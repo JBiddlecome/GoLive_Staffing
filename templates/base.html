@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}GoLive Staffing — Tools{% endblock %}</title>
+  <meta name="description" content="Internal GoLive! Staffing tools."/>
+  <link rel="icon" href="/static/favicon.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>.fallback{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}</style>
+</head>
+<body class="fallback bg-gray-50 text-gray-900">
+  <header class="w-full bg-white/70 backdrop-blur border-b">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="/" class="text-lg font-semibold">GoLive Staffing — Tools</a>
+      <nav class="space-x-4 text-sm">
+        <a class="hover:underline" href="/health-benefits">Health Benefits</a>
+        <a class="hover:underline" href="/ucla-hours-tool">UCLA Hours Tool</a>
+        <a class="hover:underline" href="/text-blast-filter">Text Blast Filter</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="max-w-6xl mx-auto px-4 py-8 text-xs text-gray-500">
+    © {{ 2025 }} GoLive! Staffing — Internal tools
+  </footer>
+</body>
+</html>
