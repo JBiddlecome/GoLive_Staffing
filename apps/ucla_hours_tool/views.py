@@ -186,7 +186,9 @@ async def upload(
         )
 
     buffer = io.BytesIO()
-    with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
+    # Use the default pandas engine (openpyxl) so that we do not require the optional
+    # ``xlsxwriter`` dependency at runtime.
+    with pd.ExcelWriter(buffer) as writer:
         output_df.to_excel(writer, index=False, sheet_name="UCLA Hours")
     buffer.seek(0)
 
