@@ -4,7 +4,16 @@ services:
     env: python
     region: oregon
     plan: starter
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    pythonVersion: 3.12.6
+    buildCommand: 
+      pip install -r requirements.txt
+      pip install --upgrade pip setuptools wheel
+    startCommand: |
+      if [ "$APP_TYPE" = "streamlit" ]; then
+        streamlit run app.py --server.port $PORT --server.address 0.0.0.0
+      else
+        uvicorn app:app --host 0.0.0.0 --port $PORT
+      fi
+
     autoDeploy: true
     healthCheckPath: /healthz
