@@ -1,0 +1,21 @@
+services:
+  # 1) Static Tools Hub website (this hosts index.html with your buttons)
+  - type: static
+    name: golive-tools-hub
+    env: static
+    buildCommand: ""
+    staticPublishPath: /
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  # 2) UCLA Hours Tool (Streamlit app)
+  - type: web
+    name: ucla-hours-tool
+    env: python
+    rootDir: apps/ucla-hours-tool
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0
+    plan: free   # or 'starter'/'standard' as needed
+    autoDeploy: true
