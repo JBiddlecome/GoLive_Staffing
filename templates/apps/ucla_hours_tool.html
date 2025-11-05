@@ -3,29 +3,26 @@
 {% block content %}
 <h1 class="text-xl font-semibold mb-4">UCLA Hours Tool</h1>
 
+<p class="text-sm text-gray-600 mb-4">
+  Upload the UCLA assignment list and payroll export. We will filter for UCLA clients, total each employee's
+  hours per pay rate, match assignments, and return a ready-to-upload spreadsheet.
+</p>
+
 <form class="space-y-4" method="post" enctype="multipart/form-data" action="/ucla-hours-tool/upload">
   <div>
-    <label class="block text-sm font-medium mb-1">Employee List (.xlsx)</label>
+    <label class="block text-sm font-medium mb-1">Assignment List (.xlsx)</label>
     <input class="border rounded p-2 w-full bg-white" type="file" name="employee_list" accept=".xlsx,.xls" required />
   </div>
   <div>
     <label class="block text-sm font-medium mb-1">Payroll (.xlsx)</label>
     <input class="border rounded p-2 w-full bg-white" type="file" name="payroll" accept=".xlsx,.xls" required />
   </div>
-  <div class="grid sm:grid-cols-2 gap-4">
-    <div>
-      <label class="block text-sm font-medium mb-1">Start (mm/dd/yyyy)</label>
-      <input class="border rounded p-2 w-full bg-white" type="text" name="start_date" placeholder="05/02/2025" />
-    </div>
-    <div>
-      <label class="block text-sm font-medium mb-1">End (mm/dd/yyyy)</label>
-      <input class="border rounded p-2 w-full bg-white" type="text" name="end_date" placeholder="06/01/2025" />
-    </div>
-  </div>
-  <button class="px-4 py-2 rounded-xl border shadow bg-white hover:bg-gray-50" type="submit">Upload (stub)</button>
+  <button class="px-4 py-2 rounded-xl border shadow bg-white hover:bg-gray-50" type="submit">Generate UCLA Hours Workbook</button>
 </form>
 
-{% if message %}
-  <div class="mt-6 p-4 bg-green-50 border border-green-200 rounded-xl text-sm">{{ message }}</div>
+{% if error %}
+  <div class="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+    {{ error }}
+  </div>
 {% endif %}
 {% endblock %}
