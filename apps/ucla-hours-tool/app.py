@@ -1,5 +1,4 @@
 import io
-import sys
 from datetime import date, timedelta
 
 import numpy as np
@@ -46,9 +45,7 @@ def most_recent_sunday(anchor: date | None = None) -> date:
         anchor = date.today()
     # Monday=0 ... Sunday=6
     dow = anchor.weekday()
-    # distance to previous Sunday
-    days_back = (dow + 1) % 7 + 0  # if already Sunday -> go back 0 days
-    # Simpler: step back until Sunday
+    # Step back until Sunday
     d = anchor
     while d.weekday() != 6:
         d -= timedelta(days=1)
@@ -169,102 +166,113 @@ we_id_prefix = custom_we.strftime("%Y%m%d")
 # Transformations
 # -----------------------------
 
-# 1) Filter to UCLA clients (case-insensitive substring)
-payroll_df[client_col] = payroll_df[client_col].astype(str)
-mask_ucla = payroll_df[client_col].str.contains("UCLA", case=False, na=False)
-payroll_ucla = payroll_df.loc[mask_ucla].copy()
+try:
+    # 1) Filter to UCLA clients (case-insensitive substring)
+    payroll_df[client_col] = payroll_df[client_col].astype(str)
+    mask_ucla = payroll_df[client_col].str.contains("UCLA", case=False, na=False)
+    payroll_ucla = payroll_df.loc[mask_ucla].copy()
 
-# 2) Build employee full name
-payroll_ucla["Employee Name"] = normalize_name_parts(payroll_ucla, first_col, last_col, full_name_col)
+    if payroll_ucla.empty:
+        st.warning("No payroll rows matched clients containing 'UCLA'. Adjust the client column mapping or upload a different file.")
+        st.stop()
 
-# 3) Hours sum per employee + pay rate
-for c in (reg_col, ot_col, dt_col):
-    if c not in payroll_ucla.columns:
-        raise ValueError(f"Missing hours column: {c}")
+    # 2) Build employee full name
+    payroll_ucla["Employee Name"] = normalize_name_parts(payroll_ucla, first_col, last_col, full_name_col)
 
-def to_num(x):
-    try:
-        return float(str(x).replace(",", ""))
-    except Exception:
-        return np.nan
+    # 3) Hours sum per employee + pay rate
+    for c in (reg_col, ot_col, dt_col):
+        if c not in payroll_ucla.columns:
+            raise ValueError(f"Missing hours column: {c}")
 
-payroll_ucla[reg_col] = payroll_ucla[reg_col].apply(to_num).fillna(0.0)
-payroll_ucla[ot_col]  = payroll_ucla[ot_col].apply(to_num).fillna(0.0)
-payroll_ucla[dt_col]  = payroll_ucla[dt_col].apply(to_num).fillna(0.0)
+    def to_num(x):
+        try:
+            return float(str(x).replace(",", ""))
+        except Exception:
+            return np.nan
 
-if payrate_col not in payroll_ucla.columns:
-    raise ValueError("Could not find Pay Rate column in Payroll. Map it in the sidebar.")
+    payroll_ucla[reg_col] = payroll_ucla[reg_col].apply(to_num).fillna(0.0)
+    payroll_ucla[ot_col] = payroll_ucla[ot_col].apply(to_num).fillna(0.0)
+    payroll_ucla[dt_col] = payroll_ucla[dt_col].apply(to_num).fillna(0.0)
 
-payroll_ucla["Pay Rate"] = payroll_ucla[payrate_col].apply(to_num)
-payroll_ucla["Hours"] = payroll_ucla[reg_col] + payroll_ucla[ot_col] + payroll_ucla[dt_col]
+    if payrate_col not in payroll_ucla.columns:
+        raise ValueError("Could not find Pay Rate column in Payroll. Map it in the sidebar.")
 
-summary = (
-    payroll_ucla
-    .groupby(["Employee Name", "Pay Rate"], dropna=False, as_index=False)["Hours"].sum()
-)
+    payroll_ucla["Pay Rate"] = payroll_ucla[payrate_col].apply(to_num)
+    payroll_ucla["Hours"] = payroll_ucla[reg_col] + payroll_ucla[ot_col] + payroll_ucla[dt_col]
 
-# 4) Prepare Assignment list for matching (normalize name + numeric rate)
-assign_df = assign_df.copy()
-assign_df["_name"] = (
-    assign_df[assign_name_col]
-    .astype(str)
-    .str.replace(r"\s+", " ", regex=True)
-    .str.strip()
-    .str.lower()
-)
-assign_df["_rate"] = assign_df[assign_rate_col].apply(to_num)
-assign_df_slim = assign_df[["_name", "_rate", assign_no_col]].drop_duplicates()
+    summary = (
+        payroll_ucla
+        .groupby(["Employee Name", "Pay Rate"], dropna=False, as_index=False)["Hours"].sum()
+    )
 
-# 5) Join to fetch Assignment #
-summary["_name"] = (
-    summary["Employee Name"]
-    .astype(str)
-    .str.replace(r"\s+", " ", regex=True)
-    .str.strip()
-    .str.lower()
-)
-summary["_rate"] = summary["Pay Rate"].apply(to_num)
-joined = summary.merge(
-    assign_df_slim,
-    how="left",
-    left_on=["_name", "_rate"],
-    right_on=["_name", "_rate"],
-)
+    # 4) Prepare Assignment list for matching (normalize name + numeric rate)
+    assign_df = assign_df.copy()
+    assign_df["_name"] = (
+        assign_df[assign_name_col]
+        .astype(str)
+        .str.replace(r"\s+", " ", regex=True)
+        .str.strip()
+        .str.lower()
+    )
+    assign_df["_rate"] = assign_df[assign_rate_col].apply(to_num)
+    assign_df_slim = assign_df[["_name", "_rate", assign_no_col]].drop_duplicates()
 
-# 6) Build final output columns
-joined.rename(columns={assign_no_col: "Assignment #"}, inplace=True)
-joined["Work Date"] = we_str
-joined["Weekending Date"] = we_str
+    # 5) Join to fetch Assignment #
+    summary["_name"] = (
+        summary["Employee Name"]
+        .astype(str)
+        .str.replace(r"\s+", " ", regex=True)
+        .str.strip()
+        .str.lower()
+    )
+    summary["_rate"] = summary["Pay Rate"].apply(to_num)
+    joined = summary.merge(
+        assign_df_slim,
+        how="left",
+        left_on=["_name", "_rate"],
+        right_on=["_name", "_rate"],
+    )
 
-# 7) Unique Line ID generation (YYYYMMDD0001, ...)
-joined = joined.sort_values(["Employee Name", "Pay Rate"]).reset_index(drop=True)
-joined["Unique Line ID"] = [f"{we_id_prefix}{i:04d}" for i in range(1, len(joined) + 1)]
+    # 6) Build final output columns
+    joined.rename(columns={assign_no_col: "Assignment #"}, inplace=True)
+    joined["Work Date"] = we_str
+    joined["Weekending Date"] = we_str
 
-final_cols = [
-    "Assignment #", "Employee Name", "Pay Rate", "Work Date",
-    "Weekending Date", "Hours", "Unique Line ID"
-]
-final = joined[final_cols]
+    # 7) Unique Line ID generation (YYYYMMDD0001, ...)
+    joined = joined.sort_values(["Employee Name", "Pay Rate"]).reset_index(drop=True)
+    joined["Unique Line ID"] = [f"{we_id_prefix}{i:04d}" for i in range(1, len(joined) + 1)]
 
-st.subheader("Output preview")
-st.dataframe(final)
+    final_cols = [
+        "Assignment #", "Employee Name", "Pay Rate", "Work Date",
+        "Weekending Date", "Hours", "Unique Line ID"
+    ]
+    final = joined[final_cols]
 
-# 8) Unmatched rows helper
-unmatched = joined[joined["Assignment #"].isna()][["Employee Name", "Pay Rate", "Hours"]]
-if not unmatched.empty:
-    st.warning("Some rows could not be matched to an Assignment # (check name or pay rate differences). See below.")
-    st.dataframe(unmatched)
+    st.subheader("Output preview")
+    st.dataframe(final)
 
-# 9) Download as Excel
-out_buf = io.BytesIO()
-with pd.ExcelWriter(out_buf, engine="xlsxwriter") as xw:
-    final.to_excel(xw, index=False, sheet_name="Export")
+    # 8) Unmatched rows helper
+    unmatched = joined[joined["Assignment #"].isna()][["Employee Name", "Pay Rate", "Hours"]]
     if not unmatched.empty:
-        unmatched.to_excel(xw, index=False, sheet_name="Unmatched")
+        st.warning("Some rows could not be matched to an Assignment # (check name or pay rate differences). See below.")
+        st.dataframe(unmatched)
 
-st.download_button(
-    label="Download Export (Excel)",
-    data=out_buf.getvalue(),
-    file_name=f"ucla_assignment_export_{we_id_prefix}.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-)
+    # 9) Download as Excel
+    out_buf = io.BytesIO()
+    with pd.ExcelWriter(out_buf, engine="xlsxwriter") as xw:
+        final.to_excel(xw, index=False, sheet_name="Export")
+        if not unmatched.empty:
+            unmatched.to_excel(xw, index=False, sheet_name="Unmatched")
+
+    st.download_button(
+        label="Download Export (Excel)",
+        data=out_buf.getvalue(),
+        file_name=f"ucla_assignment_export_{we_id_prefix}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+except ValueError as err:
+    st.error(str(err))
+    st.stop()
+except Exception as err:
+    st.error(f"Unexpected error: {err}")
+    st.stop()
