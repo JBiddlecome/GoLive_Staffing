@@ -1,22 +1,22 @@
 services:
   - type: web
+    runtime: python            # use runtime, not env
     name: golive-staffing-tools
-    env: python
     region: oregon
     plan: starter
-    pythonVersion: 3.12.6
+
+    envVars:
+      - key: PYTHON_VERSION    # <- this is how you pin Python in a Blueprint
+        value: "3.12.6"
+      - key: PIP_ONLY_BINARY
+        value: ":all:"
+      # optional: set this only if you want the Streamlit path by default
+      # - key: APP_TYPE
+      #   value: "fastapi"
+
     buildCommand: |
-      echo "PWD=$(pwd)"
-      echo "Listing service root:"
-      ls -al
-      if [ -f runtime.txt ]; then
-        echo "runtime.txt contents:" && cat runtime.txt
-      else
-        echo "runtime.txt NOT FOUND in service root"
-      fi
-      python --version
       pip install --upgrade pip setuptools wheel
-      PIP_ONLY_BINARY=:all: pip install -r requirements.txt
+      pip install -r requirements.txt
 
     startCommand: |
       if [ "$APP_TYPE" = "streamlit" ]; then
