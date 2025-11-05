@@ -6,8 +6,8 @@ services:
     plan: starter
     pythonVersion: 3.12.6
     buildCommand: 
-      pip install -r requirements.txt
       pip install --upgrade pip setuptools wheel
+      pip install -r requirements.txt
     startCommand: |
       if [ "$APP_TYPE" = "streamlit" ]; then
         streamlit run app.py --server.port $PORT --server.address 0.0.0.0
