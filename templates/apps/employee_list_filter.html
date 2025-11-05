@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Employee List Filter — GoLive Tools{% endblock %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-6">Employee List Filter</h1>
+
+<div class="grid gap-8">
+  <section class="p-6 bg-white border border-gray-200 rounded-xl shadow-sm">
+    <h2 class="text-lg font-semibold mb-4">Upload Employee Workbook</h2>
+    <p class="text-sm text-gray-600 mb-4">Upload the employee roster Excel file, choose filters, then export an updated workbook.</p>
+    <form class="space-y-4" method="post" enctype="multipart/form-data" action="/employee-list-filter/upload">
+      <div>
+        <label class="block text-sm font-medium mb-1" for="file">Employee List (.xlsx)</label>
+        <input class="border rounded-lg p-2 w-full bg-white" type="file" id="file" name="file" accept=".xlsx" required />
+      </div>
+      <button class="px-4 py-2 rounded-lg border border-slate-300 shadow-sm bg-slate-50 hover:bg-slate-100" type="submit">Upload Workbook</button>
+    </form>
+    {% if uploaded_filename %}
+    <p class="mt-4 text-sm text-green-700">Loaded file: <span class="font-medium">{{ uploaded_filename }}</span></p>
+    {% endif %}
+    {% if error %}
+    <p class="mt-4 text-sm text-red-600">{{ error }}</p>
+    {% endif %}
+  </section>
+
+  <section class="p-6 bg-white border border-gray-200 rounded-xl shadow-sm">
+    <h2 class="text-lg font-semibold mb-4">Filter &amp; Export</h2>
+    {% if options %}
+    <form class="space-y-4" method="post" action="/employee-list-filter/process">
+      <input type="hidden" name="file_token" value="{{ file_token }}" />
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1" for="status">Status</label>
+          <select class="border rounded-lg p-2 w-full bg-white" id="status" name="status">
+            <option value="All" {% if selected.status == 'All' %}selected{% endif %}>All</option>
+            {% for value in options.statuses %}
+            <option value="{{ value }}" {% if selected.status == value %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="city">City</label>
+          <select class="border rounded-lg p-2 w-full bg-white" id="city" name="city">
+            <option value="All" {% if selected.city == 'All' %}selected{% endif %}>All</option>
+            {% for value in options.cities %}
+            <option value="{{ value }}" {% if selected.city == value %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="state">State</label>
+          <select class="border rounded-lg p-2 w-full bg-white" id="state" name="state">
+            <option value="All" {% if selected.state == 'All' %}selected{% endif %}>All</option>
+            {% for value in options.states %}
+            <option value="{{ value }}" {% if selected.state == value %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="start_date">Start Date</label>
+          <select class="border rounded-lg p-2 w-full bg-white" id="start_date" name="start_date">
+            <option value="All" {% if selected.start_date == 'All' %}selected{% endif %}>All</option>
+            {% for value in options.start_dates %}
+            <option value="{{ value }}" {% if selected.start_date == value %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+          </select>
+          <p class="text-xs text-gray-500 mt-1">Rehire Date overrides Start Date when available.</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="position">Position</label>
+          <select class="border rounded-lg p-2 w-full bg-white" id="position" name="position">
+            <option value="All" {% if selected.position == 'All' %}selected{% endif %}>All</option>
+            {% for value in options.positions %}
+            <option value="{{ value }}" {% if selected.position == value %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="county">County of Residence</label>
+          <select class="border rounded-lg p-2 w-full bg-white" id="county" name="county">
+            <option value="All" {% if selected.county == 'All' %}selected{% endif %}>All</option>
+            {% for value in options.counties %}
+            <option value="{{ value }}" {% if selected.county == value %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <button class="px-4 py-2 rounded-lg border border-slate-300 shadow-sm bg-indigo-600 text-white hover:bg-indigo-500" type="submit">Export Filtered Workbook</button>
+    </form>
+    {% else %}
+    <p class="text-sm text-gray-600">Upload an employee workbook to enable filtering and export.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
