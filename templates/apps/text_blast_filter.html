@@ -6,10 +6,10 @@
 <div class="grid gap-8">
   <section class="p-6 bg-white border border-gray-200 rounded-xl shadow-sm">
     <h2 class="text-lg font-semibold mb-4">Available Employees From Event</h2>
-    <p class="text-sm text-gray-600 mb-4">Upload the event roster exported as an .xlsx file. The tool will remove the first three rows and prepare the data for filtering.</p>
+    <p class="text-sm text-gray-600 mb-4">Upload the Available Employees file, filter, and export as CSV file.</p>
     <form class="space-y-4" method="post" enctype="multipart/form-data" action="/text-blast-filter/upload">
       <div>
-        <label class="block text-sm font-medium mb-1" for="file">Event roster (.xlsx)</label>
+        <label class="block text-sm font-medium mb-1" for="file">Available Employees File (.xlsx)</label>
         <input class="border rounded-lg p-2 w-full bg-white" type="file" id="file" name="file" accept=".xlsx" required />
       </div>
       <button class="px-4 py-2 rounded-lg border border-slate-300 shadow-sm bg-slate-50 hover:bg-slate-100" type="submit">Upload Roster</button>
@@ -53,7 +53,7 @@
       <button class="px-4 py-2 rounded-lg border border-slate-300 shadow-sm bg-indigo-600 text-white hover:bg-indigo-500" type="submit">Generate SMS List</button>
     </form>
     {% else %}
-    <p class="text-sm text-gray-600">Upload an event roster to enable filtering and download the SMS list.</p>
+    <p class="text-sm text-gray-600">Upload an Available Employees file to enable filtering and download the SMS list.</p>
     {% endif %}
   </section>
 </div>
