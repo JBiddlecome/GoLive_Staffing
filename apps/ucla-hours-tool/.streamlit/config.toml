@@ -1,0 +1,10 @@
+[server]
+enableXsrfProtection = true
+maxUploadSize = 400
+headless = true
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+base = "light"
