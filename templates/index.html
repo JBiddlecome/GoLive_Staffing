@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}GoLive Staffing — Tools{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Welcome</h1>
+<p class="mb-6">Choose a tool below. Each tool supports Excel uploads and will provide a downloadable result once processing is added.</p>
+
+<div class="grid md:grid-cols-3 gap-4">
+  <a href="/health-benefits" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
+    <h2 class="font-semibold mb-2">Health Benefits</h2>
+    <p class="text-sm text-gray-600">Upcoming: census validation, eligibility filters, etc.</p>
+  </a>
+  <a href="/ucla-hours-tool" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
+    <h2 class="font-semibold mb-2">UCLA Hours Tool</h2>
+    <p class="text-sm text-gray-600">Upload Payroll + Employee List, filter by date windows, compute totals.</p>
+  </a>
+  <a href="/text-blast-filter" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
+    <h2 class="font-semibold mb-2">Text Blast Filter</h2>
+    <p class="text-sm text-gray-600">Clean/segment contacts before outbound SMS campaigns.</p>
+  </a>
+</div>
+{% endblock %}
