@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Text Blast Filter — GoLive Tools{% endblock %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-4">Text Blast Filter</h1>
+
+<form class="space-y-4" method="post" enctype="multipart/form-data" action="/text-blast-filter/upload">
+  <div>
+    <label class="block text-sm font-medium mb-1">Contacts (.xlsx/.csv)</label>
+    <input class="border rounded p-2 w-full bg-white" type="file" name="file" accept=".xlsx,.xls,.csv" required />
+  </div>
+  <button class="px-4 py-2 rounded-xl border shadow bg-white hover:bg-gray-50" type="submit">Upload (stub)</button>
+</form>
+
+{% if message %}
+  <div class="mt-6 p-4 bg-green-50 border border-green-200 rounded-xl text-sm">{{ message }}</div>
+{% endif %}
+{% endblock %}
