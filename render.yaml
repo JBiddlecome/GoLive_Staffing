@@ -5,9 +5,9 @@ services:
     region: oregon
     plan: starter
     pythonVersion: 3.12.6
-    buildCommand: 
+    buildCommand: |
       pip install --upgrade pip setuptools wheel
-      pip install -r requirements.txt
+      PIP_ONLY_BINARY=:all: pip install -r requirements.txt
     startCommand: |
       if [ "$APP_TYPE" = "streamlit" ]; then
         streamlit run app.py --server.port $PORT --server.address 0.0.0.0
