@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Clickboarding Check — GoLive Tools{% endblock %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-6">Clickboarding ↔ Employee List Check</h1>
+<p class="text-sm text-gray-600 mb-6">
+  Upload the Clickboarding List (.csv) and Employee List (.xlsx) to compare employee names for recent hires.
+  Names with a similarity score below your confidence threshold are flagged for review.
+</p>
+
+<section class="p-6 bg-white border border-gray-200 rounded-xl shadow-sm mb-8">
+  <h2 class="text-lg font-semibold mb-4">Upload &amp; Match</h2>
+  <form class="space-y-4" method="post" enctype="multipart/form-data" action="/clickboarding-check/process">
+    <div class="grid md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium mb-1" for="clickboarding_file">Clickboarding List (CSV)</label>
+        <input class="border rounded-lg p-2 w-full bg-white" type="file" id="clickboarding_file" name="clickboarding_file" accept=".csv" required />
+        <p class="text-xs text-gray-500 mt-1">Expecting a column named <span class="font-medium">Name</span> formatted like “Lastname, Firstname”.</p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1" for="employee_file">Employee List (Excel)</label>
+        <input class="border rounded-lg p-2 w-full bg-white" type="file" id="employee_file" name="employee_file" accept=".xlsx,.xls" required />
+        <p class="text-xs text-gray-500 mt-1">Requires columns <span class="font-medium">First Name</span>, <span class="font-medium">Last Name</span>, and start/rehire dates.</p>
+      </div>
+    </div>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium mb-1" for="confidence">Match confidence threshold (%)</label>
+        <input class="border rounded-lg p-2 w-full bg-white" type="number" id="confidence" name="confidence" value="{{ clickboarding_settings.confidence }}" min="50" max="100" step="1" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1" for="days_back">Look back window (days)</label>
+        <input class="border rounded-lg p-2 w-full bg-white" type="number" id="days_back" name="days_back" value="{{ clickboarding_settings.days_back }}" min="1" max="120" step="1" />
+        <p class="text-xs text-gray-500 mt-1">Employees with Start/Rehire Date within this window are considered.</p>
+      </div>
+    </div>
+    <button class="px-4 py-2 rounded-lg border border-slate-300 shadow-sm bg-indigo-600 text-white hover:bg-indigo-500" type="submit">
+      Run matching
+    </button>
+  </form>
+
+  {% if clickboarding_uploaded.clickboarding_filename or clickboarding_uploaded.employee_filename %}
+  <div class="mt-4 text-sm text-gray-600">
+    {% if clickboarding_uploaded.clickboarding_filename %}
+    <p>Clickboarding file: <span class="font-medium">{{ clickboarding_uploaded.clickboarding_filename }}</span></p>
+    {% endif %}
+    {% if clickboarding_uploaded.employee_filename %}
+    <p>Employee file: <span class="font-medium">{{ clickboarding_uploaded.employee_filename }}</span></p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if clickboarding_error %}
+  <p class="mt-4 text-sm text-red-600">{{ clickboarding_error }}</p>
+  {% endif %}
+</section>
+
+<section class="grid md:grid-cols-2 gap-8">
+  <div class="p-6 bg-white border border-gray-200 rounded-xl shadow-sm">
+    <h2 class="text-lg font-semibold mb-4">Needs Review</h2>
+    {% if clickboarding_review %}
+      {% if clickboarding_review.rows %}
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50">
+            <tr>
+              {% for header in clickboarding_review.headers %}
+              <th class="text-left font-semibold px-3 py-2 border-b">{{ header }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in clickboarding_review.rows %}
+            <tr class="border-b last:border-b-0">
+              {% for header in clickboarding_review.headers %}
+              <td class="px-3 py-2 align-top">{{ row[header] }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if clickboarding_download_token %}
+      <a class="inline-flex items-center mt-4 px-3 py-2 rounded-lg border border-slate-300 shadow-sm bg-slate-50 hover:bg-slate-100 text-sm" href="/clickboarding-check/download/{{ clickboarding_download_token }}">Download review list (CSV)</a>
+      {% endif %}
+      {% else %}
+      <p class="text-sm text-gray-600">All Clickboarding names met the confidence threshold.</p>
+      {% endif %}
+    {% else %}
+    <p class="text-sm text-gray-500">Upload both files to see potential mismatches.</p>
+    {% endif %}
+  </div>
+
+  <div class="p-6 bg-white border border-gray-200 rounded-xl shadow-sm">
+    <h2 class="text-lg font-semibold mb-4">Best Matches</h2>
+    {% if clickboarding_matches %}
+      {% if clickboarding_matches.rows %}
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50">
+            <tr>
+              {% for header in clickboarding_matches.headers %}
+              <th class="text-left font-semibold px-3 py-2 border-b">{{ header }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in clickboarding_matches.rows %}
+            <tr class="border-b last:border-b-0">
+              {% for header in clickboarding_matches.headers %}
+              <td class="px-3 py-2 align-top">{{ row[header] }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-sm text-gray-600">No matches available yet.</p>
+      {% endif %}
+    {% else %}
+    <p class="text-sm text-gray-500">Run the matcher to view matched employees.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
