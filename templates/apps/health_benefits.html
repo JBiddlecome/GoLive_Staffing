@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Health Benefits — GoLive Tools{% endblock %}
+{% block content %}
+<section class="space-y-6">
+  <header class="space-y-2">
+    <h1 class="text-2xl font-semibold">Health Benefits — Employee Hours ≥ 360</h1>
+    <p class="text-sm text-gray-600">
+      Upload the latest <strong>Employee List</strong> workbook and select a preset window<br />
+      (always <strong>2nd → 1st</strong> of adjacent months). The tool will reuse the payroll
+      workbook stored in the repository, automatically shift the payroll window to the next month
+      plus three months, and surface employees with <strong>Total Hours ≥ 360</strong>.
+    </p>
+  </header>
+
+  <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+    <p class="font-medium">Payroll source</p>
+    <p class="mt-1">This tool reads the payroll Excel workbook from <code class="bg-white/70 px-1 py-0.5 rounded">{{ payroll_path }}</code>.</p>
+    <p>Commit the latest payroll file there (e.g. <code>data/payroll.xlsx</code>) so it is available for every run.</p>
+  </div>
+
+  <form class="space-y-4 rounded-xl border bg-white p-6 shadow-sm" method="post" action="/health-benefits/analyze" enctype="multipart/form-data">
+    <div>
+      <label for="preset" class="block text-sm font-medium text-gray-700">Preset employee window (2nd → 1st)</label>
+      <select id="preset" name="preset_label" class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+        {% for preset in presets %}
+          <option value="{{ preset.value }}" {% if preset.value == selected_preset %}selected{% endif %}>{{ preset.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Employee List (.xlsx / .xls)</label>
+      <input type="file" name="employee_file" accept=".xlsx,.xls" required class="mt-1 block w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+    </div>
+
+    <button type="submit" class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+      Run analysis
+    </button>
+  </form>
+
+  {% if error %}
+    <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+      {{ error }}
+    </div>
+  {% endif %}
+
+  {% if message %}
+    <div class="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+      {{ message }}
+    </div>
+  {% endif %}
+
+  {% if info %}
+    <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+      {{ info }}
+    </div>
+  {% endif %}
+
+  {% if employee_window or payroll_window %}
+    <section class="grid gap-4 md:grid-cols-2">
+      {% if employee_window %}
+        <div class="rounded-xl border bg-white p-4 shadow-sm">
+          <h2 class="text-sm font-semibold text-gray-700">Employee List window</h2>
+          <p class="mt-1 text-sm text-gray-600">{{ employee_window.start }} → {{ employee_window.end }}</p>
+          {% if employee_count is not none %}
+            <p class="mt-2 text-xs text-gray-500">Employees matching range: {{ employee_count }}</p>
+          {% endif %}
+        </div>
+      {% endif %}
+      {% if payroll_window %}
+        <div class="rounded-xl border bg-white p-4 shadow-sm">
+          <h2 class="text-sm font-semibold text-gray-700">Payroll window (next month + 3 months)</h2>
+          <p class="mt-1 text-sm text-gray-600">{{ payroll_window.start }} → {{ payroll_window.end }}</p>
+          {% if payroll_rows_considered is not none %}
+            <p class="mt-2 text-xs text-gray-500">Payroll rows in window: {{ payroll_rows_considered }}</p>
+          {% endif %}
+          {% if payroll_rows_matched is not none %}
+            <p class="mt-1 text-xs text-gray-500">Rows matching employee IDs: {{ payroll_rows_matched }}</p>
+          {% endif %}
+        </div>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  {% if employee_preview %}
+    <section class="space-y-2">
+      <h2 class="text-sm font-semibold text-gray-700">Employee matches (first {{ employee_preview|length }} rows)</h2>
+      <div class="overflow-x-auto rounded-xl border bg-white shadow-sm">
+        <table class="min-w-full divide-y divide-gray-200 text-sm">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-3 py-2 text-left font-medium text-gray-600">Employee ID</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-600">Start Date</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-600">Rehire Date</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 bg-white">
+            {% for row in employee_preview %}
+              <tr>
+                <td class="px-3 py-2 text-gray-700">{{ row.employee_id }}</td>
+                <td class="px-3 py-2 text-gray-600">{{ row.start_date or "—" }}</td>
+                <td class="px-3 py-2 text-gray-600">{{ row.rehire_date or "—" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+
+  {% if analysis_complete %}
+    <section class="space-y-2">
+      <h2 class="text-sm font-semibold text-gray-700">Employees with Total Hours ≥ 360</h2>
+      {% if results %}
+        <div class="overflow-x-auto rounded-xl border bg-white shadow-sm">
+          <table class="min-w-full divide-y divide-gray-200 text-sm">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-3 py-2 text-left font-medium text-gray-600">Employee ID</th>
+                <th class="px-3 py-2 text-left font-medium text-gray-600">Total Hours</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 bg-white">
+              {% for row in results %}
+                <tr>
+                  <td class="px-3 py-2 text-gray-700">{{ row.employee_id }}</td>
+                  <td class="px-3 py-2 text-gray-700">{{ '%.2f'|format(row.total_hours) }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+          No employees met the 360 hour threshold for the calculated payroll window.
+        </p>
+      {% endif %}
+    </section>
+  {% endif %}
+</section>
+{% endblock %}
