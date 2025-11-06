@@ -4,26 +4,43 @@
 <h1 class="text-2xl font-bold mb-4">Welcome</h1>
 <p class="mb-6">Choose a tool below. Each tool supports Excel uploads and will provide a downloadable result once processing is added.</p>
 
-<div class="grid md:grid-cols-3 gap-4">
-  <a href="/clickboarding-check" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
-    <h2 class="font-semibold mb-2">Clickboarding Check</h2>
-    <p class="text-sm text-gray-600">Match Clickboarding names to recent employees and flag uncertain records.</p>
-  </a>
-  <a href="/health-benefits" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
-    <h2 class="font-semibold mb-2">Health Benefits</h2>
-    <p class="text-sm text-gray-600">Upcoming: census validation, eligibility filters, etc.</p>
-  </a>
-  <a href="/ucla-hours-tool" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
-    <h2 class="font-semibold mb-2">UCLA Hours Tool</h2>
-    <p class="text-sm text-gray-600">Upload Payroll + Assignment List, Output UCLA Timesheet.</p>
-  </a>
-  <a href="/text-blast-filter" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
-    <h2 class="font-semibold mb-2">Text Blast Filter</h2>
-    <p class="text-sm text-gray-600">Clean/segment contacts and filter employee rosters before outbound SMS campaigns.</p>
-  </a>
-  <a href="/employee-phone-county-audit" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
-    <h2 class="font-semibold mb-2">Employee Phone &amp; County Audit</h2>
-    <p class="text-sm text-gray-600">Find Active/Inactive employees with mobile numbers starting with 1 or Alabama in their county.</p>
-  </a>
+<div class="space-y-8">
+  <section>
+    <h2 class="text-xl font-semibold mb-4">Recruiting</h2>
+    <div class="grid md:grid-cols-3 gap-4">
+      <a href="/clickboarding-check" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
+        <h3 class="font-semibold mb-2">Clickboarding Check</h3>
+        <p class="text-sm text-gray-600">Match Clickboarding names to recent employees and flag uncertain records.</p>
+      </a>
+      <a href="/text-blast-filter" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
+        <h3 class="font-semibold mb-2">Text Blast Filter</h3>
+        <p class="text-sm text-gray-600">Clean/segment contacts and filter employee rosters before outbound SMS campaigns.</p>
+      </a>
+      <a href="/employee-phone-county-audit" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
+        <h3 class="font-semibold mb-2">Employee Phone &amp; County Audit</h3>
+        <p class="text-sm text-gray-600">Find Active/Inactive employees with mobile numbers starting with 1 or Alabama in their county.</p>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="text-xl font-semibold mb-4">Human Resources</h2>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <a href="/health-benefits" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
+        <h3 class="font-semibold mb-2">Health Benefits</h3>
+        <p class="text-sm text-gray-600">Upcoming: census validation, eligibility filters, etc.</p>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="text-xl font-semibold mb-4">Payroll</h2>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <a href="/ucla-hours-tool" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
+        <h3 class="font-semibold mb-2">UCLA Hours Tool</h3>
+        <p class="text-sm text-gray-600">Upload Payroll + Assignment List, Output UCLA Timesheet.</p>
+      </a>
+    </div>
+  </section>
 </div>
 {% endblock %}
