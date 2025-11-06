@@ -117,6 +117,10 @@
             <thead class="bg-gray-50">
               <tr>
                 <th class="px-3 py-2 text-left font-medium text-gray-600">Employee ID</th>
+                <th class="px-3 py-2 text-left font-medium text-gray-600">First Name</th>
+                <th class="px-3 py-2 text-left font-medium text-gray-600">Last Name</th>
+                <th class="px-3 py-2 text-left font-medium text-gray-600">Mobile</th>
+                <th class="px-3 py-2 text-left font-medium text-gray-600">Email</th>
                 <th class="px-3 py-2 text-left font-medium text-gray-600">Total Hours</th>
               </tr>
             </thead>
@@ -124,6 +128,10 @@
               {% for row in results %}
                 <tr>
                   <td class="px-3 py-2 text-gray-700">{{ row.employee_id }}</td>
+                  <td class="px-3 py-2 text-gray-700">{{ row.first_name or "—" }}</td>
+                  <td class="px-3 py-2 text-gray-700">{{ row.last_name or "—" }}</td>
+                  <td class="px-3 py-2 text-gray-700">{{ row.mobile or "—" }}</td>
+                  <td class="px-3 py-2 text-gray-700">{{ row.email or "—" }}</td>
                   <td class="px-3 py-2 text-gray-700">{{ '%.2f'|format(row.total_hours) }}</td>
                 </tr>
               {% endfor %}
