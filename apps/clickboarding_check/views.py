@@ -179,11 +179,18 @@ def _process(cb: pd.DataFrame, emp: pd.DataFrame, confidence: int, days_back: in
     if name_col is None:
         name_col = cb.columns[0]
 
+    status_col = None
+    for column in cb.columns:
+        if str(column).strip().lower() == "status":
+            status_col = column
+            break
+
     review_rows: List[Dict[str, object]] = []
     match_rows: List[Dict[str, object]] = []
 
     for _, row in cb.iterrows():
         raw_name = row.get(name_col, None)
+        status_value = row.get(status_col, "") if status_col else ""
         key, last, _first = _normalize_clickboarding_name(raw_name)
         if key is None:
             continue
@@ -197,6 +204,7 @@ def _process(cb: pd.DataFrame, emp: pd.DataFrame, confidence: int, days_back: in
             review_rows.append(
                 {
                     "Clickboarding Name": raw_name,
+                    "Status": status_value,
                     "Best Match (Employee List)": "",
                     "Confidence %": 0,
                     "Reason": "No candidates with matching last name in recent employees",
@@ -216,6 +224,7 @@ def _process(cb: pd.DataFrame, emp: pd.DataFrame, confidence: int, days_back: in
             review_rows.append(
                 {
                     "Clickboarding Name": raw_name,
+                    "Status": status_value,
                     "Best Match (Employee List)": "",
                     "Confidence %": 0,
                     "Reason": "Unable to determine a best match",
@@ -240,6 +249,7 @@ def _process(cb: pd.DataFrame, emp: pd.DataFrame, confidence: int, days_back: in
             review_rows.append(
                 {
                     "Clickboarding Name": raw_name,
+                    "Status": status_value,
                     "Best Match (Employee List)": match_entry["Matched Employee"],
                     "Confidence %": round(best_score, 1),
                     "Reason": f"Best available match < {confidence}%",
@@ -250,7 +260,9 @@ def _process(cb: pd.DataFrame, emp: pd.DataFrame, confidence: int, days_back: in
     if not review_df.empty:
         review_df = review_df.sort_values(by=["Confidence %"], ascending=True, na_position="last").reset_index(drop=True)
     else:
-        review_df = pd.DataFrame(columns=["Clickboarding Name", "Best Match (Employee List)", "Confidence %", "Reason"])
+        review_df = pd.DataFrame(
+            columns=["Clickboarding Name", "Status", "Best Match (Employee List)", "Confidence %", "Reason"]
+        )
 
     match_df = pd.DataFrame(match_rows)
     if not match_df.empty:
