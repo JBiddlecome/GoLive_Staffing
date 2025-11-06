@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Employee Phone & County Audit — GoLive Tools{% endblock %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-6">Employee Phone &amp; County Audit</h1>
+<p class="text-sm text-gray-600 mb-6">
+  Upload the Employee List workbook to identify Active or Inactive (60) employees whose mobile number begins with
+  <code class="px-1 py-0.5 bg-slate-100 rounded">1</code> or whose County of Residence references Alabama.
+</p>
+
+<section class="p-6 bg-white border border-gray-200 rounded-xl shadow-sm mb-8">
+  <h2 class="text-lg font-semibold mb-4">Upload Employee List</h2>
+  <form class="space-y-4" method="post" enctype="multipart/form-data" action="/employee-phone-county-audit/process">
+    <div>
+      <label class="block text-sm font-medium mb-1" for="file">Employee List (.xlsx)</label>
+      <input class="border rounded-lg p-2 w-full bg-white" type="file" id="file" name="file" accept=".xlsx" required />
+    </div>
+    <button class="px-4 py-2 rounded-lg border border-slate-300 shadow-sm bg-indigo-600 text-white hover:bg-indigo-500" type="submit">
+      Run Audit
+    </button>
+  </form>
+  {% if audit_uploaded_filename %}
+  <p class="mt-4 text-sm text-green-700">Loaded file: <span class="font-medium">{{ audit_uploaded_filename }}</span></p>
+  {% endif %}
+  {% if audit_error %}
+  <p class="mt-4 text-sm text-red-600">{{ audit_error }}</p>
+  {% endif %}
+</section>
+
+{% if audit_results %}
+<section class="grid gap-8">
+  <div class="p-6 bg-white border border-gray-200 rounded-xl shadow-sm">
+    <h2 class="text-lg font-semibold mb-2">Mobile Numbers Starting with 1</h2>
+    <p class="text-sm text-gray-600 mb-4">Found {{ audit_results.mobile.count }} entr{{ 'y' if audit_results.mobile.count == 1 else 'ies' }}.</p>
+    {% if audit_results.mobile.rows %}
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead>
+          <tr class="bg-slate-100">
+            {% for column in audit_results.mobile.columns %}
+            <th class="text-left font-semibold px-3 py-2 border-b border-slate-200">{{ column }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in audit_results.mobile.rows %}
+          <tr class="odd:bg-white even:bg-slate-50">
+            {% for column in audit_results.mobile.columns %}
+            <td class="px-3 py-2 border-b border-slate-100 align-top">{{ row[column] }}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-sm text-gray-600">No employees matched this condition.</p>
+    {% endif %}
+  </div>
+
+  <div class="p-6 bg-white border border-gray-200 rounded-xl shadow-sm">
+    <h2 class="text-lg font-semibold mb-2">County of Residence Contains &ldquo;Alabama&rdquo;</h2>
+    <p class="text-sm text-gray-600 mb-4">Found {{ audit_results.county.count }} entr{{ 'y' if audit_results.county.count == 1 else 'ies' }}.</p>
+    {% if audit_results.county.rows %}
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead>
+          <tr class="bg-slate-100">
+            {% for column in audit_results.county.columns %}
+            <th class="text-left font-semibold px-3 py-2 border-b border-slate-200">{{ column }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in audit_results.county.rows %}
+          <tr class="odd:bg-white even:bg-slate-50">
+            {% for column in audit_results.county.columns %}
+            <td class="px-3 py-2 border-b border-slate-100 align-top">{{ row[column] }}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-sm text-gray-600">No employees matched this condition.</p>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}
