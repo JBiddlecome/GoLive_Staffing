@@ -185,12 +185,21 @@ def _process(cb: pd.DataFrame, emp: pd.DataFrame, confidence: int, days_back: in
             status_col = column
             break
 
+    emp_status_col = None
+    for column in emp.columns:
+        lowered = str(column).strip().lower()
+        normalized = re.sub(r"[^a-z]", "", lowered)
+        if normalized in {"status", "employeestatus", "employmentstatus"}:
+            emp_status_col = column
+            break
+
     review_rows: List[Dict[str, object]] = []
     match_rows: List[Dict[str, object]] = []
 
     for _, row in cb.iterrows():
         raw_name = row.get(name_col, None)
-        status_value = row.get(status_col, "") if status_col else ""
+        cb_status_value = row.get(status_col, "") if status_col else ""
+        status_value = cb_status_value
         key, last, _first = _normalize_clickboarding_name(raw_name)
         if key is None:
             continue
@@ -231,6 +240,9 @@ def _process(cb: pd.DataFrame, emp: pd.DataFrame, confidence: int, days_back: in
                 }
             )
             continue
+
+        if emp_status_col:
+            status_value = best_emp.get(emp_status_col, "")
 
         match_entry = {
             "Clickboarding Name": raw_name,
