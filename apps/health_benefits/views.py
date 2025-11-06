@@ -197,6 +197,54 @@ async def analyze(
     employee_id_col = find_col(employee_df, ["Employee ID", "Emp ID", "ID", "#Emp"])
     start_col = find_col(employee_df, ["Start Date", "Start", "StartDate"])
     rehire_col = find_col(employee_df, ["Rehire Date", "Rehire", "RehireDate"])
+    first_name_col = find_col(
+        employee_df,
+        [
+            "First Name",
+            "First",
+            "FirstName",
+            "Given Name",
+            "Employee First Name",
+        ],
+    )
+    last_name_col = find_col(
+        employee_df,
+        [
+            "Last Name",
+            "Last",
+            "LastName",
+            "Surname",
+            "Employee Last Name",
+        ],
+    )
+    mobile_col = find_col(
+        employee_df,
+        [
+            "Mobile",
+            "Mobile Phone",
+            "Mobile Phone Number",
+            "Cell Phone",
+            "Cell Phone Number",
+            "Cell",
+            "Phone",
+            "Phone Number",
+            "Primary Phone",
+            "Primary Phone Number",
+        ],
+    )
+    email_col = find_col(
+        employee_df,
+        [
+            "Email",
+            "Email Address",
+            "EmailAddress",
+            "Primary Email",
+            "Primary Email Address",
+            "Work Email",
+            "Work Email Address",
+            "Personal Email",
+        ],
+    )
 
     missing_cols = [
         name
@@ -204,6 +252,10 @@ async def analyze(
             "Employee ID": employee_id_col,
             "Start Date": start_col,
             "Rehire Date": rehire_col,
+            "First Name": first_name_col,
+            "Last Name": last_name_col,
+            "Mobile": mobile_col,
+            "Email": email_col,
         }.items()
         if column is None
     ]
@@ -259,6 +311,28 @@ async def analyze(
         }
         for record in employees_in_range[[employee_id_col, start_col, rehire_col]].head(50).to_dict("records")
     ]
+
+    employee_details = (
+        employees_in_range[
+            [employee_id_col, first_name_col, last_name_col, mobile_col, email_col]
+        ]
+        .dropna(subset=[employee_id_col])
+        .copy()
+    )
+    employee_details[employee_id_col] = employee_details[employee_id_col].astype(str).str.strip()
+    for column in [first_name_col, last_name_col, mobile_col, email_col]:
+        employee_details[column] = (
+            employee_details[column].fillna("").astype(str).str.strip()
+        )
+    details_lookup = {
+        row[employee_id_col]: {
+            "first_name": row[first_name_col],
+            "last_name": row[last_name_col],
+            "mobile": row[mobile_col],
+            "email": row[email_col],
+        }
+        for row in employee_details.drop_duplicates(employee_id_col, keep="first").to_dict("records")
+    }
 
     if not employee_ids:
         context = _build_context(
@@ -422,13 +496,20 @@ async def analyze(
     )
 
     qualified = totals[totals["Total Hours"] >= 360].copy()
-    results = [
-        {
-            "employee_id": row[payroll_emp_col],
-            "total_hours": float(row["Total Hours"]),
-        }
-        for row in qualified.to_dict("records")
-    ]
+    results = []
+    for row in qualified.to_dict("records"):
+        employee_id = row[payroll_emp_col]
+        details = details_lookup.get(employee_id, {})
+        results.append(
+            {
+                "employee_id": employee_id,
+                "first_name": details.get("first_name", ""),
+                "last_name": details.get("last_name", ""),
+                "mobile": details.get("mobile", ""),
+                "email": details.get("email", ""),
+                "total_hours": float(row["Total Hours"]),
+            }
+        )
 
     context = _build_context(
         request,
