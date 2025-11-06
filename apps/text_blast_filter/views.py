@@ -10,6 +10,8 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from fastapi.templating import Jinja2Templates
 
+from apps.context import default_employee_filter_context, default_text_blast_context
+
 templates = Jinja2Templates(directory="templates")
 router = APIRouter()
 
@@ -68,17 +70,11 @@ def _collect_filter_options(df: pd.DataFrame) -> Dict[str, List[str]]:
 
 @router.get("")
 async def page(request: Request):
-    return templates.TemplateResponse(
-        "apps/text_blast_filter.html",
-        {
-            "request": request,
-            "options": None,
-            "selected": {"shift_position_title": "", "employee_status": "", "miles_from_location": 50},
-            "file_token": None,
-            "uploaded_filename": None,
-            "error": None,
-        },
-    )
+    context: Dict[str, object] = {"request": request}
+    context.update(default_text_blast_context())
+    context.update(default_employee_filter_context())
+
+    return templates.TemplateResponse("apps/text_blast_filter.html", context)
 
 
 @router.post("/upload")
@@ -87,31 +83,27 @@ async def upload(
     file: UploadFile = File(...),
 ):
     if not file.filename.lower().endswith(".xlsx"):
+        context: Dict[str, object] = {"request": request}
+        context.update(default_text_blast_context())
+        context.update(default_employee_filter_context())
+        context.update({"text_error": "Please upload an .xlsx file exported from the event."})
+
         return templates.TemplateResponse(
             "apps/text_blast_filter.html",
-            {
-                "request": request,
-                "options": None,
-                "selected": {"shift_position_title": "", "employee_status": "", "miles_from_location": 50},
-                "file_token": None,
-                "uploaded_filename": None,
-                "error": "Please upload an .xlsx file exported from the event.",
-            },
+            context,
             status_code=400,
         )
 
     file_contents = await file.read()
     if not file_contents:
+        context: Dict[str, object] = {"request": request}
+        context.update(default_text_blast_context())
+        context.update(default_employee_filter_context())
+        context.update({"text_error": "The uploaded file was empty."})
+
         return templates.TemplateResponse(
             "apps/text_blast_filter.html",
-            {
-                "request": request,
-                "options": None,
-                "selected": {"shift_position_title": "", "employee_status": "", "miles_from_location": 50},
-                "file_token": None,
-                "uploaded_filename": None,
-                "error": "The uploaded file was empty.",
-            },
+            context,
             status_code=400,
         )
 
@@ -124,32 +116,31 @@ async def upload(
         dataframe = _load_dataframe(saved_path)
     except HTTPException as exc:
         saved_path.unlink(missing_ok=True)
+        context: Dict[str, object] = {"request": request}
+        context.update(default_text_blast_context())
+        context.update(default_employee_filter_context())
+        context.update({"text_error": exc.detail})
+
         return templates.TemplateResponse(
             "apps/text_blast_filter.html",
-            {
-                "request": request,
-                "options": None,
-                "selected": {"shift_position_title": "", "employee_status": "", "miles_from_location": 50},
-                "file_token": None,
-                "uploaded_filename": None,
-                "error": exc.detail,
-            },
+            context,
             status_code=exc.status_code,
         )
 
     options = _collect_filter_options(dataframe)
 
-    return templates.TemplateResponse(
-        "apps/text_blast_filter.html",
+    context = {"request": request}
+    context.update(default_text_blast_context())
+    context.update(default_employee_filter_context())
+    context.update(
         {
-            "request": request,
-            "options": options,
-            "selected": {"shift_position_title": "", "employee_status": "", "miles_from_location": 50},
-            "file_token": file_token,
-            "uploaded_filename": file.filename,
-            "error": None,
-        },
+            "text_options": options,
+            "text_file_token": file_token,
+            "text_uploaded_filename": file.filename,
+        }
     )
+
+    return templates.TemplateResponse("apps/text_blast_filter.html", context)
 
 
 def _apply_filters(

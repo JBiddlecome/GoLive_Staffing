@@ -2,13 +2,15 @@ from __future__ import annotations
 
 from io import BytesIO
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Sequence
 from uuid import uuid4
 
 import pandas as pd
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import StreamingResponse
+from fastapi.responses import RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
+
+from apps.context import default_employee_filter_context, default_text_blast_context
 
 
 templates = Jinja2Templates(directory="templates")
@@ -57,6 +59,7 @@ def _prepare_dataframe(dataframe: pd.DataFrame) -> pd.DataFrame:
     prepared["Start Date"] = pd.to_datetime(prepared["Start Date"], errors="coerce")
     prepared["Rehire Date"] = pd.to_datetime(prepared["Rehire Date"], errors="coerce")
     prepared["Start Date"] = prepared["Rehire Date"].combine_first(prepared["Start Date"])
+    prepared["Start Date"] = prepared["Start Date"].dt.normalize()
 
     prepared["_positions_list"] = (
         prepared["Positions"]
@@ -74,9 +77,9 @@ def _collect_filter_options(df: pd.DataFrame) -> Dict[str, List[str]]:
         values = df[column].dropna().astype(str).str.strip()
         return sorted({value for value in values if value})
 
-    start_dates = (
-        df["Start Date"].dropna().dt.normalize().drop_duplicates().sort_values().dt.strftime("%Y-%m-%d").tolist()
-    )
+    normalized_dates = df["Start Date"].dropna()
+    start_date_min = normalized_dates.min()
+    start_date_max = normalized_dates.max()
 
     positions: List[str] = sorted({position for values in df["_positions_list"] for position in values})
 
@@ -84,44 +87,54 @@ def _collect_filter_options(df: pd.DataFrame) -> Dict[str, List[str]]:
         "statuses": _options_for("Status"),
         "cities": _options_for("City"),
         "states": _options_for("State"),
-        "start_dates": start_dates,
         "positions": positions,
         "counties": _options_for("County of Residence"),
+        "start_date_min": start_date_min.strftime("%Y-%m-%d") if start_date_min is not None else "",
+        "start_date_max": start_date_max.strftime("%Y-%m-%d") if start_date_max is not None else "",
     }
 
 
 def _apply_filters(
     df: pd.DataFrame,
-    status: str,
-    city: str,
+    statuses: Sequence[str],
+    cities: Sequence[str],
     state: str,
-    start_date: str,
-    position: str,
-    county: str,
+    start_date_start: str,
+    start_date_end: str,
+    positions: Sequence[str],
+    counties: Sequence[str],
 ) -> pd.DataFrame:
     filtered = df.copy()
 
-    if status and status.lower() != "all":
-        filtered = filtered[filtered["Status"].astype(str).str.strip() == status]
+    normalized_statuses = {value.strip() for value in statuses if value and value.strip()}
+    if normalized_statuses:
+        filtered = filtered[filtered["Status"].astype(str).str.strip().isin(normalized_statuses)]
 
-    if city and city.lower() != "all":
-        filtered = filtered[filtered["City"].astype(str).str.strip() == city]
+    normalized_cities = {value.strip() for value in cities if value and value.strip()}
+    if normalized_cities:
+        filtered = filtered[filtered["City"].astype(str).str.strip().isin(normalized_cities)]
 
     if state and state.lower() != "all":
         filtered = filtered[filtered["State"].astype(str).str.strip() == state]
 
-    if start_date and start_date.lower() != "all":
-        try:
-            target_date = pd.to_datetime(start_date, errors="raise").normalize()
-            filtered = filtered[filtered["Start Date"].dt.normalize() == target_date]
-        except (TypeError, ValueError):
-            pass
+    parsed_start = pd.to_datetime(start_date_start, errors="coerce") if start_date_start else None
+    parsed_end = pd.to_datetime(start_date_end, errors="coerce") if start_date_end else None
 
-    if position and position.lower() != "all":
-        filtered = filtered[filtered["_positions_list"].apply(lambda items: position in items)]
+    if parsed_start is not None:
+        parsed_start = parsed_start.normalize()
+        filtered = filtered[filtered["Start Date"] >= parsed_start]
 
-    if county and county.lower() != "all":
-        filtered = filtered[filtered["County of Residence"].astype(str).str.strip() == county]
+    if parsed_end is not None:
+        parsed_end = parsed_end.normalize()
+        filtered = filtered[filtered["Start Date"] <= parsed_end]
+
+    normalized_positions = {value.strip() for value in positions if value and value.strip()}
+    if normalized_positions:
+        filtered = filtered[filtered["_positions_list"].apply(lambda items: any(pos in items for pos in normalized_positions))]
+
+    normalized_counties = {value.strip() for value in counties if value and value.strip()}
+    if normalized_counties:
+        filtered = filtered[filtered["County of Residence"].astype(str).str.strip().isin(normalized_counties)]
 
     return filtered
 
@@ -147,69 +160,34 @@ def _remove_invalid_employee_ids(df: pd.DataFrame) -> pd.DataFrame:
 
 
 @router.get("")
-async def page(request: Request):
-    return templates.TemplateResponse(
-        "apps/employee_list_filter.html",
-        {
-            "request": request,
-            "options": None,
-            "selected": {
-                "status": "All",
-                "city": "All",
-                "state": "All",
-                "start_date": "All",
-                "position": "All",
-                "county": "All",
-            },
-            "file_token": None,
-            "uploaded_filename": None,
-            "error": None,
-        },
-    )
+async def page():
+    return RedirectResponse(url="/text-blast-filter", status_code=303)
 
 
 @router.post("/upload")
 async def upload(request: Request, file: UploadFile = File(...)):
     if not file.filename.lower().endswith(".xlsx"):
+        context: Dict[str, object] = {"request": request}
+        context.update(default_text_blast_context())
+        context.update(default_employee_filter_context())
+        context.update({"employee_error": "Please upload an .xlsx file."})
+
         return templates.TemplateResponse(
-            "apps/employee_list_filter.html",
-            {
-                "request": request,
-                "options": None,
-                "selected": {
-                    "status": "All",
-                    "city": "All",
-                    "state": "All",
-                    "start_date": "All",
-                    "position": "All",
-                    "county": "All",
-                },
-                "file_token": None,
-                "uploaded_filename": None,
-                "error": "Please upload an .xlsx file.",
-            },
+            "apps/text_blast_filter.html",
+            context,
             status_code=400,
         )
 
     file_contents = await file.read()
     if not file_contents:
+        context = {"request": request}
+        context.update(default_text_blast_context())
+        context.update(default_employee_filter_context())
+        context.update({"employee_error": "The uploaded file was empty."})
+
         return templates.TemplateResponse(
-            "apps/employee_list_filter.html",
-            {
-                "request": request,
-                "options": None,
-                "selected": {
-                    "status": "All",
-                    "city": "All",
-                    "state": "All",
-                    "start_date": "All",
-                    "position": "All",
-                    "county": "All",
-                },
-                "file_token": None,
-                "uploaded_filename": None,
-                "error": "The uploaded file was empty.",
-            },
+            "apps/text_blast_filter.html",
+            context,
             status_code=400,
         )
 
@@ -222,57 +200,43 @@ async def upload(request: Request, file: UploadFile = File(...)):
         dataframe = _prepare_dataframe(_load_dataframe(saved_path))
     except HTTPException as exc:
         saved_path.unlink(missing_ok=True)
+        context = {"request": request}
+        context.update(default_text_blast_context())
+        context.update(default_employee_filter_context())
+        context.update({"employee_error": exc.detail})
+
         return templates.TemplateResponse(
-            "apps/employee_list_filter.html",
-            {
-                "request": request,
-                "options": None,
-                "selected": {
-                    "status": "All",
-                    "city": "All",
-                    "state": "All",
-                    "start_date": "All",
-                    "position": "All",
-                    "county": "All",
-                },
-                "file_token": None,
-                "uploaded_filename": None,
-                "error": exc.detail,
-            },
+            "apps/text_blast_filter.html",
+            context,
             status_code=exc.status_code,
         )
 
     options = _collect_filter_options(dataframe)
 
-    return templates.TemplateResponse(
-        "apps/employee_list_filter.html",
+    context = {"request": request}
+    context.update(default_text_blast_context())
+    context.update(default_employee_filter_context())
+    context.update(
         {
-            "request": request,
-            "options": options,
-            "selected": {
-                "status": "All",
-                "city": "All",
-                "state": "All",
-                "start_date": "All",
-                "position": "All",
-                "county": "All",
-            },
-            "file_token": file_token,
-            "uploaded_filename": file.filename,
-            "error": None,
-        },
+            "employee_options": options,
+            "employee_file_token": file_token,
+            "employee_uploaded_filename": file.filename,
+        }
     )
+
+    return templates.TemplateResponse("apps/text_blast_filter.html", context)
 
 
 @router.post("/process")
 async def process(
     file_token: str = Form(...),
-    status: str = Form("All"),
-    city: str = Form("All"),
+    statuses: List[str] = Form([]),
+    cities: List[str] = Form([]),
     state: str = Form("All"),
-    start_date: str = Form("All"),
-    position: str = Form("All"),
-    county: str = Form("All"),
+    start_date_start: str = Form(""),
+    start_date_end: str = Form(""),
+    positions: List[str] = Form([]),
+    counties: List[str] = Form([]),
 ):
     saved_path = (UPLOAD_DIR / Path(file_token).name).resolve()
 
@@ -283,12 +247,13 @@ async def process(
 
     filtered = _apply_filters(
         dataframe,
-        status.strip(),
-        city.strip(),
+        statuses,
+        cities,
         state.strip(),
-        start_date.strip(),
-        position.strip(),
-        county.strip(),
+        start_date_start.strip(),
+        start_date_end.strip(),
+        positions,
+        counties,
     )
 
     cleaned = _normalize_mobile(filtered)
