@@ -36,7 +36,7 @@ def find_col(df: pd.DataFrame, candidates: Iterable[str]) -> Optional[str]:
 
 
 def coerce_date(series: pd.Series) -> pd.Series:
-    return pd.to_datetime(series, errors="coerce").dt.date
+    return pd.to_datetime(series, errors="coerce").dt.normalize()
 
 
 def safe_numeric(series: pd.Series) -> pd.Series:
@@ -129,7 +129,7 @@ def _build_context(
 
 
 def _format_date_value(value: object) -> str:
-    if value is None or (isinstance(value, float) and pd.isna(value)):
+    if value is None or pd.isna(value):  # type: ignore[arg-type]
         return ""
     if isinstance(value, datetime):
         return value.strftime("%Y-%m-%d")
@@ -221,13 +221,20 @@ async def analyze(
 
     emp_start: date = selected["start"]  # type: ignore[assignment]
     emp_end: date = selected["end"]  # type: ignore[assignment]
+    emp_start_ts = pd.Timestamp(emp_start)
+    emp_end_ts = pd.Timestamp(emp_end)
 
     in_range_mask = (
-        (employee_df[start_col].notna() & (employee_df[start_col] >= emp_start) & (employee_df[start_col] <= emp_end))
-        | (
+        (
+            employee_df[start_col].notna()
+            & (employee_df[start_col] >= emp_start_ts)
+            & (employee_df[start_col] <= emp_end_ts)
+        )
+        |
+        (
             employee_df[rehire_col].notna()
-            & (employee_df[rehire_col] >= emp_start)
-            & (employee_df[rehire_col] <= emp_end)
+            & (employee_df[rehire_col] >= emp_start_ts)
+            & (employee_df[rehire_col] <= emp_end_ts)
         )
     )
 
@@ -266,6 +273,8 @@ async def analyze(
 
     payroll_start = (emp_end + relativedelta(months=+1)).replace(day=1)
     payroll_end = payroll_start + relativedelta(months=+3) - timedelta(days=1)
+    payroll_start_ts = pd.Timestamp(payroll_start)
+    payroll_end_ts = pd.Timestamp(payroll_end)
     payroll_window = _format_window(payroll_start, payroll_end)
 
     if not PAYROLL_SOURCE.exists():
@@ -363,8 +372,8 @@ async def analyze(
 
     date_mask = (
         payroll_df[payroll_date_col].notna()
-        & (payroll_df[payroll_date_col] >= payroll_start)
-        & (payroll_df[payroll_date_col] <= payroll_end)
+        & (payroll_df[payroll_date_col] >= payroll_start_ts)
+        & (payroll_df[payroll_date_col] <= payroll_end_ts)
     )
     payroll_within_window = payroll_df.loc[date_mask].copy()
     rows_considered = len(payroll_within_window)
