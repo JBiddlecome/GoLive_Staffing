@@ -29,8 +29,8 @@
       </div>
       <div>
         <label class="block text-sm font-medium mb-1" for="days_back">Look back window (days)</label>
-        <input class="border rounded-lg p-2 w-full bg-white" type="number" id="days_back" name="days_back" value="{{ clickboarding_settings.days_back }}" min="1" max="120" step="1" />
-        <p class="text-xs text-gray-500 mt-1">Employees with Start/Rehire Date within this window are considered.</p>
+        <input class="border rounded-lg p-2 w-full bg-white" type="number" id="days_back" name="days_back" value="{{ clickboarding_settings.days_back }}" min="1" max="2000" step="1" />
+        <p class="text-xs text-gray-500 mt-1">Employees with Start/Rehire Date within this window are considered (up to 2,000 days).</p>
       </div>
     </div>
     <button class="px-4 py-2 rounded-lg border border-slate-300 shadow-sm bg-indigo-600 text-white hover:bg-indigo-500" type="submit">
