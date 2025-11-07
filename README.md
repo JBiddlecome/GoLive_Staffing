@@ -12,6 +12,22 @@ HUMAN RESOURCES
 
 PAYROLL
 -UCLA Hours Tool: Upload Payroll Report and Assignment List. Output the Agile1 UCLA Timesheet or determine if any employee needs an ID assigned.
+-Sales & Staffing Metrics: Upload the weekly payroll export to refresh revenue and staffing trends.
+
+## Sales & Staffing Metrics data maintenance
+
+The web workflow updates two artifacts inside the `data/` directory:
+
+- `Sales and Staffing Charts.xlsx` — the legacy workbook consumed by the dashboards.
+- `sales_staffing_metrics.csv` — a text-friendly history of the calculated metrics for code review.
+
+Commit both files together after each run so Git tracks the derived workbook alongside the reproducible CSV.
+
+To regenerate the Excel workbook from the CSV (for example, after resolving a merge conflict), run:
+
+```bash
+python -m apps.sales_staffing_metrics.cli --metrics data/sales_staffing_metrics.csv --workbook "data/Sales and Staffing Charts.xlsx"
+```
 
 
 
