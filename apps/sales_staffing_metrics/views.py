@@ -3,7 +3,7 @@ from __future__ import annotations
 import io
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import pandas as pd
 from dateutil.relativedelta import relativedelta
@@ -47,11 +47,36 @@ def _ensure_headers(ws) -> Dict[str, int]:
     return headers
 
 
-def _find_or_create_week_row(ws, headers: Dict[str, int], week_ending: datetime) -> int:
-    if "Week Ending" not in headers:
-        raise ValueError(f'Required column "Week Ending" not found in sheet "{ws.title}"')
+def _find_or_create_week_row(
+    ws, headers: Dict[str, int], week_ending: datetime
+) -> Tuple[int, Dict[str, int]]:
+    week_column_name = None
+    candidate_week_columns = (
+        "Week Ending",
+        "Week Ending (Shift Count)",
+        "Week Ending (Fill Rate)",
+    )
 
-    column = headers["Week Ending"]
+    for candidate in candidate_week_columns:
+        if candidate in headers:
+            week_column_name = candidate
+            break
+
+    if week_column_name is None and "2025 (Shift Count)" in headers:
+        insert_position = headers["2025 (Shift Count)"]
+        ws.insert_cols(insert_position)
+        ws.cell(row=1, column=insert_position).value = "Week Ending"
+        headers = _ensure_headers(ws)
+        week_column_name = "Week Ending"
+
+    if week_column_name is None:
+        raise ValueError(
+            f'Required column "Week Ending" not found in sheet "{ws.title}". '
+            "Expected one of: Week Ending, Week Ending (Shift Count), Week Ending (Fill Rate), "
+            "or 2025 (Shift Count)."
+        )
+
+    column = headers[week_column_name]
     for row in range(2, ws.max_row + 1):
         cell_value = ws.cell(row=row, column=column).value
         if cell_value is None:
@@ -61,11 +86,11 @@ def _find_or_create_week_row(ws, headers: Dict[str, int], week_ending: datetime)
         except Exception:  # pragma: no cover - defensive
             continue
         if cell_date == week_ending.date():
-            return row
+            return row, headers
 
     row = ws.max_row + 1 if ws.max_row >= 1 else 2
     ws.cell(row=row, column=column).value = week_ending
-    return row
+    return row, headers
 
 
 def _set_cell(ws, row: int, headers: Dict[str, int], column: str, value: Any) -> None:
@@ -121,7 +146,9 @@ def _update_workbook(payroll_df: pd.DataFrame, open_shifts: int) -> Dict[str, An
         raise ValueError('Missing "Revenue" sheet in the Sales and Staffing workbook.')
     revenue_sheet = workbook["Revenue"]
     revenue_headers = _ensure_headers(revenue_sheet)
-    revenue_row = _find_or_create_week_row(revenue_sheet, revenue_headers, week_ending)
+    revenue_row, revenue_headers = _find_or_create_week_row(
+        revenue_sheet, revenue_headers, week_ending
+    )
     _set_cell(revenue_sheet, revenue_row, revenue_headers, "2025 Revenue", total_revenue)
     _set_cell(revenue_sheet, revenue_row, revenue_headers, "New Sales Revenue", new_sales_revenue)
     _set_cell(revenue_sheet, revenue_row, revenue_headers, "New Sales % of Revenue", new_sales_pct)
@@ -130,7 +157,9 @@ def _update_workbook(payroll_df: pd.DataFrame, open_shifts: int) -> Dict[str, An
         raise ValueError('Missing "Shift Count" sheet in the Sales and Staffing workbook.')
     shift_sheet = workbook["Shift Count"]
     shift_headers = _ensure_headers(shift_sheet)
-    shift_row = _find_or_create_week_row(shift_sheet, shift_headers, week_ending)
+    shift_row, shift_headers = _find_or_create_week_row(
+        shift_sheet, shift_headers, week_ending
+    )
     _set_cell(shift_sheet, shift_row, shift_headers, "2025 (Shift Count)", shift_count)
     _set_cell(shift_sheet, shift_row, shift_headers, "2025 (Fill Rate)", fill_rate)
 
