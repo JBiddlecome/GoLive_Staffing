@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Sales & Staffing Metrics — GoLive Tools{% endblock %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-4">Sales &amp; Staffing Metrics</h1>
+
+<p class="text-sm text-gray-600 mb-4">
+  Upload the weekly payroll export to update the <strong>Sales and Staffing Charts.xlsx</strong> workbook.
+  We will calculate revenue, new sales performance, and staffing fill rates for the matching week ending.
+</p>
+
+<div class="rounded-xl border bg-white p-4 shadow-sm mb-6 text-sm text-gray-700">
+  <p class="font-semibold">Workbook location:</p>
+  <p class="break-all">{{ workbook_path }}</p>
+</div>
+
+<form class="space-y-4" method="post" enctype="multipart/form-data" action="/sales-staffing-metrics/update">
+  <div>
+    <label class="block text-sm font-medium mb-1">Payroll Workbook (.xlsx)</label>
+    <input class="border rounded p-2 w-full bg-white" type="file" name="payroll" accept=".xlsx,.xls" required />
+    <p class="text-xs text-gray-500 mt-1">Example: Payroll 1102.xlsx</p>
+  </div>
+  <div>
+    <label class="block text-sm font-medium mb-1">Open Shifts</label>
+    <input class="border rounded p-2 w-full bg-white" type="text" name="open_shifts" inputmode="numeric" pattern="[0-9,]*" placeholder="e.g. 12" />
+    <p class="text-xs text-gray-500 mt-1">If left blank, open shifts default to 0.</p>
+  </div>
+  <button class="px-4 py-2 rounded-xl border shadow bg-white hover:bg-gray-50" type="submit">Update Sales &amp; Staffing Charts</button>
+</form>
+
+{% if error %}
+  <div class="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+    {{ error }}
+  </div>
+{% endif %}
+
+{% if result %}
+  <div class="mt-6 p-4 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700">
+    <p class="font-semibold mb-2">Update complete for week ending {{ result.week_ending.strftime('%B %d, %Y') }}.</p>
+    <ul class="space-y-1">
+      <li><strong>2025 Revenue:</strong> ${{ '{:,.2f}'.format(result.total_revenue) }}</li>
+      <li><strong>New Sales Revenue:</strong> ${{ '{:,.2f}'.format(result.new_sales_revenue) }}</li>
+      <li><strong>New Sales % of Revenue:</strong> {{ '{:.2%}'.format(result.new_sales_pct) }}</li>
+      <li><strong>2025 (Shift Count):</strong> {{ result.shift_count }}</li>
+      <li><strong>Open Shifts:</strong> {{ result.open_shifts }}</li>
+      <li><strong>2025 (Fill Rate):</strong> {{ '{:.2%}'.format(result.fill_rate) }}</li>
+    </ul>
+  </div>
+{% endif %}
+{% endblock %}
