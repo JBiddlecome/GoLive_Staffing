@@ -15,8 +15,10 @@ from openpyxl import load_workbook
 templates = Jinja2Templates(directory="templates")
 router = APIRouter()
 
-WORKBOOK_PATH = Path("data") / "Sales and Staffing Charts.xlsx"
-METRICS_EXPORT_PATH = Path("data") / "sales_staffing_metrics.csv"
+BASE_DIR = Path(__file__).resolve().parents[2]
+DATA_DIR = BASE_DIR / "data"
+WORKBOOK_PATH = DATA_DIR / "Sales and Staffing Charts.xlsx"
+METRICS_EXPORT_PATH = DATA_DIR / "sales_staffing_metrics.csv"
 
 
 def _normalize_week_ending(value: datetime) -> datetime:
@@ -51,6 +53,7 @@ def _write_metrics_export(metrics: Dict[str, Any], path: Path = METRICS_EXPORT_P
     metrics = metrics.copy()
     metrics["week_ending"] = _normalize_week_ending(metrics["week_ending"])
 
+    path.parent.mkdir(parents=True, exist_ok=True)
     export_df = _load_metrics_export(path)
     if not export_df.empty:
         export_df = export_df[export_df["week_ending"] != metrics["week_ending"]]
