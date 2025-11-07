@@ -6,11 +6,14 @@
 <p class="text-sm text-gray-600 mb-4">
   Upload the weekly payroll export to update the <strong>Sales and Staffing Charts.xlsx</strong> workbook.
   We will calculate revenue, new sales performance, and staffing fill rates for the matching week ending.
+  The latest metrics are also captured in <strong>sales_staffing_metrics.csv</strong> for easy diffs in Git.
 </p>
 
 <div class="rounded-xl border bg-white p-4 shadow-sm mb-6 text-sm text-gray-700">
   <p class="font-semibold">Workbook location:</p>
   <p class="break-all">{{ workbook_path }}</p>
+  <p class="font-semibold mt-4">Metrics export:</p>
+  <p class="break-all">{{ metrics_export_path }}</p>
 </div>
 
 <form class="space-y-4" method="post" enctype="multipart/form-data" action="/sales-staffing-metrics/update">

@@ -16,6 +16,48 @@ templates = Jinja2Templates(directory="templates")
 router = APIRouter()
 
 WORKBOOK_PATH = Path("data") / "Sales and Staffing Charts.xlsx"
+METRICS_EXPORT_PATH = Path("data") / "sales_staffing_metrics.csv"
+
+
+def _normalize_week_ending(value: datetime) -> datetime:
+    """Return the naive midnight datetime used for exports."""
+
+    if value.tzinfo is not None:
+        value = value.astimezone(tz=None)
+    return value.replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+def _load_metrics_export(path: Path = METRICS_EXPORT_PATH) -> pd.DataFrame:
+    if not path.exists():
+        return pd.DataFrame(
+            columns=[
+                "week_ending",
+                "total_revenue",
+                "new_sales_revenue",
+                "new_sales_pct",
+                "shift_count",
+                "open_shifts",
+                "fill_rate",
+            ]
+        )
+
+    df = pd.read_csv(path)
+    if "week_ending" in df.columns:
+        df["week_ending"] = pd.to_datetime(df["week_ending"], errors="coerce")
+    return df
+
+
+def _write_metrics_export(metrics: Dict[str, Any], path: Path = METRICS_EXPORT_PATH) -> None:
+    metrics = metrics.copy()
+    metrics["week_ending"] = _normalize_week_ending(metrics["week_ending"])
+
+    export_df = _load_metrics_export(path)
+    if not export_df.empty:
+        export_df = export_df[export_df["week_ending"] != metrics["week_ending"]]
+
+    export_df = pd.concat([export_df, pd.DataFrame([metrics])], ignore_index=True)
+    export_df = export_df.sort_values("week_ending")
+    export_df.to_csv(path, index=False)
 
 
 def _to_date_series(series: pd.Series) -> pd.Series:
@@ -165,7 +207,7 @@ def _update_workbook(payroll_df: pd.DataFrame, open_shifts: int) -> Dict[str, An
 
     workbook.save(WORKBOOK_PATH)
 
-    return {
+    metrics = {
         "week_ending": week_ending,
         "total_revenue": total_revenue,
         "new_sales_revenue": new_sales_revenue,
@@ -174,6 +216,10 @@ def _update_workbook(payroll_df: pd.DataFrame, open_shifts: int) -> Dict[str, An
         "open_shifts": open_shifts,
         "fill_rate": fill_rate,
     }
+
+    _write_metrics_export(metrics)
+
+    return metrics
 
 
 def _read_payroll(upload: UploadFile) -> pd.DataFrame:
@@ -196,6 +242,7 @@ async def page(request: Request):
         {
             "request": request,
             "workbook_path": WORKBOOK_PATH,
+            "metrics_export_path": METRICS_EXPORT_PATH,
         },
     )
 
@@ -206,7 +253,11 @@ async def update(
     payroll: UploadFile = File(...),
     open_shifts: str = Form(""),
 ):
-    context = {"request": request, "workbook_path": WORKBOOK_PATH}
+    context = {
+        "request": request,
+        "workbook_path": WORKBOOK_PATH,
+        "metrics_export_path": METRICS_EXPORT_PATH,
+    }
 
     try:
         payroll_df = await run_in_threadpool(_read_payroll, payroll)
