@@ -49,4 +49,208 @@
     </ul>
   </div>
 {% endif %}
+
+<div class="mt-10">
+  <h2 class="text-lg font-semibold mb-3">Sales &amp; Staffing Charts</h2>
+  {% if chart_data.weeks %}
+    <div class="rounded-xl border bg-white p-4 shadow-sm space-y-6">
+      <div>
+        <label class="block text-sm font-medium mb-1" for="week-ending-select">Week ending</label>
+        <select id="week-ending-select" class="border rounded p-2 w-full bg-white text-sm">
+          {% for week in chart_data.weeks %}
+            <option value="{{ week.weekEnding }}" {% if loop.last %}selected{% endif %}>{{ week.label }}</option>
+          {% endfor %}
+        </select>
+        <p class="text-xs text-gray-500 mt-1">Compare the selected week with the two weeks before and after.</p>
+      </div>
+
+      <div class="grid gap-6 lg:grid-cols-2">
+        <div class="border rounded-lg p-4 bg-gray-50">
+          <h3 class="text-sm font-semibold mb-3">Shift Count</h3>
+          <div class="h-64">
+            <canvas id="shift-count-chart"></canvas>
+          </div>
+        </div>
+        <div class="border rounded-lg p-4 bg-gray-50">
+          <h3 class="text-sm font-semibold mb-3">Fill Rate</h3>
+          <div class="h-64">
+            <canvas id="fill-rate-chart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script>
+      (function () {
+        const chartData = {{ chart_data|tojson(indent=2)|safe }};
+        if (!chartData.weeks || chartData.weeks.length === 0) {
+          return;
+        }
+
+        const weeks = chartData.weeks;
+        const selectEl = document.getElementById("week-ending-select");
+        const shiftCanvas = document.getElementById("shift-count-chart");
+        const fillCanvas = document.getElementById("fill-rate-chart");
+
+        if (!selectEl || !shiftCanvas || !fillCanvas) {
+          return;
+        }
+
+        const shiftCtx = shiftCanvas.getContext("2d");
+        const fillCtx = fillCanvas.getContext("2d");
+        let shiftChart;
+        let fillChart;
+
+        function getWindow(value) {
+          const index = weeks.findIndex((week) => week.weekEnding === value);
+          if (index === -1) {
+            return [];
+          }
+
+          const span = 2;
+          let start = index - span;
+          let end = index + span;
+
+          if (start < 0) {
+            end = Math.min(weeks.length - 1, end - start);
+            start = 0;
+          }
+
+          if (end > weeks.length - 1) {
+            const overshoot = end - (weeks.length - 1);
+            start = Math.max(0, start - overshoot);
+            end = weeks.length - 1;
+          }
+
+          return weeks.slice(start, end + 1);
+        }
+
+        function buildShiftDataset(windowData) {
+          return {
+            labels: windowData.map((item) => item.label),
+            datasets: [
+              {
+                label: "2024 Shift Count",
+                data: windowData.map((item) => item.shiftCount2024),
+                backgroundColor: "rgba(59, 130, 246, 0.6)",
+                borderColor: "rgba(59, 130, 246, 1)",
+                borderWidth: 1,
+                borderRadius: 8,
+              },
+              {
+                label: "2025 Shift Count",
+                data: windowData.map((item) => item.shiftCount2025),
+                backgroundColor: "rgba(16, 185, 129, 0.6)",
+                borderColor: "rgba(16, 185, 129, 1)",
+                borderWidth: 1,
+                borderRadius: 8,
+              },
+            ],
+          };
+        }
+
+        function buildFillDataset(windowData) {
+          return {
+            labels: windowData.map((item) => item.label),
+            datasets: [
+              {
+                label: "2024 Fill Rate",
+                data: windowData.map((item) => item.fillRate2024 === null ? null : item.fillRate2024 * 100),
+                borderColor: "rgba(59, 130, 246, 1)",
+                backgroundColor: "rgba(59, 130, 246, 0.1)",
+                spanGaps: true,
+                tension: 0.3,
+                fill: false,
+                pointRadius: 4,
+              },
+              {
+                label: "2025 Fill Rate",
+                data: windowData.map((item) => item.fillRate2025 === null ? null : item.fillRate2025 * 100),
+                borderColor: "rgba(16, 185, 129, 1)",
+                backgroundColor: "rgba(16, 185, 129, 0.1)",
+                spanGaps: true,
+                tension: 0.3,
+                fill: false,
+                pointRadius: 4,
+              },
+            ],
+          };
+        }
+
+        function updateCharts(value) {
+          const windowData = getWindow(value);
+          if (windowData.length === 0) {
+            return;
+          }
+
+          if (shiftChart) {
+            shiftChart.destroy();
+          }
+          shiftChart = new Chart(shiftCtx, {
+            type: "bar",
+            data: buildShiftDataset(windowData),
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: "Shift Count",
+                  },
+                },
+              },
+              plugins: {
+                legend: {
+                  display: true,
+                },
+              },
+            },
+          });
+
+          if (fillChart) {
+            fillChart.destroy();
+          }
+          fillChart = new Chart(fillCtx, {
+            type: "line",
+            data: buildFillDataset(windowData),
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: false,
+                  suggestedMin: 80,
+                  suggestedMax: 105,
+                  ticks: {
+                    callback: (value) => `${value}%`,
+                  },
+                  title: {
+                    display: true,
+                    text: "Fill Rate (%)",
+                  },
+                },
+              },
+              plugins: {
+                legend: {
+                  display: true,
+                },
+              },
+            },
+          });
+        }
+
+        selectEl.addEventListener("change", (event) => {
+          updateCharts(event.target.value);
+        });
+
+        updateCharts(selectEl.value || weeks[weeks.length - 1].weekEnding);
+      })();
+    </script>
+  {% else %}
+    <p class="text-sm text-gray-600">Add data to the Sales and Staffing Charts workbook to see shift and fill rate trends.</p>
+  {% endif %}
+</div>
 {% endblock %}

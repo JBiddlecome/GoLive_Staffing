@@ -3,7 +3,7 @@ from __future__ import annotations
 import io
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple
 
 import pandas as pd
 from dateutil.relativedelta import relativedelta
@@ -144,6 +144,93 @@ def _set_cell(ws, row: int, headers: Dict[str, int], column: str, value: Any) ->
     ws.cell(row=row, column=headers[column]).value = value
 
 
+def _clean_int(value: Any) -> int | None:
+    if pd.isna(value):
+        return None
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        return None
+
+
+def _clean_float(value: Any) -> float | None:
+    if pd.isna(value):
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _load_chart_data(path: Path = WORKBOOK_PATH) -> Dict[str, Any]:
+    if not path.exists():
+        return {"weeks": []}
+
+    try:
+        revenue_df = pd.read_excel(path, sheet_name="Revenue")
+        shift_df = pd.read_excel(path, sheet_name="Shift Count")
+    except Exception:  # pragma: no cover - defensive
+        return {"weeks": []}
+
+    if "Week Ending" not in revenue_df.columns:
+        return {"weeks": []}
+
+    revenue_df = revenue_df.copy()
+    revenue_df["Week Ending"] = pd.to_datetime(revenue_df["Week Ending"], errors="coerce")
+    revenue_df = revenue_df.dropna(subset=["Week Ending"]).sort_values("Week Ending")
+
+    if revenue_df.empty:
+        return {"weeks": []}
+
+    shift_df = shift_df.copy()
+    week_columns: List[str] = [
+        col for col in (
+            "Week Ending (Shift Count)",
+            "Week Ending",
+        )
+        if col in shift_df.columns
+    ]
+    if not week_columns:
+        return {"weeks": []}
+
+    week_column = week_columns[0]
+    shift_df[week_column] = pd.to_datetime(shift_df[week_column], errors="coerce")
+    shift_df = shift_df.dropna(subset=[week_column])
+
+    shift_records: Dict[Any, Dict[str, Any]] = {}
+    for _, row in shift_df.iterrows():
+        week = pd.to_datetime(row[week_column]).date()
+        shift_records[week] = {
+            "shiftCount2024": _clean_int(row.get("2024 (Shift Count)")),
+            "shiftCount2025": _clean_int(row.get("2025 (Shift Count)")),
+            "fillRate2024": _clean_float(row.get("2024 (Fill Rate)")),
+            "fillRate2025": _clean_float(row.get("2025 (Fill Rate)")),
+        }
+
+    weeks: List[Dict[str, Any]] = []
+    for _, row in revenue_df.iterrows():
+        week_ts = pd.to_datetime(row["Week Ending"])
+        week_date = week_ts.date()
+        record = shift_records.get(
+            week_date,
+            {
+                "shiftCount2024": None,
+                "shiftCount2025": None,
+                "fillRate2024": None,
+                "fillRate2025": None,
+            },
+        )
+        weeks.append(
+            {
+                "weekEnding": week_ts.strftime("%Y-%m-%d"),
+                "label": week_ts.strftime("%B %d, %Y"),
+                **record,
+            }
+        )
+
+    return {"weeks": weeks}
+
+
 def _update_workbook(payroll_df: pd.DataFrame, open_shifts: int) -> Dict[str, Any]:
     if not WORKBOOK_PATH.exists():
         raise FileNotFoundError(
@@ -238,16 +325,20 @@ def _read_payroll(upload: UploadFile) -> pd.DataFrame:
         raise ValueError(f"Unable to read Excel file '{upload.filename}'.") from exc
 
 
+def _build_page_context(**extra: Any) -> Dict[str, Any]:
+    base_context = {
+        "workbook_path": WORKBOOK_PATH,
+        "metrics_export_path": METRICS_EXPORT_PATH,
+        "chart_data": _load_chart_data(),
+    }
+    base_context.update(extra)
+    return base_context
+
+
 @router.get("")
 async def page(request: Request):
-    return templates.TemplateResponse(
-        "apps/sales_staffing_metrics.html",
-        {
-            "request": request,
-            "workbook_path": WORKBOOK_PATH,
-            "metrics_export_path": METRICS_EXPORT_PATH,
-        },
-    )
+    context = _build_page_context(request=request)
+    return templates.TemplateResponse("apps/sales_staffing_metrics.html", context)
 
 
 @router.post("/update")
@@ -256,16 +347,12 @@ async def update(
     payroll: UploadFile = File(...),
     open_shifts: str = Form(""),
 ):
-    context = {
-        "request": request,
-        "workbook_path": WORKBOOK_PATH,
-        "metrics_export_path": METRICS_EXPORT_PATH,
-    }
+    context = _build_page_context(request=request)
 
     try:
         payroll_df = await run_in_threadpool(_read_payroll, payroll)
     except ValueError as exc:
-        context["error"] = str(exc)
+        context.update({"error": str(exc)})
         return templates.TemplateResponse(
             "apps/sales_staffing_metrics.html",
             context,
@@ -277,7 +364,7 @@ async def update(
     try:
         open_shifts_value = int(open_shifts.replace(",", "").strip()) if open_shifts.strip() else 0
     except ValueError:
-        context["error"] = "Open shifts must be a whole number."
+        context.update({"error": "Open shifts must be a whole number."})
         return templates.TemplateResponse(
             "apps/sales_staffing_metrics.html",
             context,
@@ -287,19 +374,19 @@ async def update(
     try:
         result = await run_in_threadpool(_update_workbook, payroll_df, open_shifts_value)
     except FileNotFoundError as exc:
-        context["error"] = str(exc)
+        context.update({"error": str(exc)})
         return templates.TemplateResponse(
             "apps/sales_staffing_metrics.html",
             context,
             status_code=404,
         )
     except ValueError as exc:
-        context["error"] = str(exc)
+        context.update({"error": str(exc)})
         return templates.TemplateResponse(
             "apps/sales_staffing_metrics.html",
             context,
             status_code=400,
         )
 
-    context.update({"result": result})
+    context.update({"result": result, "chart_data": _load_chart_data()})
     return templates.TemplateResponse("apps/sales_staffing_metrics.html", context)
