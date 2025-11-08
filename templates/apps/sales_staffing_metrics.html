@@ -126,6 +126,69 @@
           <canvas id="new-sales-chart"></canvas>
         </div>
       </div>
+
+      <div class="grid gap-6 lg:grid-cols-2">
+        <div class="border rounded-lg p-4 bg-gray-50">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold">New Clients (Last 6 Months)</h3>
+            {% if chart_data.topClientsWeekLabel %}
+              <span class="text-xs text-gray-500">Week ending {{ chart_data.topClientsWeekLabel }}</span>
+            {% endif %}
+          </div>
+          {% if chart_data.newClients %}
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-xs">
+                <thead>
+                  <tr class="text-left text-gray-500 uppercase tracking-wide">
+                    <th class="py-2 pr-3">Client</th>
+                    <th class="py-2 pr-3">Total Revenue</th>
+                    <th class="py-2">Won Date</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                  {% for client in chart_data.newClients %}
+                    <tr>
+                      <td class="py-2 pr-3 font-medium text-gray-700">{{ client.client }}</td>
+                      <td class="py-2 pr-3">${{ '{:,.2f}'.format(client.totalBill) }}</td>
+                      <td class="py-2">{{ client.wonDateLabel or client.wonDate or '—' }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-xs text-gray-500">Upload a payroll report to see recent client wins and their revenue.</p>
+          {% endif %}
+        </div>
+        <div class="border rounded-lg p-4 bg-gray-50">
+          <h3 class="text-sm font-semibold mb-3">Revenue by Industry</h3>
+          {% if chart_data.industries %}
+            <div class="h-64">
+              <canvas id="industry-chart"></canvas>
+            </div>
+            <div class="overflow-x-auto mt-4">
+              <table class="min-w-full text-xs">
+                <thead>
+                  <tr class="text-left text-gray-500 uppercase tracking-wide">
+                    <th class="py-2 pr-3">Industry</th>
+                    <th class="py-2">Total Revenue</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                  {% for industry in chart_data.industries %}
+                    <tr>
+                      <td class="py-2 pr-3 font-medium text-gray-700">{{ industry.industry }}</td>
+                      <td class="py-2">${{ '{:,.2f}'.format(industry.totalBill) }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-xs text-gray-500">Upload a payroll report to see revenue by industry.</p>
+          {% endif %}
+        </div>
+      </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -142,6 +205,7 @@
         const fillCanvas = document.getElementById("fill-rate-chart");
         const revenueCanvas = document.getElementById("revenue-chart");
         const newSalesCanvas = document.getElementById("new-sales-chart");
+        const industryCanvas = document.getElementById("industry-chart");
 
         if (!selectEl || !shiftCanvas || !fillCanvas) {
           return;
@@ -155,6 +219,7 @@
         let fillChart;
         let revenueChart;
         let newSalesChart;
+        let industryChart;
 
         function getWindow(value) {
           const index = weeks.findIndex((week) => week.weekEnding === value);
@@ -459,6 +524,62 @@
               },
             });
           }
+        }
+
+        if (industryCanvas && chartData.industries && chartData.industries.length > 0) {
+          const industryCtx = industryCanvas.getContext("2d");
+          const labels = chartData.industries.map((item) => item.industry);
+          const data = chartData.industries.map((item) => item.totalBill || 0);
+          const totalRevenue = data.reduce((sum, value) => sum + value, 0);
+          const palette = [
+            "#2563eb",
+            "#16a34a",
+            "#f97316",
+            "#9333ea",
+            "#0ea5e9",
+            "#ef4444",
+            "#84cc16",
+            "#f59e0b",
+          ];
+
+          industryChart = new Chart(industryCtx, {
+            type: "pie",
+            data: {
+              labels,
+              datasets: [
+                {
+                  data,
+                  backgroundColor: labels.map(
+                    (_, index) => palette[index % palette.length]
+                  ),
+                  borderColor: labels.map((_, index) => palette[index % palette.length]),
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              plugins: {
+                legend: {
+                  position: "bottom",
+                },
+                tooltip: {
+                  callbacks: {
+                    label(context) {
+                      const label = context.label || "";
+                      const value = context.parsed || 0;
+                      const percentage = totalRevenue
+                        ? ((value / totalRevenue) * 100).toFixed(1)
+                        : "0.0";
+                      return `${label}: $${value.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })} (${percentage}%)`;
+                    },
+                  },
+                },
+              },
+            },
+          });
         }
 
         selectEl.addEventListener("change", (event) => {
