@@ -78,6 +78,54 @@
           </div>
         </div>
       </div>
+
+      <div class="grid gap-6 lg:grid-cols-2">
+        <div class="border rounded-lg p-4 bg-gray-50">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold">Top Clients</h3>
+            {% if chart_data.topClientsWeekLabel %}
+              <span class="text-xs text-gray-500">Week ending {{ chart_data.topClientsWeekLabel }}</span>
+            {% endif %}
+          </div>
+          {% if chart_data.topClients %}
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-xs">
+                <thead>
+                  <tr class="text-left text-gray-500 uppercase tracking-wide">
+                    <th class="py-2 pr-3">Client</th>
+                    <th class="py-2 pr-3">Total Bill</th>
+                    <th class="py-2">Avg Bill Rate</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                  {% for client in chart_data.topClients %}
+                    <tr>
+                      <td class="py-2 pr-3 font-medium text-gray-700">{{ client.client }}</td>
+                      <td class="py-2 pr-3">${{ '{:,.2f}'.format(client.totalBill) }}</td>
+                      <td class="py-2">{% if client.averageBillRate is not none %}${{ '{:,.2f}'.format(client.averageBillRate) }}{% else %}<span class="text-gray-400">—</span>{% endif %}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-xs text-gray-500">Upload a payroll report to see the leading clients by total billing.</p>
+          {% endif %}
+        </div>
+        <div class="border rounded-lg p-4 bg-gray-50">
+          <h3 class="text-sm font-semibold mb-3">Revenue vs Goal</h3>
+          <div class="h-64">
+            <canvas id="revenue-chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="border rounded-lg p-4 bg-gray-50">
+        <h3 class="text-sm font-semibold mb-3">New Sales Performance</h3>
+        <div class="h-64">
+          <canvas id="new-sales-chart"></canvas>
+        </div>
+      </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -92,6 +140,8 @@
         const selectEl = document.getElementById("week-ending-select");
         const shiftCanvas = document.getElementById("shift-count-chart");
         const fillCanvas = document.getElementById("fill-rate-chart");
+        const revenueCanvas = document.getElementById("revenue-chart");
+        const newSalesCanvas = document.getElementById("new-sales-chart");
 
         if (!selectEl || !shiftCanvas || !fillCanvas) {
           return;
@@ -99,8 +149,12 @@
 
         const shiftCtx = shiftCanvas.getContext("2d");
         const fillCtx = fillCanvas.getContext("2d");
+        const revenueCtx = revenueCanvas ? revenueCanvas.getContext("2d") : null;
+        const newSalesCtx = newSalesCanvas ? newSalesCanvas.getContext("2d") : null;
         let shiftChart;
         let fillChart;
+        let revenueChart;
+        let newSalesChart;
 
         function getWindow(value) {
           const index = weeks.findIndex((week) => week.weekEnding === value);
@@ -178,6 +232,63 @@
           };
         }
 
+        function buildRevenueDataset(windowData) {
+          return {
+            labels: windowData.map((item) => item.label),
+            datasets: [
+              {
+                label: "2025 Revenue",
+                data: windowData.map((item) => (item.revenue2025 == null ? null : item.revenue2025)),
+                borderColor: "rgba(59, 130, 246, 1)",
+                backgroundColor: "rgba(59, 130, 246, 0.1)",
+                spanGaps: true,
+                tension: 0.3,
+                fill: false,
+              },
+              {
+                label: "2025 Revenue Goal",
+                data: windowData.map((item) => (item.revenueGoal2025 == null ? null : item.revenueGoal2025)),
+                borderColor: "rgba(249, 115, 22, 1)",
+                backgroundColor: "rgba(249, 115, 22, 0.1)",
+                spanGaps: true,
+                tension: 0.3,
+                fill: false,
+              },
+            ],
+          };
+        }
+
+        function buildNewSalesDataset(windowData) {
+          return {
+            labels: windowData.map((item) => item.label),
+            datasets: [
+              {
+                type: "bar",
+                label: "New Sales Revenue",
+                data: windowData.map((item) => (item.newSalesRevenue == null ? null : item.newSalesRevenue)),
+                backgroundColor: "rgba(16, 185, 129, 0.6)",
+                borderColor: "rgba(16, 185, 129, 1)",
+                borderWidth: 1,
+                borderRadius: 8,
+                yAxisID: "yRevenue",
+              },
+              {
+                type: "line",
+                label: "New Sales % of Revenue",
+                data: windowData.map((item) =>
+                  item.newSalesPct == null ? null : Math.round(item.newSalesPct * 1000) / 10
+                ),
+                borderColor: "rgba(107, 114, 128, 1)",
+                backgroundColor: "rgba(107, 114, 128, 0.1)",
+                spanGaps: true,
+                tension: 0.3,
+                fill: false,
+                yAxisID: "yPercent",
+              },
+            ],
+          };
+        }
+
         function updateCharts(value) {
           const windowData = getWindow(value);
           if (windowData.length === 0) {
@@ -240,6 +351,114 @@
               },
             },
           });
+
+          if (revenueCtx) {
+            if (revenueChart) {
+              revenueChart.destroy();
+            }
+            revenueChart = new Chart(revenueCtx, {
+              type: "line",
+              data: buildRevenueDataset(windowData),
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      callback: (value) => `$${Number(value).toLocaleString()}`,
+                    },
+                    title: {
+                      display: true,
+                      text: "Revenue",
+                    },
+                  },
+                },
+                plugins: {
+                  legend: {
+                    display: true,
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label(context) {
+                        const label = context.dataset.label || "";
+                        const val = context.parsed.y;
+                        if (val == null) {
+                          return label;
+                        }
+                        const numeric = Number(val);
+                        return `${label}: $${numeric.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                      },
+                    },
+                  },
+                },
+              },
+            });
+          }
+
+          if (newSalesCtx) {
+            if (newSalesChart) {
+              newSalesChart.destroy();
+            }
+            newSalesChart = new Chart(newSalesCtx, {
+              type: "bar",
+              data: buildNewSalesDataset(windowData),
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  yRevenue: {
+                    beginAtZero: true,
+                    position: "left",
+                    ticks: {
+                      callback: (value) => `$${Number(value).toLocaleString()}`,
+                    },
+                    title: {
+                      display: true,
+                      text: "Revenue",
+                    },
+                  },
+                  yPercent: {
+                    beginAtZero: true,
+                    suggestedMax: 50,
+                    position: "right",
+                    grid: {
+                      drawOnChartArea: false,
+                    },
+                    ticks: {
+                      callback: (value) => `${value}%`,
+                    },
+                    title: {
+                      display: true,
+                      text: "% of Revenue",
+                    },
+                  },
+                },
+                plugins: {
+                  legend: {
+                    display: true,
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label(context) {
+                        const datasetLabel = context.dataset.label || "";
+                        if (context.dataset.yAxisID === "yPercent") {
+                          const val = context.parsed.y;
+                          return `${datasetLabel}: ${val != null ? val.toFixed(1) : "--"}%`;
+                        }
+                        const val = context.parsed.y;
+                        if (val == null) {
+                          return `${datasetLabel}: $0.00`;
+                        }
+                        const numeric = Number(val);
+                        return `${datasetLabel}: $${numeric.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                      },
+                    },
+                  },
+                },
+              },
+            });
+          }
         }
 
         selectEl.addEventListener("change", (event) => {
