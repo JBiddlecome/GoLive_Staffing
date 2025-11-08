@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import json
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -19,6 +20,7 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 DATA_DIR = BASE_DIR / "data"
 WORKBOOK_PATH = DATA_DIR / "Sales and Staffing Charts.xlsx"
 METRICS_EXPORT_PATH = DATA_DIR / "sales_staffing_metrics.csv"
+DASHBOARD_DATA_PATH = DATA_DIR / "sales_staffing_dashboard.json"
 
 
 def _normalize_week_ending(value: datetime) -> datetime:
@@ -61,6 +63,38 @@ def _write_metrics_export(metrics: Dict[str, Any], path: Path = METRICS_EXPORT_P
     export_df = pd.concat([export_df, pd.DataFrame([metrics])], ignore_index=True)
     export_df = export_df.sort_values("week_ending")
     export_df.to_csv(path, index=False)
+
+
+def _load_dashboard_data(path: Path = DASHBOARD_DATA_PATH) -> Dict[str, Any]:
+    if not path.exists():
+        return {}
+
+    try:
+        with path.open("r", encoding="utf-8") as fh:
+            return json.load(fh)
+    except Exception:  # pragma: no cover - defensive
+        return {}
+
+
+def _write_dashboard_data(data: Dict[str, Any], path: Path = DASHBOARD_DATA_PATH) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    safe_data = data.copy()
+    if "weekEnding" in safe_data and hasattr(safe_data["weekEnding"], "isoformat"):
+        safe_data["weekEnding"] = safe_data["weekEnding"].isoformat()
+    if "weekLabel" in safe_data and hasattr(safe_data["weekLabel"], "strftime"):
+        safe_data["weekLabel"] = safe_data["weekLabel"].strftime("%B %d, %Y")
+    with path.open("w", encoding="utf-8") as fh:
+        json.dump(safe_data, fh, indent=2)
+
+
+def _empty_chart_payload() -> Dict[str, Any]:
+    dashboard_data = _load_dashboard_data()
+    return {
+        "weeks": [],
+        "topClients": dashboard_data.get("topClients", []),
+        "topClientsWeekEnding": dashboard_data.get("weekEnding"),
+        "topClientsWeekLabel": dashboard_data.get("weekLabel"),
+    }
 
 
 def _to_date_series(series: pd.Series) -> pd.Series:
@@ -164,23 +198,23 @@ def _clean_float(value: Any) -> float | None:
 
 def _load_chart_data(path: Path = WORKBOOK_PATH) -> Dict[str, Any]:
     if not path.exists():
-        return {"weeks": []}
+        return _empty_chart_payload()
 
     try:
         revenue_df = pd.read_excel(path, sheet_name="Revenue")
         shift_df = pd.read_excel(path, sheet_name="Shift Count")
     except Exception:  # pragma: no cover - defensive
-        return {"weeks": []}
+        return _empty_chart_payload()
 
     if "Week Ending" not in revenue_df.columns:
-        return {"weeks": []}
+        return _empty_chart_payload()
 
     revenue_df = revenue_df.copy()
     revenue_df["Week Ending"] = pd.to_datetime(revenue_df["Week Ending"], errors="coerce")
     revenue_df = revenue_df.dropna(subset=["Week Ending"]).sort_values("Week Ending")
 
     if revenue_df.empty:
-        return {"weeks": []}
+        return _empty_chart_payload()
 
     shift_df = shift_df.copy()
     week_columns: List[str] = [
@@ -220,15 +254,67 @@ def _load_chart_data(path: Path = WORKBOOK_PATH) -> Dict[str, Any]:
                 "fillRate2025": None,
             },
         )
+        revenue_2025 = _clean_float(row.get("2025 Revenue"))
+        revenue_goal_2025 = _clean_float(row.get("2025 Revenue Goal"))
+        new_sales_revenue = _clean_float(row.get("New Sales Revenue"))
+        new_sales_pct = _clean_float(row.get("New Sales % of Revenue"))
         weeks.append(
             {
                 "weekEnding": week_ts.strftime("%Y-%m-%d"),
                 "label": week_ts.strftime("%B %d, %Y"),
                 **record,
+                "revenue2025": revenue_2025,
+                "revenueGoal2025": revenue_goal_2025,
+                "newSalesRevenue": new_sales_revenue,
+                "newSalesPct": new_sales_pct,
             }
         )
 
-    return {"weeks": weeks}
+    dashboard_data = _load_dashboard_data()
+
+    return {
+        "weeks": weeks,
+        "topClients": dashboard_data.get("topClients", []),
+        "topClientsWeekEnding": dashboard_data.get("weekEnding"),
+        "topClientsWeekLabel": dashboard_data.get("weekLabel"),
+    }
+
+
+def _calculate_top_clients(payroll_df: pd.DataFrame) -> List[Dict[str, Any]]:
+    if "Client" not in payroll_df.columns or "Total Bill" not in payroll_df.columns:
+        return []
+
+    df = payroll_df.copy()
+    df["Client"] = df["Client"].fillna("Unknown Client").astype(str)
+    df["Total Bill"] = df["Total Bill"].apply(_normalize_money)
+
+    if "Bill Rate" in df.columns:
+        df["Bill Rate"] = df["Bill Rate"].apply(_normalize_money)
+    else:
+        df["Bill Rate"] = pd.NA
+
+    grouped = (
+        df.groupby("Client", as_index=False)
+        .agg(total_bill=("Total Bill", "sum"), average_bill_rate=("Bill Rate", "mean"))
+        .sort_values("total_bill", ascending=False)
+        .head(5)
+    )
+
+    results: List[Dict[str, Any]] = []
+    for _, row in grouped.iterrows():
+        total_bill_value = float(row["total_bill"]) if pd.notna(row["total_bill"]) else 0.0
+        avg_bill_rate_value = (
+            float(row["average_bill_rate"]) if pd.notna(row["average_bill_rate"]) else None
+        )
+        results.append(
+            {
+                "client": row["Client"],
+                "totalBill": total_bill_value,
+                "averageBillRate": avg_bill_rate_value,
+            }
+        )
+
+    return results
 
 
 def _update_workbook(payroll_df: pd.DataFrame, open_shifts: int) -> Dict[str, Any]:
@@ -308,6 +394,14 @@ def _update_workbook(payroll_df: pd.DataFrame, open_shifts: int) -> Dict[str, An
     }
 
     _write_metrics_export(metrics)
+
+    top_clients = _calculate_top_clients(payroll_df)
+    dashboard_payload = {
+        "weekEnding": week_ending,
+        "weekLabel": week_ending,
+        "topClients": top_clients,
+    }
+    _write_dashboard_data(dashboard_payload)
 
     return metrics
 
