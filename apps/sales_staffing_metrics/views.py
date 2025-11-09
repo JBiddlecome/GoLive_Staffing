@@ -21,7 +21,26 @@ DATA_DIR = BASE_DIR / "data"
 WORKBOOK_PATH = DATA_DIR / "Sales and Staffing Charts.xlsx"
 METRICS_EXPORT_PATH = DATA_DIR / "sales_staffing_metrics.csv"
 DASHBOARD_DATA_PATH = DATA_DIR / "sales_staffing_dashboard.json"
-PAYROLL_SOURCE_PATH = DATA_DIR / "Payroll 2.csv"
+PAYROLL_CANDIDATE_FILENAMES = [
+    "payroll 2.csv",
+    "Payroll 2.csv",
+]
+
+
+def _resolve_payroll_source_path() -> Path:
+    """Return the path to the payroll CSV, tolerating filename casing."""
+
+    for filename in PAYROLL_CANDIDATE_FILENAMES:
+        candidate = DATA_DIR / filename
+        if candidate.exists():
+            return candidate
+
+    for candidate in DATA_DIR.glob("*.csv"):
+        if candidate.name.lower() == "payroll 2.csv":
+            return candidate
+
+    # Fall back to the preferred lowercase filename so callers get a sensible path
+    return DATA_DIR / PAYROLL_CANDIDATE_FILENAMES[0]
 
 
 def _normalize_week_ending(value: datetime) -> datetime:
@@ -77,7 +96,10 @@ def _load_dashboard_data(path: Path = DASHBOARD_DATA_PATH) -> Dict[str, Any]:
         return {}
 
 
-def _load_payroll_csv(path: Path = PAYROLL_SOURCE_PATH) -> pd.DataFrame:
+def _load_payroll_csv(path: Path | None = None) -> pd.DataFrame:
+    if path is None:
+        path = _resolve_payroll_source_path()
+
     if not path.exists():
         return pd.DataFrame()
 
