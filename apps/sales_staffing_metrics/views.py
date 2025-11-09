@@ -21,6 +21,7 @@ DATA_DIR = BASE_DIR / "data"
 WORKBOOK_PATH = DATA_DIR / "Sales and Staffing Charts.xlsx"
 METRICS_EXPORT_PATH = DATA_DIR / "sales_staffing_metrics.csv"
 DASHBOARD_DATA_PATH = DATA_DIR / "sales_staffing_dashboard.json"
+PAYROLL_SOURCE_PATH = DATA_DIR / "Payroll 2.csv"
 
 
 def _normalize_week_ending(value: datetime) -> datetime:
@@ -76,6 +77,22 @@ def _load_dashboard_data(path: Path = DASHBOARD_DATA_PATH) -> Dict[str, Any]:
         return {}
 
 
+def _load_payroll_csv(path: Path = PAYROLL_SOURCE_PATH) -> pd.DataFrame:
+    if not path.exists():
+        return pd.DataFrame()
+
+    try:
+        df = pd.read_csv(path, encoding="utf-8-sig", low_memory=False)
+    except Exception:  # pragma: no cover - defensive
+        return pd.DataFrame()
+
+    if "Date" in df.columns:
+        df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+    if "Client Won Date" in df.columns:
+        df["Client Won Date"] = pd.to_datetime(df["Client Won Date"], errors="coerce")
+    return df
+
+
 def _write_dashboard_data(data: Dict[str, Any], path: Path = DASHBOARD_DATA_PATH) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     safe_data = data.copy()
@@ -113,6 +130,7 @@ def _empty_chart_payload() -> Dict[str, Any]:
         "topClientsWeekLabel": dashboard_data.get("weekLabel"),
         "newClients": dashboard_data.get("newClients", []),
         "industries": dashboard_data.get("industries", []),
+        "weeklyDetails": {},
     }
 
 
@@ -291,13 +309,97 @@ def _load_chart_data(path: Path = WORKBOOK_PATH) -> Dict[str, Any]:
 
     dashboard_data = _load_dashboard_data()
 
+    payroll_df = _load_payroll_csv()
+    weekly_details: Dict[str, Dict[str, Any]] = {}
+
+    if not payroll_df.empty and weeks:
+        payroll_df = payroll_df.copy()
+        if "Date" in payroll_df.columns:
+            payroll_df = payroll_df.dropna(subset=["Date"])
+        if "Total Bill" in payroll_df.columns:
+            payroll_df["Total Bill"] = payroll_df["Total Bill"].apply(_normalize_money)
+        if "Bill Rate" in payroll_df.columns:
+            payroll_df["Bill Rate"] = payroll_df["Bill Rate"].apply(_normalize_money)
+
+        week_datetime_map: Dict[str, datetime] = {}
+        for week in weeks:
+            week_ending_value = week.get("weekEnding")
+            if not week_ending_value:
+                continue
+            try:
+                week_end_ts = pd.to_datetime(week_ending_value, errors="coerce")
+            except Exception:  # pragma: no cover - defensive
+                continue
+            if pd.isna(week_end_ts):
+                continue
+            week_datetime_map[week_ending_value] = week_end_ts.to_pydatetime().replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+
+        if "Client Won Date" in payroll_df.columns and week_datetime_map:
+            new_clients_df = payroll_df.loc[payroll_df["Client Won Date"].notna()].copy()
+            earliest_week_dt = min(week_datetime_map.values())
+            min_won_date = earliest_week_dt - relativedelta(months=6)
+            new_clients_df = new_clients_df[
+                new_clients_df["Client Won Date"] >= min_won_date
+            ].copy()
+        else:
+            new_clients_df = pd.DataFrame(columns=payroll_df.columns)
+
+        for week in weeks:
+            week_ending_value = week.get("weekEnding")
+            week_end_dt = week_datetime_map.get(week_ending_value)
+            if week_end_dt is None:
+                continue
+
+            week_start_dt = week_end_dt - timedelta(days=6)
+
+            if "Date" in payroll_df.columns:
+                week_payroll = payroll_df[
+                    (payroll_df["Date"] >= week_start_dt)
+                    & (payroll_df["Date"] <= week_end_dt)
+                ]
+            else:
+                week_payroll = payroll_df
+
+            six_months_prior = week_end_dt - relativedelta(months=6)
+            new_clients_source = new_clients_df if not new_clients_df.empty else payroll_df
+            weekly_details[week_ending_value] = {
+                "topClients": _calculate_top_clients(week_payroll),
+                "newClients": _calculate_new_clients(
+                    new_clients_source,
+                    six_months_prior,
+                    week_end_dt,
+                    (week_start_dt, week_end_dt),
+                    copy_frame=new_clients_source is payroll_df,
+                ),
+                "industries": _calculate_industry_totals(week_payroll),
+            }
+
+    selected_week = weeks[-1] if weeks else None
+    selected_week_ending = selected_week.get("weekEnding") if selected_week else None
+    selected_week_label = selected_week.get("label") if selected_week else None
+
+    if selected_week_ending and selected_week_ending in weekly_details:
+        default_detail = weekly_details[selected_week_ending]
+        top_clients = default_detail.get("topClients", [])
+        new_clients = default_detail.get("newClients", [])
+        industries = default_detail.get("industries", [])
+    else:
+        top_clients = dashboard_data.get("topClients", [])
+        new_clients = dashboard_data.get("newClients", [])
+        industries = dashboard_data.get("industries", [])
+        selected_week_ending = dashboard_data.get("weekEnding", selected_week_ending)
+        selected_week_label = dashboard_data.get("weekLabel", selected_week_label)
+
     return {
         "weeks": weeks,
-        "topClients": dashboard_data.get("topClients", []),
-        "topClientsWeekEnding": dashboard_data.get("weekEnding"),
-        "topClientsWeekLabel": dashboard_data.get("weekLabel"),
-        "newClients": dashboard_data.get("newClients", []),
-        "industries": dashboard_data.get("industries", []),
+        "topClients": top_clients,
+        "topClientsWeekEnding": selected_week_ending,
+        "topClientsWeekLabel": selected_week_label,
+        "newClients": new_clients,
+        "industries": industries,
+        "weeklyDetails": weekly_details,
     }
 
 
@@ -357,20 +459,34 @@ def _format_won_date(value: Any) -> Tuple[str | None, str | None]:
 
 
 def _calculate_new_clients(
-    payroll_df: pd.DataFrame, six_months_prior: datetime, week_ending: datetime
+    payroll_df: pd.DataFrame,
+    six_months_prior: datetime,
+    week_ending: datetime,
+    highlight_range: Tuple[datetime, datetime] | None = None,
+    copy_frame: bool = True,
 ) -> List[Dict[str, Any]]:
     required_columns = {"Client", "Client Won Date", "Total Bill"}
     if not required_columns.issubset(payroll_df.columns):
         return []
 
-    df = payroll_df.copy()
-    df = df[df["Client Won Date"].notna()].copy()
-    if df.empty:
+    valid_won_mask = payroll_df["Client Won Date"].notna()
+    if not valid_won_mask.any():
         return []
 
+    df = payroll_df.loc[valid_won_mask]
+    if copy_frame:
+        df = df.copy()
+
     df["Client"] = df["Client"].fillna("Unknown Client").astype(str)
-    df["Total Bill"] = df["Total Bill"].apply(_normalize_money)
-    df["Client Won Date"] = pd.to_datetime(df["Client Won Date"], errors="coerce")
+    if "Total Bill" in df.columns and df["Total Bill"].dtype == "O":
+        df["Total Bill"] = df["Total Bill"].apply(_normalize_money)
+    if "Client Won Date" in df.columns and not pd.api.types.is_datetime64_any_dtype(
+        df["Client Won Date"]
+    ):
+        df["Client Won Date"] = pd.to_datetime(df["Client Won Date"], errors="coerce")
+        df = df[df["Client Won Date"].notna()].copy()
+        if df.empty:
+            return []
 
     mask = (df["Client Won Date"] >= six_months_prior) & (
         df["Client Won Date"] <= week_ending
@@ -385,6 +501,17 @@ def _calculate_new_clients(
         .sort_values("won_date", ascending=False)
     )
 
+    if highlight_range is not None:
+        highlight_start, highlight_end = highlight_range
+        highlight_start_ts = pd.Timestamp(highlight_start)
+        highlight_end_ts = pd.Timestamp(highlight_end)
+        grouped["is_highlighted"] = grouped["won_date"].apply(
+            lambda value: pd.notna(value)
+            and highlight_start_ts <= pd.Timestamp(value) <= highlight_end_ts
+        )
+    else:
+        grouped["is_highlighted"] = False
+
     results: List[Dict[str, Any]] = []
     for _, row in grouped.iterrows():
         total_bill_value = float(row["total_bill"]) if pd.notna(row["total_bill"]) else 0.0
@@ -395,6 +522,7 @@ def _calculate_new_clients(
                 "totalBill": total_bill_value,
                 "wonDate": won_iso,
                 "wonDateLabel": won_label,
+                "isHighlighted": bool(row.get("is_highlighted", False)),
             }
         )
 
@@ -502,7 +630,10 @@ def _update_workbook(payroll_df: pd.DataFrame, open_shifts: int) -> Dict[str, An
     _write_metrics_export(metrics)
 
     top_clients = _calculate_top_clients(payroll_df)
-    new_clients = _calculate_new_clients(payroll_df, six_months_prior, week_ending)
+    highlight_range = (week_ending - timedelta(days=6), week_ending)
+    new_clients = _calculate_new_clients(
+        payroll_df, six_months_prior, week_ending, highlight_range
+    )
     industry_totals = _calculate_industry_totals(payroll_df)
     dashboard_payload = {
         "weekEnding": week_ending,
