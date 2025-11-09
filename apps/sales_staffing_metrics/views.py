@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import io
+import json
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple
 
 import pandas as pd
 from dateutil.relativedelta import relativedelta
@@ -19,6 +20,7 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 DATA_DIR = BASE_DIR / "data"
 WORKBOOK_PATH = DATA_DIR / "Sales and Staffing Charts.xlsx"
 METRICS_EXPORT_PATH = DATA_DIR / "sales_staffing_metrics.csv"
+DASHBOARD_DATA_PATH = DATA_DIR / "sales_staffing_dashboard.json"
 
 
 def _normalize_week_ending(value: datetime) -> datetime:
@@ -61,6 +63,57 @@ def _write_metrics_export(metrics: Dict[str, Any], path: Path = METRICS_EXPORT_P
     export_df = pd.concat([export_df, pd.DataFrame([metrics])], ignore_index=True)
     export_df = export_df.sort_values("week_ending")
     export_df.to_csv(path, index=False)
+
+
+def _load_dashboard_data(path: Path = DASHBOARD_DATA_PATH) -> Dict[str, Any]:
+    if not path.exists():
+        return {}
+
+    try:
+        with path.open("r", encoding="utf-8") as fh:
+            return json.load(fh)
+    except Exception:  # pragma: no cover - defensive
+        return {}
+
+
+def _write_dashboard_data(data: Dict[str, Any], path: Path = DASHBOARD_DATA_PATH) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    safe_data = data.copy()
+    if "weekEnding" in safe_data and hasattr(safe_data["weekEnding"], "isoformat"):
+        safe_data["weekEnding"] = safe_data["weekEnding"].isoformat()
+    if "weekLabel" in safe_data and hasattr(safe_data["weekLabel"], "strftime"):
+        safe_data["weekLabel"] = safe_data["weekLabel"].strftime("%B %d, %Y")
+    if "newClients" in safe_data:
+        serialized_clients: List[Dict[str, Any]] = []
+        for client in safe_data["newClients"]:
+            client_copy = client.copy()
+            won_date_value = client_copy.get("wonDate")
+            if hasattr(won_date_value, "isoformat"):
+                client_copy["wonDate"] = won_date_value.isoformat()
+            won_label_value = client_copy.get("wonDateLabel")
+            if hasattr(won_label_value, "strftime"):
+                client_copy["wonDateLabel"] = won_label_value.strftime("%B %d, %Y")
+            serialized_clients.append(client_copy)
+        safe_data["newClients"] = serialized_clients
+    if "industries" in safe_data:
+        serialized_industries: List[Dict[str, Any]] = []
+        for industry in safe_data["industries"]:
+            serialized_industries.append(industry.copy())
+        safe_data["industries"] = serialized_industries
+    with path.open("w", encoding="utf-8") as fh:
+        json.dump(safe_data, fh, indent=2)
+
+
+def _empty_chart_payload() -> Dict[str, Any]:
+    dashboard_data = _load_dashboard_data()
+    return {
+        "weeks": [],
+        "topClients": dashboard_data.get("topClients", []),
+        "topClientsWeekEnding": dashboard_data.get("weekEnding"),
+        "topClientsWeekLabel": dashboard_data.get("weekLabel"),
+        "newClients": dashboard_data.get("newClients", []),
+        "industries": dashboard_data.get("industries", []),
+    }
 
 
 def _to_date_series(series: pd.Series) -> pd.Series:
@@ -144,6 +197,232 @@ def _set_cell(ws, row: int, headers: Dict[str, int], column: str, value: Any) ->
     ws.cell(row=row, column=headers[column]).value = value
 
 
+def _clean_int(value: Any) -> int | None:
+    if pd.isna(value):
+        return None
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        return None
+
+
+def _clean_float(value: Any) -> float | None:
+    if pd.isna(value):
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _load_chart_data(path: Path = WORKBOOK_PATH) -> Dict[str, Any]:
+    if not path.exists():
+        return _empty_chart_payload()
+
+    try:
+        revenue_df = pd.read_excel(path, sheet_name="Revenue")
+        shift_df = pd.read_excel(path, sheet_name="Shift Count")
+    except Exception:  # pragma: no cover - defensive
+        return _empty_chart_payload()
+
+    if "Week Ending" not in revenue_df.columns:
+        return _empty_chart_payload()
+
+    revenue_df = revenue_df.copy()
+    revenue_df["Week Ending"] = pd.to_datetime(revenue_df["Week Ending"], errors="coerce")
+    revenue_df = revenue_df.dropna(subset=["Week Ending"]).sort_values("Week Ending")
+
+    if revenue_df.empty:
+        return _empty_chart_payload()
+
+    shift_df = shift_df.copy()
+    week_columns: List[str] = [
+        col for col in (
+            "Week Ending (Shift Count)",
+            "Week Ending",
+        )
+        if col in shift_df.columns
+    ]
+    if not week_columns:
+        return {"weeks": []}
+
+    week_column = week_columns[0]
+    shift_df[week_column] = pd.to_datetime(shift_df[week_column], errors="coerce")
+    shift_df = shift_df.dropna(subset=[week_column])
+
+    shift_records: Dict[Any, Dict[str, Any]] = {}
+    for _, row in shift_df.iterrows():
+        week = pd.to_datetime(row[week_column]).date()
+        shift_records[week] = {
+            "shiftCount2024": _clean_int(row.get("2024 (Shift Count)")),
+            "shiftCount2025": _clean_int(row.get("2025 (Shift Count)")),
+            "fillRate2024": _clean_float(row.get("2024 (Fill Rate)")),
+            "fillRate2025": _clean_float(row.get("2025 (Fill Rate)")),
+        }
+
+    weeks: List[Dict[str, Any]] = []
+    for _, row in revenue_df.iterrows():
+        week_ts = pd.to_datetime(row["Week Ending"])
+        week_date = week_ts.date()
+        record = shift_records.get(
+            week_date,
+            {
+                "shiftCount2024": None,
+                "shiftCount2025": None,
+                "fillRate2024": None,
+                "fillRate2025": None,
+            },
+        )
+        revenue_2025 = _clean_float(row.get("2025 Revenue"))
+        revenue_goal_2025 = _clean_float(row.get("2025 Revenue Goal"))
+        new_sales_revenue = _clean_float(row.get("New Sales Revenue"))
+        new_sales_pct = _clean_float(row.get("New Sales % of Revenue"))
+        weeks.append(
+            {
+                "weekEnding": week_ts.strftime("%Y-%m-%d"),
+                "label": week_ts.strftime("%B %d, %Y"),
+                **record,
+                "revenue2025": revenue_2025,
+                "revenueGoal2025": revenue_goal_2025,
+                "newSalesRevenue": new_sales_revenue,
+                "newSalesPct": new_sales_pct,
+            }
+        )
+
+    dashboard_data = _load_dashboard_data()
+
+    return {
+        "weeks": weeks,
+        "topClients": dashboard_data.get("topClients", []),
+        "topClientsWeekEnding": dashboard_data.get("weekEnding"),
+        "topClientsWeekLabel": dashboard_data.get("weekLabel"),
+        "newClients": dashboard_data.get("newClients", []),
+        "industries": dashboard_data.get("industries", []),
+    }
+
+
+def _calculate_top_clients(payroll_df: pd.DataFrame) -> List[Dict[str, Any]]:
+    if "Client" not in payroll_df.columns or "Total Bill" not in payroll_df.columns:
+        return []
+
+    df = payroll_df.copy()
+    df["Client"] = df["Client"].fillna("Unknown Client").astype(str)
+    df["Total Bill"] = df["Total Bill"].apply(_normalize_money)
+
+    if "Bill Rate" in df.columns:
+        df["Bill Rate"] = df["Bill Rate"].apply(_normalize_money)
+    else:
+        df["Bill Rate"] = pd.NA
+
+    grouped = (
+        df.groupby("Client", as_index=False)
+        .agg(total_bill=("Total Bill", "sum"), average_bill_rate=("Bill Rate", "mean"))
+        .sort_values("total_bill", ascending=False)
+        .head(5)
+    )
+
+    results: List[Dict[str, Any]] = []
+    for _, row in grouped.iterrows():
+        total_bill_value = float(row["total_bill"]) if pd.notna(row["total_bill"]) else 0.0
+        avg_bill_rate_value = (
+            float(row["average_bill_rate"]) if pd.notna(row["average_bill_rate"]) else None
+        )
+        results.append(
+            {
+                "client": row["Client"],
+                "totalBill": total_bill_value,
+                "averageBillRate": avg_bill_rate_value,
+            }
+        )
+
+    return results
+
+
+def _format_won_date(value: Any) -> Tuple[str | None, str | None]:
+    if pd.isna(value):
+        return None, None
+    if isinstance(value, pd.Timestamp):
+        won_date = value.to_pydatetime()
+    elif isinstance(value, datetime):
+        won_date = value
+    else:
+        try:
+            won_date = pd.to_datetime(value)
+            if pd.isna(won_date):
+                return None, None
+            won_date = won_date.to_pydatetime()
+        except Exception:  # pragma: no cover - defensive
+            return None, None
+    return won_date.date().isoformat(), won_date.strftime("%B %d, %Y")
+
+
+def _calculate_new_clients(
+    payroll_df: pd.DataFrame, six_months_prior: datetime, week_ending: datetime
+) -> List[Dict[str, Any]]:
+    required_columns = {"Client", "Client Won Date", "Total Bill"}
+    if not required_columns.issubset(payroll_df.columns):
+        return []
+
+    df = payroll_df.copy()
+    df = df[df["Client Won Date"].notna()].copy()
+    if df.empty:
+        return []
+
+    df["Client"] = df["Client"].fillna("Unknown Client").astype(str)
+    df["Total Bill"] = df["Total Bill"].apply(_normalize_money)
+    df["Client Won Date"] = pd.to_datetime(df["Client Won Date"], errors="coerce")
+
+    mask = (df["Client Won Date"] >= six_months_prior) & (
+        df["Client Won Date"] <= week_ending
+    )
+    df = df.loc[mask]
+    if df.empty:
+        return []
+
+    grouped = (
+        df.groupby("Client", as_index=False)
+        .agg(total_bill=("Total Bill", "sum"), won_date=("Client Won Date", "max"))
+        .sort_values("won_date", ascending=False)
+    )
+
+    results: List[Dict[str, Any]] = []
+    for _, row in grouped.iterrows():
+        total_bill_value = float(row["total_bill"]) if pd.notna(row["total_bill"]) else 0.0
+        won_iso, won_label = _format_won_date(row["won_date"])
+        results.append(
+            {
+                "client": row["Client"],
+                "totalBill": total_bill_value,
+                "wonDate": won_iso,
+                "wonDateLabel": won_label,
+            }
+        )
+
+    return results
+
+
+def _calculate_industry_totals(payroll_df: pd.DataFrame) -> List[Dict[str, Any]]:
+    if "Industry" not in payroll_df.columns or "Total Bill" not in payroll_df.columns:
+        return []
+
+    df = payroll_df.copy()
+    df["Industry"] = df["Industry"].fillna("Unknown Industry").astype(str)
+    df["Total Bill"] = df["Total Bill"].apply(_normalize_money)
+
+    grouped = (
+        df.groupby("Industry", as_index=False)
+        .agg(total_bill=("Total Bill", "sum"))
+        .sort_values("total_bill", ascending=False)
+    )
+
+    results: List[Dict[str, Any]] = []
+    for _, row in grouped.iterrows():
+        total_bill_value = float(row["total_bill"]) if pd.notna(row["total_bill"]) else 0.0
+        results.append({"industry": row["Industry"], "totalBill": total_bill_value})
+
+    return results
+
+
 def _update_workbook(payroll_df: pd.DataFrame, open_shifts: int) -> Dict[str, Any]:
     if not WORKBOOK_PATH.exists():
         raise FileNotFoundError(
@@ -222,6 +501,18 @@ def _update_workbook(payroll_df: pd.DataFrame, open_shifts: int) -> Dict[str, An
 
     _write_metrics_export(metrics)
 
+    top_clients = _calculate_top_clients(payroll_df)
+    new_clients = _calculate_new_clients(payroll_df, six_months_prior, week_ending)
+    industry_totals = _calculate_industry_totals(payroll_df)
+    dashboard_payload = {
+        "weekEnding": week_ending,
+        "weekLabel": week_ending,
+        "topClients": top_clients,
+        "newClients": new_clients,
+        "industries": industry_totals,
+    }
+    _write_dashboard_data(dashboard_payload)
+
     return metrics
 
 
@@ -238,16 +529,20 @@ def _read_payroll(upload: UploadFile) -> pd.DataFrame:
         raise ValueError(f"Unable to read Excel file '{upload.filename}'.") from exc
 
 
+def _build_page_context(**extra: Any) -> Dict[str, Any]:
+    base_context = {
+        "workbook_path": WORKBOOK_PATH,
+        "metrics_export_path": METRICS_EXPORT_PATH,
+        "chart_data": _load_chart_data(),
+    }
+    base_context.update(extra)
+    return base_context
+
+
 @router.get("")
 async def page(request: Request):
-    return templates.TemplateResponse(
-        "apps/sales_staffing_metrics.html",
-        {
-            "request": request,
-            "workbook_path": WORKBOOK_PATH,
-            "metrics_export_path": METRICS_EXPORT_PATH,
-        },
-    )
+    context = _build_page_context(request=request)
+    return templates.TemplateResponse("apps/sales_staffing_metrics.html", context)
 
 
 @router.post("/update")
@@ -256,16 +551,12 @@ async def update(
     payroll: UploadFile = File(...),
     open_shifts: str = Form(""),
 ):
-    context = {
-        "request": request,
-        "workbook_path": WORKBOOK_PATH,
-        "metrics_export_path": METRICS_EXPORT_PATH,
-    }
+    context = _build_page_context(request=request)
 
     try:
         payroll_df = await run_in_threadpool(_read_payroll, payroll)
     except ValueError as exc:
-        context["error"] = str(exc)
+        context.update({"error": str(exc)})
         return templates.TemplateResponse(
             "apps/sales_staffing_metrics.html",
             context,
@@ -277,7 +568,7 @@ async def update(
     try:
         open_shifts_value = int(open_shifts.replace(",", "").strip()) if open_shifts.strip() else 0
     except ValueError:
-        context["error"] = "Open shifts must be a whole number."
+        context.update({"error": "Open shifts must be a whole number."})
         return templates.TemplateResponse(
             "apps/sales_staffing_metrics.html",
             context,
@@ -287,19 +578,19 @@ async def update(
     try:
         result = await run_in_threadpool(_update_workbook, payroll_df, open_shifts_value)
     except FileNotFoundError as exc:
-        context["error"] = str(exc)
+        context.update({"error": str(exc)})
         return templates.TemplateResponse(
             "apps/sales_staffing_metrics.html",
             context,
             status_code=404,
         )
     except ValueError as exc:
-        context["error"] = str(exc)
+        context.update({"error": str(exc)})
         return templates.TemplateResponse(
             "apps/sales_staffing_metrics.html",
             context,
             status_code=400,
         )
 
-    context.update({"result": result})
+    context.update({"result": result, "chart_data": _load_chart_data()})
     return templates.TemplateResponse("apps/sales_staffing_metrics.html", context)

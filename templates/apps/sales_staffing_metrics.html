@@ -49,4 +49,548 @@
     </ul>
   </div>
 {% endif %}
+
+<div class="mt-10">
+  <h2 class="text-lg font-semibold mb-3">Sales &amp; Staffing Charts</h2>
+  {% if chart_data.weeks %}
+    <div class="rounded-xl border bg-white p-4 shadow-sm space-y-6">
+      <div>
+        <label class="block text-sm font-medium mb-1" for="week-ending-select">Week ending</label>
+        <select id="week-ending-select" class="border rounded p-2 w-full bg-white text-sm">
+          {% for week in chart_data.weeks %}
+            <option value="{{ week.weekEnding }}" {% if loop.last %}selected{% endif %}>{{ week.label }}</option>
+          {% endfor %}
+        </select>
+        <p class="text-xs text-gray-500 mt-1">Compare the selected week with the two weeks before and after.</p>
+      </div>
+
+      <div class="grid gap-6 lg:grid-cols-2">
+        <div class="border rounded-lg p-4 bg-gray-50">
+          <h3 class="text-sm font-semibold mb-3">Shift Count</h3>
+          <div class="h-64">
+            <canvas id="shift-count-chart"></canvas>
+          </div>
+        </div>
+        <div class="border rounded-lg p-4 bg-gray-50">
+          <h3 class="text-sm font-semibold mb-3">Fill Rate</h3>
+          <div class="h-64">
+            <canvas id="fill-rate-chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid gap-6 lg:grid-cols-2">
+        <div class="border rounded-lg p-4 bg-gray-50">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold">Top Clients</h3>
+            {% if chart_data.topClientsWeekLabel %}
+              <span class="text-xs text-gray-500">Week ending {{ chart_data.topClientsWeekLabel }}</span>
+            {% endif %}
+          </div>
+          {% if chart_data.topClients %}
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-xs">
+                <thead>
+                  <tr class="text-left text-gray-500 uppercase tracking-wide">
+                    <th class="py-2 pr-3">Client</th>
+                    <th class="py-2 pr-3">Total Bill</th>
+                    <th class="py-2">Avg Bill Rate</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                  {% for client in chart_data.topClients %}
+                    <tr>
+                      <td class="py-2 pr-3 font-medium text-gray-700">{{ client.client }}</td>
+                      <td class="py-2 pr-3">${{ '{:,.2f}'.format(client.totalBill) }}</td>
+                      <td class="py-2">{% if client.averageBillRate is not none %}${{ '{:,.2f}'.format(client.averageBillRate) }}{% else %}<span class="text-gray-400">—</span>{% endif %}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-xs text-gray-500">Upload a payroll report to see the leading clients by total billing.</p>
+          {% endif %}
+        </div>
+        <div class="border rounded-lg p-4 bg-gray-50">
+          <h3 class="text-sm font-semibold mb-3">Revenue vs Goal</h3>
+          <div class="h-64">
+            <canvas id="revenue-chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="border rounded-lg p-4 bg-gray-50">
+        <h3 class="text-sm font-semibold mb-3">New Sales Performance</h3>
+        <div class="h-64">
+          <canvas id="new-sales-chart"></canvas>
+        </div>
+      </div>
+
+      <div class="grid gap-6 lg:grid-cols-2">
+        <div class="border rounded-lg p-4 bg-gray-50">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold">New Clients (Last 6 Months)</h3>
+            {% if chart_data.topClientsWeekLabel %}
+              <span class="text-xs text-gray-500">Week ending {{ chart_data.topClientsWeekLabel }}</span>
+            {% endif %}
+          </div>
+          {% if chart_data.newClients %}
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-xs">
+                <thead>
+                  <tr class="text-left text-gray-500 uppercase tracking-wide">
+                    <th class="py-2 pr-3">Client</th>
+                    <th class="py-2 pr-3">Total Revenue</th>
+                    <th class="py-2">Won Date</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                  {% for client in chart_data.newClients %}
+                    <tr>
+                      <td class="py-2 pr-3 font-medium text-gray-700">{{ client.client }}</td>
+                      <td class="py-2 pr-3">${{ '{:,.2f}'.format(client.totalBill) }}</td>
+                      <td class="py-2">{{ client.wonDateLabel or client.wonDate or '—' }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-xs text-gray-500">Upload a payroll report to see recent client wins and their revenue.</p>
+          {% endif %}
+        </div>
+        <div class="border rounded-lg p-4 bg-gray-50">
+          <h3 class="text-sm font-semibold mb-3">Revenue by Industry</h3>
+          {% if chart_data.industries %}
+            <div class="h-64">
+              <canvas id="industry-chart"></canvas>
+            </div>
+            <div class="overflow-x-auto mt-4">
+              <table class="min-w-full text-xs">
+                <thead>
+                  <tr class="text-left text-gray-500 uppercase tracking-wide">
+                    <th class="py-2 pr-3">Industry</th>
+                    <th class="py-2">Total Revenue</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                  {% for industry in chart_data.industries %}
+                    <tr>
+                      <td class="py-2 pr-3 font-medium text-gray-700">{{ industry.industry }}</td>
+                      <td class="py-2">${{ '{:,.2f}'.format(industry.totalBill) }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-xs text-gray-500">Upload a payroll report to see revenue by industry.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script>
+      (function () {
+        const chartData = {{ chart_data|tojson(indent=2)|safe }};
+        if (!chartData.weeks || chartData.weeks.length === 0) {
+          return;
+        }
+
+        const weeks = chartData.weeks;
+        const selectEl = document.getElementById("week-ending-select");
+        const shiftCanvas = document.getElementById("shift-count-chart");
+        const fillCanvas = document.getElementById("fill-rate-chart");
+        const revenueCanvas = document.getElementById("revenue-chart");
+        const newSalesCanvas = document.getElementById("new-sales-chart");
+        const industryCanvas = document.getElementById("industry-chart");
+
+        if (!selectEl || !shiftCanvas || !fillCanvas) {
+          return;
+        }
+
+        const shiftCtx = shiftCanvas.getContext("2d");
+        const fillCtx = fillCanvas.getContext("2d");
+        const revenueCtx = revenueCanvas ? revenueCanvas.getContext("2d") : null;
+        const newSalesCtx = newSalesCanvas ? newSalesCanvas.getContext("2d") : null;
+        let shiftChart;
+        let fillChart;
+        let revenueChart;
+        let newSalesChart;
+        let industryChart;
+
+        function getWindow(value) {
+          const index = weeks.findIndex((week) => week.weekEnding === value);
+          if (index === -1) {
+            return [];
+          }
+
+          const span = 2;
+          let start = index - span;
+          let end = index + span;
+
+          if (start < 0) {
+            end = Math.min(weeks.length - 1, end - start);
+            start = 0;
+          }
+
+          if (end > weeks.length - 1) {
+            const overshoot = end - (weeks.length - 1);
+            start = Math.max(0, start - overshoot);
+            end = weeks.length - 1;
+          }
+
+          return weeks.slice(start, end + 1);
+        }
+
+        function buildShiftDataset(windowData) {
+          return {
+            labels: windowData.map((item) => item.label),
+            datasets: [
+              {
+                label: "2024 Shift Count",
+                data: windowData.map((item) => item.shiftCount2024),
+                backgroundColor: "rgba(59, 130, 246, 0.6)",
+                borderColor: "rgba(59, 130, 246, 1)",
+                borderWidth: 1,
+                borderRadius: 8,
+              },
+              {
+                label: "2025 Shift Count",
+                data: windowData.map((item) => item.shiftCount2025),
+                backgroundColor: "rgba(16, 185, 129, 0.6)",
+                borderColor: "rgba(16, 185, 129, 1)",
+                borderWidth: 1,
+                borderRadius: 8,
+              },
+            ],
+          };
+        }
+
+        function buildFillDataset(windowData) {
+          return {
+            labels: windowData.map((item) => item.label),
+            datasets: [
+              {
+                label: "2024 Fill Rate",
+                data: windowData.map((item) => item.fillRate2024 === null ? null : item.fillRate2024 * 100),
+                borderColor: "rgba(59, 130, 246, 1)",
+                backgroundColor: "rgba(59, 130, 246, 0.1)",
+                spanGaps: true,
+                tension: 0.3,
+                fill: false,
+                pointRadius: 4,
+              },
+              {
+                label: "2025 Fill Rate",
+                data: windowData.map((item) => item.fillRate2025 === null ? null : item.fillRate2025 * 100),
+                borderColor: "rgba(16, 185, 129, 1)",
+                backgroundColor: "rgba(16, 185, 129, 0.1)",
+                spanGaps: true,
+                tension: 0.3,
+                fill: false,
+                pointRadius: 4,
+              },
+            ],
+          };
+        }
+
+        function buildRevenueDataset(windowData) {
+          return {
+            labels: windowData.map((item) => item.label),
+            datasets: [
+              {
+                label: "2025 Revenue",
+                data: windowData.map((item) => (item.revenue2025 == null ? null : item.revenue2025)),
+                borderColor: "rgba(59, 130, 246, 1)",
+                backgroundColor: "rgba(59, 130, 246, 0.1)",
+                spanGaps: true,
+                tension: 0.3,
+                fill: false,
+              },
+              {
+                label: "2025 Revenue Goal",
+                data: windowData.map((item) => (item.revenueGoal2025 == null ? null : item.revenueGoal2025)),
+                borderColor: "rgba(249, 115, 22, 1)",
+                backgroundColor: "rgba(249, 115, 22, 0.1)",
+                spanGaps: true,
+                tension: 0.3,
+                fill: false,
+              },
+            ],
+          };
+        }
+
+        function buildNewSalesDataset(windowData) {
+          return {
+            labels: windowData.map((item) => item.label),
+            datasets: [
+              {
+                type: "bar",
+                label: "New Sales Revenue",
+                data: windowData.map((item) => (item.newSalesRevenue == null ? null : item.newSalesRevenue)),
+                backgroundColor: "rgba(16, 185, 129, 0.6)",
+                borderColor: "rgba(16, 185, 129, 1)",
+                borderWidth: 1,
+                borderRadius: 8,
+                yAxisID: "yRevenue",
+              },
+              {
+                type: "line",
+                label: "New Sales % of Revenue",
+                data: windowData.map((item) =>
+                  item.newSalesPct == null ? null : Math.round(item.newSalesPct * 1000) / 10
+                ),
+                borderColor: "rgba(107, 114, 128, 1)",
+                backgroundColor: "rgba(107, 114, 128, 0.1)",
+                spanGaps: true,
+                tension: 0.3,
+                fill: false,
+                yAxisID: "yPercent",
+              },
+            ],
+          };
+        }
+
+        function updateCharts(value) {
+          const windowData = getWindow(value);
+          if (windowData.length === 0) {
+            return;
+          }
+
+          if (shiftChart) {
+            shiftChart.destroy();
+          }
+          shiftChart = new Chart(shiftCtx, {
+            type: "bar",
+            data: buildShiftDataset(windowData),
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: "Shift Count",
+                  },
+                },
+              },
+              plugins: {
+                legend: {
+                  display: true,
+                },
+              },
+            },
+          });
+
+          if (fillChart) {
+            fillChart.destroy();
+          }
+          fillChart = new Chart(fillCtx, {
+            type: "line",
+            data: buildFillDataset(windowData),
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: false,
+                  suggestedMin: 80,
+                  suggestedMax: 105,
+                  ticks: {
+                    callback: (value) => `${value}%`,
+                  },
+                  title: {
+                    display: true,
+                    text: "Fill Rate (%)",
+                  },
+                },
+              },
+              plugins: {
+                legend: {
+                  display: true,
+                },
+              },
+            },
+          });
+
+          if (revenueCtx) {
+            if (revenueChart) {
+              revenueChart.destroy();
+            }
+            revenueChart = new Chart(revenueCtx, {
+              type: "line",
+              data: buildRevenueDataset(windowData),
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      callback: (value) => `$${Number(value).toLocaleString()}`,
+                    },
+                    title: {
+                      display: true,
+                      text: "Revenue",
+                    },
+                  },
+                },
+                plugins: {
+                  legend: {
+                    display: true,
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label(context) {
+                        const label = context.dataset.label || "";
+                        const val = context.parsed.y;
+                        if (val == null) {
+                          return label;
+                        }
+                        const numeric = Number(val);
+                        return `${label}: $${numeric.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                      },
+                    },
+                  },
+                },
+              },
+            });
+          }
+
+          if (newSalesCtx) {
+            if (newSalesChart) {
+              newSalesChart.destroy();
+            }
+            newSalesChart = new Chart(newSalesCtx, {
+              type: "bar",
+              data: buildNewSalesDataset(windowData),
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  yRevenue: {
+                    beginAtZero: true,
+                    position: "left",
+                    ticks: {
+                      callback: (value) => `$${Number(value).toLocaleString()}`,
+                    },
+                    title: {
+                      display: true,
+                      text: "Revenue",
+                    },
+                  },
+                  yPercent: {
+                    beginAtZero: true,
+                    suggestedMax: 50,
+                    position: "right",
+                    grid: {
+                      drawOnChartArea: false,
+                    },
+                    ticks: {
+                      callback: (value) => `${value}%`,
+                    },
+                    title: {
+                      display: true,
+                      text: "% of Revenue",
+                    },
+                  },
+                },
+                plugins: {
+                  legend: {
+                    display: true,
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label(context) {
+                        const datasetLabel = context.dataset.label || "";
+                        if (context.dataset.yAxisID === "yPercent") {
+                          const val = context.parsed.y;
+                          return `${datasetLabel}: ${val != null ? val.toFixed(1) : "--"}%`;
+                        }
+                        const val = context.parsed.y;
+                        if (val == null) {
+                          return `${datasetLabel}: $0.00`;
+                        }
+                        const numeric = Number(val);
+                        return `${datasetLabel}: $${numeric.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                      },
+                    },
+                  },
+                },
+              },
+            });
+          }
+        }
+
+        if (industryCanvas && chartData.industries && chartData.industries.length > 0) {
+          const industryCtx = industryCanvas.getContext("2d");
+          const labels = chartData.industries.map((item) => item.industry);
+          const data = chartData.industries.map((item) => item.totalBill || 0);
+          const totalRevenue = data.reduce((sum, value) => sum + value, 0);
+          const palette = [
+            "#2563eb",
+            "#16a34a",
+            "#f97316",
+            "#9333ea",
+            "#0ea5e9",
+            "#ef4444",
+            "#84cc16",
+            "#f59e0b",
+          ];
+
+          industryChart = new Chart(industryCtx, {
+            type: "pie",
+            data: {
+              labels,
+              datasets: [
+                {
+                  data,
+                  backgroundColor: labels.map(
+                    (_, index) => palette[index % palette.length]
+                  ),
+                  borderColor: labels.map((_, index) => palette[index % palette.length]),
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              plugins: {
+                legend: {
+                  position: "bottom",
+                },
+                tooltip: {
+                  callbacks: {
+                    label(context) {
+                      const label = context.label || "";
+                      const value = context.parsed || 0;
+                      const percentage = totalRevenue
+                        ? ((value / totalRevenue) * 100).toFixed(1)
+                        : "0.0";
+                      return `${label}: $${value.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })} (${percentage}%)`;
+                    },
+                  },
+                },
+              },
+            },
+          });
+        }
+
+        selectEl.addEventListener("change", (event) => {
+          updateCharts(event.target.value);
+        });
+
+        updateCharts(selectEl.value || weeks[weeks.length - 1].weekEnding);
+      })();
+    </script>
+  {% else %}
+    <p class="text-sm text-gray-600">Add data to the Sales and Staffing Charts workbook to see shift and fill rate trends.</p>
+  {% endif %}
+</div>
 {% endblock %}
