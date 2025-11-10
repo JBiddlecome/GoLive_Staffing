@@ -182,22 +182,26 @@
             id="industry-chart-wrapper"
             class="{% if not chart_data.industries %}hidden{% endif %}"
           >
-            <div class="h-80">
+            <div class="h-96 w-full max-w-xl mx-auto">
               <canvas id="industry-chart"></canvas>
             </div>
             <div class="overflow-x-auto mt-4" id="industry-table-container">
+              {% set total_industry_revenue = chart_data.industries | sum(attribute='totalBill') %}
               <table class="min-w-full text-xs">
                 <thead>
                   <tr class="text-left text-gray-500 uppercase tracking-wide">
                     <th class="py-2 pr-3">Industry</th>
-                    <th class="py-2">Total Revenue</th>
+                    <th class="py-2 pr-3">Total Revenue</th>
+                    <th class="py-2">Share of Total</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200" id="industry-table-body">
                   {% for industry in chart_data.industries %}
                     <tr>
                       <td class="py-2 pr-3 font-medium text-gray-700">{{ industry.industry }}</td>
-                      <td class="py-2">${{ '{:,.2f}'.format(industry.totalBill) }}</td>
+                      <td class="py-2 pr-3">${{ '{:,.2f}'.format(industry.totalBill) }}</td>
+                      {% set industry_share = (industry.totalBill / total_industry_revenue * 100) if total_industry_revenue else 0 %}
+                      <td class="py-2">{{ '%.1f'|format(industry_share) }}%</td>
                     </tr>
                   {% endfor %}
                 </tbody>
@@ -249,7 +253,7 @@
                     0
                   );
             ctx.save();
-            ctx.font = "12px sans-serif";
+            ctx.font = "13px sans-serif";
             ctx.fillStyle = "#1f2937";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
@@ -263,9 +267,13 @@
               }
               const label = (data.labels && data.labels[index]) || "";
               const { x, y } = element.tooltipPosition();
-              const percentage = total > 0 ? ((rawValue / total) * 100).toFixed(1) : "0.0";
-              ctx.fillText(label, x, y - 8);
-              ctx.fillText(`${percentage}%`, x, y + 8);
+              const percentageValue = total > 0 ? (rawValue / total) * 100 : 0;
+              if (percentageValue <= 5) {
+                return;
+              }
+              const percentage = percentageValue.toFixed(1);
+              ctx.fillText(label, x, y - 9);
+              ctx.fillText(`${percentage}%`, x, y + 9);
             });
             ctx.restore();
           },
@@ -481,6 +489,11 @@
             industryEmpty.classList.add("hidden");
           }
 
+          const totalRevenue = industries.reduce(
+            (sum, item) => sum + (Number(item.totalBill) || 0),
+            0
+          );
+
           industries.forEach((item) => {
             const row = document.createElement("tr");
 
@@ -490,9 +503,18 @@
             row.appendChild(nameCell);
 
             const totalCell = document.createElement("td");
-            totalCell.className = "py-2";
+            totalCell.className = "py-2 pr-3";
             totalCell.textContent = formatCurrency(item.totalBill);
             row.appendChild(totalCell);
+
+            const shareCell = document.createElement("td");
+            shareCell.className = "py-2";
+            const revenueValue = Number(item.totalBill) || 0;
+            const percentage = totalRevenue
+              ? `${((revenueValue / totalRevenue) * 100).toFixed(1)}%`
+              : "0.0%";
+            shareCell.textContent = percentage;
+            row.appendChild(shareCell);
 
             industryTableBody.appendChild(row);
           });
@@ -503,7 +525,6 @@
 
           const labels = industries.map((item) => item.industry || "Unknown Industry");
           const dataValues = industries.map((item) => Number(item.totalBill) || 0);
-          const totalRevenue = dataValues.reduce((sum, value) => sum + value, 0);
 
           if (industryChart) {
             industryChart.destroy();
@@ -529,9 +550,6 @@
             options: {
               maintainAspectRatio: false,
               plugins: {
-                legend: {
-                  position: "bottom",
-                },
                 tooltip: {
                   callbacks: {
                     label(context) {
