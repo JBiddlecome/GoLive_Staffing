@@ -225,6 +225,13 @@
         const pieSliceLabelPlugin = {
           id: "pieSliceLabel",
           afterDatasetsDraw(chart, _args, pluginOptions) {
+            if (!chart) {
+              return;
+            }
+            const chartType = chart.config?.type;
+            if (chartType !== "pie" && chartType !== "doughnut") {
+              return;
+            }
             const { ctx, data } = chart;
             if (!data || !data.datasets || data.datasets.length === 0) {
               return;
