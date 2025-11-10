@@ -9,11 +9,11 @@ from openpyxl import load_workbook
 
 from .views import (
     METRICS_EXPORT_PATH,
-    WORKBOOK_PATH,
     _ensure_headers,
     _find_or_create_week_row,
     _set_cell,
     _load_metrics_export,
+    get_workbook_path,
 )
 
 
@@ -92,22 +92,26 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         description="Rebuild the Sales and Staffing workbook from the metrics export."
     )
+    default_workbook_path = get_workbook_path()
     parser.add_argument(
         "--metrics",
         type=Path,
-        default=METRICS_EXPORT_PATH,
+        default=None,
         help=f"Path to the CSV export (default: {METRICS_EXPORT_PATH})",
     )
     parser.add_argument(
         "--workbook",
         type=Path,
-        default=WORKBOOK_PATH,
-        help=f"Path to the Excel workbook template (default: {WORKBOOK_PATH})",
+        default=None,
+        help=f"Path to the Excel workbook template (default: {default_workbook_path})",
     )
 
     args = parser.parse_args(argv)
 
-    rebuild_from_export(metrics_path=args.metrics, workbook_path=args.workbook)
+    metrics_path = args.metrics or METRICS_EXPORT_PATH
+    workbook_path = args.workbook or default_workbook_path
+
+    rebuild_from_export(metrics_path=metrics_path, workbook_path=workbook_path)
 
 
 if __name__ == "__main__":  # pragma: no cover - CLI entry point
