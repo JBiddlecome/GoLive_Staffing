@@ -46,3 +46,9 @@ app.include_router(
 @app.get("/healthz")
 async def healthz():
     return {"status": "ok"}
+
+
+@app.head("/healthz")
+async def healthz_head() -> Response:
+    """Render sends HEAD requests to the health check endpoint."""
+    return Response(status_code=200)
