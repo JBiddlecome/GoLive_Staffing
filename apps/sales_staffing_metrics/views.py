@@ -5,11 +5,13 @@ import json
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
+from uuid import uuid4
 
 import pandas as pd
 from dateutil.relativedelta import relativedelta
-from fastapi import APIRouter, Form, Request, UploadFile, File
+from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from openpyxl import load_workbook
 
@@ -21,6 +23,7 @@ DATA_DIR = BASE_DIR / "data"
 WORKBOOK_PATH = DATA_DIR / "Sales and Staffing Charts.xlsx"
 METRICS_EXPORT_PATH = DATA_DIR / "sales_staffing_metrics.csv"
 DASHBOARD_DATA_PATH = DATA_DIR / "sales_staffing_dashboard.json"
+PIPELINE_DATA_PATH = DATA_DIR / "sales_staffing_pipeline.json"
 PAYROLL_CANDIDATE_FILENAMES = [
     "payroll 2.csv",
     "Payroll 2.csv",
@@ -139,6 +142,36 @@ def _write_dashboard_data(data: Dict[str, Any], path: Path = DASHBOARD_DATA_PATH
         for industry in safe_data["industries"]:
             serialized_industries.append(industry.copy())
         safe_data["industries"] = serialized_industries
+    with path.open("w", encoding="utf-8") as fh:
+        json.dump(safe_data, fh, indent=2)
+
+
+def _load_pipeline_data(path: Path = PIPELINE_DATA_PATH) -> Dict[str, List[Dict[str, Any]]]:
+    if not path.exists():
+        return {"closed": [], "upcoming": []}
+
+    try:
+        with path.open("r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except Exception:  # pragma: no cover - defensive
+        return {"closed": [], "upcoming": []}
+
+    closed = data.get("closed")
+    upcoming = data.get("upcoming")
+    return {
+        "closed": closed if isinstance(closed, list) else [],
+        "upcoming": upcoming if isinstance(upcoming, list) else [],
+    }
+
+
+def _write_pipeline_data(
+    data: Dict[str, List[Dict[str, Any]]], path: Path = PIPELINE_DATA_PATH
+) -> None:
+    safe_data = {
+        "closed": list(data.get("closed", [])),
+        "upcoming": list(data.get("upcoming", [])),
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as fh:
         json.dump(safe_data, fh, indent=2)
 
@@ -675,6 +708,7 @@ def _build_page_context(**extra: Any) -> Dict[str, Any]:
         "workbook_path": WORKBOOK_PATH,
         "metrics_export_path": METRICS_EXPORT_PATH,
         "chart_data": _load_chart_data(),
+        "pipeline_tables": _load_pipeline_data(),
     }
     base_context.update(extra)
     return base_context
@@ -735,3 +769,82 @@ async def update(
 
     context.update({"result": result, "chart_data": _load_chart_data()})
     return templates.TemplateResponse("apps/sales_staffing_metrics.html", context)
+
+
+@router.post("/tables")
+async def manage_tables(
+    request: Request,
+    table: str = Form(...),
+    action: str = Form(...),
+    client_name: str = Form(""),
+    location: str = Form(""),
+    event_date: str = Form(""),
+    row_id: str = Form(""),
+):
+    normalized_table = table.lower()
+    if normalized_table not in {"closed", "upcoming"}:
+        context = _build_page_context(request=request, table_error="Unknown table action.")
+        return templates.TemplateResponse(
+            "apps/sales_staffing_metrics.html",
+            context,
+            status_code=400,
+        )
+
+    pipeline_data = _load_pipeline_data()
+    rows = list(pipeline_data.get(normalized_table, []))
+    normalized_action = action.lower()
+
+    if normalized_action == "add":
+        client = client_name.strip()
+        site = location.strip()
+        date_value = event_date.strip()
+        if not client or not site or not date_value:
+            context = _build_page_context(
+                request=request,
+                table_error="Please provide a client name, location, and date to add a row.",
+            )
+            context["pipeline_tables"][normalized_table] = rows
+            return templates.TemplateResponse(
+                "apps/sales_staffing_metrics.html",
+                context,
+                status_code=400,
+            )
+
+        rows.append(
+            {
+                "id": str(uuid4()),
+                "client": client,
+                "location": site,
+                "date": date_value,
+            }
+        )
+        pipeline_data[normalized_table] = rows
+        _write_pipeline_data(pipeline_data)
+        return RedirectResponse(url="/sales-staffing-metrics", status_code=303)
+
+    if normalized_action == "delete":
+        target_id = row_id.strip()
+        if not target_id:
+            context = _build_page_context(
+                request=request,
+                table_error="Missing row identifier for deletion.",
+            )
+            context["pipeline_tables"][normalized_table] = rows
+            return templates.TemplateResponse(
+                "apps/sales_staffing_metrics.html",
+                context,
+                status_code=400,
+            )
+
+        pipeline_data[normalized_table] = [
+            row for row in rows if str(row.get("id", "")) != target_id
+        ]
+        _write_pipeline_data(pipeline_data)
+        return RedirectResponse(url="/sales-staffing-metrics", status_code=303)
+
+    context = _build_page_context(request=request, table_error="Unsupported action for table management.")
+    return templates.TemplateResponse(
+        "apps/sales_staffing_metrics.html",
+        context,
+        status_code=400,
+    )
