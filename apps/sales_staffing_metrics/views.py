@@ -508,7 +508,7 @@ def _calculate_new_clients(
     grouped = (
         df.groupby("Client", as_index=False)
         .agg(total_bill=("Total Bill", "sum"), won_date=("Client Won Date", "max"))
-        .sort_values("won_date", ascending=True)
+        .sort_values("won_date", ascending=False)
     )
 
     if highlight_range is not None:
