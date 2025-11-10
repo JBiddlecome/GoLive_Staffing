@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, UploadFile, File, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -23,6 +23,12 @@ templates = Jinja2Templates(directory="templates")
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+
+@app.head("/")
+async def index_head() -> Response:
+    """Render expects HEAD requests on the root path to succeed."""
+    return Response(status_code=200)
+
 # Mount tool routers
 app.include_router(clickboarding_router, prefix="/clickboarding-check", tags=["Clickboarding Check"])
 app.include_router(health_benefits_router, prefix="/health-benefits", tags=["Health Benefits"])
@@ -40,3 +46,9 @@ app.include_router(
 @app.get("/healthz")
 async def healthz():
     return {"status": "ok"}
+
+
+@app.head("/healthz")
+async def healthz_head() -> Response:
+    """Render sends HEAD requests to the health check endpoint."""
+    return Response(status_code=200)

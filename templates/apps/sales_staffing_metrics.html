@@ -83,34 +83,42 @@
         <div class="border rounded-lg p-4 bg-gray-50">
           <div class="flex items-center justify-between mb-3">
             <h3 class="text-sm font-semibold">Top Clients</h3>
-            {% if chart_data.topClientsWeekLabel %}
-              <span class="text-xs text-gray-500">Week ending {{ chart_data.topClientsWeekLabel }}</span>
-            {% endif %}
+            <span
+              id="top-clients-week-label"
+              class="text-xs text-gray-500{% if not chart_data.topClientsWeekLabel %} hidden{% endif %}"
+            >
+              {% if chart_data.topClientsWeekLabel %}Week ending {{ chart_data.topClientsWeekLabel }}{% endif %}
+            </span>
           </div>
-          {% if chart_data.topClients %}
-            <div class="overflow-x-auto">
-              <table class="min-w-full text-xs">
-                <thead>
-                  <tr class="text-left text-gray-500 uppercase tracking-wide">
-                    <th class="py-2 pr-3">Client</th>
-                    <th class="py-2 pr-3">Total Bill</th>
-                    <th class="py-2">Avg Bill Rate</th>
+          <div
+            class="overflow-x-auto{% if not chart_data.topClients %} hidden{% endif %}"
+            id="top-clients-table-container"
+          >
+            <table class="min-w-full text-xs">
+              <thead>
+                <tr class="text-left text-gray-500 uppercase tracking-wide">
+                  <th class="py-2 pr-3">Client</th>
+                  <th class="py-2 pr-3">Total Bill</th>
+                  <th class="py-2">Avg Bill Rate</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200" id="top-clients-body">
+                {% for client in chart_data.topClients %}
+                  <tr>
+                    <td class="py-2 pr-3 font-medium text-gray-700">{{ client.client }}</td>
+                    <td class="py-2 pr-3">${{ '{:,.2f}'.format(client.totalBill) }}</td>
+                    <td class="py-2">{% if client.averageBillRate is not none %}${{ '{:,.2f}'.format(client.averageBillRate) }}{% else %}<span class="text-gray-400">—</span>{% endif %}</td>
                   </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200">
-                  {% for client in chart_data.topClients %}
-                    <tr>
-                      <td class="py-2 pr-3 font-medium text-gray-700">{{ client.client }}</td>
-                      <td class="py-2 pr-3">${{ '{:,.2f}'.format(client.totalBill) }}</td>
-                      <td class="py-2">{% if client.averageBillRate is not none %}${{ '{:,.2f}'.format(client.averageBillRate) }}{% else %}<span class="text-gray-400">—</span>{% endif %}</td>
-                    </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          {% else %}
-            <p class="text-xs text-gray-500">Upload a payroll report to see the leading clients by total billing.</p>
-          {% endif %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <p
+            class="text-xs text-gray-500{% if chart_data.topClients %} hidden{% endif %}"
+            id="top-clients-empty"
+          >
+            Upload a payroll report to see the leading clients by total billing.
+          </p>
         </div>
         <div class="border rounded-lg p-4 bg-gray-50">
           <h3 class="text-sm font-semibold mb-3">Revenue vs Goal</h3>
@@ -131,42 +139,53 @@
         <div class="border rounded-lg p-4 bg-gray-50">
           <div class="flex items-center justify-between mb-3">
             <h3 class="text-sm font-semibold">New Clients (Last 6 Months)</h3>
-            {% if chart_data.topClientsWeekLabel %}
-              <span class="text-xs text-gray-500">Week ending {{ chart_data.topClientsWeekLabel }}</span>
-            {% endif %}
+            <span
+              id="new-clients-week-label"
+              class="text-xs text-gray-500{% if not chart_data.topClientsWeekLabel %} hidden{% endif %}"
+            >
+              {% if chart_data.topClientsWeekLabel %}Week ending {{ chart_data.topClientsWeekLabel }}{% endif %}
+            </span>
           </div>
-          {% if chart_data.newClients %}
-            <div class="overflow-x-auto">
-              <table class="min-w-full text-xs">
-                <thead>
-                  <tr class="text-left text-gray-500 uppercase tracking-wide">
-                    <th class="py-2 pr-3">Client</th>
-                    <th class="py-2 pr-3">Total Revenue</th>
-                    <th class="py-2">Won Date</th>
+          <div
+            class="overflow-x-auto{% if not chart_data.newClients %} hidden{% endif %}"
+            id="new-clients-table-container"
+          >
+            <table class="min-w-full text-xs">
+              <thead>
+                <tr class="text-left text-gray-500 uppercase tracking-wide">
+                  <th class="py-2 pr-3">Client</th>
+                  <th class="py-2 pr-3">Total Revenue</th>
+                  <th class="py-2">Won Date</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200" id="new-clients-body">
+                {% for client in chart_data.newClients %}
+                  <tr class="{% if client.isHighlighted %}bg-yellow-100{% endif %}">
+                    <td class="py-2 pr-3 font-medium text-gray-700">{{ client.client }}</td>
+                    <td class="py-2 pr-3">${{ '{:,.2f}'.format(client.totalBill) }}</td>
+                    <td class="py-2">{{ client.wonDateLabel or client.wonDate or '—' }}</td>
                   </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200">
-                  {% for client in chart_data.newClients %}
-                    <tr>
-                      <td class="py-2 pr-3 font-medium text-gray-700">{{ client.client }}</td>
-                      <td class="py-2 pr-3">${{ '{:,.2f}'.format(client.totalBill) }}</td>
-                      <td class="py-2">{{ client.wonDateLabel or client.wonDate or '—' }}</td>
-                    </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          {% else %}
-            <p class="text-xs text-gray-500">Upload a payroll report to see recent client wins and their revenue.</p>
-          {% endif %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <p
+            class="text-xs text-gray-500{% if chart_data.newClients %} hidden{% endif %}"
+            id="new-clients-empty"
+          >
+            Upload a payroll report to see recent client wins and their revenue.
+          </p>
         </div>
-        <div class="border rounded-lg p-4 bg-gray-50">
+        <div class="border rounded-lg p-4 bg-gray-50 lg:col-span-2">
           <h3 class="text-sm font-semibold mb-3">Revenue by Industry</h3>
-          {% if chart_data.industries %}
-            <div class="h-64">
+          <div
+            id="industry-chart-wrapper"
+            class="{% if not chart_data.industries %}hidden{% endif %}"
+          >
+            <div class="h-80">
               <canvas id="industry-chart"></canvas>
             </div>
-            <div class="overflow-x-auto mt-4">
+            <div class="overflow-x-auto mt-4" id="industry-table-container">
               <table class="min-w-full text-xs">
                 <thead>
                   <tr class="text-left text-gray-500 uppercase tracking-wide">
@@ -174,7 +193,7 @@
                     <th class="py-2">Total Revenue</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200">
+                <tbody class="divide-y divide-gray-200" id="industry-table-body">
                   {% for industry in chart_data.industries %}
                     <tr>
                       <td class="py-2 pr-3 font-medium text-gray-700">{{ industry.industry }}</td>
@@ -184,9 +203,13 @@
                 </tbody>
               </table>
             </div>
-          {% else %}
-            <p class="text-xs text-gray-500">Upload a payroll report to see revenue by industry.</p>
-          {% endif %}
+          </div>
+          <p
+            class="text-xs text-gray-500{% if chart_data.industries %} hidden{% endif %}"
+            id="industry-empty"
+          >
+            Upload a payroll report to see revenue by industry.
+          </p>
         </div>
       </div>
     </div>
@@ -199,13 +222,80 @@
           return;
         }
 
+        const pieSliceLabelPlugin = {
+          id: "pieSliceLabel",
+          afterDatasetsDraw(chart, _args, pluginOptions) {
+            const { ctx, data } = chart;
+            if (!data || !data.datasets || data.datasets.length === 0) {
+              return;
+            }
+            const dataset = data.datasets[0];
+            const meta = chart.getDatasetMeta(0);
+            if (!meta || !meta.data) {
+              return;
+            }
+            const total =
+              pluginOptions && typeof pluginOptions.total === "number"
+                ? pluginOptions.total
+                : dataset.data.reduce(
+                    (sum, value) => sum + (Number(value) || 0),
+                    0
+                  );
+            ctx.save();
+            ctx.font = "12px sans-serif";
+            ctx.fillStyle = "#1f2937";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            meta.data.forEach((element, index) => {
+              if (!element) {
+                return;
+              }
+              const rawValue = Number(dataset.data[index] || 0);
+              if (!Number.isFinite(rawValue) || rawValue <= 0) {
+                return;
+              }
+              const label = (data.labels && data.labels[index]) || "";
+              const { x, y } = element.tooltipPosition();
+              const percentage = total > 0 ? ((rawValue / total) * 100).toFixed(1) : "0.0";
+              ctx.fillText(label, x, y - 8);
+              ctx.fillText(`${percentage}%`, x, y + 8);
+            });
+            ctx.restore();
+          },
+        };
+
+        Chart.register(pieSliceLabelPlugin);
+
+        const industryPalette = [
+          "#2563eb",
+          "#16a34a",
+          "#f97316",
+          "#9333ea",
+          "#0ea5e9",
+          "#ef4444",
+          "#84cc16",
+          "#f59e0b",
+        ];
+
         const weeks = chartData.weeks;
+        const weeklyDetails = chartData.weeklyDetails || {};
         const selectEl = document.getElementById("week-ending-select");
         const shiftCanvas = document.getElementById("shift-count-chart");
         const fillCanvas = document.getElementById("fill-rate-chart");
         const revenueCanvas = document.getElementById("revenue-chart");
         const newSalesCanvas = document.getElementById("new-sales-chart");
         const industryCanvas = document.getElementById("industry-chart");
+        const topClientsWeekLabelEl = document.getElementById("top-clients-week-label");
+        const newClientsWeekLabelEl = document.getElementById("new-clients-week-label");
+        const topClientsTableContainer = document.getElementById("top-clients-table-container");
+        const topClientsBody = document.getElementById("top-clients-body");
+        const topClientsEmpty = document.getElementById("top-clients-empty");
+        const newClientsTableContainer = document.getElementById("new-clients-table-container");
+        const newClientsBody = document.getElementById("new-clients-body");
+        const newClientsEmpty = document.getElementById("new-clients-empty");
+        const industryWrapper = document.getElementById("industry-chart-wrapper");
+        const industryTableBody = document.getElementById("industry-table-body");
+        const industryEmpty = document.getElementById("industry-empty");
 
         if (!selectEl || !shiftCanvas || !fillCanvas) {
           return;
@@ -215,11 +305,260 @@
         const fillCtx = fillCanvas.getContext("2d");
         const revenueCtx = revenueCanvas ? revenueCanvas.getContext("2d") : null;
         const newSalesCtx = newSalesCanvas ? newSalesCanvas.getContext("2d") : null;
+        const industryCtx = industryCanvas ? industryCanvas.getContext("2d") : null;
         let shiftChart;
         let fillChart;
         let revenueChart;
         let newSalesChart;
         let industryChart;
+
+        function formatCurrency(value) {
+          const numeric = Number(value);
+          if (!Number.isFinite(numeric)) {
+            return "$0.00";
+          }
+          return `$${numeric.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}`;
+        }
+
+        function setWeekLabel(element, text) {
+          if (!element) {
+            return;
+          }
+          if (text) {
+            element.textContent = text;
+            element.classList.remove("hidden");
+          } else {
+            element.textContent = "";
+            element.classList.add("hidden");
+          }
+        }
+
+        function clearElementChildren(element) {
+          if (!element) {
+            return;
+          }
+          while (element.firstChild) {
+            element.removeChild(element.firstChild);
+          }
+        }
+
+        function getDetailForWeek(week) {
+          if (week && weeklyDetails[week.weekEnding]) {
+            return weeklyDetails[week.weekEnding];
+          }
+          return {
+            topClients: chartData.topClients || [],
+            newClients: chartData.newClients || [],
+            industries: chartData.industries || [],
+          };
+        }
+
+        function renderTopClients(clients) {
+          if (!topClientsBody) {
+            return;
+          }
+          clearElementChildren(topClientsBody);
+          if (Array.isArray(clients) && clients.length > 0) {
+            if (topClientsTableContainer) {
+              topClientsTableContainer.classList.remove("hidden");
+            }
+            if (topClientsEmpty) {
+              topClientsEmpty.classList.add("hidden");
+            }
+            clients.forEach((client) => {
+              const row = document.createElement("tr");
+
+              const nameCell = document.createElement("td");
+              nameCell.className = "py-2 pr-3 font-medium text-gray-700";
+              nameCell.textContent = client.client || "Unknown Client";
+              row.appendChild(nameCell);
+
+              const totalCell = document.createElement("td");
+              totalCell.className = "py-2 pr-3";
+              totalCell.textContent = formatCurrency(client.totalBill);
+              row.appendChild(totalCell);
+
+              const avgCell = document.createElement("td");
+              avgCell.className = "py-2";
+              if (client.averageBillRate == null) {
+                const dash = document.createElement("span");
+                dash.className = "text-gray-400";
+                dash.textContent = "—";
+                avgCell.appendChild(dash);
+              } else {
+                avgCell.textContent = formatCurrency(client.averageBillRate);
+              }
+              row.appendChild(avgCell);
+
+              topClientsBody.appendChild(row);
+            });
+          } else {
+            if (topClientsTableContainer) {
+              topClientsTableContainer.classList.add("hidden");
+            }
+            if (topClientsEmpty) {
+              topClientsEmpty.classList.remove("hidden");
+            }
+          }
+        }
+
+        function renderNewClients(clients) {
+          if (!newClientsBody) {
+            return;
+          }
+          clearElementChildren(newClientsBody);
+          if (Array.isArray(clients) && clients.length > 0) {
+            if (newClientsTableContainer) {
+              newClientsTableContainer.classList.remove("hidden");
+            }
+            if (newClientsEmpty) {
+              newClientsEmpty.classList.add("hidden");
+            }
+            clients.forEach((client) => {
+              const row = document.createElement("tr");
+              if (client.isHighlighted) {
+                row.classList.add("bg-yellow-100");
+              }
+
+              const nameCell = document.createElement("td");
+              nameCell.className = "py-2 pr-3 font-medium text-gray-700";
+              nameCell.textContent = client.client || "Unknown Client";
+              row.appendChild(nameCell);
+
+              const totalCell = document.createElement("td");
+              totalCell.className = "py-2 pr-3";
+              totalCell.textContent = formatCurrency(client.totalBill);
+              row.appendChild(totalCell);
+
+              const wonCell = document.createElement("td");
+              wonCell.className = "py-2";
+              wonCell.textContent = client.wonDateLabel || client.wonDate || "—";
+              row.appendChild(wonCell);
+
+              newClientsBody.appendChild(row);
+            });
+          } else {
+            if (newClientsTableContainer) {
+              newClientsTableContainer.classList.add("hidden");
+            }
+            if (newClientsEmpty) {
+              newClientsEmpty.classList.remove("hidden");
+            }
+          }
+        }
+
+        function renderIndustry(industries) {
+          if (!industryWrapper || !industryTableBody) {
+            return;
+          }
+          clearElementChildren(industryTableBody);
+          if (!Array.isArray(industries) || industries.length === 0) {
+            if (industryWrapper) {
+              industryWrapper.classList.add("hidden");
+            }
+            if (industryEmpty) {
+              industryEmpty.classList.remove("hidden");
+            }
+            if (industryChart) {
+              industryChart.destroy();
+              industryChart = null;
+            }
+            return;
+          }
+
+          industryWrapper.classList.remove("hidden");
+          if (industryEmpty) {
+            industryEmpty.classList.add("hidden");
+          }
+
+          industries.forEach((item) => {
+            const row = document.createElement("tr");
+
+            const nameCell = document.createElement("td");
+            nameCell.className = "py-2 pr-3 font-medium text-gray-700";
+            nameCell.textContent = item.industry || "Unknown Industry";
+            row.appendChild(nameCell);
+
+            const totalCell = document.createElement("td");
+            totalCell.className = "py-2";
+            totalCell.textContent = formatCurrency(item.totalBill);
+            row.appendChild(totalCell);
+
+            industryTableBody.appendChild(row);
+          });
+
+          if (!industryCtx) {
+            return;
+          }
+
+          const labels = industries.map((item) => item.industry || "Unknown Industry");
+          const dataValues = industries.map((item) => Number(item.totalBill) || 0);
+          const totalRevenue = dataValues.reduce((sum, value) => sum + value, 0);
+
+          if (industryChart) {
+            industryChart.destroy();
+          }
+
+          industryChart = new Chart(industryCtx, {
+            type: "pie",
+            data: {
+              labels,
+              datasets: [
+                {
+                  data: dataValues,
+                  backgroundColor: labels.map(
+                    (_, index) => industryPalette[index % industryPalette.length]
+                  ),
+                  borderColor: labels.map(
+                    (_, index) => industryPalette[index % industryPalette.length]
+                  ),
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: "bottom",
+                },
+                tooltip: {
+                  callbacks: {
+                    label(context) {
+                      const label = context.label || "";
+                      const value = Number(context.parsed) || 0;
+                      const percentage = totalRevenue
+                        ? ((value / totalRevenue) * 100).toFixed(1)
+                        : "0.0";
+                      return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                    },
+                  },
+                },
+                pieSliceLabel: {
+                  total: totalRevenue,
+                },
+              },
+            },
+          });
+        }
+
+        function updateSummarySections(selectedWeek) {
+          const detail = getDetailForWeek(selectedWeek);
+          const labelText = selectedWeek
+            ? `Week ending ${selectedWeek.label}`
+            : chartData.topClientsWeekLabel
+            ? `Week ending ${chartData.topClientsWeekLabel}`
+            : "";
+
+          setWeekLabel(topClientsWeekLabelEl, labelText);
+          setWeekLabel(newClientsWeekLabelEl, labelText);
+          renderTopClients(detail.topClients || []);
+          renderNewClients(detail.newClients || []);
+          renderIndustry(detail.industries || []);
+        }
 
         function getWindow(value) {
           const index = weeks.findIndex((week) => week.weekEnding === value);
@@ -355,6 +694,9 @@
         }
 
         function updateCharts(value) {
+          const selectedWeek = weeks.find((week) => week.weekEnding === value);
+          updateSummarySections(selectedWeek);
+
           const windowData = getWindow(value);
           if (windowData.length === 0) {
             return;
@@ -524,62 +866,6 @@
               },
             });
           }
-        }
-
-        if (industryCanvas && chartData.industries && chartData.industries.length > 0) {
-          const industryCtx = industryCanvas.getContext("2d");
-          const labels = chartData.industries.map((item) => item.industry);
-          const data = chartData.industries.map((item) => item.totalBill || 0);
-          const totalRevenue = data.reduce((sum, value) => sum + value, 0);
-          const palette = [
-            "#2563eb",
-            "#16a34a",
-            "#f97316",
-            "#9333ea",
-            "#0ea5e9",
-            "#ef4444",
-            "#84cc16",
-            "#f59e0b",
-          ];
-
-          industryChart = new Chart(industryCtx, {
-            type: "pie",
-            data: {
-              labels,
-              datasets: [
-                {
-                  data,
-                  backgroundColor: labels.map(
-                    (_, index) => palette[index % palette.length]
-                  ),
-                  borderColor: labels.map((_, index) => palette[index % palette.length]),
-                  borderWidth: 1,
-                },
-              ],
-            },
-            options: {
-              plugins: {
-                legend: {
-                  position: "bottom",
-                },
-                tooltip: {
-                  callbacks: {
-                    label(context) {
-                      const label = context.label || "";
-                      const value = context.parsed || 0;
-                      const percentage = totalRevenue
-                        ? ((value / totalRevenue) * 100).toFixed(1)
-                        : "0.0";
-                      return `${label}: $${value.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })} (${percentage}%)`;
-                    },
-                  },
-                },
-              },
-            },
-          });
         }
 
         selectEl.addEventListener("change", (event) => {
