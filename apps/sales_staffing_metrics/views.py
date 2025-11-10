@@ -118,27 +118,6 @@ def _load_payroll_csv(path: Path | None = None) -> pd.DataFrame:
     return df
 
 
-def _prepare_payroll_dataframe(payroll_df: pd.DataFrame) -> pd.DataFrame:
-    if payroll_df.empty:
-        return payroll_df
-
-    df = payroll_df.copy()
-
-    if "Date" in df.columns:
-        df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
-
-    if "Client Won Date" in df.columns:
-        df["Client Won Date"] = pd.to_datetime(df["Client Won Date"], errors="coerce")
-
-    if "Total Bill" in df.columns:
-        df["Total Bill"] = df["Total Bill"].apply(_normalize_money)
-
-    if "Bill Rate" in df.columns:
-        df["Bill Rate"] = df["Bill Rate"].apply(_normalize_money)
-
-    return df
-
-
 def _write_dashboard_data(data: Dict[str, Any], path: Path = DASHBOARD_DATA_PATH) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     safe_data = data.copy()
@@ -309,212 +288,136 @@ def _clean_float(value: Any) -> float | None:
         return None
 
 
-def _build_weeks_from_payroll(payroll_df: pd.DataFrame) -> List[Dict[str, Any]]:
-    if payroll_df.empty:
-        return []
+def _load_chart_data(path: Path = WORKBOOK_PATH) -> Dict[str, Any]:
+    if not path.exists():
+        return _empty_chart_payload()
 
-    if "Date" not in payroll_df.columns or "Total Bill" not in payroll_df.columns:
-        return []
+    try:
+        revenue_df = pd.read_excel(path, sheet_name="Revenue")
+        shift_df = pd.read_excel(path, sheet_name="Shift Count")
+    except Exception:  # pragma: no cover - defensive
+        return _empty_chart_payload()
 
-    df = payroll_df.dropna(subset=["Date"]).copy()
-    if df.empty:
-        return []
+    if "Week Ending" not in revenue_df.columns:
+        return _empty_chart_payload()
 
-    df["weekEnding"] = df["Date"].apply(
-        lambda value: _next_sunday_on_or_after(pd.Timestamp(value)).normalize()
-    )
+    revenue_df = revenue_df.copy()
+    revenue_df["Week Ending"] = pd.to_datetime(revenue_df["Week Ending"], errors="coerce")
+    revenue_df = revenue_df.dropna(subset=["Week Ending"]).sort_values("Week Ending")
+
+    if revenue_df.empty:
+        return _empty_chart_payload()
+
+    shift_df = shift_df.copy()
+    week_columns: List[str] = [
+        col for col in (
+            "Week Ending (Shift Count)",
+            "Week Ending",
+        )
+        if col in shift_df.columns
+    ]
+    if not week_columns:
+        return {"weeks": []}
+
+    week_column = week_columns[0]
+    shift_df[week_column] = pd.to_datetime(shift_df[week_column], errors="coerce")
+    shift_df = shift_df.dropna(subset=[week_column])
+
+    shift_records: Dict[Any, Dict[str, Any]] = {}
+    for _, row in shift_df.iterrows():
+        week = pd.to_datetime(row[week_column]).date()
+        shift_records[week] = {
+            "shiftCount2024": _clean_int(row.get("2024 (Shift Count)")),
+            "shiftCount2025": _clean_int(row.get("2025 (Shift Count)")),
+            "fillRate2024": _clean_float(row.get("2024 (Fill Rate)")),
+            "fillRate2025": _clean_float(row.get("2025 (Fill Rate)")),
+        }
 
     weeks: List[Dict[str, Any]] = []
-    for week_ending, group in df.groupby("weekEnding"):
-        week_end_ts = pd.Timestamp(week_ending)
-        week_label = week_end_ts.strftime("%B %d, %Y")
-
-        total_bill_series = group.get("Total Bill", pd.Series(dtype=float))
-        total_revenue = float(total_bill_series.sum()) if not total_bill_series.empty else 0.0
-        shift_count = int((total_bill_series > 0).sum()) if not total_bill_series.empty else 0
-
-        if total_revenue == 0.0 and shift_count == 0:
-            continue
-
-        new_sales_revenue = 0.0
-        if "Client Won Date" in group.columns:
-            six_months_prior = week_end_ts - relativedelta(months=6)
-            mask = group["Client Won Date"].notna() & (
-                group["Client Won Date"] >= six_months_prior
-            ) & (group["Client Won Date"] <= week_end_ts)
-            new_sales_revenue = float(group.loc[mask, "Total Bill"].sum())
-
-        new_sales_pct = new_sales_revenue / total_revenue if total_revenue else 0.0
-
-        weeks.append(
+    for _, row in revenue_df.iterrows():
+        week_ts = pd.to_datetime(row["Week Ending"])
+        week_date = week_ts.date()
+        record = shift_records.get(
+            week_date,
             {
-                "weekEnding": week_end_ts.strftime("%Y-%m-%d"),
-                "label": week_label,
                 "shiftCount2024": None,
-                "shiftCount2025": shift_count,
+                "shiftCount2025": None,
                 "fillRate2024": None,
                 "fillRate2025": None,
-                "revenue2025": total_revenue,
-                "revenueGoal2025": None,
+            },
+        )
+        revenue_2025 = _clean_float(row.get("2025 Revenue"))
+        revenue_goal_2025 = _clean_float(row.get("2025 Revenue Goal"))
+        new_sales_revenue = _clean_float(row.get("New Sales Revenue"))
+        new_sales_pct = _clean_float(row.get("New Sales % of Revenue"))
+        weeks.append(
+            {
+                "weekEnding": week_ts.strftime("%Y-%m-%d"),
+                "label": week_ts.strftime("%B %d, %Y"),
+                **record,
+                "revenue2025": revenue_2025,
+                "revenueGoal2025": revenue_goal_2025,
                 "newSalesRevenue": new_sales_revenue,
                 "newSalesPct": new_sales_pct,
             }
         )
 
-    weeks.sort(key=lambda item: item["weekEnding"])
-    return weeks
-
-
-def _build_weekly_details(
-    weeks: List[Dict[str, Any]], payroll_df: pd.DataFrame
-) -> Dict[str, Dict[str, Any]]:
-    if not weeks or payroll_df.empty:
-        return {}
-
-    df = payroll_df.copy()
-    if "Date" in df.columns:
-        df = df.dropna(subset=["Date"])
-
-    week_datetime_map: Dict[str, datetime] = {}
-    for week in weeks:
-        week_ending_value = week.get("weekEnding")
-        if not week_ending_value:
-            continue
-        try:
-            week_end_ts = pd.to_datetime(week_ending_value, errors="coerce")
-        except Exception:  # pragma: no cover - defensive
-            continue
-        if pd.isna(week_end_ts):
-            continue
-        week_datetime_map[week_ending_value] = week_end_ts.to_pydatetime().replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
-
-    weekly_details: Dict[str, Dict[str, Any]] = {}
-    for week in weeks:
-        week_ending_value = week.get("weekEnding")
-        week_end_dt = week_datetime_map.get(week_ending_value)
-        if week_end_dt is None:
-            continue
-
-        week_start_dt = week_end_dt - timedelta(days=6)
-
-        if "Date" in df.columns:
-            week_payroll = df[
-                (df["Date"] >= week_start_dt) & (df["Date"] <= week_end_dt)
-            ]
-        else:
-            week_payroll = df
-
-        six_months_prior = week_end_dt - relativedelta(months=6)
-        weekly_details[week_ending_value] = {
-            "topClients": _calculate_top_clients(week_payroll),
-            "newClients": _calculate_new_clients(
-                week_payroll,
-                six_months_prior,
-                week_end_dt,
-                (week_start_dt, week_end_dt),
-            ),
-            "industries": _calculate_industry_totals(week_payroll),
-        }
-
-    return weekly_details
-
-
-def _load_chart_data(path: Path = WORKBOOK_PATH) -> Dict[str, Any]:
     dashboard_data = _load_dashboard_data()
-    payroll_df = _prepare_payroll_dataframe(_load_payroll_csv())
 
-    weeks: List[Dict[str, Any]] = []
-    if path.exists():
-        try:
-            revenue_df = pd.read_excel(path, sheet_name="Revenue")
-            shift_df = pd.read_excel(path, sheet_name="Shift Count")
-        except Exception:  # pragma: no cover - defensive
-            revenue_df = pd.DataFrame()
-            shift_df = pd.DataFrame()
+    payroll_df = _load_payroll_csv()
+    weekly_details: Dict[str, Dict[str, Any]] = {}
 
-        if not revenue_df.empty and "Week Ending" in revenue_df.columns:
-            revenue_df = revenue_df.copy()
-            revenue_df["Week Ending"] = pd.to_datetime(
-                revenue_df["Week Ending"], errors="coerce"
+    if not payroll_df.empty and weeks:
+        payroll_df = payroll_df.copy()
+        if "Date" in payroll_df.columns:
+            payroll_df = payroll_df.dropna(subset=["Date"])
+        if "Total Bill" in payroll_df.columns:
+            payroll_df["Total Bill"] = payroll_df["Total Bill"].apply(_normalize_money)
+        if "Bill Rate" in payroll_df.columns:
+            payroll_df["Bill Rate"] = payroll_df["Bill Rate"].apply(_normalize_money)
+
+        week_datetime_map: Dict[str, datetime] = {}
+        for week in weeks:
+            week_ending_value = week.get("weekEnding")
+            if not week_ending_value:
+                continue
+            try:
+                week_end_ts = pd.to_datetime(week_ending_value, errors="coerce")
+            except Exception:  # pragma: no cover - defensive
+                continue
+            if pd.isna(week_end_ts):
+                continue
+            week_datetime_map[week_ending_value] = week_end_ts.to_pydatetime().replace(
+                hour=0, minute=0, second=0, microsecond=0
             )
-            revenue_df = revenue_df.dropna(subset=["Week Ending"]).sort_values(
-                "Week Ending"
-            )
 
-            shift_df = shift_df.copy()
-            week_columns: List[str] = [
-                col
-                for col in (
-                    "Week Ending (Shift Count)",
-                    "Week Ending",
-                )
-                if col in shift_df.columns
-            ]
-            shift_records: Dict[Any, Dict[str, Any]] = {}
+        for week in weeks:
+            week_ending_value = week.get("weekEnding")
+            week_end_dt = week_datetime_map.get(week_ending_value)
+            if week_end_dt is None:
+                continue
 
-            if week_columns:
-                week_column = week_columns[0]
-                shift_df[week_column] = pd.to_datetime(
-                    shift_df[week_column], errors="coerce"
-                )
-                shift_df = shift_df.dropna(subset=[week_column])
+            week_start_dt = week_end_dt - timedelta(days=6)
 
-                for _, row in shift_df.iterrows():
-                    week = pd.to_datetime(row[week_column]).date()
-                    shift_records[week] = {
-                        "shiftCount2024": _clean_int(row.get("2024 (Shift Count)")),
-                        "shiftCount2025": _clean_int(row.get("2025 (Shift Count)")),
-                        "fillRate2024": _clean_float(row.get("2024 (Fill Rate)")),
-                        "fillRate2025": _clean_float(row.get("2025 (Fill Rate)")),
-                    }
+            if "Date" in payroll_df.columns:
+                week_payroll = payroll_df[
+                    (payroll_df["Date"] >= week_start_dt)
+                    & (payroll_df["Date"] <= week_end_dt)
+                ]
+            else:
+                week_payroll = payroll_df
 
-            for _, row in revenue_df.iterrows():
-                week_ts = pd.to_datetime(row["Week Ending"])
-                week_date = week_ts.date()
-                record = shift_records.get(
-                    week_date,
-                    {
-                        "shiftCount2024": None,
-                        "shiftCount2025": None,
-                        "fillRate2024": None,
-                        "fillRate2025": None,
-                    },
-                )
-                revenue_2025 = _clean_float(row.get("2025 Revenue"))
-                revenue_goal_2025 = _clean_float(row.get("2025 Revenue Goal"))
-                new_sales_revenue = _clean_float(row.get("New Sales Revenue"))
-                new_sales_pct = _clean_float(row.get("New Sales % of Revenue"))
-                weeks.append(
-                    {
-                        "weekEnding": week_ts.strftime("%Y-%m-%d"),
-                        "label": week_ts.strftime("%B %d, %Y"),
-                        **record,
-                        "revenue2025": revenue_2025,
-                        "revenueGoal2025": revenue_goal_2025,
-                        "newSalesRevenue": new_sales_revenue,
-                        "newSalesPct": new_sales_pct,
-                    }
-                )
-
-    if not weeks:
-        weeks = _build_weeks_from_payroll(payroll_df)
-
-    if not weeks:
-        empty_payload = _empty_chart_payload()
-        empty_payload.update(
-            {
-                "topClients": dashboard_data.get("topClients", []),
-                "topClientsWeekEnding": dashboard_data.get("weekEnding"),
-                "topClientsWeekLabel": dashboard_data.get("weekLabel"),
-                "newClients": dashboard_data.get("newClients", []),
-                "industries": dashboard_data.get("industries", []),
+            six_months_prior = week_end_dt - relativedelta(months=6)
+            weekly_details[week_ending_value] = {
+                "topClients": _calculate_top_clients(week_payroll),
+                "newClients": _calculate_new_clients(
+                    week_payroll,
+                    six_months_prior,
+                    week_end_dt,
+                    (week_start_dt, week_end_dt),
+                ),
+                "industries": _calculate_industry_totals(week_payroll),
             }
-        )
-        return empty_payload
-
-    weekly_details = _build_weekly_details(weeks, payroll_df)
 
     selected_week = weeks[-1] if weeks else None
     selected_week_ending = selected_week.get("weekEnding") if selected_week else None
