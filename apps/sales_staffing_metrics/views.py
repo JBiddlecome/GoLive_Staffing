@@ -358,16 +358,6 @@ def _load_chart_data(path: Path = WORKBOOK_PATH) -> Dict[str, Any]:
                 hour=0, minute=0, second=0, microsecond=0
             )
 
-        if "Client Won Date" in payroll_df.columns and week_datetime_map:
-            new_clients_df = payroll_df.loc[payroll_df["Client Won Date"].notna()].copy()
-            earliest_week_dt = min(week_datetime_map.values())
-            min_won_date = earliest_week_dt - relativedelta(months=6)
-            new_clients_df = new_clients_df[
-                new_clients_df["Client Won Date"] >= min_won_date
-            ].copy()
-        else:
-            new_clients_df = pd.DataFrame(columns=payroll_df.columns)
-
         for week in weeks:
             week_ending_value = week.get("weekEnding")
             week_end_dt = week_datetime_map.get(week_ending_value)
@@ -385,15 +375,13 @@ def _load_chart_data(path: Path = WORKBOOK_PATH) -> Dict[str, Any]:
                 week_payroll = payroll_df
 
             six_months_prior = week_end_dt - relativedelta(months=6)
-            new_clients_source = new_clients_df if not new_clients_df.empty else payroll_df
             weekly_details[week_ending_value] = {
                 "topClients": _calculate_top_clients(week_payroll),
                 "newClients": _calculate_new_clients(
-                    new_clients_source,
+                    week_payroll,
                     six_months_prior,
                     week_end_dt,
                     (week_start_dt, week_end_dt),
-                    copy_frame=new_clients_source is payroll_df,
                 ),
                 "industries": _calculate_industry_totals(week_payroll),
             }
@@ -520,7 +508,7 @@ def _calculate_new_clients(
     grouped = (
         df.groupby("Client", as_index=False)
         .agg(total_bill=("Total Bill", "sum"), won_date=("Client Won Date", "max"))
-        .sort_values("won_date", ascending=False)
+        .sort_values("won_date", ascending=True)
     )
 
     if highlight_range is not None:
