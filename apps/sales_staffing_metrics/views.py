@@ -38,7 +38,6 @@ def _resolve_workbook_path(base_dir: Path = DATA_DIR) -> Path:
     return base_dir / WORKBOOK_CANDIDATE_FILENAMES[0]
 
 
-WORKBOOK_PATH = _resolve_workbook_path()
 METRICS_EXPORT_PATH = DATA_DIR / "sales_staffing_metrics.csv"
 DASHBOARD_DATA_PATH = DATA_DIR / "sales_staffing_dashboard.json"
 PIPELINE_DATA_PATH = DATA_DIR / "sales_staffing_pipeline.json"
@@ -72,7 +71,16 @@ def _normalize_week_ending(value: datetime) -> datetime:
     return value.replace(hour=0, minute=0, second=0, microsecond=0)
 
 
-def _load_metrics_export(path: Path = METRICS_EXPORT_PATH) -> pd.DataFrame:
+def get_workbook_path() -> Path:
+    """Return the current Sales & Staffing workbook path."""
+
+    return _resolve_workbook_path()
+
+
+def _load_metrics_export(path: Path | None = None) -> pd.DataFrame:
+    if path is None:
+        path = METRICS_EXPORT_PATH
+
     if not path.exists():
         return pd.DataFrame(
             columns=[
@@ -92,7 +100,10 @@ def _load_metrics_export(path: Path = METRICS_EXPORT_PATH) -> pd.DataFrame:
     return df
 
 
-def _write_metrics_export(metrics: Dict[str, Any], path: Path = METRICS_EXPORT_PATH) -> None:
+def _write_metrics_export(metrics: Dict[str, Any], path: Path | None = None) -> None:
+    if path is None:
+        path = METRICS_EXPORT_PATH
+
     metrics = metrics.copy()
     metrics["week_ending"] = _normalize_week_ending(metrics["week_ending"])
 
@@ -306,7 +317,10 @@ def _clean_float(value: Any) -> float | None:
         return None
 
 
-def _load_chart_data(path: Path = WORKBOOK_PATH) -> Dict[str, Any]:
+def _load_chart_data(path: Path | None = None) -> Dict[str, Any]:
+    if path is None:
+        path = get_workbook_path()
+
     if not path.exists():
         return _empty_chart_payload()
 
@@ -630,10 +644,17 @@ def _calculate_industry_totals(payroll_df: pd.DataFrame) -> List[Dict[str, Any]]
     return results
 
 
-def _update_workbook(payroll_df: pd.DataFrame, open_shifts: int) -> Dict[str, Any]:
-    if not WORKBOOK_PATH.exists():
+def _update_workbook(
+    payroll_df: pd.DataFrame, open_shifts: int, workbook_path: Path | None = None
+) -> Dict[str, Any]:
+    if workbook_path is None:
+        workbook_path = get_workbook_path()
+
+    if not workbook_path.exists():
+        expected_names = ", ".join(WORKBOOK_CANDIDATE_FILENAMES)
         raise FileNotFoundError(
-            "Sales and Staffing workbook not found. Expected to find it at " f"{WORKBOOK_PATH}."
+            "Sales and Staffing workbook not found. "
+            f"Looked for one of ({expected_names}) in {DATA_DIR}."
         )
 
     payroll_df = payroll_df.copy()
@@ -671,7 +692,7 @@ def _update_workbook(payroll_df: pd.DataFrame, open_shifts: int) -> Dict[str, An
     total_shifts = shift_count + open_shifts
     fill_rate = shift_count / total_shifts if total_shifts > 0 else 0.0
 
-    workbook = load_workbook(filename=WORKBOOK_PATH)
+    workbook = load_workbook(filename=workbook_path)
 
     if "Revenue" not in workbook.sheetnames:
         raise ValueError('Missing "Revenue" sheet in the Sales and Staffing workbook.')
@@ -694,7 +715,7 @@ def _update_workbook(payroll_df: pd.DataFrame, open_shifts: int) -> Dict[str, An
     _set_cell(shift_sheet, shift_row, shift_headers, "2025 (Shift Count)", shift_count)
     _set_cell(shift_sheet, shift_row, shift_headers, "2025 (Fill Rate)", fill_rate)
 
-    workbook.save(WORKBOOK_PATH)
+    workbook.save(workbook_path)
 
     metrics = {
         "week_ending": week_ending,
@@ -740,10 +761,11 @@ def _read_payroll(upload: UploadFile) -> pd.DataFrame:
 
 
 def _build_page_context(**extra: Any) -> Dict[str, Any]:
+    workbook_path = get_workbook_path()
     base_context = {
-        "workbook_path": WORKBOOK_PATH,
+        "workbook_path": workbook_path,
         "metrics_export_path": METRICS_EXPORT_PATH,
-        "chart_data": _load_chart_data(),
+        "chart_data": _load_chart_data(path=workbook_path),
         "pipeline_tables": _load_pipeline_data(),
     }
     base_context.update(extra)
@@ -787,7 +809,12 @@ async def update(
         )
 
     try:
-        result = await run_in_threadpool(_update_workbook, payroll_df, open_shifts_value)
+        result = await run_in_threadpool(
+            _update_workbook,
+            payroll_df,
+            open_shifts_value,
+            context.get("workbook_path"),
+        )
     except FileNotFoundError as exc:
         context.update({"error": str(exc)})
         return templates.TemplateResponse(
@@ -803,7 +830,10 @@ async def update(
             status_code=400,
         )
 
-    context.update({"result": result, "chart_data": _load_chart_data()})
+    workbook_path = context.get("workbook_path", get_workbook_path())
+    context.update(
+        {"result": result, "chart_data": _load_chart_data(path=workbook_path)}
+    )
     return templates.TemplateResponse("apps/sales_staffing_metrics.html", context)
 
 
