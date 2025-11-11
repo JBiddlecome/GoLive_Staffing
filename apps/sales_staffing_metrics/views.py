@@ -602,6 +602,7 @@ def _summarize_top_clients(df: pd.DataFrame) -> List[Dict[str, Any]]:
             {
                 "client": row["Client"],
                 "totalBill": total_bill_value,
+                "revenue": total_bill_value,
                 "averageBillRate": avg_bill_rate_value,
             }
         )

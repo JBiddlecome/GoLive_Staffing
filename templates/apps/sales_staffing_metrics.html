@@ -50,10 +50,7 @@
           <p class="mt-1 text-xs text-gray-500">
             Based on Total Bill revenue for the selected week (Monday through Sunday).
           </p>
-          <div class="mt-4 h-72">
-            <canvas id="top-clients-chart"></canvas>
-          </div>
-          <div class="mt-6 overflow-hidden rounded-lg border border-gray-200">
+          <div class="mt-4 overflow-hidden rounded-lg border border-gray-200">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
@@ -61,7 +58,7 @@
                     Client
                   </th>
                   <th scope="col" class="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Total Bill
+                    Revenue
                   </th>
                   <th scope="col" class="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
                     Avg. Bill Rate
@@ -110,7 +107,6 @@
       const selectEl = document.getElementById("week-ending-select");
       const shiftCtx = document.getElementById("shift-count-chart");
       const fillCtx = document.getElementById("fill-rate-chart");
-      const topClientsCtx = document.getElementById("top-clients-chart");
       const revenueCtx = document.getElementById("revenue-goal-chart");
       const topClientsTableBody = document.getElementById("top-clients-table-body");
       if (!selectEl || !shiftCtx || !fillCtx) {
@@ -280,55 +276,6 @@
         }
       );
 
-      const topClientsChart =
-        topClientsCtx && Chart ?
-          new Chart(topClientsCtx, {
-            type: "bar",
-            data: {
-              labels: [],
-              datasets: [
-                {
-                  label: "Total Bill",
-                  data: [],
-                  backgroundColor: "#6366f1",
-                  borderRadius: 6,
-                },
-              ],
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              indexAxis: "y",
-              plugins: {
-                legend: { display: false },
-                tooltip: {
-                  callbacks: {
-                    label(context) {
-                      const value = context.parsed.x ?? context.parsed;
-                      return `Total Bill: ${currencyFormatter.format(value || 0)}`;
-                    },
-                  },
-                },
-              },
-              scales: {
-                x: {
-                  beginAtZero: true,
-                  ticks: {
-                    callback(value) {
-                      return currencyFormatter.format(value);
-                    },
-                  },
-                },
-                y: {
-                  ticks: {
-                    color: "#374151",
-                  },
-                },
-              },
-            },
-          })
-        : null;
-
       const revenueChart =
         revenueCtx && Chart ?
           new Chart(revenueCtx, {
@@ -393,14 +340,6 @@
 
         const clients = topClientsByWeek[weekEnding] || [];
 
-        if (topClientsChart) {
-          topClientsChart.data.labels = clients.map((entry) => entry.client);
-          topClientsChart.data.datasets[0].data = clients.map(
-            (entry) => entry.totalBill ?? 0
-          );
-          topClientsChart.update();
-        }
-
         topClientsTableBody.innerHTML = "";
 
         if (!clients.length) {
@@ -415,15 +354,17 @@
         }
 
         clients.forEach((entry) => {
+          const revenue = entry.revenue ?? entry.totalBill ?? 0;
+          const averageBillRate = entry.averageBillRate;
           const row = document.createElement("tr");
           row.innerHTML = `
             <td class="px-4 py-2">${entry.client}</td>
             <td class="px-4 py-2 text-right font-medium">${currencyFormatter.format(
-              entry.totalBill || 0
+              revenue || 0
             )}</td>
             <td class="px-4 py-2 text-right text-gray-600">${
-              entry.averageBillRate != null
-                ? currencyFormatterWithCents.format(entry.averageBillRate)
+              averageBillRate != null
+                ? currencyFormatterWithCents.format(averageBillRate)
                 : "—"
             }</td>
           `;
