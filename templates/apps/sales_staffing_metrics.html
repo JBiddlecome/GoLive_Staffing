@@ -563,7 +563,9 @@
             tension: 0.3,
             spanGaps: true,
             datalabels: {
-              display: false,
+              display() {
+                return false;
+              },
             },
           },
           {
