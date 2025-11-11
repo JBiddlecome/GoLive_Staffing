@@ -86,6 +86,50 @@
           </div>
         </div>
       </div>
+
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <h2 class="text-base font-semibold text-gray-900">New Sales</h2>
+        <p class="mt-1 text-xs text-gray-500">
+          New sales revenue and contribution to total revenue for the surrounding weeks of the selected week ending.
+        </p>
+        <div class="mt-4 h-72">
+          <canvas id="new-sales-chart"></canvas>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <h2 class="text-base font-semibold text-gray-900">New Clients</h2>
+        <p class="mt-1 text-xs text-gray-500">
+          Clients won within six months of the selected week ending with billing activity during that week.
+        </p>
+        <div class="mt-4 overflow-hidden rounded-lg border border-gray-200">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Client
+                </th>
+                <th scope="col" class="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Total Bill
+                </th>
+                <th scope="col" class="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Won Date
+                </th>
+              </tr>
+            </thead>
+            <tbody id="new-clients-table-body" class="divide-y divide-gray-200 bg-white text-sm text-gray-700">
+              <tr>
+                <td colspan="3" class="px-4 py-3 text-center text-sm text-gray-500">
+                  Select a week to view newly won clients.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="mt-2 text-xs text-gray-500">
+          Rows highlighted in green indicate clients won during the selected week.
+        </p>
+      </div>
     </div>
   {% else %}
     <div class="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
@@ -108,7 +152,9 @@
       const shiftCtx = document.getElementById("shift-count-chart");
       const fillCtx = document.getElementById("fill-rate-chart");
       const revenueCtx = document.getElementById("revenue-goal-chart");
+      const newSalesCtx = document.getElementById("new-sales-chart");
       const topClientsTableBody = document.getElementById("top-clients-table-body");
+      const newClientsTableBody = document.getElementById("new-clients-table-body");
       if (!selectEl || !shiftCtx || !fillCtx) {
         return;
       }
@@ -117,6 +163,11 @@
 
       const topClientsByWeek = chartData.topClientsByWeek || {};
       const revenueSeries = chartData.revenueSeries || [];
+      const newClientsByWeek = chartData.newClientsByWeek || {};
+
+      const revenueSeriesByWeek = new Map(
+        revenueSeries.map((entry) => [entry.weekEnding, entry])
+      );
 
       const currencyFormatter = new Intl.NumberFormat("en-US", {
         style: "currency",
@@ -333,6 +384,90 @@
           })
         : null;
 
+      const newSalesChart =
+        newSalesCtx && Chart
+          ? new Chart(newSalesCtx, {
+              type: "bar",
+              data: {
+                labels: [],
+                datasets: [
+                  {
+                    type: "bar",
+                    label: "New Sales Revenue",
+                    data: [],
+                    backgroundColor: "rgba(129, 140, 248, 0.35)",
+                    borderColor: "#6366f1",
+                    borderWidth: 1,
+                    yAxisID: "yRevenue",
+                  },
+                  {
+                    type: "line",
+                    label: "New Sales % of Revenue",
+                    data: [],
+                    borderColor: "#f59e0b",
+                    backgroundColor: "rgba(245, 158, 11, 0.25)",
+                    tension: 0.3,
+                    spanGaps: true,
+                    yAxisID: "yPct",
+                  },
+                ],
+              },
+              options: {
+                ...sharedOptions,
+                scales: {
+                  x: {
+                    ...sharedOptions.scales.x,
+                  },
+                  yRevenue: {
+                    position: "left",
+                    beginAtZero: true,
+                    ticks: {
+                      callback(value) {
+                        return currencyFormatter.format(value);
+                      },
+                    },
+                  },
+                  yPct: {
+                    position: "right",
+                    beginAtZero: true,
+                    grid: {
+                      drawOnChartArea: false,
+                    },
+                    ticks: {
+                      callback(value) {
+                        return `${value}%`;
+                      },
+                    },
+                  },
+                },
+                plugins: {
+                  ...sharedOptions.plugins,
+                  tooltip: {
+                    callbacks: {
+                      label(context) {
+                        if (context.dataset.yAxisID === "yRevenue") {
+                          const value = context.parsed.y;
+                          if (value == null) {
+                            return `${context.dataset.label}: N/A`;
+                          }
+                          return `${context.dataset.label}: ${currencyFormatter.format(value)}`;
+                        }
+                        if (context.dataset.yAxisID === "yPct") {
+                          const value = context.parsed.y;
+                          if (value == null) {
+                            return `${context.dataset.label}: N/A`;
+                          }
+                          return `${context.dataset.label}: ${value.toFixed(1)}%`;
+                        }
+                        return `${context.dataset.label}: ${context.formattedValue}`;
+                      },
+                    },
+                  },
+                },
+              },
+            })
+          : null;
+
       function updateTopClients(weekEnding) {
         if (!topClientsTableBody) {
           return;
@@ -372,6 +507,43 @@
         });
       }
 
+      function updateNewClients(weekEnding) {
+        if (!newClientsTableBody) {
+          return;
+        }
+
+        const clients = newClientsByWeek[weekEnding] || [];
+        newClientsTableBody.innerHTML = "";
+
+        if (!clients.length) {
+          const emptyRow = document.createElement("tr");
+          const cell = document.createElement("td");
+          cell.colSpan = 3;
+          cell.className = "px-4 py-3 text-center text-sm text-gray-500";
+          cell.textContent = "No newly won clients with billing for this week.";
+          emptyRow.appendChild(cell);
+          newClientsTableBody.appendChild(emptyRow);
+          return;
+        }
+
+        clients.forEach((entry) => {
+          const row = document.createElement("tr");
+          if (entry.isHighlighted) {
+            row.classList.add("bg-green-50");
+          }
+          row.innerHTML = `
+            <td class="px-4 py-2">${entry.client}</td>
+            <td class="px-4 py-2 text-right font-medium">${currencyFormatter.format(
+              entry.totalBill || 0
+            )}</td>
+            <td class="px-4 py-2 text-right text-gray-600">${
+              entry.wonDateLabel ?? "—"
+            }</td>
+          `;
+          newClientsTableBody.appendChild(row);
+        });
+      }
+
       function updateCharts(weekEnding) {
         const windowWeeks = getWindow(weekEnding);
         const labels = windowWeeks.map((week) => week.label);
@@ -386,7 +558,26 @@
         fillChart.data.datasets[1].data = toFillSeries(windowWeeks, "fillRate2025");
         fillChart.update();
 
+        if (newSalesChart) {
+          newSalesChart.data.labels = labels;
+          newSalesChart.data.datasets[0].data = windowWeeks.map((week) => {
+            const series = revenueSeriesByWeek.get(week.weekEnding) || {};
+            const value = series.newSalesRevenue;
+            return typeof value === "number" && Number.isFinite(value) ? value : null;
+          });
+          newSalesChart.data.datasets[1].data = windowWeeks.map((week) => {
+            const series = revenueSeriesByWeek.get(week.weekEnding) || {};
+            const value = series.newSalesPct;
+            if (typeof value !== "number" || !Number.isFinite(value)) {
+              return null;
+            }
+            return value > 1 ? value : value * 100;
+          });
+          newSalesChart.update();
+        }
+
         updateTopClients(weekEnding);
+        updateNewClients(weekEnding);
       }
 
       const initialWeek = chartData.selectedWeek || weeks[weeks.length - 1].weekEnding;

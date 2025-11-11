@@ -533,6 +533,8 @@ def _load_revenue_goal_data(path: Path | None = None) -> List[Dict[str, Any]]:
     week_column = column_lookup.get("week ending")
     revenue_column = column_lookup.get("2025 revenue")
     goal_column = column_lookup.get("2025 revenue goal")
+    new_sales_revenue_column = column_lookup.get("new sales revenue")
+    new_sales_pct_column = column_lookup.get("new sales % of revenue")
 
     if not week_column or not revenue_column or not goal_column:
         logger.warning(
@@ -555,6 +557,17 @@ def _load_revenue_goal_data(path: Path | None = None) -> List[Dict[str, Any]]:
         goal_value = _clean_float(row.get(goal_column))
 
         week_dt = week_ts.to_pydatetime().date()
+        new_sales_revenue_value = (
+            _clean_float(row.get(new_sales_revenue_column))
+            if new_sales_revenue_column
+            else None
+        )
+        new_sales_pct_value = (
+            _clean_float(row.get(new_sales_pct_column))
+            if new_sales_pct_column
+            else None
+        )
+
         records.append(
             (
                 week_dt,
@@ -563,6 +576,8 @@ def _load_revenue_goal_data(path: Path | None = None) -> List[Dict[str, Any]]:
                     "label": week_ts.strftime("%B %d, %Y"),
                     "revenue2025": revenue_value,
                     "revenueGoal2025": goal_value,
+                    "newSalesRevenue": new_sales_revenue_value,
+                    "newSalesPct": new_sales_pct_value,
                 },
             )
         )
@@ -648,6 +663,84 @@ def _calculate_top_clients_by_week(
         )
         subset = working.loc[mask]
         results[week] = _summarize_top_clients(subset)
+
+    return results
+
+
+def _calculate_new_clients_by_week(
+    payroll_df: pd.DataFrame, week_endings: List[str]
+) -> Dict[str, List[Dict[str, Any]]]:
+    results: Dict[str, List[Dict[str, Any]]] = {week: [] for week in week_endings}
+
+    required_columns = {"Date", "Client", "Client Won Date", "Total Bill"}
+    if payroll_df.empty or not required_columns.issubset(payroll_df.columns):
+        return results
+
+    df = payroll_df.copy()
+    df["Date"] = pd.to_datetime(df["Date"], errors="coerce").dt.normalize()
+    df["Client Won Date"] = pd.to_datetime(
+        df["Client Won Date"], errors="coerce"
+    ).dt.normalize()
+    df = df.dropna(subset=["Date", "Client Won Date"])
+    if df.empty:
+        return results
+
+    df["Client"] = df["Client"].fillna("Unknown Client").astype(str)
+    df["Total Bill"] = df["Total Bill"].apply(_normalize_money)
+
+    for week in week_endings:
+        try:
+            week_date = datetime.strptime(week, "%Y-%m-%d").date()
+        except (TypeError, ValueError):
+            results[week] = []
+            continue
+
+        start_of_week = week_date - timedelta(days=6)
+        six_months_prior = week_date - relativedelta(months=6)
+
+        weekly_subset = df[
+            (df["Date"].dt.date >= start_of_week)
+            & (df["Date"].dt.date <= week_date)
+            & (df["Client Won Date"].dt.date >= six_months_prior)
+            & (df["Client Won Date"].dt.date <= week_date)
+        ]
+
+        if weekly_subset.empty:
+            results[week] = []
+            continue
+
+        grouped = (
+            weekly_subset.groupby("Client", as_index=False)
+            .agg(
+                total_bill=("Total Bill", "sum"),
+                won_date=("Client Won Date", "max"),
+            )
+            .sort_values("won_date", ascending=False)
+        )
+
+        entries: List[Dict[str, Any]] = []
+        for _, row in grouped.iterrows():
+            total_bill_value = (
+                float(row["total_bill"]) if pd.notna(row["total_bill"]) else 0.0
+            )
+            won_iso, won_label = _format_won_date(row["won_date"])
+            won_dt = pd.to_datetime(row["won_date"], errors="coerce")
+            is_highlighted = False
+            if pd.notna(won_dt):
+                won_date_value = won_dt.date()
+                is_highlighted = start_of_week <= won_date_value <= week_date
+
+            entries.append(
+                {
+                    "client": row["Client"],
+                    "totalBill": total_bill_value,
+                    "wonDate": won_iso,
+                    "wonDateLabel": won_label,
+                    "isHighlighted": is_highlighted,
+                }
+            )
+
+        results[week] = entries
 
     return results
 
@@ -893,7 +986,9 @@ def _build_page_context(**extra: Any) -> Dict[str, Any]:
 
     payroll_df = _load_payroll_csv()
     top_clients_by_week = _calculate_top_clients_by_week(payroll_df, weeks)
+    new_clients_by_week = _calculate_new_clients_by_week(payroll_df, weeks)
     chart_payload["topClientsByWeek"] = top_clients_by_week
+    chart_payload["newClientsByWeek"] = new_clients_by_week
     chart_payload["revenueSeries"] = _load_revenue_goal_data()
 
     base_context = {
