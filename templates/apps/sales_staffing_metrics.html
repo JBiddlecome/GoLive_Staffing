@@ -524,6 +524,9 @@
             position: "bottom",
             labels: { usePointStyle: true },
           },
+          datalabels: {
+            display: false,
+          },
         },
         scales: {
           x: {
@@ -565,7 +568,7 @@
               ...sharedOptions.scales.x,
               ticks: {
                 ...sharedOptions.scales.x.ticks,
-                display: false,
+                display: true,
               },
             },
             y: {
@@ -619,7 +622,7 @@
               ...sharedOptions.scales.x,
               ticks: {
                 ...sharedOptions.scales.x.ticks,
-                display: false,
+                display: true,
               },
             },
             y: {
@@ -683,7 +686,7 @@
                   ...sharedOptions.scales.x,
                   ticks: {
                     ...sharedOptions.scales.x.ticks,
-                    display: false,
+                    display: true,
                   },
                 },
                 y: {
@@ -734,7 +737,7 @@
                     ...sharedOptions.scales.x,
                     ticks: {
                       ...sharedOptions.scales.x.ticks,
-                      display: false,
+                      display: true,
                     },
                     grid: {
                       display: false,
