@@ -263,6 +263,19 @@ def _clean_float(value: Any) -> float | None:
         return None
 
 
+def _normalize_excel_header(header: Any) -> str:
+    """Return a normalized representation of an Excel header cell."""
+
+    if header is None:
+        return ""
+
+    text = str(header)
+    # Collapse consecutive whitespace and strip leading/trailing spaces so headers such as
+    # "Week Ending (Shift Count) " or "Week  Ending (Shift Count)" still match.
+    normalized = " ".join(text.split()).strip().lower()
+    return normalized
+
+
 def _load_chart_data(path: Path | None = None) -> Dict[str, Any]:
     if path is None:
         path = _resolve_workbook_path()
@@ -271,7 +284,20 @@ def _load_chart_data(path: Path | None = None) -> Dict[str, Any]:
         return _empty_chart_payload()
 
     try:
-        shift_df = pd.read_excel(path, sheet_name="Shift Count")
+        with pd.ExcelFile(path) as workbook:
+            target_sheet = next(
+                (
+                    sheet_name
+                    for sheet_name in workbook.sheet_names
+                    if _normalize_excel_header(sheet_name) == "shift count"
+                ),
+                None,
+            )
+
+            if target_sheet is None:
+                return _empty_chart_payload()
+
+            shift_df = workbook.parse(target_sheet)
     except Exception:  # pragma: no cover - defensive
         return _empty_chart_payload()
 
@@ -279,18 +305,27 @@ def _load_chart_data(path: Path | None = None) -> Dict[str, Any]:
         return _empty_chart_payload()
 
     shift_df = shift_df.copy()
+    column_lookup = {
+        _normalize_excel_header(column): column for column in shift_df.columns if column is not None
+    }
+
     week_columns: List[str] = [
-        column
-        for column in (
-            "Week Ending (Shift Count)",
-            "Week Ending (Fill Rate)",
-            "Week Ending",
+        column_lookup[normalized]
+        for normalized in (
+            "week ending (shift count)",
+            "week ending (fill rate)",
+            "week ending",
         )
-        if column in shift_df.columns
+        if normalized in column_lookup
     ]
 
     if not week_columns:
         return _empty_chart_payload()
+
+    shift_2024_column = column_lookup.get("2024 (shift count)")
+    shift_2025_column = column_lookup.get("2025 (shift count)")
+    fill_2024_column = column_lookup.get("2024 (fill rate)")
+    fill_2025_column = column_lookup.get("2025 (fill rate)")
 
     records: List[Tuple[date, Dict[str, Any]]] = []
     for _, row in shift_df.iterrows():
@@ -315,10 +350,10 @@ def _load_chart_data(path: Path | None = None) -> Dict[str, Any]:
         record = {
             "weekEnding": week_ts.strftime("%Y-%m-%d"),
             "label": week_ts.strftime("%B %d, %Y"),
-            "shiftCount2024": _clean_int(row.get("2024 (Shift Count)")),
-            "shiftCount2025": _clean_int(row.get("2025 (Shift Count)")),
-            "fillRate2024": _clean_float(row.get("2024 (Fill Rate)")),
-            "fillRate2025": _clean_float(row.get("2025 (Fill Rate)")),
+            "shiftCount2024": _clean_int(row.get(shift_2024_column)) if shift_2024_column else None,
+            "shiftCount2025": _clean_int(row.get(shift_2025_column)) if shift_2025_column else None,
+            "fillRate2024": _clean_float(row.get(fill_2024_column)) if fill_2024_column else None,
+            "fillRate2025": _clean_float(row.get(fill_2025_column)) if fill_2025_column else None,
         }
         records.append((week_date, record))
 
