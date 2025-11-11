@@ -18,7 +18,24 @@ router = APIRouter()
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 DATA_DIR = BASE_DIR / "data"
-WORKBOOK_PATH = DATA_DIR / "Sales and Staffing Charts.xlsx"
+WORKBOOK_FILENAME = "Sales and Staffing Charts.xlsx"
+
+
+def _resolve_workbook_path() -> Path:
+    """Return the path to the Sales & Staffing workbook, if it exists."""
+
+    candidate = DATA_DIR / WORKBOOK_FILENAME
+    if candidate.exists():
+        return candidate
+
+    for path in DATA_DIR.glob("**/*"):
+        if path.name.lower() == WORKBOOK_FILENAME.lower():
+            return path
+
+    return candidate
+
+
+WORKBOOK_PATH = _resolve_workbook_path()
 METRICS_EXPORT_PATH = DATA_DIR / "sales_staffing_metrics.csv"
 DASHBOARD_DATA_PATH = DATA_DIR / "sales_staffing_dashboard.json"
 PAYROLL_CANDIDATE_FILENAMES = [
@@ -246,7 +263,10 @@ def _clean_float(value: Any) -> float | None:
         return None
 
 
-def _load_chart_data(path: Path = WORKBOOK_PATH) -> Dict[str, Any]:
+def _load_chart_data(path: Path | None = None) -> Dict[str, Any]:
+    if path is None:
+        path = _resolve_workbook_path()
+
     if not path.exists():
         return _empty_chart_payload()
 
@@ -463,9 +483,11 @@ def _calculate_industry_totals(payroll_df: pd.DataFrame) -> List[Dict[str, Any]]
 
 
 def _update_workbook(payroll_df: pd.DataFrame, open_shifts: int) -> Dict[str, Any]:
-    if not WORKBOOK_PATH.exists():
+    workbook_path = _resolve_workbook_path()
+    if not workbook_path.exists():
         raise FileNotFoundError(
-            "Sales and Staffing workbook not found. Expected to find it at " f"{WORKBOOK_PATH}."
+            "Sales and Staffing workbook not found. Expected to find it at "
+            f"{workbook_path}."
         )
 
     payroll_df = payroll_df.copy()
@@ -503,7 +525,7 @@ def _update_workbook(payroll_df: pd.DataFrame, open_shifts: int) -> Dict[str, An
     total_shifts = shift_count + open_shifts
     fill_rate = shift_count / total_shifts if total_shifts > 0 else 0.0
 
-    workbook = load_workbook(filename=WORKBOOK_PATH)
+    workbook = load_workbook(filename=workbook_path)
 
     if "Revenue" not in workbook.sheetnames:
         raise ValueError('Missing "Revenue" sheet in the Sales and Staffing workbook.')
@@ -526,7 +548,7 @@ def _update_workbook(payroll_df: pd.DataFrame, open_shifts: int) -> Dict[str, An
     _set_cell(shift_sheet, shift_row, shift_headers, "2025 (Shift Count)", shift_count)
     _set_cell(shift_sheet, shift_row, shift_headers, "2025 (Fill Rate)", fill_rate)
 
-    workbook.save(WORKBOOK_PATH)
+    workbook.save(workbook_path)
 
     metrics = {
         "week_ending": week_ending,
@@ -573,7 +595,7 @@ def _read_payroll(upload: UploadFile) -> pd.DataFrame:
 
 def _build_page_context(**extra: Any) -> Dict[str, Any]:
     base_context = {
-        "workbook_path": WORKBOOK_PATH,
+        "workbook_path": _resolve_workbook_path(),
         "metrics_export_path": METRICS_EXPORT_PATH,
         "chart_data": _load_chart_data(),
     }
