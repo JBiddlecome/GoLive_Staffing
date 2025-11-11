@@ -43,6 +43,52 @@
           </div>
         </div>
       </div>
+
+      <div class="grid gap-6 lg:grid-cols-2">
+        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <h2 class="text-base font-semibold text-gray-900">Top 5 Clients</h2>
+          <p class="mt-1 text-xs text-gray-500">
+            Based on Total Bill revenue for the selected week (Monday through Sunday).
+          </p>
+          <div class="mt-4 h-72">
+            <canvas id="top-clients-chart"></canvas>
+          </div>
+          <div class="mt-6 overflow-hidden rounded-lg border border-gray-200">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th scope="col" class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Client
+                  </th>
+                  <th scope="col" class="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Total Bill
+                  </th>
+                  <th scope="col" class="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Avg. Bill Rate
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="top-clients-table-body" class="divide-y divide-gray-200 bg-white text-sm text-gray-700">
+                <tr>
+                  <td colspan="3" class="px-4 py-3 text-center text-sm text-gray-500">
+                    Select a week to view top clients.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <h2 class="text-base font-semibold text-gray-900">Revenue and Goal</h2>
+          <p class="mt-1 text-xs text-gray-500">
+            Weekly 2025 revenue performance against goal from the Sales and Staffing workbook.
+          </p>
+          <div class="mt-4 h-72">
+            <canvas id="revenue-goal-chart"></canvas>
+          </div>
+        </div>
+      </div>
     </div>
   {% else %}
     <div class="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
@@ -64,11 +110,31 @@
       const selectEl = document.getElementById("week-ending-select");
       const shiftCtx = document.getElementById("shift-count-chart");
       const fillCtx = document.getElementById("fill-rate-chart");
+      const topClientsCtx = document.getElementById("top-clients-chart");
+      const revenueCtx = document.getElementById("revenue-goal-chart");
+      const topClientsTableBody = document.getElementById("top-clients-table-body");
       if (!selectEl || !shiftCtx || !fillCtx) {
         return;
       }
 
       const windowRadius = 2;
+
+      const topClientsByWeek = chartData.topClientsByWeek || {};
+      const revenueSeries = chartData.revenueSeries || [];
+
+      const currencyFormatter = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      });
+
+      const currencyFormatterWithCents = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
 
       function getWindow(weekEnding) {
         const index = weeks.findIndex((week) => week.weekEnding === weekEnding);
@@ -214,6 +280,157 @@
         }
       );
 
+      const topClientsChart =
+        topClientsCtx && Chart ?
+          new Chart(topClientsCtx, {
+            type: "bar",
+            data: {
+              labels: [],
+              datasets: [
+                {
+                  label: "Total Bill",
+                  data: [],
+                  backgroundColor: "#6366f1",
+                  borderRadius: 6,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              indexAxis: "y",
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  callbacks: {
+                    label(context) {
+                      const value = context.parsed.x ?? context.parsed;
+                      return `Total Bill: ${currencyFormatter.format(value || 0)}`;
+                    },
+                  },
+                },
+              },
+              scales: {
+                x: {
+                  beginAtZero: true,
+                  ticks: {
+                    callback(value) {
+                      return currencyFormatter.format(value);
+                    },
+                  },
+                },
+                y: {
+                  ticks: {
+                    color: "#374151",
+                  },
+                },
+              },
+            },
+          })
+        : null;
+
+      const revenueChart =
+        revenueCtx && Chart ?
+          new Chart(revenueCtx, {
+            type: "line",
+            data: {
+              labels: revenueSeries.map((entry) => entry.label),
+              datasets: [
+                {
+                  label: "2025 Revenue",
+                  data: revenueSeries.map((entry) => entry.revenue2025 ?? null),
+                  borderColor: "#f97316",
+                  backgroundColor: "rgba(249, 115, 22, 0.15)",
+                  tension: 0.3,
+                  spanGaps: true,
+                },
+                {
+                  label: "2025 Revenue Goal",
+                  data: revenueSeries.map((entry) => entry.revenueGoal2025 ?? null),
+                  borderColor: "#2563eb",
+                  backgroundColor: "rgba(37, 99, 235, 0.05)",
+                  tension: 0.3,
+                  borderDash: [6, 4],
+                  spanGaps: true,
+                },
+              ],
+            },
+            options: {
+              ...sharedOptions,
+              plugins: {
+                ...sharedOptions.plugins,
+                tooltip: {
+                  callbacks: {
+                    label(context) {
+                      const value = context.parsed.y;
+                      if (value == null) {
+                        return `${context.dataset.label}: N/A`;
+                      }
+                      return `${context.dataset.label}: ${currencyFormatter.format(value)}`;
+                    },
+                  },
+                },
+              },
+              scales: {
+                ...sharedOptions.scales,
+                y: {
+                  ...sharedOptions.scales.y,
+                  ticks: {
+                    callback(value) {
+                      return currencyFormatter.format(value);
+                    },
+                  },
+                },
+              },
+            },
+          })
+        : null;
+
+      function updateTopClients(weekEnding) {
+        if (!topClientsTableBody) {
+          return;
+        }
+
+        const clients = topClientsByWeek[weekEnding] || [];
+
+        if (topClientsChart) {
+          topClientsChart.data.labels = clients.map((entry) => entry.client);
+          topClientsChart.data.datasets[0].data = clients.map(
+            (entry) => entry.totalBill ?? 0
+          );
+          topClientsChart.update();
+        }
+
+        topClientsTableBody.innerHTML = "";
+
+        if (!clients.length) {
+          const emptyRow = document.createElement("tr");
+          const cell = document.createElement("td");
+          cell.colSpan = 3;
+          cell.className = "px-4 py-3 text-center text-sm text-gray-500";
+          cell.textContent = "No client billing activity for this week.";
+          emptyRow.appendChild(cell);
+          topClientsTableBody.appendChild(emptyRow);
+          return;
+        }
+
+        clients.forEach((entry) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td class="px-4 py-2">${entry.client}</td>
+            <td class="px-4 py-2 text-right font-medium">${currencyFormatter.format(
+              entry.totalBill || 0
+            )}</td>
+            <td class="px-4 py-2 text-right text-gray-600">${
+              entry.averageBillRate != null
+                ? currencyFormatterWithCents.format(entry.averageBillRate)
+                : "—"
+            }</td>
+          `;
+          topClientsTableBody.appendChild(row);
+        });
+      }
+
       function updateCharts(weekEnding) {
         const windowWeeks = getWindow(weekEnding);
         const labels = windowWeeks.map((week) => week.label);
@@ -227,6 +444,8 @@
         fillChart.data.datasets[0].data = toFillSeries(windowWeeks, "fillRate2024");
         fillChart.data.datasets[1].data = toFillSeries(windowWeeks, "fillRate2025");
         fillChart.update();
+
+        updateTopClients(weekEnding);
       }
 
       const initialWeek = chartData.selectedWeek || weeks[weeks.length - 1].weekEnding;
