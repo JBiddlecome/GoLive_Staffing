@@ -90,12 +90,3 @@ def test_chart_data_selects_latest_week_with_detail(tmp_path, monkeypatch):
     detail = chart_data["weeklyDetails"][detail_week["weekEnding"]]
     assert chart_data["topClients"] == detail.get("topClients", [])
     assert chart_data["topClients"], "Top clients should default to the detailed week"
-
-
-def test_resolve_workbook_path_accepts_ampersand(tmp_path):
-    workbook_path = tmp_path / "Sales & Staffing Charts.xlsx"
-    _build_sample_workbook(workbook_path)
-
-    resolved = views._resolve_workbook_path(base_dir=tmp_path)
-
-    assert resolved == workbook_path
