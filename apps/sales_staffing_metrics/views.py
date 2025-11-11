@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import json
+import logging
 import os
 from datetime import datetime, timedelta, date
 from pathlib import Path
@@ -21,6 +22,16 @@ BASE_DIR = Path(os.getenv("APP_ROOT", Path.cwd()))
 DATA_DIR = BASE_DIR / "data"
 WORKBOOK_FILENAME = "Sales and Staffing Charts.xlsx"
 
+logger = logging.getLogger("apps.sales_staffing_metrics")
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter(
+        "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    )
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+
 
 def _resolve_workbook_path() -> Path:
     """
@@ -33,28 +44,53 @@ def _resolve_workbook_path() -> Path:
       4) anywhere under BASE_DIR (recursive)
     """
 
+    logger.debug(
+        "Resolving workbook path. BASE_DIR=%s DATA_DIR=%s", BASE_DIR, DATA_DIR
+    )
+
     env_override = os.getenv("SALES_STAFFING_WORKBOOK")
     if env_override:
         override_path = Path(env_override)
         if not override_path.is_absolute():
             override_path = BASE_DIR / override_path
+        logger.info(
+            "SALES_STAFFING_WORKBOOK override provided. Raw value=%s resolved=%s",
+            env_override,
+            override_path,
+        )
         if override_path.exists():
+            logger.info("Using workbook override path: %s", override_path)
             return override_path
+        logger.warning(
+            "Workbook override path does not exist: %s", override_path
+        )
 
     for candidate in (DATA_DIR / WORKBOOK_FILENAME, BASE_DIR / WORKBOOK_FILENAME):
+        logger.debug(
+            "Checking candidate workbook path: %s (exists=%s)",
+            candidate,
+            candidate.exists(),
+        )
         if candidate.exists():
+            logger.info("Found workbook at candidate path: %s", candidate)
             return candidate
 
     if BASE_DIR.exists():
+        logger.debug("Searching recursively under %s for workbook", BASE_DIR)
         for path in BASE_DIR.rglob("*"):
             try:
                 if path.name.lower() == WORKBOOK_FILENAME.lower():
+                    logger.info("Found workbook via recursive search: %s", path)
                     return path
             except Exception:  # pragma: no cover - defensive
                 continue
 
     # fall back to preferred location (even if missing)
-    return DATA_DIR / WORKBOOK_FILENAME
+    fallback_path = DATA_DIR / WORKBOOK_FILENAME
+    logger.warning(
+        "Workbook not found. Falling back to expected location: %s", fallback_path
+    )
+    return fallback_path
 
 
 WORKBOOK_PATH = _resolve_workbook_path()
@@ -302,7 +338,10 @@ def _load_chart_data(path: Path | None = None) -> Dict[str, Any]:
     if path is None:
         path = _resolve_workbook_path()
 
+    logger.debug("Loading chart data from workbook path: %s", path)
+
     if not path.exists():
+        logger.warning("Workbook path does not exist when loading chart data: %s", path)
         return _empty_chart_payload()
 
     try:
@@ -317,13 +356,24 @@ def _load_chart_data(path: Path | None = None) -> Dict[str, Any]:
             )
 
             if target_sheet is None:
+                logger.warning(
+                    "Shift Count sheet not found in workbook '%s'. Sheets available: %s",
+                    path,
+                    workbook.sheet_names,
+                )
                 return _empty_chart_payload()
 
             shift_df = workbook.parse(target_sheet)
-    except Exception:  # pragma: no cover - defensive
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.exception(
+            "Failed to load chart data from workbook '%s': %s", path, exc
+        )
         return _empty_chart_payload()
 
     if shift_df.empty:
+        logger.warning(
+            "Shift Count sheet '%s' in workbook '%s' is empty", target_sheet, path
+        )
         return _empty_chart_payload()
 
     shift_df = shift_df.copy()
@@ -342,6 +392,12 @@ def _load_chart_data(path: Path | None = None) -> Dict[str, Any]:
     ]
 
     if not week_columns:
+        logger.warning(
+            "No week ending columns found in sheet '%s' of workbook '%s'. Headers: %s",
+            target_sheet,
+            path,
+            list(shift_df.columns),
+        )
         return _empty_chart_payload()
 
     shift_2024_column = column_lookup.get("2024 (shift count)")
@@ -380,15 +436,22 @@ def _load_chart_data(path: Path | None = None) -> Dict[str, Any]:
         records.append((week_date, record))
 
     if not records:
+        logger.info(
+            "No records with valid week ending values found in workbook '%s'", path
+        )
         return _empty_chart_payload()
 
     records.sort(key=lambda item: item[0])
     weeks = [record for _, record in records]
 
-    return {
-        "weeks": weeks,
-        "selectedWeek": weeks[-1]["weekEnding"],
-    }
+    payload = {"weeks": weeks, "selectedWeek": weeks[-1]["weekEnding"]}
+    logger.debug(
+        "Loaded %s weeks of chart data from '%s'. Selected week=%s",
+        len(weeks),
+        path,
+        payload["selectedWeek"],
+    )
+    return payload
 
 
 def _calculate_top_clients(payroll_df: pd.DataFrame) -> List[Dict[str, Any]]:
@@ -643,10 +706,18 @@ def _read_payroll(upload: UploadFile) -> pd.DataFrame:
         payload = upload.file.read()
         if not payload:
             raise ValueError("The uploaded payroll workbook is empty.")
+        logger.debug(
+            "Reading payroll workbook '%s' (%s bytes)",
+            upload.filename,
+            len(payload),
+        )
         return pd.read_excel(io.BytesIO(payload), engine="openpyxl")
     except ValueError:
         raise
     except Exception as exc:  # pragma: no cover - defensive
+        logger.exception(
+            "Unable to read Excel file '%s'", upload.filename,
+        )
         raise ValueError(f"Unable to read Excel file '{upload.filename}'.") from exc
 
 
@@ -657,11 +728,23 @@ def _build_page_context(**extra: Any) -> Dict[str, Any]:
         "chart_data": _load_chart_data(),
     }
     base_context.update(extra)
+    workbook_path = base_context["workbook_path"]
+    logger.info(
+        "Building page context. workbook_path=%s (exists=%s) metrics_export_path=%s (exists=%s) weeks_available=%s",
+        workbook_path,
+        workbook_path.exists(),
+        METRICS_EXPORT_PATH,
+        METRICS_EXPORT_PATH.exists(),
+        len(base_context.get("chart_data", {}).get("weeks", []))
+        if isinstance(base_context.get("chart_data"), dict)
+        else "unknown",
+    )
     return base_context
 
 
 @router.get("")
 async def page(request: Request):
+    logger.info("Rendering Sales & Staffing Metrics page for %s", request.client)
     context = _build_page_context(request=request)
     return templates.TemplateResponse("apps/sales_staffing_metrics.html", context)
 
@@ -672,11 +755,17 @@ async def update(
     payroll: UploadFile = File(...),
     open_shifts: str = Form(""),
 ):
+    logger.info(
+        "Received Sales & Staffing metrics update request. payroll_filename=%s open_shifts_raw='%s'",
+        payroll.filename,
+        open_shifts,
+    )
     context = _build_page_context(request=request)
 
     try:
         payroll_df = await run_in_threadpool(_read_payroll, payroll)
     except ValueError as exc:
+        logger.warning("Payroll upload invalid: %s", exc)
         context.update({"error": str(exc)})
         return templates.TemplateResponse(
             "apps/sales_staffing_metrics.html",
@@ -689,6 +778,7 @@ async def update(
     try:
         open_shifts_value = int(open_shifts.replace(",", "").strip()) if open_shifts.strip() else 0
     except ValueError:
+        logger.warning("Invalid open shifts value provided: '%s'", open_shifts)
         context.update({"error": "Open shifts must be a whole number."})
         return templates.TemplateResponse(
             "apps/sales_staffing_metrics.html",
@@ -699,6 +789,7 @@ async def update(
     try:
         result = await run_in_threadpool(_update_workbook, payroll_df, open_shifts_value)
     except FileNotFoundError as exc:
+        logger.error("Workbook update failed - file missing: %s", exc)
         context.update({"error": str(exc)})
         return templates.TemplateResponse(
             "apps/sales_staffing_metrics.html",
@@ -706,6 +797,7 @@ async def update(
             status_code=404,
         )
     except ValueError as exc:
+        logger.warning("Workbook update failed due to invalid data: %s", exc)
         context.update({"error": str(exc)})
         return templates.TemplateResponse(
             "apps/sales_staffing_metrics.html",
@@ -713,5 +805,8 @@ async def update(
             status_code=400,
         )
 
+    logger.info(
+        "Workbook update succeeded. Metrics: %s", result
+    )
     context.update({"result": result, "chart_data": _load_chart_data()})
     return templates.TemplateResponse("apps/sales_staffing_metrics.html", context)
