@@ -30,7 +30,17 @@ if app_root_env:
 else:
     BASE_DIR = _MODULE_BASE_DIR
 
-DATA_DIR = BASE_DIR / "data"
+RENDER_DATA_DIR = Path("/opt/render/project/src/data")
+
+if any(
+    os.getenv(env_var)
+    for env_var in ("RENDER", "RENDER_SERVICE_ID", "RENDER_EXTERNAL_URL")
+):
+    DATA_DIR = RENDER_DATA_DIR
+elif RENDER_DATA_DIR.exists():
+    DATA_DIR = RENDER_DATA_DIR
+else:
+    DATA_DIR = BASE_DIR / "data"
 WORKBOOK_FILENAME = "Sales and Staffing Charts.xlsx"
 
 logger = logging.getLogger("apps.sales_staffing_metrics")
