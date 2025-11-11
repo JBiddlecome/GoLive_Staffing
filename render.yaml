@@ -27,7 +27,3 @@ services:
 
     autoDeploy: true
     healthCheckPath: /healthz
-    disk:
-      name: sales-pipeline-data
-      mountPath: /opt/render/project/src/data
-      sizeGB: 1
