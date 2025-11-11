@@ -115,14 +115,18 @@ PAYROLL_CANDIDATE_FILENAMES = [
 def _resolve_payroll_source_path() -> Path:
     """Return the path to the payroll CSV, tolerating filename casing."""
 
-    for filename in PAYROLL_CANDIDATE_FILENAMES:
-        candidate = DATA_DIR / filename
-        if candidate.exists():
-            return candidate
+    search_roots = [DATA_DIR, BASE_DIR]
 
-    for candidate in DATA_DIR.glob("*.csv"):
-        if candidate.name.lower() == "payroll 2.csv":
-            return candidate
+    for root in search_roots:
+        for filename in PAYROLL_CANDIDATE_FILENAMES:
+            candidate = root / filename
+            if candidate.exists():
+                return candidate
+
+    for root in search_roots:
+        for candidate in root.glob("*.csv"):
+            if candidate.name.lower() == "payroll 2.csv":
+                return candidate
 
     # Fall back to the preferred lowercase filename so callers get a sensible path
     return DATA_DIR / PAYROLL_CANDIDATE_FILENAMES[0]
