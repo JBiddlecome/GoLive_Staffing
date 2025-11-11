@@ -18,7 +18,17 @@ from openpyxl import load_workbook
 templates = Jinja2Templates(directory="templates")
 router = APIRouter()
 
-BASE_DIR = Path(os.getenv("APP_ROOT", Path.cwd()))
+_MODULE_BASE_DIR = Path(__file__).resolve().parents[2]
+
+app_root_env = os.getenv("APP_ROOT")
+if app_root_env:
+    base_dir_candidate = Path(app_root_env)
+    if not base_dir_candidate.is_absolute():
+        base_dir_candidate = _MODULE_BASE_DIR / base_dir_candidate
+    BASE_DIR = base_dir_candidate
+else:
+    BASE_DIR = _MODULE_BASE_DIR
+
 DATA_DIR = BASE_DIR / "data"
 WORKBOOK_FILENAME = "Sales and Staffing Charts.xlsx"
 
