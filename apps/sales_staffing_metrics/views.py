@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import io
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
@@ -144,16 +144,7 @@ def _write_dashboard_data(data: Dict[str, Any], path: Path = DASHBOARD_DATA_PATH
 
 
 def _empty_chart_payload() -> Dict[str, Any]:
-    dashboard_data = _load_dashboard_data()
-    return {
-        "weeks": [],
-        "topClients": dashboard_data.get("topClients", []),
-        "topClientsWeekEnding": dashboard_data.get("weekEnding"),
-        "topClientsWeekLabel": dashboard_data.get("weekLabel"),
-        "newClients": dashboard_data.get("newClients", []),
-        "industries": dashboard_data.get("industries", []),
-        "weeklyDetails": {},
-    }
+    return {"weeks": [], "selectedWeek": None}
 
 
 def _to_date_series(series: pd.Series) -> pd.Series:
@@ -260,156 +251,66 @@ def _load_chart_data(path: Path = WORKBOOK_PATH) -> Dict[str, Any]:
         return _empty_chart_payload()
 
     try:
-        revenue_df = pd.read_excel(path, sheet_name="Revenue")
         shift_df = pd.read_excel(path, sheet_name="Shift Count")
     except Exception:  # pragma: no cover - defensive
         return _empty_chart_payload()
 
-    if "Week Ending" not in revenue_df.columns:
-        return _empty_chart_payload()
-
-    revenue_df = revenue_df.copy()
-    revenue_df["Week Ending"] = pd.to_datetime(revenue_df["Week Ending"], errors="coerce")
-    revenue_df = revenue_df.dropna(subset=["Week Ending"]).sort_values("Week Ending")
-
-    if revenue_df.empty:
+    if shift_df.empty:
         return _empty_chart_payload()
 
     shift_df = shift_df.copy()
     week_columns: List[str] = [
-        col for col in (
+        column
+        for column in (
             "Week Ending (Shift Count)",
+            "Week Ending (Fill Rate)",
             "Week Ending",
         )
-        if col in shift_df.columns
+        if column in shift_df.columns
     ]
+
     if not week_columns:
-        return {"weeks": []}
+        return _empty_chart_payload()
 
-    week_column = week_columns[0]
-    shift_df[week_column] = pd.to_datetime(shift_df[week_column], errors="coerce")
-    shift_df = shift_df.dropna(subset=[week_column])
-
-    shift_records: Dict[Any, Dict[str, Any]] = {}
+    records: List[Tuple[date, Dict[str, Any]]] = []
     for _, row in shift_df.iterrows():
-        week = pd.to_datetime(row[week_column]).date()
-        shift_records[week] = {
+        week_ts = None
+        for column in week_columns:
+            value = row.get(column)
+            if pd.isna(value):
+                continue
+            try:
+                parsed = pd.to_datetime(value, errors="coerce")
+            except Exception:  # pragma: no cover - defensive
+                parsed = pd.NaT
+            if pd.isna(parsed):
+                continue
+            week_ts = parsed.to_pydatetime()
+            break
+
+        if week_ts is None:
+            continue
+
+        week_date = week_ts.date()
+        record = {
+            "weekEnding": week_ts.strftime("%Y-%m-%d"),
+            "label": week_ts.strftime("%B %d, %Y"),
             "shiftCount2024": _clean_int(row.get("2024 (Shift Count)")),
             "shiftCount2025": _clean_int(row.get("2025 (Shift Count)")),
             "fillRate2024": _clean_float(row.get("2024 (Fill Rate)")),
             "fillRate2025": _clean_float(row.get("2025 (Fill Rate)")),
         }
+        records.append((week_date, record))
 
-    weeks: List[Dict[str, Any]] = []
-    for _, row in revenue_df.iterrows():
-        week_ts = pd.to_datetime(row["Week Ending"])
-        week_date = week_ts.date()
-        record = shift_records.get(
-            week_date,
-            {
-                "shiftCount2024": None,
-                "shiftCount2025": None,
-                "fillRate2024": None,
-                "fillRate2025": None,
-            },
-        )
-        revenue_2025 = _clean_float(row.get("2025 Revenue"))
-        revenue_goal_2025 = _clean_float(row.get("2025 Revenue Goal"))
-        new_sales_revenue = _clean_float(row.get("New Sales Revenue"))
-        new_sales_pct = _clean_float(row.get("New Sales % of Revenue"))
-        weeks.append(
-            {
-                "weekEnding": week_ts.strftime("%Y-%m-%d"),
-                "label": week_ts.strftime("%B %d, %Y"),
-                **record,
-                "revenue2025": revenue_2025,
-                "revenueGoal2025": revenue_goal_2025,
-                "newSalesRevenue": new_sales_revenue,
-                "newSalesPct": new_sales_pct,
-            }
-        )
+    if not records:
+        return _empty_chart_payload()
 
-    dashboard_data = _load_dashboard_data()
-
-    payroll_df = _load_payroll_csv()
-    weekly_details: Dict[str, Dict[str, Any]] = {}
-
-    if not payroll_df.empty and weeks:
-        payroll_df = payroll_df.copy()
-        if "Date" in payroll_df.columns:
-            payroll_df = payroll_df.dropna(subset=["Date"])
-        if "Total Bill" in payroll_df.columns:
-            payroll_df["Total Bill"] = payroll_df["Total Bill"].apply(_normalize_money)
-        if "Bill Rate" in payroll_df.columns:
-            payroll_df["Bill Rate"] = payroll_df["Bill Rate"].apply(_normalize_money)
-
-        week_datetime_map: Dict[str, datetime] = {}
-        for week in weeks:
-            week_ending_value = week.get("weekEnding")
-            if not week_ending_value:
-                continue
-            try:
-                week_end_ts = pd.to_datetime(week_ending_value, errors="coerce")
-            except Exception:  # pragma: no cover - defensive
-                continue
-            if pd.isna(week_end_ts):
-                continue
-            week_datetime_map[week_ending_value] = week_end_ts.to_pydatetime().replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
-
-        for week in weeks:
-            week_ending_value = week.get("weekEnding")
-            week_end_dt = week_datetime_map.get(week_ending_value)
-            if week_end_dt is None:
-                continue
-
-            week_start_dt = week_end_dt - timedelta(days=6)
-
-            if "Date" in payroll_df.columns:
-                week_payroll = payroll_df[
-                    (payroll_df["Date"] >= week_start_dt)
-                    & (payroll_df["Date"] <= week_end_dt)
-                ]
-            else:
-                week_payroll = payroll_df
-
-            six_months_prior = week_end_dt - relativedelta(months=6)
-            weekly_details[week_ending_value] = {
-                "topClients": _calculate_top_clients(week_payroll),
-                "newClients": _calculate_new_clients(
-                    week_payroll,
-                    six_months_prior,
-                    week_end_dt,
-                    (week_start_dt, week_end_dt),
-                ),
-                "industries": _calculate_industry_totals(week_payroll),
-            }
-
-    selected_week = weeks[-1] if weeks else None
-    selected_week_ending = selected_week.get("weekEnding") if selected_week else None
-    selected_week_label = selected_week.get("label") if selected_week else None
-
-    if selected_week_ending and selected_week_ending in weekly_details:
-        default_detail = weekly_details[selected_week_ending]
-        top_clients = default_detail.get("topClients", [])
-        new_clients = default_detail.get("newClients", [])
-        industries = default_detail.get("industries", [])
-    else:
-        top_clients = dashboard_data.get("topClients", [])
-        new_clients = dashboard_data.get("newClients", [])
-        industries = dashboard_data.get("industries", [])
-        selected_week_ending = dashboard_data.get("weekEnding", selected_week_ending)
-        selected_week_label = dashboard_data.get("weekLabel", selected_week_label)
+    records.sort(key=lambda item: item[0])
+    weeks = [record for _, record in records]
 
     return {
         "weeks": weeks,
-        "topClients": top_clients,
-        "topClientsWeekEnding": selected_week_ending,
-        "topClientsWeekLabel": selected_week_label,
-        "newClients": new_clients,
-        "industries": industries,
-        "weeklyDetails": weekly_details,
+        "selectedWeek": weeks[-1]["weekEnding"],
     }
 
 
