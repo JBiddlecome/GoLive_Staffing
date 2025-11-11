@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 from datetime import datetime, timedelta, date
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -16,23 +17,44 @@ from openpyxl import load_workbook
 templates = Jinja2Templates(directory="templates")
 router = APIRouter()
 
-BASE_DIR = Path(__file__).resolve().parents[2]
+BASE_DIR = Path(os.getenv("APP_ROOT", Path.cwd()))
 DATA_DIR = BASE_DIR / "data"
 WORKBOOK_FILENAME = "Sales and Staffing Charts.xlsx"
 
 
 def _resolve_workbook_path() -> Path:
-    """Return the path to the Sales & Staffing workbook, if it exists."""
+    """
+    Resolve the Sales & Staffing workbook path.
 
-    candidate = DATA_DIR / WORKBOOK_FILENAME
-    if candidate.exists():
-        return candidate
+    Search order:
+      1) SALES_STAFFING_WORKBOOK env override (absolute or relative to BASE_DIR)
+      2) data/ in the working directory
+      3) repo root (BASE_DIR)
+      4) anywhere under BASE_DIR (recursive)
+    """
 
-    for path in DATA_DIR.glob("**/*"):
-        if path.name.lower() == WORKBOOK_FILENAME.lower():
-            return path
+    env_override = os.getenv("SALES_STAFFING_WORKBOOK")
+    if env_override:
+        override_path = Path(env_override)
+        if not override_path.is_absolute():
+            override_path = BASE_DIR / override_path
+        if override_path.exists():
+            return override_path
 
-    return candidate
+    for candidate in (DATA_DIR / WORKBOOK_FILENAME, BASE_DIR / WORKBOOK_FILENAME):
+        if candidate.exists():
+            return candidate
+
+    if BASE_DIR.exists():
+        for path in BASE_DIR.rglob("*"):
+            try:
+                if path.name.lower() == WORKBOOK_FILENAME.lower():
+                    return path
+            except Exception:  # pragma: no cover - defensive
+                continue
+
+    # fall back to preferred location (even if missing)
+    return DATA_DIR / WORKBOOK_FILENAME
 
 
 WORKBOOK_PATH = _resolve_workbook_path()
