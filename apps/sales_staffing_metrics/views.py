@@ -419,39 +419,21 @@ def _load_chart_data(path: Path = WORKBOOK_PATH) -> Dict[str, Any]:
                 "industries": _calculate_industry_totals(week_payroll),
             }
 
-    selected_week: Dict[str, Any] | None = None
-    selected_detail: Dict[str, Any] | None = None
-
-    for week in reversed(weeks):
-        week_key = week.get("weekEnding")
-        detail = weekly_details.get(week_key) if week_key else None
-        if not detail:
-            continue
-        if any(detail.get(key) for key in ("topClients", "newClients", "industries")):
-            selected_week = week
-            selected_detail = detail
-            break
-
-    if selected_week is None and weeks:
-        selected_week = weeks[-1]
-        week_key = selected_week.get("weekEnding")
-        selected_detail = weekly_details.get(week_key) if week_key else None
-
+    selected_week = weeks[-1] if weeks else None
     selected_week_ending = selected_week.get("weekEnding") if selected_week else None
     selected_week_label = selected_week.get("label") if selected_week else None
 
-    if selected_detail:
-        top_clients = selected_detail.get("topClients", [])
-        new_clients = selected_detail.get("newClients", [])
-        industries = selected_detail.get("industries", [])
+    if selected_week_ending and selected_week_ending in weekly_details:
+        default_detail = weekly_details[selected_week_ending]
+        top_clients = default_detail.get("topClients", [])
+        new_clients = default_detail.get("newClients", [])
+        industries = default_detail.get("industries", [])
     else:
         top_clients = dashboard_data.get("topClients", [])
         new_clients = dashboard_data.get("newClients", [])
         industries = dashboard_data.get("industries", [])
-        if not selected_week_ending:
-            selected_week_ending = dashboard_data.get("weekEnding", selected_week_ending)
-        if not selected_week_label:
-            selected_week_label = dashboard_data.get("weekLabel", selected_week_label)
+        selected_week_ending = dashboard_data.get("weekEnding", selected_week_ending)
+        selected_week_label = dashboard_data.get("weekLabel", selected_week_label)
 
     return {
         "weeks": weeks,
