@@ -98,37 +98,6 @@
       </div>
 
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <h2 class="text-base font-semibold text-gray-900">Revenue by Industry</h2>
-        <p class="mt-1 text-xs text-gray-500">
-          Revenue totals for each industry in the selected week (Monday through Sunday) sourced from the Payroll 2.csv file.
-        </p>
-        <div class="mt-4 grid gap-6 lg:grid-cols-2">
-          <div>
-            <div class="relative h-72">
-              <canvas id="industry-bar-chart" class="hidden"></canvas>
-              <div
-                id="industry-bar-empty"
-                class="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-gray-500"
-              >
-                No industry revenue data for this week.
-              </div>
-            </div>
-          </div>
-          <div>
-            <div class="relative h-72">
-              <canvas id="industry-pie-chart" class="hidden"></canvas>
-              <div
-                id="industry-pie-empty"
-                class="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-gray-500"
-              >
-                No industry revenue data for this week.
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
         <h2 class="text-base font-semibold text-gray-900">New Clients</h2>
         <p class="mt-1 text-xs text-gray-500">
           Clients won within six months of the selected week ending with billing activity during that week.
@@ -161,6 +130,218 @@
           Rows highlighted in green indicate clients won during the selected week.
         </p>
       </div>
+
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <h2 class="text-base font-semibold text-gray-900">Revenue by Industry</h2>
+        <p class="mt-1 text-xs text-gray-500">
+          Revenue totals for each industry in the selected week (Monday through Sunday) sourced from the Payroll 2.csv file.
+        </p>
+        <div class="mt-4 grid gap-6 lg:grid-cols-2">
+          <div>
+            <div class="relative h-72">
+              <canvas id="industry-bar-chart" class="hidden"></canvas>
+              <div
+                id="industry-bar-empty"
+                class="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-gray-500"
+              >
+                No industry revenue data for this week.
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="relative h-72">
+              <canvas id="industry-pie-chart" class="hidden"></canvas>
+              <div
+                id="industry-pie-empty"
+                class="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-gray-500"
+              >
+                No industry revenue data for this week.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h2 class="text-base font-semibold text-gray-900">Closed &amp; Upcoming</h2>
+            <p class="mt-1 text-xs text-gray-500">
+              Track recently closed deals and upcoming opportunities. Add entries using the form fields and save to keep the list up to date.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              data-deal-save
+              class="inline-flex items-center rounded-lg border border-transparent bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400"
+              disabled
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-6 grid gap-6 lg:grid-cols-2">
+          <section data-deal-section="closed">
+            <div class="rounded-lg border border-gray-200">
+              <div class="border-b border-gray-200 bg-gray-50 px-4 py-3">
+                <h3 class="text-sm font-semibold text-gray-900">Closed</h3>
+              </div>
+              <div class="p-4">
+                <form class="grid gap-3 sm:grid-cols-4" data-deal-form data-deal-type="closed">
+                  <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-gray-700" for="closed-client-name">Client Name</label>
+                    <input
+                      id="closed-client-name"
+                      name="clientName"
+                      type="text"
+                      required
+                      class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-gray-700" for="closed-location">Location</label>
+                    <input
+                      id="closed-location"
+                      name="location"
+                      type="text"
+                      required
+                      class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-gray-700" for="closed-date">Date</label>
+                    <input
+                      id="closed-date"
+                      name="date"
+                      type="date"
+                      required
+                      class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div class="sm:col-span-2 flex items-end">
+                    <button
+                      type="submit"
+                      class="inline-flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-100"
+                    >
+                      Add Entry
+                    </button>
+                  </div>
+                </form>
+
+                <div class="mt-4 overflow-hidden rounded-lg border border-gray-200">
+                  <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                      <tr>
+                        <th scope="col" class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          Client Name
+                        </th>
+                        <th scope="col" class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          Location
+                        </th>
+                        <th scope="col" class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          Date
+                        </th>
+                        <th scope="col" class="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody data-deal-table-body="closed" class="divide-y divide-gray-200 bg-white text-sm text-gray-700">
+                      <tr>
+                        <td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500">
+                          No entries yet. Add new records using the form above.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section data-deal-section="upcoming">
+            <div class="rounded-lg border border-gray-200">
+              <div class="border-b border-gray-200 bg-gray-50 px-4 py-3">
+                <h3 class="text-sm font-semibold text-gray-900">Upcoming</h3>
+              </div>
+              <div class="p-4">
+                <form class="grid gap-3 sm:grid-cols-4" data-deal-form data-deal-type="upcoming">
+                  <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-gray-700" for="upcoming-client-name">Client Name</label>
+                    <input
+                      id="upcoming-client-name"
+                      name="clientName"
+                      type="text"
+                      required
+                      class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-gray-700" for="upcoming-location">Location</label>
+                    <input
+                      id="upcoming-location"
+                      name="location"
+                      type="text"
+                      required
+                      class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-gray-700" for="upcoming-date">Date</label>
+                    <input
+                      id="upcoming-date"
+                      name="date"
+                      type="date"
+                      required
+                      class="mt-1 w-full rounded-md border border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div class="sm:col-span-2 flex items-end">
+                    <button
+                      type="submit"
+                      class="inline-flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-100"
+                    >
+                      Add Entry
+                    </button>
+                  </div>
+                </form>
+
+                <div class="mt-4 overflow-hidden rounded-lg border border-gray-200">
+                  <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                      <tr>
+                        <th scope="col" class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          Client Name
+                        </th>
+                        <th scope="col" class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          Location
+                        </th>
+                        <th scope="col" class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          Date
+                        </th>
+                        <th scope="col" class="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody data-deal-table-body="upcoming" class="divide-y divide-gray-200 bg-white text-sm text-gray-700">
+                      <tr>
+                        <td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500">
+                          No entries yet. Add new records using the form above.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <p data-deal-feedback class="mt-4 text-sm text-gray-500"></p>
+      </div>
     </div>
   {% else %}
     <div class="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
@@ -174,6 +355,7 @@
   <script>
     (function () {
       const chartData = {{ chart_data | tojson(indent=2) | safe }};
+      const dealTables = {{ deal_tables | tojson(indent=2) | safe }};
       const weeks = chartData.weeks || [];
       if (!weeks.length) {
         return;
@@ -379,6 +561,13 @@
           ...sharedOptions,
           scales: {
             ...sharedOptions.scales,
+            x: {
+              ...sharedOptions.scales.x,
+              ticks: {
+                ...sharedOptions.scales.x.ticks,
+                display: false,
+              },
+            },
             y: {
               ...sharedOptions.scales.y,
               ticks: {
@@ -426,6 +615,13 @@
           },
           scales: {
             ...sharedOptions.scales,
+            x: {
+              ...sharedOptions.scales.x,
+              ticks: {
+                ...sharedOptions.scales.x.ticks,
+                display: false,
+              },
+            },
             y: {
               beginAtZero: true,
               suggestedMax: 100,
@@ -483,6 +679,13 @@
               },
               scales: {
                 ...sharedOptions.scales,
+                x: {
+                  ...sharedOptions.scales.x,
+                  ticks: {
+                    ...sharedOptions.scales.x.ticks,
+                    display: false,
+                  },
+                },
                 y: {
                   ...sharedOptions.scales.y,
                   ticks: {
@@ -529,6 +732,13 @@
                 scales: {
                   x: {
                     ...sharedOptions.scales.x,
+                    ticks: {
+                      ...sharedOptions.scales.x.ticks,
+                      display: false,
+                    },
+                    grid: {
+                      display: false,
+                    },
                   },
                   yRevenue: {
                     position: "left",
@@ -818,6 +1028,285 @@
         updateNewClients(weekEnding);
         updateIndustryCharts(weekEnding);
       }
+
+      function normalizeDealEntry(entry) {
+        if (!entry || typeof entry !== "object") {
+          return { clientName: "", location: "", date: "" };
+        }
+        return {
+          clientName: typeof entry.clientName === "string" ? entry.clientName : "",
+          location: typeof entry.location === "string" ? entry.location : "",
+          date: typeof entry.date === "string" ? entry.date : "",
+        };
+      }
+
+      const dealState = {
+        closed: Array.isArray(dealTables.closed) ? dealTables.closed.map((entry) => normalizeDealEntry(entry)) : [],
+        upcoming: Array.isArray(dealTables.upcoming) ? dealTables.upcoming.map((entry) => normalizeDealEntry(entry)) : [],
+      };
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const dateFormatter = new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+
+      const saveButtons = Array.from(document.querySelectorAll("[data-deal-save]"));
+      const feedbackEl = document.querySelector("[data-deal-feedback]");
+      let dealsDirty = false;
+      let isSaving = false;
+
+      function parseDealDate(value) {
+        if (!value) {
+          return null;
+        }
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+          return null;
+        }
+        parsed.setHours(0, 0, 0, 0);
+        return parsed;
+      }
+
+      function sortDealEntries(entries) {
+        entries.sort((a, b) => {
+          const aDate = parseDealDate(a.date);
+          const bDate = parseDealDate(b.date);
+          if (!aDate && !bDate) {
+            return 0;
+          }
+          if (!aDate) {
+            return 1;
+          }
+          if (!bDate) {
+            return -1;
+          }
+          const aDiff = Math.abs(aDate.getTime() - today.getTime());
+          const bDiff = Math.abs(bDate.getTime() - today.getTime());
+          if (aDiff !== bDiff) {
+            return aDiff - bDiff;
+          }
+          return aDate.getTime() - bDate.getTime();
+        });
+      }
+
+      function renderDealTable(section) {
+        const body = document.querySelector(`[data-deal-table-body="${section}"]`);
+        if (!body) {
+          return;
+        }
+
+        const entries = dealState[section] || [];
+        body.innerHTML = "";
+
+        if (!entries.length) {
+          const row = document.createElement("tr");
+          const cell = document.createElement("td");
+          cell.colSpan = 4;
+          cell.className = "px-4 py-3 text-center text-sm text-gray-500";
+          cell.textContent = "No entries yet. Add new records using the form above.";
+          row.appendChild(cell);
+          body.appendChild(row);
+          return;
+        }
+
+        entries.forEach((entry, index) => {
+          const row = document.createElement("tr");
+
+          const clientCell = document.createElement("td");
+          clientCell.className = "px-4 py-2";
+          clientCell.textContent = entry.clientName || "—";
+
+          const locationCell = document.createElement("td");
+          locationCell.className = "px-4 py-2";
+          locationCell.textContent = entry.location || "—";
+
+          const dateCell = document.createElement("td");
+          dateCell.className = "px-4 py-2";
+          const parsedDate = parseDealDate(entry.date);
+          dateCell.textContent = parsedDate ? dateFormatter.format(parsedDate) : entry.date || "—";
+
+          const actionCell = document.createElement("td");
+          actionCell.className = "px-4 py-2 text-right";
+          const deleteButton = document.createElement("button");
+          deleteButton.type = "button";
+          deleteButton.className =
+            "inline-flex items-center rounded-md border border-transparent bg-red-50 px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-100";
+          deleteButton.textContent = "Delete";
+          deleteButton.dataset.dealDelete = "true";
+          deleteButton.dataset.dealType = section;
+          deleteButton.dataset.entryIndex = String(index);
+          actionCell.appendChild(deleteButton);
+
+          row.appendChild(clientCell);
+          row.appendChild(locationCell);
+          row.appendChild(dateCell);
+          row.appendChild(actionCell);
+
+          body.appendChild(row);
+        });
+      }
+
+      function updateSaveButtons() {
+        saveButtons.forEach((button) => {
+          if (!button) {
+            return;
+          }
+          button.disabled = !dealsDirty || isSaving;
+        });
+      }
+
+      function showDealFeedback(message, tone = "info") {
+        if (!feedbackEl) {
+          return;
+        }
+        feedbackEl.textContent = message;
+        feedbackEl.classList.remove("text-green-600", "text-red-600", "text-gray-500");
+        if (!message) {
+          feedbackEl.classList.add("text-gray-500");
+          return;
+        }
+        if (tone === "success") {
+          feedbackEl.classList.add("text-green-600");
+        } else if (tone === "error") {
+          feedbackEl.classList.add("text-red-600");
+        } else {
+          feedbackEl.classList.add("text-gray-500");
+        }
+      }
+
+      function refreshDealTables() {
+        sortDealEntries(dealState.closed);
+        sortDealEntries(dealState.upcoming);
+        renderDealTable("closed");
+        renderDealTable("upcoming");
+      }
+
+      function markDealsDirty() {
+        dealsDirty = true;
+        updateSaveButtons();
+      }
+
+      refreshDealTables();
+      updateSaveButtons();
+
+      document.querySelectorAll("[data-deal-form]").forEach((form) => {
+        form.addEventListener("submit", (event) => {
+          event.preventDefault();
+          const formEl = event.currentTarget;
+          if (!(formEl instanceof HTMLFormElement)) {
+            return;
+          }
+          if (!formEl.reportValidity()) {
+            return;
+          }
+
+          const type = formEl.dataset.dealType;
+          if (!type || !dealState[type]) {
+            return;
+          }
+
+          const formData = new FormData(formEl);
+          const clientName = (formData.get("clientName") || "").toString().trim();
+          const location = (formData.get("location") || "").toString().trim();
+          const dateValue = (formData.get("date") || "").toString();
+
+          if (!clientName || !location || !dateValue) {
+            return;
+          }
+
+          dealState[type].push({
+            clientName,
+            location,
+            date: dateValue,
+          });
+
+          formEl.reset();
+          refreshDealTables();
+          markDealsDirty();
+          showDealFeedback("Entry added. Remember to save your changes.");
+        });
+      });
+
+      document.querySelectorAll("[data-deal-table-body]").forEach((body) => {
+        body.addEventListener("click", (event) => {
+          const target = event.target instanceof HTMLElement ? event.target.closest("[data-deal-delete]") : null;
+          if (!target) {
+            return;
+          }
+          const type = target.dataset.dealType;
+          const index = Number.parseInt(target.dataset.entryIndex || "", 10);
+          if (!type || !dealState[type] || Number.isNaN(index)) {
+            return;
+          }
+          dealState[type].splice(index, 1);
+          refreshDealTables();
+          markDealsDirty();
+          showDealFeedback("Entry removed. Save to keep your tables updated.");
+        });
+      });
+
+      async function saveDealTables() {
+        if (isSaving || !dealsDirty) {
+          return;
+        }
+
+        isSaving = true;
+        updateSaveButtons();
+        showDealFeedback("Saving changes…");
+
+        try {
+          const response = await fetch("./deals", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              closed: dealState.closed,
+              upcoming: dealState.upcoming,
+            }),
+          });
+
+          if (!response.ok) {
+            let detail = "Unable to save changes. Please try again.";
+            try {
+              const errorPayload = await response.json();
+              if (errorPayload && typeof errorPayload.detail === "string") {
+                detail = errorPayload.detail;
+              }
+            } catch (error) {
+              // ignore JSON parsing errors
+            }
+            throw new Error(detail);
+          }
+
+          const payload = await response.json();
+          const nextClosed = Array.isArray(payload.closed)
+            ? payload.closed.map((entry) => normalizeDealEntry(entry))
+            : [];
+          const nextUpcoming = Array.isArray(payload.upcoming)
+            ? payload.upcoming.map((entry) => normalizeDealEntry(entry))
+            : [];
+          dealState.closed = nextClosed;
+          dealState.upcoming = nextUpcoming;
+          dealsDirty = false;
+          refreshDealTables();
+          showDealFeedback("Changes saved.", "success");
+        } catch (error) {
+          console.error(error);
+          showDealFeedback(error instanceof Error ? error.message : "Unable to save changes. Please try again.", "error");
+        } finally {
+          isSaving = false;
+          updateSaveButtons();
+        }
+      }
+
+      saveButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          void saveDealTables();
+        });
+      });
 
       const initialWeek = chartData.selectedWeek || weeks[weeks.length - 1].weekEnding;
       if (selectEl.value !== initialWeek) {
