@@ -20,25 +20,7 @@ router = APIRouter()
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 DATA_DIR = BASE_DIR / "data"
-WORKBOOK_CANDIDATE_FILENAMES = [
-    "Sales & Staffing Charts.xlsx",
-    "Sales and Staffing Charts.xlsx",
-]
-
-
-def _resolve_workbook_path(base_dir: Path = DATA_DIR) -> Path:
-    """Return the Excel workbook path, tolerating naming variations."""
-
-    for filename in WORKBOOK_CANDIDATE_FILENAMES:
-        candidate = base_dir / filename
-        if candidate.exists():
-            return candidate
-
-    # Fall back to the preferred filename so callers get a sensible path
-    return base_dir / WORKBOOK_CANDIDATE_FILENAMES[0]
-
-
-WORKBOOK_PATH = _resolve_workbook_path()
+WORKBOOK_PATH = DATA_DIR / "Sales and Staffing Charts.xlsx"
 METRICS_EXPORT_PATH = DATA_DIR / "sales_staffing_metrics.csv"
 DASHBOARD_DATA_PATH = DATA_DIR / "sales_staffing_dashboard.json"
 PIPELINE_DATA_PATH = DATA_DIR / "sales_staffing_pipeline.json"
