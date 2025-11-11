@@ -477,6 +477,18 @@
 
       setIndustryEmptyState(true);
 
+      function formatIndustryLabel(rawLabel) {
+        if (typeof rawLabel !== "string") {
+          return "Unknown";
+        }
+        const trimmed = rawLabel.trim();
+        if (!trimmed) {
+          return "Unknown";
+        }
+        const withoutSuffix = trimmed.replace(/\s*industry$/i, "").trim();
+        return withoutSuffix || trimmed;
+      }
+
       function getWindow(weekEnding) {
         const index = weeks.findIndex((week) => week.weekEnding === weekEnding);
         if (index === -1) {
@@ -550,6 +562,9 @@
             backgroundColor: "#bfdbfe",
             tension: 0.3,
             spanGaps: true,
+            datalabels: {
+              display: false,
+            },
           },
           {
             label: "2025 Shift Count",
@@ -558,6 +573,9 @@
             backgroundColor: "#93c5fd",
             tension: 0.3,
             spanGaps: true,
+            datalabels: {
+              display: false,
+            },
           },
         ],
         {
@@ -591,6 +609,9 @@
             backgroundColor: "#a7f3d0",
             tension: 0.3,
             spanGaps: true,
+            datalabels: {
+              display: false,
+            },
           },
           {
             label: "2025 Fill Rate",
@@ -599,6 +620,9 @@
             backgroundColor: "#5eead4",
             tension: 0.3,
             spanGaps: true,
+            datalabels: {
+              display: false,
+            },
           },
         ],
         {
@@ -652,6 +676,9 @@
                   backgroundColor: "rgba(249, 115, 22, 0.15)",
                   tension: 0.3,
                   spanGaps: true,
+                  datalabels: {
+                    display: false,
+                  },
                 },
                 {
                   label: "2025 Revenue Goal",
@@ -661,6 +688,9 @@
                   tension: 0.3,
                   borderDash: [6, 4],
                   spanGaps: true,
+                  datalabels: {
+                    display: false,
+                  },
                 },
               ],
             },
@@ -717,6 +747,9 @@
                     borderColor: "#6366f1",
                     borderWidth: 1,
                     yAxisID: "yRevenue",
+                    datalabels: {
+                      display: false,
+                    },
                   },
                   {
                     type: "line",
@@ -727,6 +760,9 @@
                     tension: 0.3,
                     spanGaps: true,
                     yAxisID: "yPct",
+                    datalabels: {
+                      display: false,
+                    },
                   },
                 ],
               },
@@ -805,6 +841,9 @@
                     data: [],
                     backgroundColor: [],
                     borderRadius: 6,
+                    datalabels: {
+                      display: false,
+                    },
                   },
                 ],
               },
@@ -856,6 +895,9 @@
                     data: [],
                     backgroundColor: [],
                     borderWidth: 1,
+                    datalabels: {
+                      display: false,
+                    },
                   },
                 ],
               },
@@ -967,8 +1009,11 @@
             typeof entry.totalBill === "number" && Number.isFinite(entry.totalBill)
               ? entry.totalBill
               : Number.parseFloat(entry.totalBill) || 0;
+          const industryLabel = formatIndustryLabel(
+            entry && typeof entry.industry === "string" ? entry.industry : ""
+          );
           return {
-            industry: entry.industry || "Unknown Industry",
+            industry: industryLabel,
             totalBill: Number.isFinite(value) ? value : 0,
           };
         });
