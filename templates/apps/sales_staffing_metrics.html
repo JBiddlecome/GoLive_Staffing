@@ -98,6 +98,37 @@
       </div>
 
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <h2 class="text-base font-semibold text-gray-900">Revenue by Industry</h2>
+        <p class="mt-1 text-xs text-gray-500">
+          Revenue totals for each industry in the selected week (Monday through Sunday) sourced from the Payroll 2.csv file.
+        </p>
+        <div class="mt-4 grid gap-6 lg:grid-cols-2">
+          <div>
+            <div class="relative h-72">
+              <canvas id="industry-bar-chart" class="hidden"></canvas>
+              <div
+                id="industry-bar-empty"
+                class="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-gray-500"
+              >
+                No industry revenue data for this week.
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="relative h-72">
+              <canvas id="industry-pie-chart" class="hidden"></canvas>
+              <div
+                id="industry-pie-empty"
+                class="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-gray-500"
+              >
+                No industry revenue data for this week.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
         <h2 class="text-base font-semibold text-gray-900">New Clients</h2>
         <p class="mt-1 text-xs text-gray-500">
           Clients won within six months of the selected week ending with billing activity during that week.
@@ -155,6 +186,10 @@
       const newSalesCtx = document.getElementById("new-sales-chart");
       const topClientsTableBody = document.getElementById("top-clients-table-body");
       const newClientsTableBody = document.getElementById("new-clients-table-body");
+      const industryBarCtx = document.getElementById("industry-bar-chart");
+      const industryPieCtx = document.getElementById("industry-pie-chart");
+      const industryBarEmpty = document.getElementById("industry-bar-empty");
+      const industryPieEmpty = document.getElementById("industry-pie-empty");
       if (!selectEl || !shiftCtx || !fillCtx) {
         return;
       }
@@ -164,6 +199,7 @@
       const topClientsByWeek = chartData.topClientsByWeek || {};
       const revenueSeries = chartData.revenueSeries || [];
       const newClientsByWeek = chartData.newClientsByWeek || {};
+      const industryTotalsByWeek = chartData.industryTotalsByWeek || {};
 
       const revenueSeriesByWeek = new Map(
         revenueSeries.map((entry) => [entry.weekEnding, entry])
@@ -182,6 +218,82 @@
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       });
+
+      const industryPalette = [
+        "#2563eb",
+        "#7c3aed",
+        "#059669",
+        "#f59e0b",
+        "#f97316",
+        "#ec4899",
+        "#6366f1",
+        "#0ea5e9",
+        "#10b981",
+        "#facc15",
+      ];
+
+      const industryPieLabelPlugin = {
+        id: "industryPieLabel",
+        afterDatasetsDraw(chart) {
+          const dataset = chart.data.datasets[0];
+          if (!dataset) {
+            return;
+          }
+          const meta = chart.getDatasetMeta(0);
+          const ctx = chart.ctx;
+          const total = dataset.data.reduce((sum, value) => {
+            return sum + (typeof value === "number" && Number.isFinite(value) ? value : 0);
+          }, 0);
+
+          if (!total) {
+            return;
+          }
+
+          meta.data.forEach((element, index) => {
+            const rawValue = dataset.data[index];
+            if (!element || typeof rawValue !== "number" || !Number.isFinite(rawValue)) {
+              return;
+            }
+
+            const percentage = (rawValue / total) * 100;
+            if (percentage < 2) {
+              return;
+            }
+
+            const label = chart.data.labels[index];
+            const percentageLabel = percentage >= 10 ? percentage.toFixed(0) : percentage.toFixed(1);
+            const text = `${label} ${percentageLabel}%`;
+            const position = element.tooltipPosition();
+
+            ctx.save();
+            ctx.font = "12px 'Inter', system-ui, sans-serif";
+            ctx.fillStyle = "#374151";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(text, position.x, position.y);
+            ctx.restore();
+          });
+        },
+      };
+
+      Chart.register(industryPieLabelPlugin);
+
+      function setIndustryEmptyState(isEmpty) {
+        if (industryBarCtx) {
+          industryBarCtx.classList.toggle("hidden", isEmpty);
+        }
+        if (industryBarEmpty) {
+          industryBarEmpty.classList.toggle("hidden", !isEmpty);
+        }
+        if (industryPieCtx) {
+          industryPieCtx.classList.toggle("hidden", isEmpty);
+        }
+        if (industryPieEmpty) {
+          industryPieEmpty.classList.toggle("hidden", !isEmpty);
+        }
+      }
+
+      setIndustryEmptyState(true);
 
       function getWindow(weekEnding) {
         const index = weeks.findIndex((week) => week.weekEnding === weekEnding);
@@ -468,6 +580,98 @@
             })
           : null;
 
+      const industryBarChart =
+        industryBarCtx && Chart
+          ? new Chart(industryBarCtx, {
+              type: "bar",
+              data: {
+                labels: [],
+                datasets: [
+                  {
+                    label: "Revenue",
+                    data: [],
+                    backgroundColor: [],
+                    borderRadius: 6,
+                  },
+                ],
+              },
+              options: {
+                ...sharedOptions,
+                indexAxis: "y",
+                plugins: {
+                  ...sharedOptions.plugins,
+                  legend: {
+                    display: false,
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label(context) {
+                        const value = context.parsed.x ?? context.parsed.y ?? 0;
+                        return `${context.label}: ${currencyFormatter.format(value)}`;
+                      },
+                    },
+                  },
+                },
+                scales: {
+                  x: {
+                    beginAtZero: true,
+                    ticks: {
+                      callback(value) {
+                        return currencyFormatter.format(value);
+                      },
+                    },
+                  },
+                  y: {
+                    ticks: {
+                      autoSkip: false,
+                    },
+                  },
+                },
+              },
+            })
+          : null;
+
+      const industryPieChart =
+        industryPieCtx && Chart
+          ? new Chart(industryPieCtx, {
+              type: "pie",
+              data: {
+                labels: [],
+                datasets: [
+                  {
+                    label: "Revenue Share",
+                    data: [],
+                    backgroundColor: [],
+                    borderWidth: 1,
+                  },
+                ],
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    display: false,
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label(context) {
+                        const value = context.parsed ?? 0;
+                        const dataset = context.chart.data.datasets[context.datasetIndex];
+                        const total = dataset.data.reduce((sum, entry) => {
+                          return sum + (typeof entry === "number" && Number.isFinite(entry) ? entry : 0);
+                        }, 0);
+                        const percentage = total > 0 ? (value / total) * 100 : 0;
+                        const pctLabel = percentage >= 10 ? percentage.toFixed(0) : percentage.toFixed(1);
+                        return `${context.label}: ${currencyFormatter.format(value)} (${pctLabel}%)`;
+                      },
+                    },
+                  },
+                },
+              },
+            })
+          : null;
+
       function updateTopClients(weekEnding) {
         if (!topClientsTableBody) {
           return;
@@ -544,6 +748,40 @@
         });
       }
 
+      function updateIndustryCharts(weekEnding) {
+        const entries = (industryTotalsByWeek[weekEnding] || []).map((entry) => {
+          const value =
+            typeof entry.totalBill === "number" && Number.isFinite(entry.totalBill)
+              ? entry.totalBill
+              : Number.parseFloat(entry.totalBill) || 0;
+          return {
+            industry: entry.industry || "Unknown Industry",
+            totalBill: Number.isFinite(value) ? value : 0,
+          };
+        });
+
+        const shouldShowCharts = entries.length > 0;
+        setIndustryEmptyState(!shouldShowCharts);
+
+        const labels = entries.map((entry) => entry.industry);
+        const values = entries.map((entry) => entry.totalBill);
+        const colors = labels.map((_, index) => industryPalette[index % industryPalette.length]);
+
+        if (industryBarChart) {
+          industryBarChart.data.labels = labels;
+          industryBarChart.data.datasets[0].data = values;
+          industryBarChart.data.datasets[0].backgroundColor = colors;
+          industryBarChart.update();
+        }
+
+        if (industryPieChart) {
+          industryPieChart.data.labels = labels;
+          industryPieChart.data.datasets[0].data = values;
+          industryPieChart.data.datasets[0].backgroundColor = colors;
+          industryPieChart.update();
+        }
+      }
+
       function updateCharts(weekEnding) {
         const windowWeeks = getWindow(weekEnding);
         const labels = windowWeeks.map((week) => week.label);
@@ -578,6 +816,7 @@
 
         updateTopClients(weekEnding);
         updateNewClients(weekEnding);
+        updateIndustryCharts(weekEnding);
       }
 
       const initialWeek = chartData.selectedWeek || weeks[weeks.length - 1].weekEnding;

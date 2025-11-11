@@ -834,16 +834,16 @@ def _calculate_new_clients(
     return results
 
 
-def _calculate_industry_totals(payroll_df: pd.DataFrame) -> List[Dict[str, Any]]:
-    if "Industry" not in payroll_df.columns or "Total Bill" not in payroll_df.columns:
+def _summarize_industry_totals(df: pd.DataFrame) -> List[Dict[str, Any]]:
+    if df.empty or "Industry" not in df.columns or "Total Bill" not in df.columns:
         return []
 
-    df = payroll_df.copy()
-    df["Industry"] = df["Industry"].fillna("Unknown Industry").astype(str)
-    df["Total Bill"] = df["Total Bill"].apply(_normalize_money)
+    working = df.copy()
+    working["Industry"] = working["Industry"].fillna("Unknown Industry").astype(str)
+    working["Total Bill"] = working["Total Bill"].apply(_normalize_money)
 
     grouped = (
-        df.groupby("Industry", as_index=False)
+        working.groupby("Industry", as_index=False)
         .agg(total_bill=("Total Bill", "sum"))
         .sort_values("total_bill", ascending=False)
     )
@@ -852,6 +852,46 @@ def _calculate_industry_totals(payroll_df: pd.DataFrame) -> List[Dict[str, Any]]
     for _, row in grouped.iterrows():
         total_bill_value = float(row["total_bill"]) if pd.notna(row["total_bill"]) else 0.0
         results.append({"industry": row["Industry"], "totalBill": total_bill_value})
+
+    return results
+
+
+def _calculate_industry_totals(payroll_df: pd.DataFrame) -> List[Dict[str, Any]]:
+    return _summarize_industry_totals(payroll_df)
+
+
+def _calculate_industry_totals_by_week(
+    payroll_df: pd.DataFrame, week_endings: List[str]
+) -> Dict[str, List[Dict[str, Any]]]:
+    results: Dict[str, List[Dict[str, Any]]] = {week: [] for week in week_endings}
+
+    required_columns = {"Date", "Industry", "Total Bill"}
+    if payroll_df.empty or not required_columns.issubset(payroll_df.columns):
+        return results
+
+    working = payroll_df.copy()
+    working["Date"] = pd.to_datetime(working["Date"], errors="coerce").dt.normalize()
+    working = working.dropna(subset=["Date"])
+
+    if working.empty:
+        return results
+
+    working["Industry"] = working["Industry"].fillna("Unknown Industry").astype(str)
+    working["Total Bill"] = working["Total Bill"].apply(_normalize_money)
+
+    for week in week_endings:
+        try:
+            week_date = datetime.strptime(week, "%Y-%m-%d").date()
+        except (TypeError, ValueError):
+            results[week] = []
+            continue
+
+        start_date = week_date - timedelta(days=6)
+        mask = (working["Date"].dt.date >= start_date) & (
+            working["Date"].dt.date <= week_date
+        )
+        weekly_subset = working.loc[mask]
+        results[week] = _summarize_industry_totals(weekly_subset)
 
     return results
 
@@ -975,7 +1015,7 @@ def _read_payroll(upload: UploadFile) -> pd.DataFrame:
         raise ValueError(f"Unable to read Excel file '{upload.filename}'.") from exc
 
 
-def _build_page_context(**extra: Any) -> Dict[str, Any]:
+def _build_chart_payload() -> Dict[str, Any]:
     chart_payload = _load_chart_data()
 
     weeks = [
@@ -987,9 +1027,18 @@ def _build_page_context(**extra: Any) -> Dict[str, Any]:
     payroll_df = _load_payroll_csv()
     top_clients_by_week = _calculate_top_clients_by_week(payroll_df, weeks)
     new_clients_by_week = _calculate_new_clients_by_week(payroll_df, weeks)
+    industry_totals_by_week = _calculate_industry_totals_by_week(payroll_df, weeks)
+
     chart_payload["topClientsByWeek"] = top_clients_by_week
     chart_payload["newClientsByWeek"] = new_clients_by_week
+    chart_payload["industryTotalsByWeek"] = industry_totals_by_week
     chart_payload["revenueSeries"] = _load_revenue_goal_data()
+
+    return chart_payload
+
+
+def _build_page_context(**extra: Any) -> Dict[str, Any]:
+    chart_payload = _build_chart_payload()
 
     base_context = {
         "workbook_path": _resolve_workbook_path(),
@@ -1004,8 +1053,8 @@ def _build_page_context(**extra: Any) -> Dict[str, Any]:
         workbook_path.exists(),
         METRICS_EXPORT_PATH,
         METRICS_EXPORT_PATH.exists(),
-        len(base_context.get("chart_data", {}).get("weeks", []))
-        if isinstance(base_context.get("chart_data"), dict)
+        len(chart_payload.get("weeks", []))
+        if isinstance(chart_payload, dict)
         else "unknown",
     )
     return base_context
@@ -1077,5 +1126,5 @@ async def update(
     logger.info(
         "Workbook update succeeded. Metrics: %s", result
     )
-    context.update({"result": result, "chart_data": _load_chart_data()})
+    context.update({"result": result, "chart_data": _build_chart_payload()})
     return templates.TemplateResponse("apps/sales_staffing_metrics.html", context)
