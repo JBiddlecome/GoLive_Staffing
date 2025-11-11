@@ -252,6 +252,19 @@ def _normalize_money(value: Any) -> float:
         return 0.0
 
 
+def _normalize_money_nullable(value: Any) -> float | None:
+    if pd.isna(value):
+        return None
+    if isinstance(value, str):
+        value = value.replace(",", "").replace("$", "").strip()
+        if not value:
+            return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def _ensure_headers(ws) -> Dict[str, int]:
     headers: Dict[str, int] = {}
     for idx, cell in enumerate(ws[1], start=1):
@@ -464,21 +477,116 @@ def _load_chart_data(path: Path | None = None) -> Dict[str, Any]:
     return payload
 
 
-def _calculate_top_clients(payroll_df: pd.DataFrame) -> List[Dict[str, Any]]:
-    if "Client" not in payroll_df.columns or "Total Bill" not in payroll_df.columns:
+def _load_revenue_goal_data(path: Path | None = None) -> List[Dict[str, Any]]:
+    if path is None:
+        path = _resolve_workbook_path()
+
+    if not path.exists():
+        logger.warning(
+            "Workbook path does not exist when loading revenue data: %s", path
+        )
         return []
 
-    df = payroll_df.copy()
-    df["Client"] = df["Client"].fillna("Unknown Client").astype(str)
-    df["Total Bill"] = df["Total Bill"].apply(_normalize_money)
+    try:
+        with pd.ExcelFile(path) as workbook:
+            target_sheet = next(
+                (
+                    sheet_name
+                    for sheet_name in workbook.sheet_names
+                    if _normalize_excel_header(sheet_name) == "revenue"
+                ),
+                None,
+            )
 
-    if "Bill Rate" in df.columns:
-        df["Bill Rate"] = df["Bill Rate"].apply(_normalize_money)
+            if target_sheet is None:
+                logger.warning(
+                    "Revenue sheet not found in workbook '%s'. Sheets available: %s",
+                    path,
+                    workbook.sheet_names,
+                )
+                return []
+
+            revenue_df = workbook.parse(target_sheet)
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.exception(
+            "Failed to load revenue data from workbook '%s': %s", path, exc
+        )
+        return []
+
+    if revenue_df.empty:
+        logger.warning(
+            "Revenue sheet '%s' in workbook '%s' is empty", target_sheet, path
+        )
+        return []
+
+    revenue_df = revenue_df.copy()
+    column_lookup = {
+        _normalize_excel_header(column): column
+        for column in revenue_df.columns
+        if column is not None
+    }
+
+    week_column = column_lookup.get("week ending")
+    revenue_column = column_lookup.get("2025 revenue")
+    goal_column = column_lookup.get("2025 revenue goal")
+
+    if not week_column or not revenue_column or not goal_column:
+        logger.warning(
+            "Required columns missing from revenue sheet '%s'. Headers: %s",
+            target_sheet,
+            list(revenue_df.columns),
+        )
+        return []
+
+    records: List[Tuple[date, Dict[str, Any]]] = []
+    for _, row in revenue_df.iterrows():
+        week_value = row.get(week_column)
+        if pd.isna(week_value):
+            continue
+        week_ts = pd.to_datetime(week_value, errors="coerce")
+        if pd.isna(week_ts):
+            continue
+
+        revenue_value = _clean_float(row.get(revenue_column))
+        goal_value = _clean_float(row.get(goal_column))
+
+        week_dt = week_ts.to_pydatetime().date()
+        records.append(
+            (
+                week_dt,
+                {
+                    "weekEnding": week_dt.strftime("%Y-%m-%d"),
+                    "label": week_ts.strftime("%B %d, %Y"),
+                    "revenue2025": revenue_value,
+                    "revenueGoal2025": goal_value,
+                },
+            )
+        )
+
+    if not records:
+        return []
+
+    records.sort(key=lambda item: item[0])
+    return [record for _, record in records]
+
+
+def _summarize_top_clients(df: pd.DataFrame) -> List[Dict[str, Any]]:
+    if df.empty or "Client" not in df.columns or "Total Bill" not in df.columns:
+        return []
+
+    working = df.copy()
+    working["Client"] = working["Client"].fillna("Unknown Client").astype(str)
+    working["Total Bill"] = working["Total Bill"].apply(_normalize_money)
+
+    if "Bill Rate" in working.columns:
+        working["Bill Rate"] = working["Bill Rate"].apply(_normalize_money_nullable)
     else:
-        df["Bill Rate"] = pd.NA
+        working["Bill Rate"] = pd.NA
+
+    working["Bill Rate"] = pd.to_numeric(working["Bill Rate"], errors="coerce")
 
     grouped = (
-        df.groupby("Client", as_index=False)
+        working.groupby("Client", as_index=False)
         .agg(total_bill=("Total Bill", "sum"), average_bill_rate=("Bill Rate", "mean"))
         .sort_values("total_bill", ascending=False)
         .head(5)
@@ -494,9 +602,48 @@ def _calculate_top_clients(payroll_df: pd.DataFrame) -> List[Dict[str, Any]]:
             {
                 "client": row["Client"],
                 "totalBill": total_bill_value,
+                "revenue": total_bill_value,
                 "averageBillRate": avg_bill_rate_value,
             }
         )
+
+    return results
+
+
+def _calculate_top_clients(payroll_df: pd.DataFrame) -> List[Dict[str, Any]]:
+    return _summarize_top_clients(payroll_df)
+
+
+def _calculate_top_clients_by_week(
+    payroll_df: pd.DataFrame, week_endings: List[str]
+) -> Dict[str, List[Dict[str, Any]]]:
+    results: Dict[str, List[Dict[str, Any]]] = {week: [] for week in week_endings}
+
+    if payroll_df.empty or "Date" not in payroll_df.columns:
+        return results
+
+    working = payroll_df.copy()
+    working["Date"] = pd.to_datetime(working["Date"], errors="coerce")
+    working = working.dropna(subset=["Date"])
+
+    if working.empty:
+        return results
+
+    working["Date"] = working["Date"].dt.normalize()
+
+    for week in week_endings:
+        try:
+            week_date = datetime.strptime(week, "%Y-%m-%d").date()
+        except (TypeError, ValueError):
+            results[week] = []
+            continue
+
+        start_date = week_date - timedelta(days=6)
+        mask = (working["Date"].dt.date >= start_date) & (
+            working["Date"].dt.date <= week_date
+        )
+        subset = working.loc[mask]
+        results[week] = _summarize_top_clients(subset)
 
     return results
 
@@ -732,10 +879,23 @@ def _read_payroll(upload: UploadFile) -> pd.DataFrame:
 
 
 def _build_page_context(**extra: Any) -> Dict[str, Any]:
+    chart_payload = _load_chart_data()
+
+    weeks = [
+        week.get("weekEnding")
+        for week in chart_payload.get("weeks", [])
+        if isinstance(week, dict) and week.get("weekEnding")
+    ]
+
+    payroll_df = _load_payroll_csv()
+    top_clients_by_week = _calculate_top_clients_by_week(payroll_df, weeks)
+    chart_payload["topClientsByWeek"] = top_clients_by_week
+    chart_payload["revenueSeries"] = _load_revenue_goal_data()
+
     base_context = {
         "workbook_path": _resolve_workbook_path(),
         "metrics_export_path": METRICS_EXPORT_PATH,
-        "chart_data": _load_chart_data(),
+        "chart_data": chart_payload,
     }
     base_context.update(extra)
     workbook_path = base_context["workbook_path"]
