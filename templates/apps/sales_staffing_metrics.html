@@ -56,9 +56,10 @@
     <div class="rounded-xl border bg-white p-4 shadow-sm space-y-6">
       <div>
         <label class="block text-sm font-medium mb-1" for="week-ending-select">Week ending</label>
+        {% set defaultWeekEnding = chart_data.topClientsWeekEnding or (chart_data.weeks | last).weekEnding %}
         <select id="week-ending-select" class="border rounded p-2 w-full bg-white text-sm">
           {% for week in chart_data.weeks %}
-            <option value="{{ week.weekEnding }}" {% if loop.last %}selected{% endif %}>{{ week.label }}</option>
+            <option value="{{ week.weekEnding }}" {% if week.weekEnding == defaultWeekEnding %}selected{% endif %}>{{ week.label }}</option>
           {% endfor %}
         </select>
         <p class="text-xs text-gray-500 mt-1">Compare the selected week with the two weeks before and after.</p>
@@ -897,7 +898,15 @@
           updateCharts(event.target.value);
         });
 
-        updateCharts(selectEl.value || weeks[weeks.length - 1].weekEnding);
+        const fallbackWeekEnding = weeks.length ? weeks[weeks.length - 1].weekEnding : null;
+        const initialWeekEnding = chartData.topClientsWeekEnding || fallbackWeekEnding;
+
+        if (initialWeekEnding) {
+          selectEl.value = initialWeekEnding;
+          updateCharts(initialWeekEnding);
+        } else if (weeks.length) {
+          updateCharts(selectEl.value);
+        }
       })();
     </script>
   {% else %}
