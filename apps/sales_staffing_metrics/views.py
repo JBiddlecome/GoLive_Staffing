@@ -10,9 +10,10 @@ from typing import Any, Dict, List, Tuple
 
 import pandas as pd
 from dateutil.relativedelta import relativedelta
-from fastapi import APIRouter, Form, Request, UploadFile, File
+from fastapi import APIRouter, Body, Form, HTTPException, Request, UploadFile, File
 from fastapi.concurrency import run_in_threadpool
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import JSONResponse
 from openpyxl import load_workbook
 
 templates = Jinja2Templates(directory="templates")
@@ -106,6 +107,7 @@ def _resolve_workbook_path() -> Path:
 WORKBOOK_PATH = _resolve_workbook_path()
 METRICS_EXPORT_PATH = DATA_DIR / "sales_staffing_metrics.csv"
 DASHBOARD_DATA_PATH = DATA_DIR / "sales_staffing_dashboard.json"
+DEALS_DATA_PATH = DATA_DIR / "sales_staffing_deals.json"
 PAYROLL_CANDIDATE_FILENAMES = [
     "payroll 2.csv",
     "Payroll 2.csv",
@@ -183,6 +185,104 @@ def _load_dashboard_data(path: Path = DASHBOARD_DATA_PATH) -> Dict[str, Any]:
             return json.load(fh)
     except Exception:  # pragma: no cover - defensive
         return {}
+
+
+def _parse_deal_date(value: Any) -> date | None:
+    if not value:
+        return None
+    if isinstance(value, date) and not isinstance(value, datetime):
+        return value
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, str):
+        try:
+            return datetime.strptime(value.strip(), "%Y-%m-%d").date()
+        except ValueError:
+            return None
+    return None
+
+
+def _normalize_deal_entry(entry: Dict[str, Any], *, strict: bool = False) -> Dict[str, str] | None:
+    if not isinstance(entry, dict):
+        return None
+
+    client = str(entry.get("clientName") or entry.get("client") or "").strip()
+    location = str(entry.get("location") or "").strip()
+    parsed_date = _parse_deal_date(entry.get("date"))
+
+    if strict:
+        if not client:
+            raise ValueError("Client name is required.")
+        if not location:
+            raise ValueError("Location is required.")
+        if parsed_date is None:
+            raise ValueError("Date must be provided in YYYY-MM-DD format.")
+
+    if not client or not location or parsed_date is None:
+        return None
+
+    return {
+        "clientName": client,
+        "location": location,
+        "date": parsed_date.isoformat(),
+    }
+
+
+def _deal_sort_key(entry: Dict[str, Any]) -> Tuple[int, date]:
+    entry_date = _parse_deal_date(entry.get("date"))
+    if entry_date is None:
+        return (10_000, date.max)
+
+    delta_days = abs((entry_date - date.today()).days)
+    return (delta_days, entry_date)
+
+
+def _sort_deal_entries(entries: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    return sorted(entries, key=_deal_sort_key)
+
+
+def _load_deal_tables(path: Path = DEALS_DATA_PATH) -> Dict[str, List[Dict[str, str]]]:
+    if not path.exists():
+        return {"closed": [], "upcoming": []}
+
+    try:
+        with path.open("r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except Exception:  # pragma: no cover - defensive
+        return {"closed": [], "upcoming": []}
+
+    result: Dict[str, List[Dict[str, str]]] = {"closed": [], "upcoming": []}
+    for key in ("closed", "upcoming"):
+        entries = data.get(key, []) if isinstance(data, dict) else []
+        normalized: List[Dict[str, str]] = []
+        if isinstance(entries, list):
+            for entry in entries:
+                normalized_entry = _normalize_deal_entry(entry)
+                if normalized_entry is not None:
+                    normalized.append(normalized_entry)
+        result[key] = _sort_deal_entries(normalized)
+    return result
+
+
+def _write_deal_tables(
+    tables: Dict[str, List[Dict[str, Any]]], path: Path = DEALS_DATA_PATH
+) -> Dict[str, List[Dict[str, str]]]:
+    cleaned: Dict[str, List[Dict[str, str]]] = {"closed": [], "upcoming": []}
+
+    for key in cleaned:
+        entries = tables.get(key, []) if isinstance(tables, dict) else []
+        normalized: List[Dict[str, str]] = []
+        if isinstance(entries, list):
+            for entry in entries:
+                normalized_entry = _normalize_deal_entry(entry, strict=True)
+                normalized.append(normalized_entry)
+        cleaned[key] = _sort_deal_entries(normalized)
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as fh:
+        json.dump(cleaned, fh, indent=2, ensure_ascii=False)
+
+    return cleaned
 
 
 def _load_payroll_csv(path: Path | None = None) -> pd.DataFrame:
@@ -1044,6 +1144,7 @@ def _build_page_context(**extra: Any) -> Dict[str, Any]:
         "workbook_path": _resolve_workbook_path(),
         "metrics_export_path": METRICS_EXPORT_PATH,
         "chart_data": chart_payload,
+        "deal_tables": _load_deal_tables(),
     }
     base_context.update(extra)
     workbook_path = base_context["workbook_path"]
@@ -1128,3 +1229,18 @@ async def update(
     )
     context.update({"result": result, "chart_data": _build_chart_payload()})
     return templates.TemplateResponse("apps/sales_staffing_metrics.html", context)
+
+
+@router.get("/deals")
+async def get_deal_tables() -> JSONResponse:
+    tables = _load_deal_tables()
+    return JSONResponse(tables)
+
+
+@router.post("/deals")
+async def save_deal_tables(payload: Dict[str, Any] = Body(...)) -> JSONResponse:
+    try:
+        cleaned = _write_deal_tables(payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return JSONResponse({"status": "ok", **cleaned})
