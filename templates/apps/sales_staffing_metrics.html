@@ -366,6 +366,15 @@
         return;
       }
 
+      try {
+        if (window.Chart) {
+          const pluginIds = (Chart.registry?.plugins?.getAll?.() || []).map((plugin) => plugin.id);
+          console.log("Registered plugins:", pluginIds);
+        }
+      } catch (err) {
+        console.warn("Unable to inspect Chart.js plugins", err);
+      }
+
       const selectEl = document.getElementById("week-ending-select");
       const shiftCtx = document.getElementById("shift-count-chart");
       const fillCtx = document.getElementById("fill-rate-chart");
@@ -422,11 +431,17 @@
       const industryPieLabelPlugin = {
         id: "industryPieLabel",
         afterDatasetsDraw(chart) {
+          const meta = chart.getDatasetMeta(0);
+          // Only run on pie/doughnut charts (meta.type === 'arc').
+          if (!meta || meta.type !== "arc") {
+            return;
+          }
+
           const dataset = chart.data.datasets[0];
           if (!dataset) {
             return;
           }
-          const meta = chart.getDatasetMeta(0);
+
           const ctx = chart.ctx;
           const total = dataset.data.reduce((sum, value) => {
             return sum + (typeof value === "number" && Number.isFinite(value) ? value : 0);
