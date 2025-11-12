@@ -4,11 +4,10 @@ import io
 import json
 from pathlib import Path
 from typing import Dict, List, Tuple
-from uuid import uuid4
 
 import pandas as pd
 from dateutil.relativedelta import relativedelta
-from fastapi import APIRouter, File, Form, Request, UploadFile
+from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
@@ -24,10 +23,16 @@ COUNTY_COL_CANDIDATES = [
     "county",
 ]
 POSITIONS_COL_CANDIDATES = ["Positions", "Position(s)", "positions"]
+CONCIERGE_COL_CANDIDATES = [
+    "Concierge Date",
+    "ConciergeDate",
+    "Concierge_Date",
+    "concierge_date",
+    "conciergedate",
+]
 TARGET_POSITIONS = ["Cook 2", "Server 2", "Dishwasher"]
 
-UPLOAD_DIR = Path("tmp/recruiting_metrics_uploads")
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+DATA_FILE = Path("Employee List Data.xlsx")
 
 templates = Jinja2Templates(directory="templates")
 router = APIRouter()
@@ -35,48 +40,32 @@ router = APIRouter()
 
 @router.get("", response_class=HTMLResponse)
 async def page(request: Request) -> HTMLResponse:
-    context = {"request": request}
-    return templates.TemplateResponse("apps/recruiting_metrics.html", context)
-
-
-@router.post("/upload", response_class=HTMLResponse)
-async def upload_file(request: Request, file: UploadFile = File(...)) -> HTMLResponse:
-    file_bytes = await file.read()
-    if not file_bytes:
-        return _error_response(request, "The uploaded file was empty.")
-
     try:
-        dataframe = _load_dataframe(file_bytes, file.filename)
+        dataframe = _load_default_dataframe()
     except ValueError as exc:
         return _error_response(request, str(exc))
 
     if dataframe.empty:
-        return _error_response(request, "The uploaded file does not contain any rows.")
+        return _error_response(request, "The data file does not contain any rows.")
 
     try:
         resolved = _resolve_columns(dataframe)
     except ValueError as exc:
         return _error_response(request, str(exc))
 
-    sundays = _pick_week_ending_sundays(dataframe, start_year=2025, resolved=resolved)
+    sundays = _pick_week_ending_sundays(dataframe, start_year=2024, resolved=resolved)
     if not sundays:
         return _error_response(
             request,
-            "No Sunday week-ending dates found (starting in 2025). Check your Start Date / Rehire Date columns.",
+            "No Sunday week-ending dates found. Check the Start Date and Rehire Date columns in the data file.",
         )
-
-    token = uuid4().hex + Path(file.filename).suffix.lower()
-    file_path = UPLOAD_DIR / token
-    file_path.write_bytes(file_bytes)
-    _write_metadata(file_path, {"filename": file.filename})
 
     selected_sunday = sundays[-1]
     metrics, details = _build_metrics(dataframe, selected_sunday, resolved)
 
     context = _build_context(
         request=request,
-        filename=file.filename,
-        token=token,
+        filename=DATA_FILE.name,
         sundays=sundays,
         selected_sunday=selected_sunday,
         metrics=metrics,
@@ -88,34 +77,26 @@ async def upload_file(request: Request, file: UploadFile = File(...)) -> HTMLRes
 @router.post("/select-week", response_class=HTMLResponse)
 async def select_week(
     request: Request,
-    token: str = Form(...),
     week_ending: str = Form(...),
 ) -> HTMLResponse:
-    file_path = UPLOAD_DIR / token
-    if not file_path.exists():
-        return _error_response(request, "The uploaded file could not be found. Please upload it again.")
-
-    metadata = _read_metadata(file_path)
-    file_bytes = file_path.read_bytes()
-
     try:
-        dataframe = _load_dataframe(file_bytes, file_path.name)
+        dataframe = _load_default_dataframe()
     except ValueError as exc:
         return _error_response(request, str(exc))
 
     if dataframe.empty:
-        return _error_response(request, "The uploaded file does not contain any rows.")
+        return _error_response(request, "The data file does not contain any rows.")
 
     try:
         resolved = _resolve_columns(dataframe)
     except ValueError as exc:
         return _error_response(request, str(exc))
 
-    sundays = _pick_week_ending_sundays(dataframe, start_year=2025, resolved=resolved)
+    sundays = _pick_week_ending_sundays(dataframe, start_year=2024, resolved=resolved)
     if not sundays:
         return _error_response(
             request,
-            "No Sunday week-ending dates found (starting in 2025). Check your Start Date / Rehire Date columns.",
+            "No Sunday week-ending dates found. Check the Start Date and Rehire Date columns in the data file.",
         )
 
     selected_sunday = pd.to_datetime(week_ending, errors="coerce")
@@ -134,8 +115,7 @@ async def select_week(
 
     context = _build_context(
         request=request,
-        filename=metadata.get("filename", "Uploaded file"),
-        token=token,
+        filename=DATA_FILE.name,
         sundays=sundays,
         selected_sunday=selected_sunday,
         metrics=metrics,
@@ -150,8 +130,26 @@ async def select_week(
 
 
 def _error_response(request: Request, message: str) -> HTMLResponse:
-    context = {"request": request, "rm_error": message}
+    context = {
+        "request": request,
+        "rm_error": message,
+        "rm_data_source": DATA_FILE.name,
+    }
     return templates.TemplateResponse("apps/recruiting_metrics.html", context, status_code=400)
+
+
+def _load_default_dataframe() -> pd.DataFrame:
+    if not DATA_FILE.exists():
+        raise ValueError(
+            "The data file 'Employee List Data.xlsx' could not be found in the application directory."
+        )
+
+    try:
+        file_bytes = DATA_FILE.read_bytes()
+    except OSError as exc:  # pragma: no cover - filesystem errors
+        raise ValueError(f"Could not read data file: {exc}") from exc
+
+    return _load_dataframe(file_bytes, DATA_FILE.name)
 
 
 def _load_dataframe(file_bytes: bytes, filename: str) -> pd.DataFrame:
@@ -172,6 +170,7 @@ def _resolve_columns(df: pd.DataFrame) -> Dict[str, str]:
     rehire_col = _resolve_column(df, DATE_COL_CANDIDATES["rehire_date"])
     county_col = _resolve_column(df, COUNTY_COL_CANDIDATES)
     positions_col = _resolve_column(df, POSITIONS_COL_CANDIDATES)
+    concierge_col = _resolve_column(df, CONCIERGE_COL_CANDIDATES)
 
     if not start_col and not rehire_col:
         raise ValueError("Missing required date columns. Include at least Start Date or Rehire Date.")
@@ -181,6 +180,7 @@ def _resolve_columns(df: pd.DataFrame) -> Dict[str, str]:
         "rehire_col": rehire_col,
         "county_col": county_col,
         "positions_col": positions_col,
+        "concierge_col": concierge_col,
     }
 
 
@@ -366,6 +366,7 @@ def _build_metrics(
     rehire_col = resolved.get("rehire_col", "")
     county_col = resolved.get("county_col", "")
     positions_col = resolved.get("positions_col", "")
+    concierge_col = resolved.get("concierge_col", "")
 
     current_start, current_end = _week_bounds_from_sunday(selected_sunday)
     prior_year_sunday = selected_sunday - relativedelta(years=1)
@@ -448,6 +449,13 @@ def _build_metrics(
             ],
         },
         "positionTable": position_records,
+        "columns": {
+            "start": start_col or None,
+            "rehire": rehire_col or None,
+            "county": county_col or None,
+            "positions": positions_col or None,
+            "concierge": concierge_col or None,
+        },
     }
 
     has_hires = any(record["count"] > 0 for record in county_records)
@@ -471,7 +479,6 @@ def _build_context(
     *,
     request: Request,
     filename: str,
-    token: str,
     sundays: List[pd.Timestamp],
     selected_sunday: pd.Timestamp,
     metrics: Dict[str, object],
@@ -489,7 +496,6 @@ def _build_context(
 
     context: Dict[str, object] = {
         "request": request,
-        "rm_token": token,
         "rm_weeks": weeks,
         "rm_selected_week": selected_sunday.strftime("%Y-%m-%d"),
         "rm_selected_week_label": selected_sunday.strftime("%B %d, %Y"),
@@ -500,6 +506,7 @@ def _build_context(
         "rm_has_hires_by_county": details["has_hires_by_county"],
         "rm_has_positions": details["has_positions"],
         "rm_position_table": metrics["positionTable"],
+        "rm_data_source": filename,
     }
 
     return context
@@ -507,18 +514,3 @@ def _build_context(
 
 def _format_range(start: pd.Timestamp, end: pd.Timestamp) -> str:
     return f"{start.strftime('%B %d, %Y')} – {end.strftime('%B %d, %Y')}"
-
-
-def _write_metadata(file_path: Path, metadata: Dict[str, str]) -> None:
-    meta_path = file_path.with_suffix(file_path.suffix + ".meta.json")
-    meta_path.write_text(json.dumps(metadata), encoding="utf-8")
-
-
-def _read_metadata(file_path: Path) -> Dict[str, str]:
-    meta_path = file_path.with_suffix(file_path.suffix + ".meta.json")
-    if meta_path.exists():
-        try:
-            return json.loads(meta_path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:  # pragma: no cover - defensive
-            return {}
-    return {}
