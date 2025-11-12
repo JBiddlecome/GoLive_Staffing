@@ -1299,8 +1299,6 @@
         });
       });
 
-      const dealsEndpoint = {{ request.url_for("save_deal_tables") | tojson }};
-
       async function saveDealTables() {
         if (isSaving || !dealsDirty) {
           return;
@@ -1311,7 +1309,7 @@
         showDealFeedback("Saving changes…");
 
         try {
-          const response = await fetch(dealsEndpoint, {
+          const response = await fetch("./deals", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
