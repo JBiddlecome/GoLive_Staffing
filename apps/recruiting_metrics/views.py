@@ -236,9 +236,14 @@ def _week_bounds_from_sunday(week_ending: pd.Timestamp) -> Tuple[pd.Timestamp, p
     return start.normalize(), week_ending.normalize()
 
 
-def _build_week_series(center_sunday: pd.Timestamp) -> List[pd.Timestamp]:
-    offsets = [-14, -7, 0, 7, 14]
-    return [center_sunday + pd.Timedelta(days=offset) for offset in offsets]
+def _build_week_series(latest_sunday: pd.Timestamp, weeks: int = 5) -> List[pd.Timestamp]:
+    """Return a chronologically ordered list of recent week-ending Sundays."""
+
+    if weeks <= 0:
+        return []
+
+    offsets = range(weeks - 1, -1, -1)
+    return [latest_sunday - pd.Timedelta(days=7 * offset) for offset in offsets]
 
 
 def _count_new_hires(
