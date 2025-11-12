@@ -353,6 +353,11 @@
 {% if chart_data.weeks %}
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script>
+    if (window.Chart && Chart.defaults && typeof Chart.defaults.set === "function") {
+      Chart.defaults.set("plugins.datalabels", { display: false });
+    }
+  </script>
+  <script>
     (function () {
       const chartData = {{ chart_data | tojson(indent=2) | safe }};
       const dealTables = {{ deal_tables | tojson(indent=2) | safe }};
