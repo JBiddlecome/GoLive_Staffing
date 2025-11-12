@@ -465,6 +465,25 @@
 
       Chart.register(industryPieLabelPlugin);
 
+      // Ensure ChartDataLabels (if present) is registered first, then hard-disable it
+      if (window.ChartDataLabels) {
+        try {
+          Chart.register(window.ChartDataLabels);
+        } catch (e) {
+          /* already registered */
+        }
+      }
+      // Force OFF globally (after all registrations so defaults can't overwrite this)
+      if (Chart && Chart.defaults && Chart.defaults.plugins) {
+        Chart.defaults.plugins.datalabels = {
+          display: false,
+          // extra safety: if some dataset sets display:true, this formatter still returns nothing
+          formatter: () => "",
+          // keep it invisible even if some theme sets a color
+          color: "rgba(0,0,0,0)",
+        };
+      }
+
       function setIndustryEmptyState(isEmpty) {
         if (industryBarCtx) {
           industryBarCtx.classList.toggle("hidden", isEmpty);
