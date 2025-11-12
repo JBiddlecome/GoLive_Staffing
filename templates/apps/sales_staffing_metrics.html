@@ -524,6 +524,8 @@
         });
       }
 
+      const disableDataLabels = () => false;
+
       const sharedOptions = {
         responsive: true,
         maintainAspectRatio: false,
@@ -537,7 +539,7 @@
             labels: { usePointStyle: true },
           },
           datalabels: {
-            display: false,
+            display: disableDataLabels,
           },
         },
         scales: {
@@ -563,9 +565,7 @@
             tension: 0.3,
             spanGaps: true,
             datalabels: {
-              display() {
-                return false;
-              },
+              display: disableDataLabels,
             },
           },
           {
@@ -576,7 +576,7 @@
             tension: 0.3,
             spanGaps: true,
             datalabels: {
-              display: false,
+              display: disableDataLabels,
             },
           },
         ],
@@ -612,7 +612,7 @@
             tension: 0.3,
             spanGaps: true,
             datalabels: {
-              display: false,
+              display: disableDataLabels,
             },
           },
           {
@@ -623,7 +623,7 @@
             tension: 0.3,
             spanGaps: true,
             datalabels: {
-              display: false,
+              display: disableDataLabels,
             },
           },
         ],
@@ -679,7 +679,7 @@
                   tension: 0.3,
                   spanGaps: true,
                   datalabels: {
-                    display: false,
+                    display: disableDataLabels,
                   },
                 },
                 {
@@ -691,7 +691,7 @@
                   borderDash: [6, 4],
                   spanGaps: true,
                   datalabels: {
-                    display: false,
+                    display: disableDataLabels,
                   },
                 },
               ],
