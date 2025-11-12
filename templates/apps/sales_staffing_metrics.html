@@ -464,6 +464,45 @@
       };
 
       Chart.register(industryPieLabelPlugin);
+      // --- hard-disable any label-ish plugins that might be loaded globally ---
+      (function () {
+        // List whatever could be present from base.html or elsewhere
+        const idsToDisable = ["datalabels", "labels", "chartjs-plugin-labels", "annotation"];
+      
+        // 1) Unregister if currently registered
+        idsToDisable.forEach((id) => {
+          try {
+            const plugin = Chart.registry?.plugins?.get?.(id);
+            if (plugin) Chart.unregister(plugin);
+          } catch (e) {
+            // ignore
+          }
+        });
+      
+        // 2) Set global defaults to false so even if registered, they're off
+        if (Chart.defaults && Chart.defaults.plugins) {
+          idsToDisable.forEach((id) => {
+            Chart.defaults.plugins[id] = false;
+          });
+        }
+      
+        // 3) Double-lock per-chart options by setting to boolean false (not just {display:false})
+        //    We'll patch your shared options here so every chart inherits it.
+        if (!window.__labelsPluginsDisabledOnce) {
+          window.__labelsPluginsDisabledOnce = true;
+          const origShared = window.sharedOptions; // not defined yet in your file, so we’ll hook via a getter
+          // Monkey-patch Object.defineProperty to inject plugins:false after you create sharedOptions.
+          // Safer: just create a global hook you call right after sharedOptions is defined (see below).
+          window.__disableLabelPluginsOnOptions = function (opts) {
+            opts.plugins = Object.assign({}, opts.plugins, {
+              datalabels: false,
+              labels: false,
+              annotation: false,
+            });
+            return opts;
+          };
+        }
+      })();
 
       // Ensure ChartDataLabels (if present) is registered first, then hard-disable it
       if (window.ChartDataLabels) {
@@ -550,7 +589,7 @@
 
       const disableDataLabels = () => false;
 
-      const sharedOptions = {
+      const sharedOptions = __disableLabelPluginsOnOptions({
         responsive: true,
         maintainAspectRatio: false,
         interaction: {
@@ -576,7 +615,7 @@
             beginAtZero: true,
           },
         },
-      };
+      });
 
       const shiftChart = createLineChart(
         shiftCtx,
