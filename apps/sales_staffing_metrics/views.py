@@ -32,38 +32,15 @@ else:
 
 RENDER_DATA_DIR = Path("/opt/render/project/src/data")
 
-
-def _resolve_data_dir() -> Path:
-    """Determine the directory used for runtime data files."""
-
-    env_override = os.getenv("SALES_STAFFING_DATA_DIR") or os.getenv("DATA_DIR")
-    if env_override:
-        data_dir = Path(env_override)
-        if not data_dir.is_absolute():
-            data_dir = BASE_DIR / data_dir
-        return data_dir
-
-    render_disk_path = os.getenv("RENDER_DISK_PATH")
-    if render_disk_path:
-        return Path(render_disk_path) / "sales-staffing-metrics"
-
-    persistent_mount = Path("/var/data")
-    if persistent_mount.exists():
-        return persistent_mount / "sales-staffing-metrics"
-
-    if any(
-        os.getenv(env_var)
-        for env_var in ("RENDER", "RENDER_SERVICE_ID", "RENDER_EXTERNAL_URL")
-    ):
-        return RENDER_DATA_DIR
-
-    if RENDER_DATA_DIR.exists():
-        return RENDER_DATA_DIR
-
-    return BASE_DIR / "data"
-
-
-DATA_DIR = _resolve_data_dir()
+if any(
+    os.getenv(env_var)
+    for env_var in ("RENDER", "RENDER_SERVICE_ID", "RENDER_EXTERNAL_URL")
+):
+    DATA_DIR = RENDER_DATA_DIR
+elif RENDER_DATA_DIR.exists():
+    DATA_DIR = RENDER_DATA_DIR
+else:
+    DATA_DIR = BASE_DIR / "data"
 WORKBOOK_FILENAME = "Sales and Staffing Charts.xlsx"
 
 logger = logging.getLogger("apps.sales_staffing_metrics")
@@ -75,8 +52,6 @@ if not logger.handlers:
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 logger.setLevel(logging.INFO)
-
-logger.info("Using data directory: %s", DATA_DIR)
 
 
 def _resolve_workbook_path() -> Path:
