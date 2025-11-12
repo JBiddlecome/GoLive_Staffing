@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+{% block title %}Recruiting Metrics — GoLive Tools{% endblock %}
+{% block content %}
+<section class="space-y-6">
+  <header class="space-y-2">
+    <h1 class="text-2xl font-semibold text-gray-900">Recruiting Metrics</h1>
+    <p class="text-sm text-gray-600">
+      Upload the Employee List export to review onboarding activity by week, county, and position. Select a Sunday
+      week ending date to compare the current year's activity against the same week one year earlier.
+    </p>
+  </header>
+
+  <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+    <h2 class="text-base font-semibold text-gray-900">1. Upload employee list</h2>
+    <p class="mt-1 text-xs text-gray-500">Accepts CSV or Excel files.</p>
+    <form
+      action="/recruiting-metrics/upload"
+      method="post"
+      enctype="multipart/form-data"
+      class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center"
+    >
+      <input
+        type="file"
+        name="file"
+        accept=".csv,.xlsx,.xls"
+        required
+        class="w-full text-sm text-gray-700"
+      />
+      <button
+        type="submit"
+        class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+      >
+        Upload file
+      </button>
+    </form>
+  </div>
+
+  {% if rm_error %}
+    <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+      {{ rm_error }}
+    </div>
+  {% endif %}
+
+  {% if rm_metrics_json %}
+    <div class="space-y-6">
+      <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div class="space-y-1">
+            <h2 class="text-base font-semibold text-gray-900">2. Select week ending</h2>
+            <p class="text-xs text-gray-500">
+              Selected week: <span class="font-medium text-gray-800">{{ rm_selected_week_range }}</span><br />
+              Prior-year comparison: <span class="font-medium text-gray-800">{{ rm_prior_week_range }}</span>
+            </p>
+            <p class="text-xs text-gray-500">
+              Uploaded file: <span class="font-medium text-gray-800">{{ rm_uploaded_filename }}</span>
+            </p>
+          </div>
+          <form
+            action="/recruiting-metrics/select-week"
+            method="post"
+            class="flex flex-col gap-3 md:w-64"
+            id="rm-week-form"
+          >
+            <input type="hidden" name="token" value="{{ rm_token }}" />
+            <label class="text-sm font-medium text-gray-700" for="rm-week-select">Week ending (Sunday)</label>
+            <select
+              id="rm-week-select"
+              name="week_ending"
+              class="rounded-lg border border-gray-300 bg-white p-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            >
+              {% for week in rm_weeks %}
+                <option value="{{ week.value }}" {% if week.value == rm_selected_week %}selected{% endif %}>
+                  {{ week.label }}
+                </option>
+              {% endfor %}
+            </select>
+            <button
+              type="submit"
+              class="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            >
+              Update metrics
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="grid gap-6 lg:grid-cols-2">
+        <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h3 class="text-base font-semibold text-gray-900">Onboarded — Selected Week ±2 vs Prior Year</h3>
+          <p class="mt-1 text-xs text-gray-500">
+            Counts include new starts and rehires during the week ending Sunday {{ rm_selected_week_label }}.
+          </p>
+          <div class="mt-4 h-72">
+            <canvas id="rm-onboarded-chart"></canvas>
+          </div>
+        </div>
+        <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h3 class="text-base font-semibold text-gray-900">Rehires — Selected Week ±2 vs Prior Year</h3>
+          <p class="mt-1 text-xs text-gray-500">
+            Rehire counts are based on the rehire date column only.
+          </p>
+          <div class="mt-4 h-72">
+            <canvas id="rm-rehires-chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid gap-6 lg:grid-cols-2">
+        <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h3 class="text-base font-semibold text-gray-900">Hires by County of Residence</h3>
+          <p class="mt-1 text-xs text-gray-500">Selected week only.</p>
+          {% if rm_has_hires_by_county %}
+            <div class="mt-4 h-80">
+              <canvas id="rm-county-chart"></canvas>
+            </div>
+          {% else %}
+            <div class="mt-4 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-10 text-center text-sm text-gray-500">
+              No hires found for the selected week.
+            </div>
+          {% endif %}
+        </div>
+        <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h3 class="text-base font-semibold text-gray-900">New Employees by County &amp; Position</h3>
+          <p class="mt-1 text-xs text-gray-500">
+            Counts are derived from the Positions column for Cook 2, Server 2, and Dishwasher roles during the selected week.
+          </p>
+          {% if rm_has_positions %}
+            <div class="mt-4 h-80">
+              <canvas id="rm-positions-chart"></canvas>
+            </div>
+          {% else %}
+            <div class="mt-4 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-10 text-center text-sm text-gray-500">
+              No matching position data found for the selected week.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h3 class="text-base font-semibold text-gray-900">Position Detail</h3>
+        <p class="mt-1 text-xs text-gray-500">County-level counts for Cook 2, Server 2, and Dishwasher.</p>
+        <div class="mt-4 overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 text-sm text-gray-700">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-2 text-left font-semibold uppercase tracking-wide text-xs text-gray-500">County</th>
+                <th class="px-4 py-2 text-right font-semibold uppercase tracking-wide text-xs text-gray-500">Cook 2</th>
+                <th class="px-4 py-2 text-right font-semibold uppercase tracking-wide text-xs text-gray-500">Server 2</th>
+                <th class="px-4 py-2 text-right font-semibold uppercase tracking-wide text-xs text-gray-500">Dishwasher</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              {% if rm_position_table %}
+                {% for row in rm_position_table %}
+                  <tr>
+                    <td class="px-4 py-2">{{ row.county }}</td>
+                    <td class="px-4 py-2 text-right">{{ row['Cook 2'] }}</td>
+                    <td class="px-4 py-2 text-right">{{ row['Server 2'] }}</td>
+                    <td class="px-4 py-2 text-right">{{ row['Dishwasher'] }}</td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td class="px-4 py-3 text-center text-sm text-gray-500" colspan="4">No position data available.</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  {% if rm_metrics_json %}
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.4.0/dist/chartjs-adapter-luxon.umd.min.js"></script>
+    <script id="rm-metrics-data" type="application/json">{{ rm_metrics_json | safe }}</script>
+    <script>
+      const metrics = JSON.parse(document.getElementById('rm-metrics-data').textContent);
+
+      const chartInstances = {};
+
+      function destroyChart(id) {
+        if (chartInstances[id]) {
+          chartInstances[id].destroy();
+          delete chartInstances[id];
+        }
+      }
+
+      function buildLineChart(id, current, prior, label) {
+        const ctx = document.getElementById(id);
+        if (!ctx) return;
+
+        destroyChart(id);
+
+        chartInstances[id] = new Chart(ctx, {
+          type: 'line',
+          data: {
+            datasets: [
+              {
+                label: `${label} (Current Year)`,
+                data: current.map((point) => ({ x: point.weekEnding, y: point.count })),
+                borderColor: '#4f46e5',
+                backgroundColor: '#6366f1',
+                tension: 0.2,
+                pointRadius: 4,
+              },
+              {
+                label: `${label} (Prior Year)`,
+                data: prior.map((point) => ({ x: point.weekEnding, y: point.count })),
+                borderColor: '#f97316',
+                backgroundColor: '#fb923c',
+                tension: 0.2,
+                pointRadius: 4,
+              },
+            ],
+          },
+          options: {
+            parsing: false,
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              mode: 'nearest',
+              intersect: false,
+            },
+            scales: {
+              x: {
+                type: 'time',
+                time: {
+                  unit: 'week',
+                },
+                title: {
+                  display: true,
+                  text: 'Week ending (Sunday)',
+                },
+              },
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: 'Count',
+                },
+                ticks: {
+                  precision: 0,
+                },
+              },
+            },
+          },
+        });
+      }
+
+      function buildBarChart(id, labels, data) {
+        const ctx = document.getElementById(id);
+        if (!ctx) return;
+        destroyChart(id);
+
+        chartInstances[id] = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [
+              {
+                label: 'Hires',
+                data,
+                backgroundColor: '#0ea5e9',
+              },
+            ],
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                beginAtZero: true,
+                ticks: { precision: 0 },
+                title: { display: true, text: 'Count' },
+              },
+              y: {
+                title: { display: true, text: 'County' },
+              },
+            },
+            plugins: {
+              legend: { display: false },
+            },
+          },
+        });
+      }
+
+      function buildStackedChart(id, counties, positions, matrix) {
+        const ctx = document.getElementById(id);
+        if (!ctx) return;
+        destroyChart(id);
+
+        const datasets = positions.map((position, idx) => {
+          const palette = ['#22c55e', '#6366f1', '#f97316'];
+          return {
+            label: position,
+            data: matrix.map((row) => row[idx] || 0),
+            backgroundColor: palette[idx % palette.length],
+          };
+        });
+
+        chartInstances[id] = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: counties,
+            datasets,
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                stacked: true,
+                title: {
+                  display: true,
+                  text: 'County',
+                },
+              },
+              y: {
+                stacked: true,
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: 'Count',
+                },
+                ticks: {
+                  precision: 0,
+                },
+              },
+            },
+          },
+        });
+      }
+
+      buildLineChart('rm-onboarded-chart', metrics.onboarded.current, metrics.onboarded.prior, 'Onboarded');
+      buildLineChart('rm-rehires-chart', metrics.rehires.current, metrics.rehires.prior, 'Rehires');
+
+      if (metrics.hiresByCounty.length > 0) {
+        const labels = metrics.hiresByCounty.map((item) => item.county);
+        const values = metrics.hiresByCounty.map((item) => item.count);
+        buildBarChart('rm-county-chart', labels, values);
+      }
+
+      if (metrics.positions.counties.length > 0) {
+        buildStackedChart(
+          'rm-positions-chart',
+          metrics.positions.counties,
+          metrics.positions.positions,
+          metrics.positions.matrix,
+        );
+      }
+
+      const weekSelect = document.getElementById('rm-week-select');
+      const weekForm = document.getElementById('rm-week-form');
+      if (weekSelect && weekForm) {
+        weekSelect.addEventListener('change', () => {
+          weekForm.requestSubmit();
+        });
+      }
+    </script>
+  {% endif %}
+{% endblock %}
