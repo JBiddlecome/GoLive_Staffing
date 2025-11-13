@@ -167,6 +167,116 @@
     <script>
       const metrics = JSON.parse(document.getElementById('rm-metrics-data').textContent);
 
+      function ensureDateAdapter() {
+        if (!window.luxon || !Chart || !Chart._adapters || !Chart._adapters._date) {
+          return;
+        }
+
+        const adapter = Chart._adapters._date;
+        const required = ['formats', 'parse', 'format', 'add', 'diff', 'startOf', 'endOf'];
+        const hasAllMethods = required.every((method) => typeof adapter[method] === 'function');
+        if (hasAllMethods) {
+          return;
+        }
+
+        const { DateTime } = luxon;
+        const unitMap = {
+          millisecond: 'millisecond',
+          second: 'second',
+          minute: 'minute',
+          hour: 'hour',
+          day: 'day',
+          week: 'week',
+          isoWeek: 'week',
+          month: 'month',
+          quarter: 'quarter',
+          year: 'year',
+        };
+
+        const formatTokens = {
+          datetime: 'MMM dd, yyyy, h:mm a',
+          millisecond: 'h:mm:ss.SSS a',
+          second: 'h:mm:ss a',
+          minute: 'h:mm a',
+          hour: 'h a',
+          day: 'MMM dd',
+          week: "MMM dd, yyyy",
+          month: 'MMM yyyy',
+          quarter: "qqq yyyy",
+          year: 'yyyy',
+        };
+
+        const fallbackAdapter = {
+          formats() {
+            return formatTokens;
+          },
+          parse(value, format) {
+            if (value === null || value === undefined || value === '') {
+              return null;
+            }
+
+            if (typeof value === 'number') {
+              return Number.isFinite(value) ? value : null;
+            }
+
+            if (value instanceof Date) {
+              return DateTime.fromJSDate(value).toMillis();
+            }
+
+            if (typeof value === 'string') {
+              let parsed = DateTime.fromISO(value, { zone: 'utc' });
+              if (!parsed.isValid && format && formatTokens[format]) {
+                parsed = DateTime.fromFormat(value, formatTokens[format], { zone: 'utc' });
+              }
+              return parsed.isValid ? parsed.toMillis() : null;
+            }
+
+            if (typeof value === 'object' && value) {
+              if (value.value !== undefined) {
+                return fallbackAdapter.parse(value.value, format);
+              }
+              if (value.x !== undefined) {
+                return fallbackAdapter.parse(value.x, format);
+              }
+            }
+
+            return null;
+          },
+          format(time, format) {
+            const dt = DateTime.fromMillis(time, { zone: 'utc' });
+            const token = formatTokens[format] || formatTokens.datetime;
+            return dt.isValid ? dt.toFormat(token) : '';
+          },
+          add(time, amount, unit) {
+            const normalized = unitMap[unit] || 'day';
+            const dt = DateTime.fromMillis(time, { zone: 'utc' }).plus({ [normalized]: amount });
+            return dt.toMillis();
+          },
+          diff(max, min, unit) {
+            const normalized = unitMap[unit] || 'millisecond';
+            const maxDt = DateTime.fromMillis(max, { zone: 'utc' });
+            const minDt = DateTime.fromMillis(min, { zone: 'utc' });
+            return maxDt.diff(minDt, normalized).as(normalized);
+          },
+          startOf(time, unit, weekday) {
+            const normalized = unitMap[unit] || 'day';
+            let dt = DateTime.fromMillis(time, { zone: 'utc' });
+            if (normalized === 'week' && typeof weekday === 'number') {
+              dt = dt.set({ weekday });
+            }
+            return dt.startOf(normalized).toMillis();
+          },
+          endOf(time, unit) {
+            const normalized = unitMap[unit] || 'day';
+            return DateTime.fromMillis(time, { zone: 'utc' }).endOf(normalized).toMillis();
+          },
+        };
+
+        Chart._adapters._date.override(fallbackAdapter);
+      }
+
+      ensureDateAdapter();
+
       const chartInstances = {};
 
       function destroyChart(id) {
