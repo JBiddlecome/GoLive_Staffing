@@ -81,15 +81,26 @@
     <form class="space-y-4" method="post" action="/employee-list-filter/process">
       <input type="hidden" name="file_token" value="{{ employee_file_token }}" />
       <div class="grid md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium mb-1" for="statuses">Status</label>
-          <select class="border rounded-lg p-2 w-full bg-white" id="statuses" name="statuses" multiple size="6">
+        <fieldset>
+          <legend class="block text-sm font-medium mb-2">Status</legend>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 border rounded-lg p-3 bg-white">
             {% for value in employee_options.statuses %}
-            <option value="{{ value }}" {% if value in employee_selected.statuses %}selected{% endif %}>{{ value }}</option>
+            {% set status_id = 'status_' ~ loop.index %}
+            <label class="inline-flex items-center gap-2" for="{{ status_id }}">
+              <input
+                class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                type="checkbox"
+                id="{{ status_id }}"
+                name="statuses"
+                value="{{ value }}"
+                {% if value in employee_selected.statuses %}checked{% endif %}
+              />
+              <span class="text-sm text-gray-700">{{ value }}</span>
+            </label>
             {% endfor %}
-          </select>
-          <p class="text-xs text-gray-500 mt-1">Leave unselected to include all statuses. Hold Ctrl (Windows) or Command (macOS) to select multiple.</p>
-        </div>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">Select one or more statuses to include. Leave all unchecked to include every status.</p>
+        </fieldset>
         <div>
           <label class="block text-sm font-medium mb-1" for="cities">City</label>
           <select class="border rounded-lg p-2 w-full bg-white" id="cities" name="cities" multiple size="6">
