@@ -5,6 +5,7 @@ from fastapi.templating import Jinja2Templates
 
 # Sub-routes
 from apps.clickboarding_check.views import router as clickboarding_router
+from apps.concierge.views import router as concierge_router
 from apps.employee_list_filter.views import router as employee_list_router
 from apps.employee_phone_county_audit.views import router as employee_audit_router
 from apps.health_benefits.views import router as health_benefits_router
@@ -35,6 +36,7 @@ app.include_router(clickboarding_router, prefix="/clickboarding-check", tags=["C
 app.include_router(health_benefits_router, prefix="/health-benefits", tags=["Health Benefits"])
 app.include_router(sales_staffing_router, prefix="/sales-staffing-metrics", tags=["Sales & Staffing Metrics"])
 app.include_router(recruiting_metrics_router, prefix="/recruiting-metrics", tags=["Recruiting Metrics"])
+app.include_router(concierge_router, prefix="/concierge", tags=["Concierge"])
 app.include_router(text_blast_router, prefix="/text-blast-filter", tags=["Text Blast Filter"])
 app.include_router(ucla_hours_router, prefix="/ucla-hours-tool", tags=["UCLA Hours Tool"])
 app.include_router(employee_list_router, prefix="/employee-list-filter", tags=["Employee List Filter"])
