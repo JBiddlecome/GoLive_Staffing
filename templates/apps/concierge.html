@@ -32,7 +32,7 @@
       <h2 class="text-lg font-semibold">Concierge list</h2>
       <p class="text-sm text-gray-600">Total employees: {{ summary.total }} · Concierged: {{ summary.concierged }}</p>
     </div>
-    <form action="/concierge" method="get" class="flex items-center gap-2 text-sm">
+    <form action="/concierge" method="get" class="flex flex-wrap items-center gap-2 text-sm">
       <input type="hidden" name="sort" value="{{ sort }}" />
       <label for="concierged" class="text-gray-700">Filter:</label>
       <select id="concierged" name="concierged" class="border rounded-md px-2 py-1">
@@ -40,6 +40,10 @@
         <option value="yes" {% if concierged_filter == 'yes' %}selected{% endif %}>Concierged</option>
         <option value="no" {% if concierged_filter == 'no' %}selected{% endif %}>Not concierged</option>
       </select>
+      <label for="start_date" class="text-gray-700">Start date:</label>
+      <input type="date" id="start_date" name="start_date" value="{{ start_date }}" class="border rounded-md px-2 py-1" />
+      <label for="end_date" class="text-gray-700">End date:</label>
+      <input type="date" id="end_date" name="end_date" value="{{ end_date }}" class="border rounded-md px-2 py-1" />
       <button type="submit" class="px-3 py-1 rounded-md bg-gray-800 text-white">Apply</button>
     </form>
   </div>
@@ -53,7 +57,7 @@
         <tr class="border-b text-left text-xs uppercase text-gray-600">
           <th class="py-2 pr-3">
             {% set next_sort = 'employee_id_desc' if sort == 'employee_id_asc' else 'employee_id_asc' %}
-            <a class="inline-flex items-center gap-1 hover:underline" href="{{ request.url_for('concierge_page') }}?concierged={{ concierged_filter }}&sort={{ next_sort }}">
+            <a class="inline-flex items-center gap-1 hover:underline" href="{{ request.url_for('concierge_page') }}?concierged={{ concierged_filter }}&sort={{ next_sort }}&start_date={{ start_date }}&end_date={{ end_date }}">
               <span>Employee ID</span>
               {% if sort.startswith('employee_id') %}
                 <span aria-hidden="true">{{ '↑' if sort == 'employee_id_asc' else '↓' }}</span>
@@ -80,6 +84,8 @@
               <input type="hidden" name="employee_id" value="{{ record.employee_id }}" />
               <input type="hidden" name="concierged_filter" value="{{ concierged_filter }}" />
               <input type="hidden" name="sort" value="{{ sort }}" />
+              <input type="hidden" name="start_date" value="{{ start_date }}" />
+              <input type="hidden" name="end_date" value="{{ end_date }}" />
             </form>
           </td>
           <td class="py-3 pr-3">
