@@ -41,6 +41,8 @@ async def concierge_page(
     sort: str = Query("employee_id_asc"),
     notice: str = Query(""),
     error: str = Query(""),
+    start_date: str = Query(""),
+    end_date: str = Query(""),
 ) -> HTMLResponse:
     return _render_page(
         request,
@@ -48,6 +50,8 @@ async def concierge_page(
         sort=sort,
         notice=notice,
         error=error,
+        start_date=start_date,
+        end_date=end_date,
     )
 
 
@@ -81,6 +85,8 @@ async def update_employee(
     concierged: str | None = Form(None),
     concierged_filter: str = Form("all"),
     sort: str = Form("employee_id_asc"),
+    start_date: str = Form(""),
+    end_date: str = Form(""),
 ) -> HTMLResponse:
     records = _load_records()
     existing = {record.get("employee_id"): record for record in records}
@@ -128,6 +134,8 @@ async def update_employee(
         notice="Employee updated.",
         concierged_filter=concierged_filter,
         sort=sort,
+        start_date=start_date,
+        end_date=end_date,
     )
 
 
@@ -143,28 +151,41 @@ def _render_page(
     sort: str = "employee_id_asc",
     notice: str = "",
     error: str = "",
+    start_date: str = "",
+    end_date: str = "",
 ) -> HTMLResponse:
     records = _load_records()
     normalized_sort = _normalize_sort(sort)
+
+    parsed_start, parsed_end, date_error = _normalize_filter_dates(start_date, end_date)
+
+    filter_error = date_error or ""
     filtered_records = _apply_concierged_filter(records, concierged_filter)
+    if not date_error:
+        filtered_records = _apply_date_range_filter(filtered_records, parsed_start, parsed_end)
+
     sorted_records = _apply_sort(filtered_records, normalized_sort)
 
     concierged_count = sum(1 for record in records if record.get("concierged"))
+    combined_error = " ".join(msg for msg in (error, filter_error) if msg).strip()
+
     context: Dict[str, object] = {
         "request": request,
         "records": sorted_records,
         "concierged_filter": concierged_filter,
         "sort": normalized_sort,
         "notice": notice,
-        "error": error,
+        "error": combined_error,
         "summary": {
             "total": len(records),
             "concierged": concierged_count,
         },
         "recruiters": ALLOWED_RECRUITERS,
+        "start_date": start_date,
+        "end_date": end_date,
     }
 
-    status_code = 400 if error else 200
+    status_code = 400 if combined_error else 200
     return templates.TemplateResponse("apps/concierge.html", context, status_code=status_code)
 
 
@@ -175,6 +196,32 @@ def _apply_concierged_filter(records: List[Dict[str, object]], filter_value: str
     if normalized == "no":
         return [record for record in records if not record.get("concierged")]
     return records
+
+
+def _apply_date_range_filter(
+    records: List[Dict[str, object]],
+    start_date: pd.Timestamp | None,
+    end_date: pd.Timestamp | None,
+) -> List[Dict[str, object]]:
+    if start_date is None and end_date is None:
+        return records
+
+    def _in_range(date_str: str) -> bool:
+        parsed = _normalize_date(date_str)
+        if parsed is None:
+            return False
+        if start_date is not None and parsed < start_date:
+            return False
+        if end_date is not None and parsed > end_date:
+            return False
+        return True
+
+    return [
+        record
+        for record in records
+        if _in_range(record.get("start_date", ""))
+        or _in_range(record.get("rehire_date", ""))
+    ]
 
 
 def _apply_sort(records: List[Dict[str, object]], sort: str) -> List[Dict[str, object]]:
@@ -272,6 +319,24 @@ def _normalize_date(value) -> pd.Timestamp | None:
 def _normalize_date_str(value: str) -> str:
     parsed = _normalize_date(value)
     return _format_date(parsed)
+
+
+def _normalize_filter_dates(
+    start_date: str, end_date: str
+) -> tuple[pd.Timestamp | None, pd.Timestamp | None, str | None]:
+    parsed_start = _normalize_date(start_date) if start_date else None
+    parsed_end = _normalize_date(end_date) if end_date else None
+
+    if start_date and parsed_start is None:
+        return None, None, "Start date must be a valid date (YYYY-MM-DD)."
+
+    if end_date and parsed_end is None:
+        return None, None, "End date must be a valid date (YYYY-MM-DD)."
+
+    if parsed_start and parsed_end and parsed_start > parsed_end:
+        return None, None, "Start date cannot be after end date."
+
+    return parsed_start, parsed_end, None
 
 
 def _format_date(value: pd.Timestamp | None) -> str:
