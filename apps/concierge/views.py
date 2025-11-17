@@ -25,6 +25,10 @@ REQUIRED_COLUMNS = [
 
 ALLOWED_RECRUITERS = ["Piyush", "Prafull", "Anmol", "Christina"]
 START_DATE_CUTOFF = pd.Timestamp(year=2025, month=10, day=1)
+_SORT_FIELDS = {
+    "employee_id_asc": ("employee_id", False),
+    "employee_id_desc": ("employee_id", True),
+}
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -34,10 +38,17 @@ templates = Jinja2Templates(directory="templates")
 async def concierge_page(
     request: Request,
     concierged: str = Query("all"),
+    sort: str = Query("employee_id_asc"),
     notice: str = Query(""),
     error: str = Query(""),
 ) -> HTMLResponse:
-    return _render_page(request, concierged_filter=concierged, notice=notice, error=error)
+    return _render_page(
+        request,
+        concierged_filter=concierged,
+        sort=sort,
+        notice=notice,
+        error=error,
+    )
 
 
 @router.post("/upload", response_class=HTMLResponse)
@@ -69,12 +80,18 @@ async def update_employee(
     recruiter: str = Form(""),
     concierged: str | None = Form(None),
     concierged_filter: str = Form("all"),
+    sort: str = Form("employee_id_asc"),
 ) -> HTMLResponse:
     records = _load_records()
     existing = {record.get("employee_id"): record for record in records}
 
     if employee_id not in existing:
-        return _render_page(request, error="Employee not found.", concierged_filter=concierged_filter)
+        return _render_page(
+            request,
+            error="Employee not found.",
+            concierged_filter=concierged_filter,
+            sort=sort,
+        )
 
     record = existing[employee_id]
 
@@ -84,6 +101,7 @@ async def update_employee(
             request,
             error="Called Date must be a valid date (YYYY-MM-DD).",
             concierged_filter=concierged_filter,
+            sort=sort,
         )
 
     try:
@@ -95,6 +113,7 @@ async def update_employee(
             request,
             error="Number of calls must be a non-negative integer.",
             concierged_filter=concierged_filter,
+            sort=sort,
         )
 
     record["called_date"] = normalized_called
@@ -104,7 +123,12 @@ async def update_employee(
 
     _save_records(records)
 
-    return _render_page(request, notice="Employee updated.", concierged_filter=concierged_filter)
+    return _render_page(
+        request,
+        notice="Employee updated.",
+        concierged_filter=concierged_filter,
+        sort=sort,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -116,17 +140,21 @@ def _render_page(
     request: Request,
     *,
     concierged_filter: str = "all",
+    sort: str = "employee_id_asc",
     notice: str = "",
     error: str = "",
 ) -> HTMLResponse:
     records = _load_records()
+    normalized_sort = _normalize_sort(sort)
     filtered_records = _apply_concierged_filter(records, concierged_filter)
+    sorted_records = _apply_sort(filtered_records, normalized_sort)
 
     concierged_count = sum(1 for record in records if record.get("concierged"))
     context: Dict[str, object] = {
         "request": request,
-        "records": filtered_records,
+        "records": sorted_records,
         "concierged_filter": concierged_filter,
+        "sort": normalized_sort,
         "notice": notice,
         "error": error,
         "summary": {
@@ -147,6 +175,18 @@ def _apply_concierged_filter(records: List[Dict[str, object]], filter_value: str
     if normalized == "no":
         return [record for record in records if not record.get("concierged")]
     return records
+
+
+def _apply_sort(records: List[Dict[str, object]], sort: str) -> List[Dict[str, object]]:
+    field, reverse = _SORT_FIELDS.get(sort, _SORT_FIELDS["employee_id_asc"])
+    return sorted(records, key=lambda record: record.get(field, ""), reverse=reverse)
+
+
+def _normalize_sort(sort: str) -> str:
+    normalized = (sort or "").lower()
+    if normalized in _SORT_FIELDS:
+        return normalized
+    return "employee_id_asc"
 
 
 def _load_dataframe(file_bytes: bytes, filename: str) -> pd.DataFrame:
