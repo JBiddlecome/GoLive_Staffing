@@ -34,21 +34,10 @@ templates = Jinja2Templates(directory="templates")
 async def concierge_page(
     request: Request,
     concierged: str = Query("all"),
-    start_date_from: str = Query(""),
-    start_date_to: str = Query(""),
-    sort_by: str = Query("id_asc"),
     notice: str = Query(""),
     error: str = Query(""),
 ) -> HTMLResponse:
-    return _render_page(
-        request,
-        concierged_filter=concierged,
-        start_date_from=start_date_from,
-        start_date_to=start_date_to,
-        sort_by=sort_by,
-        notice=notice,
-        error=error,
-    )
+    return _render_page(request, concierged_filter=concierged, notice=notice, error=error)
 
 
 @router.post("/upload", response_class=HTMLResponse)
@@ -80,9 +69,6 @@ async def update_employee(
     recruiter: str = Form(""),
     concierged: str | None = Form(None),
     concierged_filter: str = Form("all"),
-    start_date_from: str = Form(""),
-    start_date_to: str = Form(""),
-    sort_by: str = Form("id_asc"),
 ) -> HTMLResponse:
     records = _load_records()
     existing = {record.get("employee_id"): record for record in records}
@@ -118,14 +104,7 @@ async def update_employee(
 
     _save_records(records)
 
-    return _render_page(
-        request,
-        notice="Employee updated.",
-        concierged_filter=concierged_filter,
-        start_date_from=start_date_from,
-        start_date_to=start_date_to,
-        sort_by=sort_by,
-    )
+    return _render_page(request, notice="Employee updated.", concierged_filter=concierged_filter)
 
 
 # ---------------------------------------------------------------------------
@@ -137,25 +116,17 @@ def _render_page(
     request: Request,
     *,
     concierged_filter: str = "all",
-    start_date_from: str = "",
-    start_date_to: str = "",
-    sort_by: str = "id_asc",
     notice: str = "",
     error: str = "",
 ) -> HTMLResponse:
     records = _load_records()
     filtered_records = _apply_concierged_filter(records, concierged_filter)
-    filtered_records = _apply_date_range_filter(filtered_records, start_date_from, start_date_to)
-    filtered_records = _sort_records(filtered_records, sort_by)
 
     concierged_count = sum(1 for record in records if record.get("concierged"))
     context: Dict[str, object] = {
         "request": request,
         "records": filtered_records,
         "concierged_filter": concierged_filter,
-        "start_date_from": start_date_from,
-        "start_date_to": start_date_to,
-        "sort_by": sort_by,
         "notice": notice,
         "error": error,
         "summary": {
@@ -176,46 +147,6 @@ def _apply_concierged_filter(records: List[Dict[str, object]], filter_value: str
     if normalized == "no":
         return [record for record in records if not record.get("concierged")]
     return records
-
-
-def _apply_date_range_filter(
-    records: List[Dict[str, object]], start_date_from: str, start_date_to: str
-) -> List[Dict[str, object]]:
-    start = _normalize_date(start_date_from) if start_date_from else None
-    end = _normalize_date(start_date_to) if start_date_to else None
-
-    if start is None and end is None:
-        return records
-
-    filtered: List[Dict[str, object]] = []
-    for record in records:
-        for date_value in (
-            _normalize_date(record.get("start_date")),
-            _normalize_date(record.get("rehire_date")),
-        ):
-            if date_value is None:
-                continue
-
-            if start is not None and date_value < start:
-                continue
-            if end is not None and date_value > end:
-                continue
-
-            filtered.append(record)
-            break
-
-    return filtered
-
-
-def _sort_records(records: List[Dict[str, object]], sort_by: str) -> List[Dict[str, object]]:
-    normalized = (sort_by or "id_asc").lower()
-    reverse = normalized == "id_desc"
-
-    def sort_key(record: Dict[str, object]):
-        employee_id = str(record.get("employee_id", "")).strip()
-        return int(employee_id) if employee_id.isdigit() else employee_id
-
-    return sorted(records, key=sort_key, reverse=reverse)
 
 
 def _load_dataframe(file_bytes: bytes, filename: str) -> pd.DataFrame:

@@ -32,38 +32,13 @@
       <h2 class="text-lg font-semibold">Concierge list</h2>
       <p class="text-sm text-gray-600">Total employees: {{ summary.total }} · Concierged: {{ summary.concierged }}</p>
     </div>
-    <form action="/concierge" method="get" class="flex flex-wrap items-center gap-2 text-sm">
+    <form action="/concierge" method="get" class="flex items-center gap-2 text-sm">
       <label for="concierged" class="text-gray-700">Filter:</label>
       <select id="concierged" name="concierged" class="border rounded-md px-2 py-1">
         <option value="all" {% if concierged_filter == 'all' %}selected{% endif %}>All</option>
         <option value="yes" {% if concierged_filter == 'yes' %}selected{% endif %}>Concierged</option>
         <option value="no" {% if concierged_filter == 'no' %}selected{% endif %}>Not concierged</option>
       </select>
-
-      <label for="start_date_from" class="text-gray-700">Start/Rehire from:</label>
-      <input
-        type="date"
-        id="start_date_from"
-        name="start_date_from"
-        value="{{ start_date_from }}"
-        class="border rounded-md px-2 py-1"
-      />
-
-      <label for="start_date_to" class="text-gray-700">to:</label>
-      <input
-        type="date"
-        id="start_date_to"
-        name="start_date_to"
-        value="{{ start_date_to }}"
-        class="border rounded-md px-2 py-1"
-      />
-
-      <label for="sort_by" class="text-gray-700">Sort:</label>
-      <select id="sort_by" name="sort_by" class="border rounded-md px-2 py-1">
-        <option value="id_asc" {% if sort_by == 'id_asc' %}selected{% endif %}>Employee ID (Asc)</option>
-        <option value="id_desc" {% if sort_by == 'id_desc' %}selected{% endif %}>Employee ID (Desc)</option>
-      </select>
-
       <button type="submit" class="px-3 py-1 rounded-md bg-gray-800 text-white">Apply</button>
     </form>
   </div>
@@ -95,9 +70,6 @@
             <form id="{{ form_id }}" action="/concierge/update" method="post">
               <input type="hidden" name="employee_id" value="{{ record.employee_id }}" />
               <input type="hidden" name="concierged_filter" value="{{ concierged_filter }}" />
-              <input type="hidden" name="start_date_from" value="{{ start_date_from }}" />
-              <input type="hidden" name="start_date_to" value="{{ start_date_to }}" />
-              <input type="hidden" name="sort_by" value="{{ sort_by }}" />
             </form>
           </td>
           <td class="py-3 pr-3">
