@@ -166,7 +166,7 @@ def _render_page(
 
     sorted_records = _apply_sort(filtered_records, normalized_sort)
 
-    concierged_count = sum(1 for record in records if record.get("concierged"))
+    concierged_count = sum(1 for record in filtered_records if record.get("concierged"))
     combined_error = " ".join(msg for msg in (error, filter_error) if msg).strip()
 
     context: Dict[str, object] = {
@@ -177,7 +177,7 @@ def _render_page(
         "notice": notice,
         "error": combined_error,
         "summary": {
-            "total": len(records),
+            "total": len(filtered_records),
             "concierged": concierged_count,
         },
         "recruiters": ALLOWED_RECRUITERS,
