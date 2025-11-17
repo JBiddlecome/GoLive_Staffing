@@ -1181,6 +1181,8 @@
       let dealsDirty = false;
       let isSaving = false;
 
+      const dealsUrl = `${window.location.pathname.replace(/\/$/, "")}/deals`;
+
       function parseDealDate(value) {
         if (!value) {
           return null;
@@ -1381,7 +1383,7 @@
         showDealFeedback("Saving changes…");
 
         try {
-          const response = await fetch("./deals", {
+          const response = await fetch(dealsUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
