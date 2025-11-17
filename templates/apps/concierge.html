@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Concierge Tracker — GoLive Staffing{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Concierge Tracker</h1>
+<p class="text-gray-700 mb-6">
+  Upload your employee roster and keep a running list of Active employees hired from October 1, 2025 forward.
+  Use the table to record concierge calls, assign recruiters, and track which hires have been concierged.
+</p>
+
+{% if notice %}
+  <div class="mb-4 rounded border border-green-200 bg-green-50 px-4 py-3 text-green-800">{{ notice }}</div>
+{% endif %}
+{% if error %}
+  <div class="mb-4 rounded border border-red-200 bg-red-50 px-4 py-3 text-red-800">{{ error }}</div>
+{% endif %}
+
+<section class="bg-white shadow-sm border rounded-2xl p-5 mb-6">
+  <h2 class="text-lg font-semibold mb-3">Upload roster</h2>
+  <form action="/concierge/upload" method="post" enctype="multipart/form-data" class="space-y-3 md:flex md:items-center md:space-y-0 md:space-x-4">
+    <div class="flex-1">
+      <input type="file" name="file" accept=".xlsx,.csv" required class="w-full text-sm" />
+      <p class="text-xs text-gray-500 mt-1">Required columns: Employee ID, Status, First Name, Last Name, Start Date, Rehire Date, Concierge Date.</p>
+      <p class="text-xs text-gray-500">Only Active employees with a Start Date or Rehire Date on/after 2025-10-01 will be added. Existing Employee IDs are kept.</p>
+    </div>
+    <button type="submit" class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">Upload</button>
+  </form>
+</section>
+
+<section class="bg-white shadow-sm border rounded-2xl p-5 mb-6">
+  <div class="flex flex-wrap items-center gap-4 justify-between">
+    <div>
+      <h2 class="text-lg font-semibold">Concierge list</h2>
+      <p class="text-sm text-gray-600">Total employees: {{ summary.total }} · Concierged: {{ summary.concierged }}</p>
+    </div>
+    <form action="/concierge" method="get" class="flex items-center gap-2 text-sm">
+      <label for="concierged" class="text-gray-700">Filter:</label>
+      <select id="concierged" name="concierged" class="border rounded-md px-2 py-1">
+        <option value="all" {% if concierged_filter == 'all' %}selected{% endif %}>All</option>
+        <option value="yes" {% if concierged_filter == 'yes' %}selected{% endif %}>Concierged</option>
+        <option value="no" {% if concierged_filter == 'no' %}selected{% endif %}>Not concierged</option>
+      </select>
+      <button type="submit" class="px-3 py-1 rounded-md bg-gray-800 text-white">Apply</button>
+    </form>
+  </div>
+</section>
+
+<section class="bg-white shadow-sm border rounded-2xl p-5">
+  {% if records %}
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead>
+        <tr class="border-b text-left text-xs uppercase text-gray-600">
+          <th class="py-2 pr-3">Employee ID</th>
+          <th class="py-2 pr-3">Name</th>
+          <th class="py-2 pr-3">Start Date</th>
+          <th class="py-2 pr-3">Rehire Date</th>
+          <th class="py-2 pr-3">Called Date</th>
+          <th class="py-2 pr-3"># Calls</th>
+          <th class="py-2 pr-3">Recruiter</th>
+          <th class="py-2 pr-3">Concierged</th>
+          <th class="py-2 pr-3"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        {% for record in records %}
+        {% set form_id = 'update-' ~ record.employee_id|replace(' ', '-') %}
+        <tr class="align-top">
+          <td class="py-3 pr-3 font-medium text-gray-900">
+            {{ record.employee_id }}
+            <form id="{{ form_id }}" action="/concierge/update" method="post">
+              <input type="hidden" name="employee_id" value="{{ record.employee_id }}" />
+              <input type="hidden" name="concierged_filter" value="{{ concierged_filter }}" />
+            </form>
+          </td>
+          <td class="py-3 pr-3">
+            <div class="font-semibold">{{ record.first_name }} {{ record.last_name }}</div>
+            <div class="text-xs text-gray-500">Concierge Date: {{ record.concierge_date or '—' }}</div>
+          </td>
+          <td class="py-3 pr-3">{{ record.start_date or '—' }}</td>
+          <td class="py-3 pr-3">{{ record.rehire_date or '—' }}</td>
+          <td class="py-3 pr-3">
+              <input type="date" name="called_date" form="{{ form_id }}" value="{{ record.called_date }}" class="border rounded-md px-2 py-1 w-40" />
+          </td>
+          <td class="py-3 pr-3">
+              <input type="number" name="call_count" form="{{ form_id }}" min="0" value="{{ record.call_count }}" class="border rounded-md px-2 py-1 w-24" />
+          </td>
+          <td class="py-3 pr-3">
+              <select name="recruiter" form="{{ form_id }}" class="border rounded-md px-2 py-1 w-36">
+                <option value="" {% if not record.recruiter %}selected{% endif %}>Select</option>
+                {% for recruiter in recruiters %}
+                  <option value="{{ recruiter }}" {% if record.recruiter == recruiter %}selected{% endif %}>{{ recruiter }}</option>
+                {% endfor %}
+              </select>
+          </td>
+          <td class="py-3 pr-3">
+              <input type="checkbox" name="concierged" form="{{ form_id }}" {% if record.concierged %}checked{% endif %} class="h-4 w-4" />
+          </td>
+          <td class="py-3 pr-3 text-right">
+              <button type="submit" form="{{ form_id }}" class="px-3 py-1 rounded-md bg-blue-600 text-white">Save</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p class="text-sm text-gray-600">No concierge records yet. Upload a roster to get started.</p>
+  {% endif %}
+</section>
+{% endblock %}
