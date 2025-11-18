@@ -311,7 +311,8 @@ def _position_counts_by_county(
             cleaned = str(token).strip()
             if not cleaned:
                 continue
-            matches = [t for t in TARGET_POSITIONS if t.lower() in cleaned.lower()]
+            normalized = " ".join(cleaned.split()).lower()
+            matches = [t for t in TARGET_POSITIONS if normalized == t.lower()]
             rows.extend((county, match) for match in matches)
 
     if not rows:
