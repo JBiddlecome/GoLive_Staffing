@@ -9,6 +9,7 @@ from apps.concierge.views import router as concierge_router
 from apps.employee_list_filter.views import router as employee_list_router
 from apps.employee_phone_county_audit.views import router as employee_audit_router
 from apps.health_benefits.views import router as health_benefits_router
+from apps.interview_questions.views import router as interview_questions_router
 from apps.recruiting_metrics.views import router as recruiting_metrics_router
 from apps.sales_staffing_metrics.views import router as sales_staffing_router
 from apps.text_blast_filter.views import router as text_blast_router
@@ -44,6 +45,9 @@ app.include_router(
     employee_audit_router,
     prefix="/employee-phone-county-audit",
     tags=["Employee Phone & County Audit"],
+)
+app.include_router(
+    interview_questions_router, prefix="/interview-questions", tags=["Interview Questions"]
 )
 
 # Simple health check for Render
