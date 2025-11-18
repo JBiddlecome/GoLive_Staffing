@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Interview Questions — GoLive Tools{% endblock %}
+{% block content %}
+<section class="max-w-4xl space-y-6">
+  <div>
+    <h1 class="text-2xl font-semibold mb-2">Interview Questions</h1>
+    <p class="text-sm text-gray-700 max-w-2xl">Paste an interview transcript to receive a JSON evaluation you can share with the hiring team.</p>
+  </div>
+
+  <div class="p-6 bg-white border border-gray-200 rounded-xl shadow-sm space-y-4">
+    <form id="iq-form" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-2" for="transcript">Interview transcript</label>
+        <textarea
+          id="transcript"
+          name="transcript"
+          rows="12"
+          class="w-full border rounded-lg p-3 bg-white shadow-inner focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="Paste the full transcript here..."
+          required
+        ></textarea>
+        <p class="text-xs text-gray-500 mt-1">Include both interviewer questions and candidate answers for the most accurate feedback.</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button
+          type="submit"
+          class="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-500 disabled:opacity-60"
+        >
+          Evaluate Interview
+        </button>
+        <span id="iq-status" class="text-sm text-gray-600" role="status"></span>
+      </div>
+    </form>
+
+    <div id="iq-result" class="hidden border border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-sm font-semibold text-gray-800">AI JSON Response</h2>
+        <button
+          id="iq-copy"
+          type="button"
+          class="px-3 py-1 text-xs font-semibold border rounded-lg bg-white hover:bg-gray-100"
+        >
+          Copy JSON
+        </button>
+      </div>
+      <pre id="iq-output" class="text-xs whitespace-pre-wrap overflow-x-auto"></pre>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const form = document.getElementById("iq-form");
+  const statusEl = document.getElementById("iq-status");
+  const resultEl = document.getElementById("iq-result");
+  const outputEl = document.getElementById("iq-output");
+  const copyBtn = document.getElementById("iq-copy");
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    resultEl.classList.add("hidden");
+    statusEl.textContent = "Submitting transcript...";
+    const transcript = (document.getElementById("transcript")?.value || "").trim();
+
+    try {
+      const response = await fetch("/interview-questions/evaluate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transcript })
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        const detail = payload.detail || payload.error || "Request failed.";
+        statusEl.textContent = `Error: ${detail}`;
+        return;
+      }
+
+      const data = await response.json();
+      outputEl.textContent = JSON.stringify(data, null, 2);
+      resultEl.classList.remove("hidden");
+      statusEl.textContent = "Response received.";
+    } catch (error) {
+      statusEl.textContent = "Network error. Please try again.";
+    }
+  });
+
+  copyBtn.addEventListener("click", async () => {
+    const text = outputEl.textContent;
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      statusEl.textContent = "Copied to clipboard.";
+      setTimeout(() => (statusEl.textContent = ""), 2000);
+    } catch (error) {
+      statusEl.textContent = "Unable to copy. Please copy manually.";
+    }
+  });
+</script>
+{% endblock %}
