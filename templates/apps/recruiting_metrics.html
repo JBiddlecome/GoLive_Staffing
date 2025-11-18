@@ -173,6 +173,27 @@
           </table>
         </div>
       </div>
+
+      <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h3 class="text-base font-semibold text-gray-900">Concierge Numbers</h3>
+        <p class="mt-1 text-xs text-gray-500">Selected week ending totals.</p>
+        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+          <div class="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Employees Onboarded and Hired</p>
+            <p class="mt-2 text-3xl font-semibold text-gray-900">
+              {{ rm_concierge_numbers.onboardedAndHired | default(0) }}
+            </p>
+            <p class="text-xs text-gray-500">Start Date or Rehire Date falls within the selected week.</p>
+          </div>
+          <div class="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Employees Onboarded and Concierged</p>
+            <p class="mt-2 text-3xl font-semibold text-gray-900">
+              {{ rm_concierge_numbers.onboardedAndConcierged | default(0) }}
+            </p>
+            <p class="text-xs text-gray-500">Concierge Date falls in the same week as the selected week ending.</p>
+          </div>
+        </div>
+      </div>
     </div>
   {% endif %}
 </section>
