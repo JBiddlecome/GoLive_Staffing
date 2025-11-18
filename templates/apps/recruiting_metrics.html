@@ -70,21 +70,42 @@
 
       <div class="grid gap-6 lg:grid-cols-2">
         <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h3 class="text-base font-semibold text-gray-900">Onboarded — Last 5 Weeks vs Prior Year</h3>
+          <h3 class="text-base font-semibold text-gray-900">Onboarded This Year</h3>
           <p class="mt-1 text-xs text-gray-500">
-            Counts include new starts and rehires across the five most recent Sunday week endings culminating on {{ rm_selected_week_label }}.
+            Counts include new starts and rehires for the selected week ending and the four prior week endings.
           </p>
           <div class="mt-4 h-72">
-            <canvas id="rm-onboarded-chart"></canvas>
+            <canvas id="rm-onboarded-current"></canvas>
           </div>
         </div>
         <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h3 class="text-base font-semibold text-gray-900">Rehires — Last 5 Weeks vs Prior Year</h3>
+          <h3 class="text-base font-semibold text-gray-900">Onboarded Last Year</h3>
           <p class="mt-1 text-xs text-gray-500">
-            Rehire counts reflect the same five-week window based on the rehire date column.
+            Shows the same five week-ending dates from the previous year based on Start Date or Rehire Date.
           </p>
           <div class="mt-4 h-72">
-            <canvas id="rm-rehires-chart"></canvas>
+            <canvas id="rm-onboarded-prior"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid gap-6 lg:grid-cols-2">
+        <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h3 class="text-base font-semibold text-gray-900">Rehires This Year</h3>
+          <p class="mt-1 text-xs text-gray-500">
+            Counts include only Rehire Date values for the selected week ending and four prior weeks.
+          </p>
+          <div class="mt-4 h-72">
+            <canvas id="rm-rehires-current"></canvas>
+          </div>
+        </div>
+        <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h3 class="text-base font-semibold text-gray-900">Rehires Last Year</h3>
+          <p class="mt-1 text-xs text-gray-500">
+            Shows rehire activity for the same five week-ending dates one year earlier.
+          </p>
+          <div class="mt-4 h-72">
+            <canvas id="rm-rehires-prior"></canvas>
           </div>
         </div>
       </div>
@@ -286,21 +307,15 @@
         }
       }
 
-      function buildLineChart(id, current, prior, label) {
+      function buildSingleLineChart(id, points, datasetLabel, color) {
         const ctx = document.getElementById(id);
         if (!ctx) return;
 
         destroyChart(id);
 
-        const labels = Array.from(
-          new Set([...current, ...prior].map((point) => point.weekEnding)),
-        ).sort();
-
-        const mapCounts = (points) =>
-          labels.map((week) => {
-            const match = points.find((point) => point.weekEnding === week);
-            return match ? match.count : 0;
-          });
+        const sorted = [...points].sort((a, b) => a.weekEnding.localeCompare(b.weekEnding));
+        const labels = sorted.map((point) => point.weekEnding);
+        const counts = sorted.map((point) => point.count || 0);
 
         chartInstances[id] = new Chart(ctx, {
           type: 'line',
@@ -308,18 +323,10 @@
             labels,
             datasets: [
               {
-                label: `${label} (Current Year)`,
-                data: mapCounts(current),
-                borderColor: '#4f46e5',
-                backgroundColor: '#6366f1',
-                tension: 0.2,
-                pointRadius: 4,
-              },
-              {
-                label: `${label} (Prior Year)`,
-                data: mapCounts(prior),
-                borderColor: '#f97316',
-                backgroundColor: '#fb923c',
+                label: datasetLabel,
+                data: counts,
+                borderColor: color,
+                backgroundColor: color,
                 tension: 0.2,
                 pointRadius: 4,
               },
@@ -440,8 +447,30 @@
         });
       }
 
-      buildLineChart('rm-onboarded-chart', metrics.onboarded.current, metrics.onboarded.prior, 'Onboarded');
-      buildLineChart('rm-rehires-chart', metrics.rehires.current, metrics.rehires.prior, 'Rehires');
+      buildSingleLineChart(
+        'rm-onboarded-current',
+        metrics.onboarded.currentYear,
+        'Onboarded (This Year)',
+        '#4f46e5',
+      );
+      buildSingleLineChart(
+        'rm-onboarded-prior',
+        metrics.onboarded.priorYear,
+        'Onboarded (Last Year)',
+        '#f97316',
+      );
+      buildSingleLineChart(
+        'rm-rehires-current',
+        metrics.rehires.currentYear,
+        'Rehires (This Year)',
+        '#0ea5e9',
+      );
+      buildSingleLineChart(
+        'rm-rehires-prior',
+        metrics.rehires.priorYear,
+        'Rehires (Last Year)',
+        '#6366f1',
+      );
 
       if (metrics.hiresByCounty.length > 0) {
         const labels = metrics.hiresByCounty.map((item) => item.county);

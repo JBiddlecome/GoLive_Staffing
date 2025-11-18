@@ -354,25 +354,30 @@ def _build_metrics(
     current_weeks = _build_week_series(selected_sunday)
     prior_weeks = _build_week_series(prior_year_sunday)
 
-    def _trend_payload(weeks: List[pd.Timestamp], counter) -> List[Dict[str, object]]:
+    def _trend_payload(
+        weeks: List[pd.Timestamp], counter, *, include_start: bool = True
+    ) -> List[Dict[str, object]]:
         payload: List[Dict[str, object]] = []
         for week in weeks:
             week_start, week_end = _week_bounds_from_sunday(week)
-            count_value = counter(df, start_col, rehire_col, week_start, week_end)
-            payload.append({
-                "weekEnding": week.strftime("%Y-%m-%d"),
-                "count": int(count_value),
-            })
+            start_arg = start_col if include_start else ""
+            count_value = counter(df, start_arg, rehire_col, week_start, week_end)
+            payload.append(
+                {
+                    "weekEnding": week.strftime("%Y-%m-%d"),
+                    "count": int(count_value),
+                }
+            )
         return payload
 
-    onboarded_current = _trend_payload(current_weeks, _count_new_hires)
-    onboarded_prior = _trend_payload(prior_weeks, _count_new_hires)
+    onboarded_current = _trend_payload(current_weeks, _count_new_hires, include_start=True)
+    onboarded_prior = _trend_payload(prior_weeks, _count_new_hires, include_start=True)
 
-    def _rehire_counter(df_obj, start_c, rehire_c, week_start, week_end):
+    def _rehire_counter(df_obj, _start_c, rehire_c, week_start, week_end):
         return _count_rehires(df_obj, rehire_c, week_start, week_end)
 
-    rehire_current = _trend_payload(current_weeks, _rehire_counter)
-    rehire_prior = _trend_payload(prior_weeks, _rehire_counter)
+    rehire_current = _trend_payload(current_weeks, _rehire_counter, include_start=False)
+    rehire_prior = _trend_payload(prior_weeks, _rehire_counter, include_start=False)
 
     county_df = _hires_by_county(df, county_col, start_col, rehire_col, current_start, current_end)
     county_records = [
@@ -411,12 +416,12 @@ def _build_metrics(
             "end": prior_end.strftime("%Y-%m-%d"),
         },
         "onboarded": {
-            "current": onboarded_current,
-            "prior": onboarded_prior,
+            "currentYear": onboarded_current,
+            "priorYear": onboarded_prior,
         },
         "rehires": {
-            "current": rehire_current,
-            "prior": rehire_prior,
+            "currentYear": rehire_current,
+            "priorYear": rehire_prior,
         },
         "hiresByCounty": county_records,
         "positions": {
