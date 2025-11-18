@@ -39,39 +39,8 @@ router = APIRouter()
 
 
 @router.get("", response_class=HTMLResponse)
-async def page(request: Request) -> HTMLResponse:
-    try:
-        dataframe = _load_default_dataframe()
-    except ValueError as exc:
-        return _error_response(request, str(exc))
-
-    if dataframe.empty:
-        return _error_response(request, "The data file does not contain any rows.")
-
-    try:
-        resolved = _resolve_columns(dataframe)
-    except ValueError as exc:
-        return _error_response(request, str(exc))
-
-    sundays = _pick_week_ending_sundays(dataframe, start_year=2024, resolved=resolved)
-    if not sundays:
-        return _error_response(
-            request,
-            "No Sunday week-ending dates found. Check the Start Date and Rehire Date columns in the data file.",
-        )
-
-    selected_sunday = sundays[-1]
-    metrics, details = _build_metrics(dataframe, selected_sunday, resolved)
-
-    context = _build_context(
-        request=request,
-        filename=DATA_FILE.name,
-        sundays=sundays,
-        selected_sunday=selected_sunday,
-        metrics=metrics,
-        details=details,
-    )
-    return templates.TemplateResponse("apps/recruiting_metrics.html", context)
+async def page(request: Request, week_ending: str | None = None) -> HTMLResponse:
+    return await _render_page(request, week_ending)
 
 
 @router.post("/select-week", response_class=HTMLResponse)
@@ -79,6 +48,10 @@ async def select_week(
     request: Request,
     week_ending: str = Form(...),
 ) -> HTMLResponse:
+    return await _render_page(request, week_ending)
+
+
+async def _render_page(request: Request, week_ending: str | None) -> HTMLResponse:
     try:
         dataframe = _load_default_dataframe()
     except ValueError as exc:
@@ -99,17 +72,7 @@ async def select_week(
             "No Sunday week-ending dates found. Check the Start Date and Rehire Date columns in the data file.",
         )
 
-    selected_sunday = pd.to_datetime(week_ending, errors="coerce")
-    if pd.isna(selected_sunday):
-        selected_sunday = sundays[-1]
-    else:
-        selected_sunday = selected_sunday.normalize()
-        if selected_sunday not in sundays:
-            # fall back to closest matching week ending
-            selected_sunday = max(
-                (s for s in sundays if s <= selected_sunday),
-                default=sundays[-1],
-            )
+    selected_sunday = _resolve_selected_sunday(week_ending, sundays)
 
     metrics, details = _build_metrics(dataframe, selected_sunday, resolved)
 
@@ -221,6 +184,21 @@ def _pick_week_ending_sundays(
     sunday_series = sunday_series[sunday_series.dt.year >= start_year]
     sunday_series = pd.to_datetime(pd.Series(pd.unique(sunday_series))).sort_values()
     return list(sunday_series)
+
+
+def _resolve_selected_sunday(
+    week_ending: str | None, sundays: List[pd.Timestamp]
+) -> pd.Timestamp:
+    selected_sunday = pd.to_datetime(week_ending, errors="coerce")
+    if pd.isna(selected_sunday):
+        return sundays[-1]
+
+    selected_sunday = selected_sunday.normalize()
+    if selected_sunday in sundays:
+        return selected_sunday
+
+    # Fall back to the closest matching week ending that is not after the requested date
+    return max((s for s in sundays if s <= selected_sunday), default=sundays[-1])
 
 
 def _compute_week_ending_sunday(any_date: pd.Timestamp) -> pd.Timestamp:
