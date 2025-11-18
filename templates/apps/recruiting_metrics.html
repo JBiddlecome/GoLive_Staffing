@@ -292,13 +292,24 @@
 
         destroyChart(id);
 
+        const labels = Array.from(
+          new Set([...current, ...prior].map((point) => point.weekEnding)),
+        ).sort();
+
+        const mapCounts = (points) =>
+          labels.map((week) => {
+            const match = points.find((point) => point.weekEnding === week);
+            return match ? match.count : 0;
+          });
+
         chartInstances[id] = new Chart(ctx, {
           type: 'line',
           data: {
+            labels,
             datasets: [
               {
                 label: `${label} (Current Year)`,
-                data: current.map((point) => ({ x: point.weekEnding, y: point.count })),
+                data: mapCounts(current),
                 borderColor: '#4f46e5',
                 backgroundColor: '#6366f1',
                 tension: 0.2,
@@ -306,7 +317,7 @@
               },
               {
                 label: `${label} (Prior Year)`,
-                data: prior.map((point) => ({ x: point.weekEnding, y: point.count })),
+                data: mapCounts(prior),
                 borderColor: '#f97316',
                 backgroundColor: '#fb923c',
                 tension: 0.2,
@@ -315,7 +326,6 @@
             ],
           },
           options: {
-            parsing: false,
             responsive: true,
             maintainAspectRatio: false,
             interaction: {
@@ -324,10 +334,7 @@
             },
             scales: {
               x: {
-                type: 'time',
-                time: {
-                  unit: 'week',
-                },
+                type: 'category',
                 title: {
                   display: true,
                   text: 'Week ending (Sunday)',
