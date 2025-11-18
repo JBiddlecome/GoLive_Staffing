@@ -250,6 +250,20 @@ def _count_rehires(
     return int(mask.sum())
 
 
+def _count_concierged(
+    df: pd.DataFrame, concierge_col: str, start: pd.Timestamp, end: pd.Timestamp
+) -> int:
+    if not concierge_col:
+        return 0
+
+    concierge_dates = pd.to_datetime(df[concierge_col], errors="coerce")
+    if concierge_dates.empty:
+        return 0
+
+    mask = concierge_dates.between(start, end, inclusive="both")
+    return int(mask.sum())
+
+
 def _hires_by_county(
     df: pd.DataFrame,
     county_col: str,
@@ -440,6 +454,14 @@ def _build_metrics(
             "positions": positions_col or None,
             "concierge": concierge_col or None,
         },
+        "conciergeNumbers": {
+            "onboardedAndHired": _count_new_hires(
+                df, start_col, rehire_col, current_start, current_end
+            ),
+            "onboardedAndConcierged": _count_concierged(
+                df, concierge_col, current_start, current_end
+            ),
+        },
     }
 
     has_hires = any(record["count"] > 0 for record in county_records)
@@ -491,6 +513,7 @@ def _build_context(
         "rm_has_positions": details["has_positions"],
         "rm_position_table": metrics["positionTable"],
         "rm_data_source": filename,
+        "rm_concierge_numbers": metrics["conciergeNumbers"],
     }
 
     return context
