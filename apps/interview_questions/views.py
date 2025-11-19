@@ -64,9 +64,9 @@ async def evaluate_interview(payload: EvaluateInterviewRequest) -> JSONResponse:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     try:
-        response = client.responses.create(
+        response = client.chat.completions.create(
             model="gpt-4.1-mini",
-            input=[
+            messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": transcript},
             ],
@@ -80,7 +80,7 @@ async def evaluate_interview(payload: EvaluateInterviewRequest) -> JSONResponse:
         logger.exception("Unexpected error while contacting AI service")
         raise HTTPException(status_code=502, detail="Unable to reach the AI service.") from exc
 
-    content_block = response.output[0].content[0].text if response.output else ""
+    content_block = response.choices[0].message.content if response.choices else ""
     if not content_block:
         raise HTTPException(status_code=502, detail="AI response was empty.")
 
