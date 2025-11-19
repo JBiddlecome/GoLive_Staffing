@@ -35,52 +35,18 @@
       </form>
     </div>
     <p id="resume-status" class="text-sm text-gray-600" role="status"></p>
-    <div id="resume-result" class="hidden space-y-4">
-      <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-        <h3 class="text-base font-semibold text-gray-900">Candidate Summary</h3>
-        <dl class="mt-3 space-y-3 text-sm text-gray-700">
-          <div>
-            <dt class="font-semibold text-gray-900">Hospitality Experience Overview</dt>
-            <dd id="summary-overview" class="mt-1 text-gray-700"></dd>
-          </div>
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-              <dt class="font-semibold text-gray-900">Total Hospitality Years (estimate)</dt>
-              <dd id="summary-years" class="mt-1 text-gray-700"></dd>
-            </div>
-            <div>
-              <dt class="font-semibold text-gray-900">Notable Venues</dt>
-              <dd id="summary-venues" class="mt-1 text-gray-700"></dd>
-            </div>
-          </div>
-          <div>
-            <dt class="font-semibold text-gray-900">Fast Food / Non-Qualifying Notes</dt>
-            <dd id="summary-notes" class="mt-1 text-gray-700"></dd>
-          </div>
-        </dl>
+    <div id="resume-result" class="hidden overflow-x-auto rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4">
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-sm font-semibold text-gray-800">AI JSON Response</p>
+        <button
+          id="resume-copy"
+          type="button"
+          class="rounded border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
+        >
+          Copy JSON
+        </button>
       </div>
-
-      <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-        <div class="flex items-center justify-between">
-          <h3 class="text-base font-semibold text-gray-900">Positions</h3>
-          <p class="text-xs font-medium text-gray-500">Sorted by experience level</p>
-        </div>
-        <div id="positions-list" class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3"></div>
-      </div>
-
-      <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4">
-        <div class="flex items-center justify-between mb-2">
-          <p class="text-sm font-semibold text-gray-800">AI JSON Response</p>
-          <button
-            id="resume-copy"
-            type="button"
-            class="rounded border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
-          >
-            Copy JSON
-          </button>
-        </div>
-        <pre id="resume-output" class="text-xs whitespace-pre-wrap"></pre>
-      </div>
+      <pre id="resume-output" class="text-xs whitespace-pre-wrap"></pre>
     </div>
   </div>
 </section>
@@ -93,11 +59,6 @@
     const resumeFile = document.getElementById("resume-file");
     const resumeStatus = document.getElementById("resume-status");
     const resumeResult = document.getElementById("resume-result");
-    const positionsList = document.getElementById("positions-list");
-    const summaryOverview = document.getElementById("summary-overview");
-    const summaryYears = document.getElementById("summary-years");
-    const summaryVenues = document.getElementById("summary-venues");
-    const summaryNotes = document.getElementById("summary-notes");
     const resumeOutput = document.getElementById("resume-output");
     const resumeCopy = document.getElementById("resume-copy");
 
@@ -132,7 +93,6 @@
           return;
         }
 
-        renderStructuredResults(data);
         resumeOutput.textContent = JSON.stringify(data, null, 2);
         resumeResult.classList.remove("hidden");
         resumeStatus.textContent = "Analysis complete.";
@@ -155,91 +115,6 @@
         resumeStatus.textContent = "Unable to copy. Please copy manually.";
       }
     });
-
-    function renderStructuredResults(data) {
-      const summary = data?.candidate_summary || {};
-      const positions = data?.positions || {};
-
-      summaryOverview.textContent = summary.hospitality_experience_overview || "No summary provided.";
-
-      const totalYears = summary.total_hospitality_years_estimate;
-      summaryYears.textContent = typeof totalYears === "number" ? `${totalYears.toFixed(2)} years` : "N/A";
-
-      const venues = Array.isArray(summary.notable_venues) ? summary.notable_venues : [];
-      summaryVenues.textContent = venues.length ? venues.join(", ") : "None listed.";
-
-      summaryNotes.textContent = summary.notes_on_fast_food_or_non_qualifying_experience || "None provided.";
-
-      if (!positionsList) return;
-      positionsList.innerHTML = "";
-
-      const statusRank = { level_3: 0, level_2: 1, level_1: 2, no_experience: 3 };
-      const sortedPositions = Object.entries(positions).sort(([, a], [, b]) => {
-        const rankA = statusRank[a?.status] ?? 4;
-        const rankB = statusRank[b?.status] ?? 4;
-        if (rankA === rankB) {
-          return (b?.estimated_years || 0) - (a?.estimated_years || 0);
-        }
-        return rankA - rankB;
-      });
-
-      sortedPositions.forEach(([key, details]) => {
-        const status = details?.status || "no_experience";
-        const estimatedYears = typeof details?.estimated_years === "number" ? details.estimated_years.toFixed(2) : "0.00";
-        const confidence = typeof details?.confidence === "number" ? `${Math.round(details.confidence * 100)}%` : "N/A";
-        const reasons = Array.isArray(details?.reasons) ? details.reasons : [];
-
-        const positionCard = document.createElement("div");
-        positionCard.className = "rounded-lg border border-gray-200 bg-gray-50 p-3 shadow-sm";
-
-        positionCard.innerHTML = `
-          <div class="flex items-baseline justify-between">
-            <h4 class="text-sm font-semibold text-gray-900">${formatPositionName(key)}</h4>
-            <span class="text-xs font-medium text-indigo-700">${formatStatus(status)}</span>
-          </div>
-          <dl class="mt-2 space-y-1 text-xs text-gray-700">
-            <div class="flex items-center justify-between">
-              <dt class="font-medium text-gray-900">Estimated Years</dt>
-              <dd>${estimatedYears}</dd>
-            </div>
-            <div class="flex items-center justify-between">
-              <dt class="font-medium text-gray-900">Confidence</dt>
-              <dd>${confidence}</dd>
-            </div>
-          </dl>
-          <div class="mt-2">
-            <p class="text-xs font-medium text-gray-900">Reasons</p>
-            ${reasons.length ? `<ul class="mt-1 list-disc space-y-1 pl-5 text-xs text-gray-700">${reasons
-              .map((reason) => `<li>${escapeHtml(reason)}</li>`)
-              .join("")}</ul>` : '<p class="mt-1 text-xs text-gray-500">No reasons provided.</p>'}
-          </div>
-        `;
-
-        positionsList.appendChild(positionCard);
-      });
-    }
-
-    function formatPositionName(key) {
-      return key
-        .split("_")
-        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(" ");
-    }
-
-    function formatStatus(status) {
-      if (status === "no_experience") return "No Experience";
-      if (status?.startsWith("level_")) {
-        const level = status.split("_")[1];
-        return `Level ${level}`;
-      }
-      return status || "Unknown";
-    }
-
-    function escapeHtml(value) {
-      const div = document.createElement("div");
-      div.textContent = value ?? "";
-      return div.innerHTML;
-    }
   });
 </script>
 {% endblock %}
