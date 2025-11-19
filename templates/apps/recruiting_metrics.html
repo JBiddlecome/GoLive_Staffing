@@ -11,47 +11,6 @@
     </p>
   </header>
 
-  <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
-    <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-      <div>
-        <h2 class="text-base font-semibold text-gray-900">Resume Analyzer</h2>
-        <p class="text-sm text-gray-600">
-          Upload a PDF or image of a candidate's resume to receive a hospitality-focused JSON assessment.
-        </p>
-      </div>
-      <form id="resume-form" class="flex flex-col gap-2 md:flex-row md:items-center" enctype="multipart/form-data">
-        <input
-          id="resume-file"
-          name="file"
-          type="file"
-          accept="application/pdf,image/*"
-          class="text-sm text-gray-700"
-          required
-        />
-        <button
-          type="submit"
-          class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-500 disabled:opacity-60"
-        >
-          Analyze Resume
-        </button>
-      </form>
-    </div>
-    <p id="resume-status" class="text-sm text-gray-600" role="status"></p>
-    <div id="resume-result" class="hidden overflow-x-auto rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4">
-      <div class="flex items-center justify-between mb-2">
-        <p class="text-sm font-semibold text-gray-800">AI JSON Response</p>
-        <button
-          id="resume-copy"
-          type="button"
-          class="rounded border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
-        >
-          Copy JSON
-        </button>
-      </div>
-      <pre id="resume-output" class="text-xs whitespace-pre-wrap"></pre>
-    </div>
-  </div>
-
   <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
     <h2 class="text-base font-semibold text-gray-900">Data source</h2>
     <p class="mt-1 text-xs text-gray-500">
@@ -242,66 +201,6 @@
 
 {% block scripts %}
   {{ super() }}
-  <script>
-    const resumeForm = document.getElementById("resume-form");
-    const resumeFile = document.getElementById("resume-file");
-    const resumeStatus = document.getElementById("resume-status");
-    const resumeResult = document.getElementById("resume-result");
-    const resumeOutput = document.getElementById("resume-output");
-    const resumeCopy = document.getElementById("resume-copy");
-
-    resumeForm?.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const file = resumeFile?.files?.[0];
-      if (!file) {
-        resumeStatus.textContent = "Please choose a PDF or image file.";
-        return;
-      }
-
-      const submitButton = resumeForm.querySelector("button[type='submit']");
-      if (submitButton) submitButton.disabled = true;
-      resumeStatus.textContent = "Uploading and analyzing resume...";
-      resumeResult.classList.add("hidden");
-
-      const formData = new FormData();
-      formData.append("file", file);
-
-      try {
-        const response = await fetch("/recruiting-metrics/resume-analyzer", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!response.ok) {
-          const payload = await response.json().catch(() => ({}));
-          const detail = payload.detail || payload.error || "Request failed.";
-          resumeStatus.textContent = `Error: ${detail}`;
-          return;
-        }
-
-        const data = await response.json();
-        resumeOutput.textContent = JSON.stringify(data, null, 2);
-        resumeResult.classList.remove("hidden");
-        resumeStatus.textContent = "Analysis complete.";
-      } catch (error) {
-        resumeStatus.textContent = "Network error. Please try again.";
-      } finally {
-        if (submitButton) submitButton.disabled = false;
-      }
-    });
-
-    resumeCopy?.addEventListener("click", async () => {
-      const text = resumeOutput?.textContent || "";
-      if (!text) return;
-      try {
-        await navigator.clipboard.writeText(text);
-        resumeStatus.textContent = "Copied to clipboard.";
-        setTimeout(() => (resumeStatus.textContent = ""), 2000);
-      } catch (error) {
-        resumeStatus.textContent = "Unable to copy. Please copy manually.";
-      }
-    });
-  </script>
   {% if rm_metrics_json %}
     <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
