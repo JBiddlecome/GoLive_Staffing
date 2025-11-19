@@ -32,9 +32,12 @@
       </div>
     </form>
 
-    <div id="iq-result" class="hidden border border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
-      <div class="flex items-center justify-between mb-2">
-        <h2 class="text-sm font-semibold text-gray-800">AI JSON Response</h2>
+    <div id="iq-result" class="hidden border border-dashed border-gray-300 rounded-lg p-4 bg-gray-50 space-y-4">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Overall Recommendation</p>
+          <p id="iq-overall" class="text-lg font-bold text-gray-900">—</p>
+        </div>
         <button
           id="iq-copy"
           type="button"
@@ -43,7 +46,48 @@
           Copy JSON
         </button>
       </div>
-      <pre id="iq-output" class="text-xs whitespace-pre-wrap overflow-x-auto"></pre>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="p-3 bg-white border rounded-lg shadow-sm">
+          <p class="text-xs uppercase tracking-wide text-gray-500">Communication</p>
+          <p id="iq-score-communication" class="text-xl font-semibold text-gray-900">—</p>
+        </div>
+        <div class="p-3 bg-white border rounded-lg shadow-sm">
+          <p class="text-xs uppercase tracking-wide text-gray-500">Technical</p>
+          <p id="iq-score-technical" class="text-xl font-semibold text-gray-900">—</p>
+        </div>
+        <div class="p-3 bg-white border rounded-lg shadow-sm">
+          <p class="text-xs uppercase tracking-wide text-gray-500">Professionalism</p>
+          <p id="iq-score-professionalism" class="text-xl font-semibold text-gray-900">—</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="p-3 bg-white border rounded-lg shadow-sm space-y-2">
+          <p class="text-sm font-semibold text-gray-800">Strengths</p>
+          <ul id="iq-strengths" class="list-disc list-inside text-sm text-gray-700 space-y-1">
+            <li class="text-gray-500">Waiting for AI response…</li>
+          </ul>
+        </div>
+        <div class="p-3 bg-white border rounded-lg shadow-sm space-y-2">
+          <p class="text-sm font-semibold text-gray-800">Concerns</p>
+          <ul id="iq-concerns" class="list-disc list-inside text-sm text-gray-700 space-y-1">
+            <li class="text-gray-500">Waiting for AI response…</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="p-3 bg-white border rounded-lg shadow-sm space-y-2">
+        <p class="text-sm font-semibold text-gray-800">Notes for Hiring Manager</p>
+        <p id="iq-notes" class="text-sm text-gray-700">Waiting for AI response…</p>
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-sm font-semibold text-gray-800">AI JSON Response</h2>
+        </div>
+        <pre id="iq-output" class="text-xs whitespace-pre-wrap overflow-x-auto"></pre>
+      </div>
     </div>
   </div>
 </section>
@@ -56,6 +100,30 @@
   const resultEl = document.getElementById("iq-result");
   const outputEl = document.getElementById("iq-output");
   const copyBtn = document.getElementById("iq-copy");
+  const overallEl = document.getElementById("iq-overall");
+  const strengthsEl = document.getElementById("iq-strengths");
+  const concernsEl = document.getElementById("iq-concerns");
+  const notesEl = document.getElementById("iq-notes");
+  const scoreCommunicationEl = document.getElementById("iq-score-communication");
+  const scoreTechnicalEl = document.getElementById("iq-score-technical");
+  const scoreProfessionalismEl = document.getElementById("iq-score-professionalism");
+
+  function renderList(targetEl, items, emptyLabel) {
+    targetEl.innerHTML = "";
+    if (!items || items.length === 0) {
+      const li = document.createElement("li");
+      li.className = "text-gray-500";
+      li.textContent = emptyLabel;
+      targetEl.appendChild(li);
+      return;
+    }
+
+    items.forEach((item) => {
+      const li = document.createElement("li");
+      li.textContent = item;
+      targetEl.appendChild(li);
+    });
+  }
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -79,6 +147,13 @@
 
       const data = await response.json();
       outputEl.textContent = JSON.stringify(data, null, 2);
+      overallEl.textContent = data.overall_recommendation || "—";
+      scoreCommunicationEl.textContent = data.scores?.communication ?? "—";
+      scoreTechnicalEl.textContent = data.scores?.technical ?? "—";
+      scoreProfessionalismEl.textContent = data.scores?.professionalism ?? "—";
+      renderList(strengthsEl, data.strengths, "No strengths provided.");
+      renderList(concernsEl, data.concerns, "No concerns provided.");
+      notesEl.textContent = data.notes_for_hiring_manager || "No notes provided.";
       resultEl.classList.remove("hidden");
       statusEl.textContent = "Response received.";
     } catch (error) {
