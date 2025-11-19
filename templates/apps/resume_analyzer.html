@@ -35,9 +35,12 @@
       </form>
     </div>
     <p id="resume-status" class="text-sm text-gray-600" role="status"></p>
-    <div id="resume-result" class="hidden overflow-x-auto rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4">
-      <div class="flex items-center justify-between mb-2">
-        <p class="text-sm font-semibold text-gray-800">AI JSON Response</p>
+    <div
+      id="resume-result"
+      class="hidden space-y-3 overflow-x-auto rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4"
+    >
+      <div class="flex items-center justify-between">
+        <p class="text-sm font-semibold text-gray-800">AI Assessment</p>
         <button
           id="resume-copy"
           type="button"
@@ -46,7 +49,8 @@
           Copy JSON
         </button>
       </div>
-      <pre id="resume-output" class="text-xs whitespace-pre-wrap"></pre>
+      <div id="resume-structured" class="space-y-4 text-sm text-gray-800"></div>
+      <pre id="resume-output" class="sr-only"></pre>
     </div>
   </div>
 </section>
@@ -61,6 +65,161 @@
     const resumeResult = document.getElementById("resume-result");
     const resumeOutput = document.getElementById("resume-output");
     const resumeCopy = document.getElementById("resume-copy");
+    const resumeStructured = document.getElementById("resume-structured");
+
+    const statusLabels = {
+      no_experience: "No experience",
+      level_1: "Level 1 (under 2 years)",
+      level_2: "Level 2 (2–5 years)",
+      level_3: "Level 3 (5+ years)",
+    };
+
+    const statusStyles = {
+      no_experience: "bg-gray-100 text-gray-800",
+      level_1: "bg-amber-100 text-amber-800",
+      level_2: "bg-blue-100 text-blue-800",
+      level_3: "bg-emerald-100 text-emerald-800",
+    };
+
+    function toTitle(text) {
+      return (text || "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    }
+
+    function formatYears(value) {
+      if (typeof value !== "number" || Number.isNaN(value)) return "N/A";
+      const rounded = Math.round(value * 10) / 10;
+      return `${rounded} yrs`;
+    }
+
+    function formatConfidence(value) {
+      if (typeof value !== "number" || Number.isNaN(value)) return "N/A";
+      return `${Math.round(value * 100)}%`;
+    }
+
+    function createElement(tag, className, text) {
+      const el = document.createElement(tag);
+      if (className) el.className = className;
+      if (text !== undefined) el.textContent = text;
+      return el;
+    }
+
+    function renderList(items, emptyText) {
+      if (!Array.isArray(items) || items.length === 0) {
+        return createElement("p", "text-gray-600", emptyText || "None provided.");
+      }
+
+      const list = createElement("ul", "list-disc space-y-1 pl-5 text-gray-700");
+      items.forEach((item) => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        list.appendChild(li);
+      });
+      return list;
+    }
+
+    function renderSummary(summary) {
+      const card = createElement("div", "rounded-lg border border-gray-200 bg-white p-4 space-y-3");
+      card.appendChild(createElement("h3", "text-base font-semibold text-gray-900", "Candidate Summary"));
+
+      if (summary.hospitality_experience_overview) {
+        card.appendChild(
+          createElement("p", "text-gray-700", summary.hospitality_experience_overview)
+        );
+      }
+
+      const totals = createElement("div", "grid gap-3 sm:grid-cols-2 text-sm text-gray-700");
+      totals.appendChild(
+        createElement(
+          "div",
+          "rounded-md bg-gray-50 px-3 py-2",
+          `Estimated hospitality years: ${summary.total_hospitality_years_estimate ?? "N/A"}`,
+        ),
+      );
+      totals.appendChild(
+        createElement(
+          "div",
+          "rounded-md bg-gray-50 px-3 py-2",
+          `Fast food / non-qualifying notes: ${summary.notes_on_fast_food_or_non_qualifying_experience || "None"}`,
+        ),
+      );
+      card.appendChild(totals);
+
+      const venuesWrapper = createElement("div", "space-y-2");
+      venuesWrapper.appendChild(createElement("p", "text-xs font-semibold uppercase tracking-wide text-gray-500", "Notable venues"));
+      venuesWrapper.appendChild(renderList(summary.notable_venues, "No notable venues captured."));
+      card.appendChild(venuesWrapper);
+
+      return card;
+    }
+
+    function renderPositions(positions) {
+      const wrapper = createElement("div", "space-y-3");
+      wrapper.appendChild(createElement("h3", "text-base font-semibold text-gray-900", "Positions"));
+
+      const keys = Object.keys(positions || {});
+      if (keys.length === 0) {
+        wrapper.appendChild(createElement("p", "text-gray-600", "No position data returned."));
+        return wrapper;
+      }
+
+      const grid = createElement("div", "grid gap-3 md:grid-cols-2");
+
+      keys.forEach((key) => {
+        const details = positions[key] || {};
+        const status = details.status || "no_experience";
+        const card = createElement("div", "rounded-lg border border-gray-200 bg-white p-4 space-y-2");
+
+        const header = createElement("div", "flex items-center justify-between gap-3");
+        header.appendChild(createElement("p", "text-sm font-semibold text-gray-900", toTitle(key)));
+        const badge = createElement(
+          "span",
+          `inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyles[status] || "bg-gray-100 text-gray-800"}`,
+          statusLabels[status] || toTitle(status),
+        );
+        header.appendChild(badge);
+        card.appendChild(header);
+
+        const meta = createElement("div", "text-xs text-gray-700 flex flex-wrap gap-2");
+        meta.appendChild(
+          createElement(
+            "span",
+            "rounded-md bg-gray-50 px-2 py-1",
+            `Estimated years: ${formatYears(details.estimated_years)}`,
+          ),
+        );
+        meta.appendChild(
+          createElement(
+            "span",
+            "rounded-md bg-gray-50 px-2 py-1",
+            `Confidence: ${formatConfidence(details.confidence)}`,
+          ),
+        );
+        card.appendChild(meta);
+
+        const reasonsWrapper = createElement("div", "space-y-1");
+        reasonsWrapper.appendChild(
+          createElement("p", "text-xs font-semibold uppercase tracking-wide text-gray-500", "Reasons"),
+        );
+        reasonsWrapper.appendChild(renderList(details.reasons, "No specific reasons provided."));
+        card.appendChild(reasonsWrapper);
+
+        grid.appendChild(card);
+      });
+
+      wrapper.appendChild(grid);
+      return wrapper;
+    }
+
+    function renderResult(data) {
+      if (!resumeStructured) return;
+      resumeStructured.innerHTML = "";
+
+      const summaryCard = renderSummary(data?.candidate_summary || {});
+      const positions = renderPositions(data?.positions || {});
+
+      resumeStructured.appendChild(summaryCard);
+      resumeStructured.appendChild(positions);
+    }
 
     resumeForm?.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -93,6 +252,7 @@
           return;
         }
 
+        renderResult(data || {});
         resumeOutput.textContent = JSON.stringify(data, null, 2);
         resumeResult.classList.remove("hidden");
         resumeStatus.textContent = "Analysis complete.";
