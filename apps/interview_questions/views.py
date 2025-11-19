@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from typing import Any, Dict
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
-from openai import OpenAI
+from openai import OpenAI, OpenAIError
 from pydantic import BaseModel
 
 SYSTEM_PROMPT = """
@@ -31,6 +32,7 @@ Return ONLY valid JSON with this exact structure:
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+logger = logging.getLogger(__name__)
 
 
 class EvaluateInterviewRequest(BaseModel):
@@ -70,7 +72,12 @@ async def evaluate_interview(payload: EvaluateInterviewRequest) -> JSONResponse:
             ],
             response_format={"type": "json_object"},
         )
+    except OpenAIError as exc:  # pragma: no cover - external API call
+        logger.exception("OpenAI API request failed")
+        detail = getattr(exc, "message", None) or getattr(exc, "error", None) or str(exc)
+        raise HTTPException(status_code=502, detail=f"AI service error: {detail}") from exc
     except Exception as exc:  # pragma: no cover - external API call
+        logger.exception("Unexpected error while contacting AI service")
         raise HTTPException(status_code=502, detail="Unable to reach the AI service.") from exc
 
     content_block = response.output[0].content[0].text if response.output else ""
