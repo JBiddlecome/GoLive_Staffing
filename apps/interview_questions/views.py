@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -107,7 +107,43 @@ async def evaluate_interview(payload: EvaluateInterviewRequest) -> JSONResponse:
 
     try:
         parsed: Dict[str, Any] = json.loads(content_block)
+        parsed = _harmonize_overall_flag(parsed)
     except json.JSONDecodeError as exc:
         raise HTTPException(status_code=502, detail="AI response was not valid JSON.") from exc
 
     return JSONResponse(parsed)
+
+
+def _harmonize_overall_flag(response: Dict[str, Any]) -> Dict[str, Any]:
+    """Ensure the overall flag reflects the majority of question flags.
+
+    The AI sometimes returns an overall recommendation that conflicts with the
+    per-question flags. This function adjusts the overall flag to match the
+    majority vote across all question evaluations while preserving any provided
+    confidence value.
+    """
+
+    question_evaluations: List[Dict[str, Any]] = response.get("question_evaluations") or []
+    if not question_evaluations:
+        return response
+
+    counts = {"Green Flag": 0, "Yellow Flag": 0, "Red Flag": 0}
+    for entry in question_evaluations:
+        flag = entry.get("flag")
+        if flag in counts:
+            counts[flag] += 1
+
+    top_count = max(counts.values())
+    majority_flags = [flag for flag, count in counts.items() if count == top_count]
+    if len(majority_flags) != 1:
+        return response
+
+    majority_flag = majority_flags[0]
+
+    overall = response.get("overall_recommendation")
+    if isinstance(overall, dict):
+        overall["flag"] = majority_flag
+    else:
+        response["overall_recommendation"] = {"flag": majority_flag, "confidence": None}
+
+    return response
