@@ -11,7 +11,7 @@
 </head>
 <body class="fallback bg-gray-50 text-gray-900">
   <header class="w-full bg-white/70 backdrop-blur border-b">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+    <div class="max-w-screen-2xl mx-auto px-4 py-4 flex items-center justify-between">
       <a href="/" class="flex items-center gap-3">
         <img src="/static/logo.svg" alt="GoLive Staffing logo" class="h-12 w-auto" />
         <span class="text-lg font-semibold">GoLive Staffing — Tools</span>
@@ -29,11 +29,11 @@
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto px-4 py-8">
+  <main class="max-w-screen-2xl mx-auto px-4 py-8">
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="max-w-7xl mx-auto px-4 py-8 text-xs text-gray-500">
+  <footer class="max-w-screen-2xl mx-auto px-4 py-8 text-xs text-gray-500">
     © {{ 2025 }} GoLive! Staffing — Internal tools
   </footer>
   {% block scripts %}{% endblock %}
