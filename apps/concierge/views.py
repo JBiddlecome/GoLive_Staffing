@@ -21,9 +21,20 @@ REQUIRED_COLUMNS = [
     "Start Date",
     "Rehire Date",
     "Concierge Date",
+    "Mobile",
+    "Language",
 ]
 
 ALLOWED_RECRUITERS = ["Piyush", "Prafull", "Anmol", "Christina"]
+FOLLOW_UP_OPTIONS = {
+    "reached_out_lvm": {"label": "Reached Out - LVM", "row_class": "bg-yellow-100"},
+    "need_to_reach_out": {"label": "Need to reach out", "row_class": "bg-orange-100"},
+    "ccd": {"label": "CC'd", "row_class": "bg-green-100"},
+    "cancelled": {"label": "Cancelled/Termed not approved", "row_class": "bg-red-100"},
+    "texted": {"label": "Texted", "row_class": "bg-blue-100"},
+    "sw_calling_back": {"label": "SW Calling back", "row_class": "bg-white"},
+    "last_reach_out_mass_text": {"label": "Last reach out mass text", "row_class": "bg-purple-100"},
+}
 START_DATE_CUTOFF = pd.Timestamp(year=2025, month=10, day=1)
 _SORT_FIELDS = {
     "employee_id_asc": ("employee_id", False),
@@ -83,6 +94,7 @@ async def update_employee(
     call_count: str = Form(""),
     recruiter: str = Form(""),
     concierged: str | None = Form(None),
+    follow_up_status: str = Form(""),
     concierged_filter: str = Form("all"),
     sort: str = Form("employee_id_asc"),
     start_date: str = Form(""),
@@ -122,10 +134,13 @@ async def update_employee(
             sort=sort,
         )
 
+    normalized_status = follow_up_status if follow_up_status in FOLLOW_UP_OPTIONS else ""
+
     record["called_date"] = normalized_called
     record["call_count"] = parsed_calls
     record["recruiter"] = recruiter if recruiter in ALLOWED_RECRUITERS else ""
     record["concierged"] = concierged is not None
+    record["follow_up_status"] = normalized_status
 
     _save_records(records)
 
@@ -183,6 +198,7 @@ def _render_page(
         "recruiters": ALLOWED_RECRUITERS,
         "start_date": start_date,
         "end_date": end_date,
+        "follow_up_options": FOLLOW_UP_OPTIONS,
     }
 
     status_code = 400 if combined_error else 200
@@ -256,7 +272,7 @@ def _load_dataframe(file_bytes: bytes, filename: str) -> pd.DataFrame:
 
 def _merge_new_employees(dataframe: pd.DataFrame) -> int:
     records = _load_records()
-    existing_ids = {record.get("employee_id") for record in records}
+    existing_by_id = {record.get("employee_id"): record for record in records}
     added = 0
 
     for _, row in dataframe.iterrows():
@@ -271,26 +287,52 @@ def _merge_new_employees(dataframe: pd.DataFrame) -> int:
             continue
 
         employee_id = str(row.get("Employee ID", "")).strip()
-        if not employee_id or employee_id in existing_ids:
+        if not employee_id:
             continue
 
         concierge_date = _normalize_date(row.get("Concierge Date"))
+        mobile = str(row.get("Mobile", "")).strip()
+        language = str(row.get("Language", "")).strip()
+
+        formatted_start = _format_date(start_date)
+        formatted_rehire = _format_date(rehire_date)
+        formatted_concierge = _format_date(concierge_date)
+
+        if employee_id in existing_by_id:
+            record = existing_by_id[employee_id]
+            record["first_name"] = str(row.get("First Name", "")).strip() or record.get("first_name", "")
+            record["last_name"] = str(row.get("Last Name", "")).strip() or record.get("last_name", "")
+            record["start_date"] = formatted_start or record.get("start_date", "")
+            record["rehire_date"] = formatted_rehire or record.get("rehire_date", "")
+
+            if formatted_concierge:
+                record["concierge_date"] = formatted_concierge
+                record["concierged"] = True
+
+            if mobile:
+                record["mobile"] = mobile
+            if language:
+                record["language"] = language
+            continue
 
         record = {
             "employee_id": employee_id,
             "first_name": str(row.get("First Name", "")).strip(),
             "last_name": str(row.get("Last Name", "")).strip(),
-            "start_date": _format_date(start_date),
-            "rehire_date": _format_date(rehire_date),
-            "concierge_date": _format_date(concierge_date),
+            "start_date": formatted_start,
+            "rehire_date": formatted_rehire,
+            "concierge_date": formatted_concierge,
             "called_date": "",
             "call_count": 0,
             "recruiter": "",
             "concierged": concierge_date is not None,
+            "mobile": mobile,
+            "language": language,
+            "follow_up_status": "",
         }
 
         records.append(record)
-        existing_ids.add(employee_id)
+        existing_by_id[employee_id] = record
         added += 1
 
     _save_records(records)
@@ -350,10 +392,31 @@ def _load_records() -> List[Dict[str, object]]:
         return []
 
     try:
-        return json.loads(DATA_FILE.read_text())
+        raw_records = json.loads(DATA_FILE.read_text())
     except json.JSONDecodeError:
         return []
+
+    normalized_records = []
+    for record in raw_records:
+        if isinstance(record, dict):
+            normalized_records.append(_ensure_record_defaults(record))
+    return normalized_records
 
 
 def _save_records(records: List[Dict[str, object]]) -> None:
     DATA_FILE.write_text(json.dumps(records, indent=2))
+
+
+def _ensure_record_defaults(record: Dict[str, object]) -> Dict[str, object]:
+    defaults = {
+        "called_date": "",
+        "call_count": 0,
+        "recruiter": "",
+        "concierged": False,
+        "follow_up_status": "",
+        "mobile": "",
+        "language": "",
+    }
+    for key, value in defaults.items():
+        record.setdefault(key, value)
+    return record
