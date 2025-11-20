@@ -172,7 +172,11 @@ def _render_page(
     records = _load_records()
     normalized_sort = _normalize_sort(sort)
 
-    parsed_start, parsed_end, date_error = _normalize_filter_dates(start_date, end_date)
+    effective_start, effective_end = start_date, end_date
+    if not start_date and not end_date:
+        effective_start, effective_end = _current_week_range()
+
+    parsed_start, parsed_end, date_error = _normalize_filter_dates(effective_start, effective_end)
 
     filter_error = date_error or ""
     filtered_records = _apply_concierged_filter(records, concierged_filter)
@@ -196,8 +200,8 @@ def _render_page(
             "concierged": concierged_count,
         },
         "recruiters": ALLOWED_RECRUITERS,
-        "start_date": start_date,
-        "end_date": end_date,
+        "start_date": effective_start,
+        "end_date": effective_end,
         "follow_up_options": FOLLOW_UP_OPTIONS,
     }
 
@@ -361,6 +365,12 @@ def _normalize_date(value) -> pd.Timestamp | None:
 def _normalize_date_str(value: str) -> str:
     parsed = _normalize_date(value)
     return _format_date(parsed)
+
+
+def _current_week_range() -> tuple[str, str]:
+    today = pd.Timestamp.today().normalize()
+    start_of_week = today - pd.Timedelta(days=today.weekday())
+    return _format_date(start_of_week), _format_date(today)
 
 
 def _normalize_filter_dates(
