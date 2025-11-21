@@ -32,6 +32,8 @@ Utility
 
 Server
 
+Host
+
 Runner
 
 Busser
@@ -148,6 +150,12 @@ Return your result as valid JSON only, using this schema:
       "reasons": []
     },
     "server": {
+      "status": "no_experience | level_1 | level_2 | level_3",
+      "estimated_years": 0.0,
+      "confidence": 0.0,
+      "reasons": []
+    },
+    "host": {
       "status": "no_experience | level_1 | level_2 | level_3",
       "estimated_years": 0.0,
       "confidence": 0.0,
