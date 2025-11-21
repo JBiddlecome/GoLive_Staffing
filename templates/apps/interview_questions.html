@@ -120,17 +120,19 @@
     const { color, label } = normalizeFlag(flagValue);
     const wrapper = document.createElement("span");
     wrapper.className = "inline-flex items-center gap-2";
+    wrapper.classList.add(color);
 
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("viewBox", "0 0 20 20");
     svg.setAttribute("aria-hidden", "true");
-    svg.classList.add("h-5", "w-5", color);
+    svg.classList.add("h-5", "w-5");
 
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute(
       "d",
       "M3 2.75A.75.75 0 0 1 3.75 2h6.5a.75.75 0 0 1 .53.22l1.25 1.25h2.97a.75.75 0 0 1 .53 1.28l-1.22 1.22 1.22 1.22a.75.75 0 0 1-.53 1.28h-3a.75.75 0 0 1-.53-.22l-1.25-1.25H4.5v8.25a.75.75 0 0 1-1.5 0z"
     );
+    path.setAttribute("fill", "currentColor");
     svg.appendChild(path);
     wrapper.appendChild(svg);
 
