@@ -70,13 +70,16 @@
   </section>
 
   <section>
-    <div class="rounded-3xl bg-white border shadow p-6 space-y-6">
-      <div>
-        <h2 class="text-2xl font-semibold">Employee Training &amp; Videos</h2>
-        <p class="text-gray-600 mt-1">Share these tutorials with employees. Use the Copy URL button next to each video to quickly grab the link.</p>
-      </div>
+    <details class="rounded-3xl bg-white border shadow">
+      <summary class="flex items-start justify-between gap-4 px-6 py-4 cursor-pointer">
+        <div>
+          <h2 class="text-2xl font-semibold">Employee Training &amp; Videos</h2>
+          <p class="text-gray-600 mt-1">Share these tutorials with employees. Use the Copy URL button next to each video to quickly grab the link.</p>
+        </div>
+        <span class="text-sm text-gray-500">Expand</span>
+      </summary>
 
-      <div class="space-y-6">
+      <div class="space-y-6 px-6 pb-6">
         <div>
           <h3 class="text-lg font-semibold mb-2">Recruiting</h3>
           <ul class="divide-y divide-gray-100 border border-gray-100 rounded-2xl">
@@ -190,7 +193,75 @@
           </ul>
         </div>
       </div>
-    </div>
+    </details>
+  </section>
+
+  <section>
+    <details class="rounded-3xl bg-white border shadow">
+      <summary class="flex items-start justify-between gap-4 px-6 py-4 cursor-pointer">
+        <div>
+          <h2 class="text-2xl font-semibold">Client Training &amp; Videos</h2>
+          <p class="text-gray-600 mt-1">Share these tutorials with clients. Use the Copy URL button next to each video to quickly grab the link.</p>
+        </div>
+        <span class="text-sm text-gray-500">Expand</span>
+      </summary>
+
+      <div class="space-y-6 px-6 pb-6">
+        <div>
+          <h3 class="text-lg font-semibold mb-2">GoLive! Basic</h3>
+          <ul class="divide-y divide-gray-100 border border-gray-100 rounded-2xl">
+            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+              <div>
+                <p class="font-medium">How to Use GoLive! and Timesheet</p>
+                <a href="https://vimeo.com/search?q=Introduction%20to%20GoLive!%20for%20Clients" target="_blank" class="text-sm text-blue-600 hover:underline">Introduction to GoLive! for Clients on Vimeo</a>
+              </div>
+              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/search?q=Introduction%20to%20GoLive!%20for%20Clients">Copy URL</button>
+            </li>
+            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+              <div>
+                <p class="font-medium">Managing Timesheets in GoLive! Browser</p>
+                <a href="https://vimeo.com/1139398260?share=copy&amp;fl=sv&amp;fe=ci" target="_blank" class="text-sm text-blue-600 hover:underline">https://vimeo.com/1139398260?share=copy&amp;fl=sv&amp;fe=ci</a>
+              </div>
+              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/1139398260?share=copy&amp;fl=sv&amp;fe=ci">Copy URL</button>
+            </li>
+            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+              <div>
+                <p class="font-medium">Introduction to GoLive!</p>
+                <a href="https://vimeo.com/search?q=Client%20App%20Introduction%20Video" target="_blank" class="text-sm text-blue-600 hover:underline">Client App Introduction Video on Vimeo</a>
+              </div>
+              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/search?q=Client%20App%20Introduction%20Video">Copy URL</button>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="text-lg font-semibold mb-2">GoLive! Pro</h3>
+          <ul class="divide-y divide-gray-100 border border-gray-100 rounded-2xl">
+            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+              <div>
+                <p class="font-medium">GoLive! Pro Introduction</p>
+                <a href="https://vimeo.com/1139399204?share=copy&amp;fl=sv&amp;fe=ci" target="_blank" class="text-sm text-blue-600 hover:underline">https://vimeo.com/1139399204?share=copy&amp;fl=sv&amp;fe=ci</a>
+              </div>
+              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/1139399204?share=copy&amp;fl=sv&amp;fe=ci">Copy URL</button>
+            </li>
+            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+              <div>
+                <p class="font-medium">Quick Add a Shift</p>
+                <a href="https://vimeo.com/1139400114?share=copy&amp;fl=sv&amp;fe=ci" target="_blank" class="text-sm text-blue-600 hover:underline">https://vimeo.com/1139400114?share=copy&amp;fl=sv&amp;fe=ci</a>
+              </div>
+              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/1139400114?share=copy&amp;fl=sv&amp;fe=ci">Copy URL</button>
+            </li>
+            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+              <div>
+                <p class="font-medium">Changing Event and Shift Details</p>
+                <a href="https://vimeo.com/search?q=Changing%20Event%20and%20Shift%20Details" target="_blank" class="text-sm text-blue-600 hover:underline">Changing Event and Shift Details on Vimeo</a>
+              </div>
+              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/search?q=Changing%20Event%20and%20Shift%20Details">Copy URL</button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </details>
   </section>
 </div>
 {% endblock %}
