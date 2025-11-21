@@ -100,6 +100,54 @@
   const notesEl = document.getElementById("iq-notes");
   const questionFlagsEl = document.getElementById("iq-question-flags");
 
+  function normalizeFlag(flagValue) {
+    const normalized = (flagValue || "").toString().trim().toLowerCase();
+
+    if (normalized.includes("green")) {
+      return { color: "text-green-500", label: "Green flag" };
+    }
+    if (normalized.includes("yellow")) {
+      return { color: "text-yellow-500", label: "Yellow flag" };
+    }
+    if (normalized.includes("red")) {
+      return { color: "text-red-500", label: "Red flag" };
+    }
+
+    return { color: "text-gray-400", label: flagValue || "—" };
+  }
+
+  function createFlagIcon(flagValue, { showLabel = false } = {}) {
+    const { color, label } = normalizeFlag(flagValue);
+    const wrapper = document.createElement("span");
+    wrapper.className = "inline-flex items-center gap-2";
+
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 20 20");
+    svg.setAttribute("aria-hidden", "true");
+    svg.classList.add("h-5", "w-5", color);
+
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute(
+      "d",
+      "M3 2.75A.75.75 0 0 1 3.75 2h6.5a.75.75 0 0 1 .53.22l1.25 1.25h2.97a.75.75 0 0 1 .53 1.28l-1.22 1.22 1.22 1.22a.75.75 0 0 1-.53 1.28h-3a.75.75 0 0 1-.53-.22l-1.25-1.25H4.5v8.25a.75.75 0 0 1-1.5 0z"
+    );
+    svg.appendChild(path);
+    wrapper.appendChild(svg);
+
+    if (showLabel) {
+      const labelText = document.createElement("span");
+      labelText.textContent = label;
+      wrapper.appendChild(labelText);
+    } else {
+      const srText = document.createElement("span");
+      srText.className = "sr-only";
+      srText.textContent = label;
+      wrapper.appendChild(srText);
+    }
+
+    return wrapper;
+  }
+
   function renderList(targetEl, items, emptyLabel) {
     targetEl.innerHTML = "";
     if (!items || items.length === 0) {
@@ -146,9 +194,8 @@
       question.className = "text-sm font-semibold text-gray-900";
       question.textContent = entry.question || `Question ${entry.question_number || ""}`;
 
-      const flag = document.createElement("span");
-      flag.className = "text-xs font-semibold px-2 py-1 rounded-full bg-indigo-50 text-indigo-700";
-      flag.textContent = entry.flag || "—";
+      const flag = createFlagIcon(entry.flag);
+      flag.classList.add("text-xs", "font-semibold", "px-2", "py-1", "rounded-full", "bg-indigo-50");
 
       header.appendChild(question);
       header.appendChild(flag);
@@ -190,7 +237,9 @@
 
       const data = await response.json();
       outputEl.textContent = JSON.stringify(data, null, 2);
-      overallEl.textContent = data.overall_recommendation?.flag || data.overall_recommendation || "—";
+      const overallFlag = data.overall_recommendation?.flag || data.overall_recommendation;
+      overallEl.innerHTML = "";
+      overallEl.appendChild(createFlagIcon(overallFlag, { showLabel: true }));
       overallConfidenceEl.textContent = `Confidence: ${formatConfidence(data.overall_recommendation?.confidence)}`;
       renderQuestionFlags(questionFlagsEl, data.question_evaluations);
       renderList(strengthsEl, data.strengths, "No strengths provided.");
