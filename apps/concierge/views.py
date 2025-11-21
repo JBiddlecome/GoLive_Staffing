@@ -3,7 +3,7 @@ from __future__ import annotations
 import io
 import json
 from pathlib import Path
-from typing import Dict, List
+from typing import Callable, Dict, List
 
 import pandas as pd
 from fastapi import APIRouter, File, Form, Query, Request, UploadFile
@@ -37,8 +37,22 @@ FOLLOW_UP_OPTIONS = {
 }
 START_DATE_CUTOFF = pd.Timestamp(year=2025, month=10, day=1)
 _SORT_FIELDS = {
-    "employee_id_asc": ("employee_id", False),
-    "employee_id_desc": ("employee_id", True),
+    "employee_id_asc": (lambda record: str(record.get("employee_id", "")).lower(), False),
+    "employee_id_desc": (lambda record: str(record.get("employee_id", "")).lower(), True),
+    "follow_up_status_asc": (
+        lambda record: FOLLOW_UP_OPTIONS.get(record.get("follow_up_status", ""), {})
+        .get("label", "")
+        .lower(),
+        False,
+    ),
+    "follow_up_status_desc": (
+        lambda record: FOLLOW_UP_OPTIONS.get(record.get("follow_up_status", ""), {})
+        .get("label", "")
+        .lower(),
+        True,
+    ),
+    "recruiter_asc": (lambda record: str(record.get("recruiter", "")).lower(), False),
+    "recruiter_desc": (lambda record: str(record.get("recruiter", "")).lower(), True),
 }
 
 router = APIRouter()
@@ -245,8 +259,8 @@ def _apply_date_range_filter(
 
 
 def _apply_sort(records: List[Dict[str, object]], sort: str) -> List[Dict[str, object]]:
-    field, reverse = _SORT_FIELDS.get(sort, _SORT_FIELDS["employee_id_asc"])
-    return sorted(records, key=lambda record: record.get(field, ""), reverse=reverse)
+    key_func, reverse = _SORT_FIELDS.get(sort, _SORT_FIELDS["employee_id_asc"])
+    return sorted(records, key=key_func, reverse=reverse)
 
 
 def _normalize_sort(sort: str) -> str:
