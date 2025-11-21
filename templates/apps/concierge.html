@@ -142,7 +142,10 @@
               <input type="checkbox" name="concierged" form="{{ form_id }}" {% if record.concierged %}checked{% endif %} class="h-4 w-4" />
           </td>
           <td class="py-3 pr-3 text-right">
-              <button type="submit" form="{{ form_id }}" class="px-3 py-1 rounded-md bg-blue-600 text-white">Save</button>
+              <div class="flex items-center justify-end gap-2">
+                <span data-save-status="{{ form_id }}" class="text-xs text-gray-500" aria-live="polite"></span>
+                <button type="button" data-save-button="{{ form_id }}" class="px-3 py-1 rounded-md bg-blue-600 text-white">Save</button>
+              </div>
           </td>
         </tr>
         {% endfor %}
@@ -179,6 +182,82 @@
       applyRowClass(row, select.value);
       select.addEventListener('change', () => applyRowClass(row, select.value));
     });
+  })();
+
+  (() => {
+    const rows = Array.from(document.querySelectorAll('tr[data-row-id]'));
+    if (!rows.length) return;
+
+    const buildFormData = (formId) => {
+      const form = document.getElementById(formId);
+      const data = new FormData(form);
+
+      document.querySelectorAll(`[name][form="${formId}"]`).forEach((field) => {
+        const name = field.getAttribute('name');
+        if (!name) return;
+
+        if (field.type === 'checkbox') {
+          if (field.checked) {
+            data.set(name, field.value || 'on');
+          } else {
+            data.delete(name);
+          }
+          return;
+        }
+
+        data.set(name, field.value ?? '');
+      });
+
+      return data;
+    };
+
+    const saveRow = async (formId) => {
+      const form = document.getElementById(formId);
+      const status = document.querySelector(`[data-save-status="${formId}"]`);
+      if (!form || !status) return;
+
+      status.classList.remove('text-red-600', 'text-green-700');
+      status.textContent = 'Saving…';
+
+      try {
+        const response = await fetch(form.action, {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' },
+          body: buildFormData(formId),
+        });
+
+        const payload = await response.json();
+        if (!response.ok || payload.error) {
+          throw new Error(payload.error || 'Unable to save.');
+        }
+
+        status.textContent = payload.notice || 'Saved';
+        status.classList.add('text-green-700');
+      } catch (error) {
+        status.textContent = error.message;
+        status.classList.add('text-red-600');
+      }
+    };
+
+    const registerRow = (row) => {
+      const formId = row.dataset.rowId;
+      if (!formId) return;
+
+      row.querySelectorAll(`[form="${formId}"]`).forEach((field) => {
+        const eventName = field.type === 'checkbox' ? 'change' : 'change';
+        field.addEventListener(eventName, () => saveRow(formId));
+      });
+
+      const saveButton = row.querySelector(`[data-save-button="${formId}"]`);
+      if (saveButton) {
+        saveButton.addEventListener('click', (event) => {
+          event.preventDefault();
+          saveRow(formId);
+        });
+      }
+    };
+
+    rows.forEach(registerRow);
   })();
 </script>
 {% endblock %}

@@ -7,7 +7,7 @@ from typing import Callable, Dict, List
 
 import pandas as pd
 from fastapi import APIRouter, File, Form, Query, Request, UploadFile
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 DATA_FILE = Path("data/concierge_records.json")
@@ -118,7 +118,7 @@ async def update_employee(
     existing = {record.get("employee_id"): record for record in records}
 
     if employee_id not in existing:
-        return _render_page(
+        return _response_for_update(
             request,
             error="Employee not found.",
             concierged_filter=concierged_filter,
@@ -129,7 +129,7 @@ async def update_employee(
 
     normalized_called = _normalize_date_str(called_date)
     if called_date and not normalized_called:
-        return _render_page(
+        return _response_for_update(
             request,
             error="Called Date must be a valid date (YYYY-MM-DD).",
             concierged_filter=concierged_filter,
@@ -141,7 +141,7 @@ async def update_employee(
         if parsed_calls < 0:
             raise ValueError
     except ValueError:
-        return _render_page(
+        return _response_for_update(
             request,
             error="Number of calls must be a non-negative integer.",
             concierged_filter=concierged_filter,
@@ -158,13 +158,15 @@ async def update_employee(
 
     _save_records(records)
 
-    return _render_page(
+    return _response_for_update(
         request,
         notice="Employee updated.",
         concierged_filter=concierged_filter,
         sort=sort,
         start_date=start_date,
         end_date=end_date,
+        record=record,
+        follow_up_status_class=FOLLOW_UP_OPTIONS.get(normalized_status, {}).get("row_class", ""),
     )
 
 
@@ -221,6 +223,44 @@ def _render_page(
 
     status_code = 400 if combined_error else 200
     return templates.TemplateResponse("apps/concierge.html", context, status_code=status_code)
+
+
+def _is_json_request(request: Request) -> bool:
+    accept = request.headers.get("accept", "").lower()
+    requested_with = request.headers.get("x-requested-with", "").lower()
+    return "application/json" in accept or requested_with == "fetch"
+
+
+def _response_for_update(
+    request: Request,
+    *,
+    notice: str = "",
+    error: str = "",
+    concierged_filter: str = "all",
+    sort: str = "employee_id_asc",
+    start_date: str = "",
+    end_date: str = "",
+    record: Dict[str, object] | None = None,
+    follow_up_status_class: str = "",
+):
+    if _is_json_request(request):
+        status_code = 400 if error else 200
+        payload: Dict[str, object] = {"notice": notice, "error": error}
+        if record is not None:
+            payload["record"] = record
+        if follow_up_status_class:
+            payload["follow_up_status_class"] = follow_up_status_class
+        return JSONResponse(payload, status_code=status_code)
+
+    return _render_page(
+        request,
+        notice=notice,
+        error=error,
+        concierged_filter=concierged_filter,
+        sort=sort,
+        start_date=start_date,
+        end_date=end_date,
+    )
 
 
 def _apply_concierged_filter(records: List[Dict[str, object]], filter_value: str) -> List[Dict[str, object]]:
