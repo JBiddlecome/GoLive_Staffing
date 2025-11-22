@@ -14,14 +14,7 @@ templates = Jinja2Templates(directory="templates")
 router = APIRouter()
 
 BASE_DIR = Path(__file__).resolve().parents[2]
-PAYROLL_SEARCH_PATHS = [BASE_DIR / "data" / "payroll.xlsx", BASE_DIR / "payroll.xlsx"]
-
-
-def _resolve_payroll_source() -> Path:
-    for candidate in PAYROLL_SEARCH_PATHS:
-        if candidate.exists():
-            return candidate
-    return PAYROLL_SEARCH_PATHS[0]
+PAYROLL_SOURCE = BASE_DIR / "data" / "payroll.xlsx"
 
 
 def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
