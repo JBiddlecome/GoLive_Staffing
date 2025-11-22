@@ -35,7 +35,7 @@ FOLLOW_UP_OPTIONS = {
     "sw_calling_back": {"label": "SW Calling back", "row_class": "bg-white"},
     "last_reach_out_mass_text": {"label": "Last reach out mass text", "row_class": "bg-purple-100"},
 }
-START_DATE_CUTOFF = pd.Timestamp(year=2025, month=10, day=1)
+START_DATE_CUTOFF = pd.Timestamp(year=2023, month=1, day=1)
 _SORT_FIELDS = {
     "employee_id_asc": (lambda record: str(record.get("employee_id", "")).lower(), False),
     "employee_id_desc": (lambda record: str(record.get("employee_id", "")).lower(), True),
@@ -68,6 +68,7 @@ async def concierge_page(
     error: str = Query(""),
     start_date: str = Query(""),
     end_date: str = Query(""),
+    search: str = Query(""),
 ) -> HTMLResponse:
     return _render_page(
         request,
@@ -77,6 +78,7 @@ async def concierge_page(
         error=error,
         start_date=start_date,
         end_date=end_date,
+        search=search,
     )
 
 
@@ -113,6 +115,7 @@ async def update_employee(
     sort: str = Form("employee_id_asc"),
     start_date: str = Form(""),
     end_date: str = Form(""),
+    search: str = Form(""),
 ) -> HTMLResponse:
     records = _load_records()
     existing = {record.get("employee_id"): record for record in records}
@@ -165,6 +168,7 @@ async def update_employee(
         sort=sort,
         start_date=start_date,
         end_date=end_date,
+        search=search,
         record=record,
         follow_up_status_class=FOLLOW_UP_OPTIONS.get(normalized_status, {}).get("row_class", ""),
     )
@@ -184,6 +188,7 @@ def _render_page(
     error: str = "",
     start_date: str = "",
     end_date: str = "",
+    search: str = "",
 ) -> HTMLResponse:
     records = _load_records()
     normalized_sort = _normalize_sort(sort)
@@ -195,11 +200,24 @@ def _render_page(
     parsed_start, parsed_end, date_error = _normalize_filter_dates(effective_start, effective_end)
 
     filter_error = date_error or ""
-    filtered_records = _apply_concierged_filter(records, concierged_filter)
+    concierged_records = _apply_concierged_filter(records, concierged_filter)
+    filtered_records = concierged_records
+    concierge_priority_ids: set[str] | None = None
     if not date_error:
-        filtered_records = _apply_date_range_filter(filtered_records, parsed_start, parsed_end)
+        filtered_records = _apply_date_range_filter(concierged_records, parsed_start, parsed_end)
+        concierge_priority_ids = _records_with_concierge_in_range(records, parsed_start, parsed_end)
 
-    sorted_records = _apply_sort(filtered_records, normalized_sort)
+    search_matches = _apply_search_filter(records, search)
+    if search_matches:
+        filtered_records = _merge_records(filtered_records, search_matches)
+        if concierge_priority_ids is not None:
+            concierge_priority_ids.update(
+                record.get("employee_id")
+                for record in search_matches
+                if _date_in_range(record.get("concierge_date", ""), parsed_start, parsed_end)
+            )
+
+    sorted_records = _apply_sort(filtered_records, normalized_sort, concierge_priority_ids)
 
     concierged_count = sum(1 for record in filtered_records if record.get("concierged"))
     combined_error = " ".join(msg for msg in (error, filter_error) if msg).strip()
@@ -218,6 +236,7 @@ def _render_page(
         "recruiters": ALLOWED_RECRUITERS,
         "start_date": effective_start,
         "end_date": effective_end,
+        "search": search,
         "follow_up_options": FOLLOW_UP_OPTIONS,
     }
 
@@ -240,6 +259,7 @@ def _response_for_update(
     sort: str = "employee_id_asc",
     start_date: str = "",
     end_date: str = "",
+    search: str = "",
     record: Dict[str, object] | None = None,
     follow_up_status_class: str = "",
 ):
@@ -260,6 +280,7 @@ def _response_for_update(
         sort=sort,
         start_date=start_date,
         end_date=end_date,
+        search=search,
     )
 
 
@@ -280,27 +301,33 @@ def _apply_date_range_filter(
     if start_date is None and end_date is None:
         return records
 
-    def _in_range(date_str: str) -> bool:
-        parsed = _normalize_date(date_str)
-        if parsed is None:
-            return False
-        if start_date is not None and parsed < start_date:
-            return False
-        if end_date is not None and parsed > end_date:
-            return False
-        return True
-
     return [
         record
         for record in records
-        if _in_range(record.get("start_date", ""))
-        or _in_range(record.get("rehire_date", ""))
+        if _date_in_range(record.get("start_date", ""), start_date, end_date)
+        or _date_in_range(record.get("rehire_date", ""), start_date, end_date)
+        or _date_in_range(record.get("concierge_date", ""), start_date, end_date)
     ]
 
 
-def _apply_sort(records: List[Dict[str, object]], sort: str) -> List[Dict[str, object]]:
+def _apply_sort(
+    records: List[Dict[str, object]],
+    sort: str,
+    concierge_priority_ids: set[str] | None = None,
+) -> List[Dict[str, object]]:
     key_func, reverse = _SORT_FIELDS.get(sort, _SORT_FIELDS["employee_id_asc"])
-    return sorted(records, key=key_func, reverse=reverse)
+    sorted_records = sorted(records, key=key_func, reverse=reverse)
+
+    if concierge_priority_ids:
+        prioritized = sorted_records.copy()
+        prioritized.sort(
+            key=lambda record: 0
+            if record.get("employee_id") in concierge_priority_ids
+            else 1
+        )
+        return prioritized
+
+    return sorted_records
 
 
 def _normalize_sort(sort: str) -> str:
@@ -308,6 +335,69 @@ def _normalize_sort(sort: str) -> str:
     if normalized in _SORT_FIELDS:
         return normalized
     return "employee_id_asc"
+
+
+def _apply_search_filter(
+    records: List[Dict[str, object]], search: str
+) -> List[Dict[str, object]]:
+    if not search:
+        return []
+
+    query = search.strip().lower()
+    if not query:
+        return []
+
+    def _matches(record: Dict[str, object]) -> bool:
+        first = str(record.get("first_name", "")).lower()
+        last = str(record.get("last_name", "")).lower()
+        full_name = f"{first} {last}".strip()
+        return query in first or query in last or query in full_name
+
+    return [record for record in records if _matches(record)]
+
+
+def _merge_records(
+    base_records: List[Dict[str, object]],
+    additional_records: List[Dict[str, object]],
+) -> List[Dict[str, object]]:
+    existing_ids = {record.get("employee_id") for record in base_records}
+    merged = list(base_records)
+
+    for record in additional_records:
+        employee_id = record.get("employee_id")
+        if employee_id not in existing_ids:
+            merged.append(record)
+            existing_ids.add(employee_id)
+
+    return merged
+
+
+def _date_in_range(
+    date_str: str, start_date: pd.Timestamp | None, end_date: pd.Timestamp | None
+) -> bool:
+    parsed = _normalize_date(date_str)
+    if parsed is None:
+        return False
+    if start_date is not None and parsed < start_date:
+        return False
+    if end_date is not None and parsed > end_date:
+        return False
+    return True
+
+
+def _records_with_concierge_in_range(
+    records: List[Dict[str, object]],
+    start_date: pd.Timestamp | None,
+    end_date: pd.Timestamp | None,
+) -> set[str]:
+    if start_date is None and end_date is None:
+        return set()
+
+    return {
+        str(record.get("employee_id"))
+        for record in records
+        if _date_in_range(record.get("concierge_date", ""), start_date, end_date)
+    }
 
 
 def _load_dataframe(file_bytes: bytes, filename: str) -> pd.DataFrame:
