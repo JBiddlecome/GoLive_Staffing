@@ -13,7 +13,8 @@ from fastapi.templating import Jinja2Templates
 templates = Jinja2Templates(directory="templates")
 router = APIRouter()
 
-PAYROLL_SOURCE = Path("data/payroll.xlsx")
+BASE_DIR = Path(__file__).resolve().parents[2]
+PAYROLL_SOURCE = BASE_DIR / "data" / "payroll.xlsx"
 
 
 def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
