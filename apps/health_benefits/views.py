@@ -13,7 +13,15 @@ from fastapi.templating import Jinja2Templates
 templates = Jinja2Templates(directory="templates")
 router = APIRouter()
 
-PAYROLL_SOURCE = Path("data/payroll.xlsx")
+BASE_DIR = Path(__file__).resolve().parents[2]
+PAYROLL_SEARCH_PATHS = [BASE_DIR / "data" / "payroll.xlsx", BASE_DIR / "payroll.xlsx"]
+
+
+def _resolve_payroll_source() -> Path:
+    for candidate in PAYROLL_SEARCH_PATHS:
+        if candidate.exists():
+            return candidate
+    return PAYROLL_SEARCH_PATHS[0]
 
 
 def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -107,12 +115,13 @@ def _build_context(
     allowed_labels = {preset["value"] for preset in presets}
     default_label = _default_preset_label(presets)
     chosen_label = selected_label if selected_label in allowed_labels else default_label
+    payroll_path = _resolve_payroll_source()
 
     context: Dict[str, object] = {
         "request": request,
         "presets": presets,
         "selected_preset": chosen_label,
-        "payroll_path": str(PAYROLL_SOURCE),
+        "payroll_path": str(payroll_path),
         "error": error,
         "info": info,
         "message": message,
@@ -351,13 +360,15 @@ async def analyze(
     payroll_end_ts = pd.Timestamp(payroll_end)
     payroll_window = _format_window(payroll_start, payroll_end)
 
-    if not PAYROLL_SOURCE.exists():
+    payroll_source = _resolve_payroll_source()
+
+    if not payroll_source.exists():
         context = _build_context(
             request,
             selected_label=selected["value"],
             error=(
                 "Payroll workbook not found. Upload the payroll Excel file to the repository at "
-                f"{PAYROLL_SOURCE} so it can be reused."
+                f"{PAYROLL_SEARCH_PATHS[0]} (preferred) or {PAYROLL_SEARCH_PATHS[1]} so it can be reused."
             ),
             employee_preview=employee_preview,
             employee_window=employee_window,
@@ -366,7 +377,7 @@ async def analyze(
         return templates.TemplateResponse("apps/health_benefits.html", context, status_code=400)
 
     try:
-        payroll_df = pd.read_excel(PAYROLL_SOURCE, dtype=str)
+        payroll_df = pd.read_excel(payroll_source, dtype=str)
     except ValueError as exc:
         context = _build_context(
             request,
