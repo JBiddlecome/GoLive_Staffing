@@ -13,11 +13,15 @@ from dateutil.relativedelta import relativedelta
 from fastapi import APIRouter, Body, Form, HTTPException, Request, UploadFile, File
 from fastapi.concurrency import run_in_threadpool
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from openpyxl import load_workbook
 
 templates = Jinja2Templates(directory="templates")
 router = APIRouter()
+
+ALLOWED_EMAIL_DOMAIN = "@culinarystaffing.com"
+AUTH_COOKIE_NAME = "sales_staffing_email"
+AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 30  # 30 days
 
 _MODULE_BASE_DIR = Path(__file__).resolve().parents[2]
 
@@ -1147,6 +1151,18 @@ def _build_chart_payload() -> Dict[str, Any]:
     return chart_payload
 
 
+def _is_authorized(request: Request) -> bool:
+    email_cookie = request.cookies.get(AUTH_COOKIE_NAME, "").strip().lower()
+    return email_cookie.endswith(ALLOWED_EMAIL_DOMAIN)
+
+
+def _validate_email(email: str) -> str:
+    normalized = email.strip().lower()
+    if not normalized.endswith(ALLOWED_EMAIL_DOMAIN):
+        raise ValueError("Please enter your Culinary Staffing email address.")
+    return normalized
+
+
 def _build_page_context(**extra: Any) -> Dict[str, Any]:
     chart_payload = _build_chart_payload()
 
@@ -1174,8 +1190,35 @@ def _build_page_context(**extra: Any) -> Dict[str, Any]:
 @router.get("")
 async def page(request: Request):
     logger.info("Rendering Sales & Staffing Metrics page for %s", request.client)
+    if not _is_authorized(request):
+        return templates.TemplateResponse(
+            "apps/sales_staffing_metrics_auth.html",
+            {"request": request},
+        )
     context = _build_page_context(request=request)
     return templates.TemplateResponse("apps/sales_staffing_metrics.html", context)
+
+
+@router.post("/auth")
+async def authorize(request: Request, email: str = Form(...)):
+    try:
+        normalized_email = _validate_email(email)
+    except ValueError as exc:
+        return templates.TemplateResponse(
+            "apps/sales_staffing_metrics_auth.html",
+            {"request": request, "error": str(exc), "email_value": email},
+            status_code=400,
+        )
+
+    response = RedirectResponse(url=request.url_for("page"), status_code=303)
+    response.set_cookie(
+        AUTH_COOKIE_NAME,
+        normalized_email,
+        max_age=AUTH_COOKIE_MAX_AGE,
+        httponly=True,
+        samesite="lax",
+    )
+    return response
 
 
 @router.post("/update")
