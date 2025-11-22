@@ -14,8 +14,8 @@
 
   <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
     <p class="font-medium">Payroll source</p>
-    <p class="mt-1">This tool reads the payroll Excel workbook from <code class="bg-white/70 px-1 py-0.5 rounded">{{ payroll_path }}</code>.</p>
-    <p>Commit the latest payroll file to <code>data/payroll.xlsx</code> (preferred) or <code>{{ payroll_fallback_path }}</code> so it is available for every run.</p>
+    <p class="mt-1">For Admins: This tool reads the payroll Excel workbook from <code class="bg-white/70 px-1 py-0.5 rounded">{{ payroll_path }}</code>.</p>
+    <p>Commit the latest payroll file to <code>data/payroll.xlsx</code> (preferred) weekly.</p>
   </div>
 
   <form class="space-y-4 rounded-xl border bg-white p-6 shadow-sm" method="post" action="/health-benefits/analyze" enctype="multipart/form-data">
