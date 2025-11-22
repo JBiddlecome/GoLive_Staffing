@@ -1,267 +1,379 @@
 {% extends "base.html" %}
 {% block title %}GoLive Staffing — Tools{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-4">Welcome</h1>
-<p class="mb-6">Choose a tool below. Each tool supports Excel uploads and will provide a downloadable result once processing is added.</p>
-
-<div class="space-y-8">
-  <section>
-    <h2 class="text-xl font-semibold mb-4">Recruiting</h2>
-    <div class="grid md:grid-cols-3 gap-4">
-      <a href="/clickboarding-check" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
-        <h3 class="font-semibold mb-2">Clickboarding Check</h3>
-        <p class="text-sm text-gray-600">Match Clickboarding names to recent employees and flag uncertain records.</p>
-      </a>
-      <a href="/concierge" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
-        <h3 class="font-semibold mb-2">Concierge</h3>
-        <p class="text-sm text-gray-600">Upload employee rosters and track concierge calls, assignments, and outcomes.</p>
-      </a>
-      <a href="/interview-questions" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
-        <h3 class="font-semibold mb-2">Interview Questions</h3>
-        <p class="text-sm text-gray-600">Paste interview transcripts and receive AI-generated JSON feedback.</p>
-      </a>
-      <a href="/resume-analyzer" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
-        <h3 class="font-semibold mb-2">Resume Analyzer</h3>
-        <p class="text-sm text-gray-600">Upload a PDF or image resume for hospitality-focused JSON scoring.</p>
-      </a>
-      <a href="/text-blast-filter" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
-        <h3 class="font-semibold mb-2">Text Blast Filter</h3>
-        <p class="text-sm text-gray-600">Clean/segment contacts and filter employee rosters before outbound SMS campaigns.</p>
-      </a>
-      <a href="/employee-phone-county-audit" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
-        <h3 class="font-semibold mb-2">Employee Phone &amp; County Audit</h3>
-        <p class="text-sm text-gray-600">Find Active/Inactive employees with mobile numbers starting with 1 or Alabama in their county.</p>
-      </a>
-    </div>
-  </section>
-
-  <section>
-    <h2 class="text-xl font-semibold mb-4">Sales &amp; Staffing</h2>
-    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <a href="/sales-staffing-metrics" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
-        <h3 class="font-semibold mb-2">Sales &amp; Staffing Metrics</h3>
-        <p class="text-sm text-gray-600">Upload weekly payroll totals to refresh revenue and fill rate dashboards.</p>
-      </a>
-      <a href="/recruiting-metrics" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
-        <h3 class="font-semibold mb-2">Recruiting Metrics</h3>
-        <p class="text-sm text-gray-600">Upload employee lists to chart onboarding, rehires, and county-level activity.</p>
-      </a>
-    </div>
-  </section>
-
-  <section>
-    <h2 class="text-xl font-semibold mb-4">Human Resources</h2>
-    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <a href="/health-benefits" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
-        <h3 class="font-semibold mb-2">Health Benefits</h3>
-        <p class="text-sm text-gray-600">Upcoming: census validation, eligibility filters, etc.</p>
-      </a>
-    </div>
-  </section>
-
-  <section>
-    <h2 class="text-xl font-semibold mb-4">Payroll</h2>
-    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <a href="/ucla-hours-tool" class="block p-5 rounded-2xl bg-white shadow hover:shadow-md border">
-        <h3 class="font-semibold mb-2">UCLA Hours Tool</h3>
-        <p class="text-sm text-gray-600">Upload Payroll + Assignment List, Output UCLA Timesheet.</p>
-      </a>
-    </div>
-  </section>
-
-  <section>
-    <details class="rounded-3xl bg-white border shadow">
-      <summary class="flex items-start justify-between gap-4 px-6 py-4 cursor-pointer">
-        <div>
-          <h2 class="text-2xl font-semibold">Employee Training &amp; Videos</h2>
-          <p class="text-gray-600 mt-1">Share these tutorials with employees. Use the Copy URL button next to each video to quickly grab the link.</p>
-        </div>
-        <span class="text-sm text-gray-500">Expand</span>
-      </summary>
-
-      <div class="space-y-6 px-6 pb-6">
-        <div>
-          <h3 class="text-lg font-semibold mb-2">Recruiting</h3>
-          <ul class="divide-y divide-gray-100 border border-gray-100 rounded-2xl">
-            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
-              <div>
-                <p class="font-medium">GoLive! Profile Setup Tutorial</p>
-                <a href="https://vimeo.com/1136692102" target="_blank" class="text-sm text-blue-600 hover:underline">https://vimeo.com/1136692102</a>
-              </div>
-              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/1136692102">Copy URL</button>
-            </li>
-          </ul>
-        </div>
-
-        <div>
-          <h3 class="text-lg font-semibold mb-2">Payroll</h3>
-          <ul class="divide-y divide-gray-100 border border-gray-100 rounded-2xl">
-            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
-              <div>
-                <p class="font-medium">Setup Direct Deposit</p>
-                <a href="https://vimeo.com/1136697684?share=copy&amp;fl=sv&amp;fe=ci" target="_blank" class="text-sm text-blue-600 hover:underline">https://vimeo.com/1136697684?share=copy&amp;fl=sv&amp;fe=ci</a>
-              </div>
-              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/1136697684?share=copy&amp;fl=sv&amp;fe=ci">Copy URL</button>
-            </li>
-            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
-              <div>
-                <p class="font-medium">How to Use Electronic Timekeeping</p>
-                <a href="https://vimeo.com/858718767" target="_blank" class="text-sm text-blue-600 hover:underline">https://vimeo.com/858718767</a>
-              </div>
-              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/858718767">Copy URL</button>
-            </li>
-            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
-              <div>
-                <p class="font-medium">How to Clock In Staff as an Event Supervisor</p>
-                <a href="https://vimeo.com/864626948" target="_blank" class="text-sm text-blue-600 hover:underline">https://vimeo.com/864626948</a>
-              </div>
-              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/864626948">Copy URL</button>
-            </li>
-            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
-              <div>
-                <p class="font-medium">Manually Adjusting Timesheet Hours</p>
-                <a href="https://vimeo.com/1038016232" target="_blank" class="text-sm text-blue-600 hover:underline">https://vimeo.com/1038016232</a>
-              </div>
-              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/1038016232">Copy URL</button>
-            </li>
-          </ul>
-        </div>
-
-        <div>
-          <h3 class="text-lg font-semibold mb-2">Staffing</h3>
-          <ul class="divide-y divide-gray-100 border border-gray-100 rounded-2xl">
-            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
-              <div>
-                <p class="font-medium">How to Pick Up Shifts</p>
-                <a href="https://vimeo.com/830714275?share=copy" target="_blank" class="text-sm text-blue-600 hover:underline">https://vimeo.com/830714275?share=copy</a>
-              </div>
-              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/830714275?share=copy">Copy URL</button>
-            </li>
-          </ul>
-        </div>
-
-        <div>
-          <h3 class="text-lg font-semibold mb-2">Certificates</h3>
-          <ul class="divide-y divide-gray-100 border border-gray-100 rounded-2xl">
-            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
-              <div>
-                <p class="font-medium">How to Upload Certificates</p>
-                <a href="https://vimeo.com/1118920639?share=copy&amp;fl=sv&amp;fe=ci" target="_blank" class="text-sm text-blue-600 hover:underline">https://vimeo.com/1118920639?share=copy&amp;fl=sv&amp;fe=ci</a>
-              </div>
-              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/1118920639?share=copy&amp;fl=sv&amp;fe=ci">Copy URL</button>
-            </li>
-            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
-              <div>
-                <p class="font-medium">How to get your RBS Certification in California</p>
-                <a href="https://vimeo.com/816292509?share=copy&amp;fl=sv&amp;fe=ci" target="_blank" class="text-sm text-blue-600 hover:underline">https://vimeo.com/816292509?share=copy&amp;fl=sv&amp;fe=ci</a>
-              </div>
-              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/816292509?share=copy&amp;fl=sv&amp;fe=ci">Copy URL</button>
-            </li>
-            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
-              <div>
-                <p class="font-medium">How to Get a UCLA Acknowledgment Certificate</p>
-                <a href="https://vimeo.com/838823928" target="_blank" class="text-sm text-blue-600 hover:underline">https://vimeo.com/838823928</a>
-              </div>
-              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/838823928">Copy URL</button>
-            </li>
-          </ul>
-        </div>
-
-        <div>
-          <h3 class="text-lg font-semibold mb-2">Human Resources</h3>
-          <ul class="divide-y divide-gray-100 border border-gray-100 rounded-2xl">
-            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
-              <div>
-                <p class="font-medium">Orientation Video</p>
-                <a href="https://vimeo.com/1025253188?share=copy&amp;fl=sv&amp;fe=ci" target="_blank" class="text-sm text-blue-600 hover:underline">https://vimeo.com/1025253188?share=copy&amp;fl=sv&amp;fe=ci</a>
-              </div>
-              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/1025253188?share=copy&amp;fl=sv&amp;fe=ci">Copy URL</button>
-            </li>
-          </ul>
-        </div>
-
-        <div>
-          <h3 class="text-lg font-semibold mb-2">GoLive!</h3>
-          <ul class="divide-y divide-gray-100 border border-gray-100 rounded-2xl">
-            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
-              <div>
-                <p class="font-medium">How to Reset Your Password</p>
-                <a href="https://vimeo.com/1038025282?share=copy&amp;fl=sv&amp;fe=ci" target="_blank" class="text-sm text-blue-600 hover:underline">https://vimeo.com/1038025282?share=copy&amp;fl=sv&amp;fe=ci</a>
-              </div>
-              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/1038025282?share=copy&amp;fl=sv&amp;fe=ci">Copy URL</button>
-            </li>
-          </ul>
+<div class="space-y-12">
+  <section
+    class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400 text-white shadow-2xl"
+  >
+    <div class="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_30%,white,transparent_30%)]"></div>
+    <div class="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-white/10 blur-3xl"></div>
+    <div class="relative grid gap-10 md:grid-cols-2 px-8 py-10 lg:px-12 lg:py-14">
+      <div class="space-y-4">
+        <p class="uppercase tracking-[0.25em] text-sm font-semibold text-emerald-50">Internal toolkit</p>
+        <h1 class="brand-serif text-4xl md:text-5xl font-semibold leading-tight">GoLive! Staffing Productivity Hub</h1>
+        <p class="text-emerald-50/90 text-lg max-w-2xl">
+          Everything you need to move faster—from concierge follow-ups to payroll exports. Upload a file, tap a button, and let our
+          automations take care of the busy work.
+        </p>
+        <div class="flex flex-wrap gap-3 pt-2">
+          <a
+            href="#tool-collections"
+            class="inline-flex items-center gap-2 rounded-full bg-white text-emerald-700 px-5 py-3 font-semibold shadow-lg shadow-emerald-900/10"
+          >
+            Explore tools
+            <span aria-hidden="true">→</span>
+          </a>
+          <a
+            href="#training"
+            class="inline-flex items-center gap-2 rounded-full border border-white/50 px-5 py-3 font-semibold text-white hover:bg-white/10"
+          >
+            Watch tutorials
+          </a>
         </div>
       </div>
-    </details>
-  </section>
 
-  <section>
-    <details class="rounded-3xl bg-white border shadow">
-      <summary class="flex items-start justify-between gap-4 px-6 py-4 cursor-pointer">
-        <div>
-          <h2 class="text-2xl font-semibold">Client Training &amp; Videos</h2>
-          <p class="text-gray-600 mt-1">Share these tutorials with clients. Use the Copy URL button next to each video to quickly grab the link.</p>
-        </div>
-        <span class="text-sm text-gray-500">Expand</span>
-      </summary>
-
-      <div class="space-y-6 px-6 pb-6">
-        <div>
-          <h3 class="text-lg font-semibold mb-2">GoLive! Basic</h3>
-          <ul class="divide-y divide-gray-100 border border-gray-100 rounded-2xl">
-            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
-              <div>
-                <p class="font-medium">How to Use GoLive! and Timesheet</p>
-                <a href="https://vimeo.com/search?q=Introduction%20to%20GoLive!%20for%20Clients" target="_blank" class="text-sm text-blue-600 hover:underline">Introduction to GoLive! for Clients on Vimeo</a>
-              </div>
-              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/search?q=Introduction%20to%20GoLive!%20for%20Clients">Copy URL</button>
-            </li>
-            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
-              <div>
-                <p class="font-medium">Managing Timesheets in GoLive! Browser</p>
-                <a href="https://vimeo.com/1139398260?share=copy&amp;fl=sv&amp;fe=ci" target="_blank" class="text-sm text-blue-600 hover:underline">https://vimeo.com/1139398260?share=copy&amp;fl=sv&amp;fe=ci</a>
-              </div>
-              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/1139398260?share=copy&amp;fl=sv&amp;fe=ci">Copy URL</button>
-            </li>
-            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
-              <div>
-                <p class="font-medium">Introduction to GoLive!</p>
-                <a href="https://vimeo.com/search?q=Client%20App%20Introduction%20Video" target="_blank" class="text-sm text-blue-600 hover:underline">Client App Introduction Video on Vimeo</a>
-              </div>
-              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/search?q=Client%20App%20Introduction%20Video">Copy URL</button>
-            </li>
-          </ul>
+      <div class="grid gap-4 md:gap-6 lg:px-6">
+        <div class="rounded-2xl bg-white/10 backdrop-blur-md p-5 border border-white/30 shadow-lg">
+          <p class="text-sm uppercase tracking-wide text-emerald-50/80">Highlights</p>
+          <div class="mt-3 grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-3xl font-semibold">10+</p>
+              <p class="text-sm text-emerald-50/80">Specialized workflows</p>
+            </div>
+            <div>
+              <p class="text-3xl font-semibold">Minutes</p>
+              <p class="text-sm text-emerald-50/80">To upload &amp; download results</p>
+            </div>
+          </div>
         </div>
 
-        <div>
-          <h3 class="text-lg font-semibold mb-2">GoLive! Pro</h3>
-          <ul class="divide-y divide-gray-100 border border-gray-100 rounded-2xl">
-            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
-              <div>
-                <p class="font-medium">GoLive! Pro Introduction</p>
-                <a href="https://vimeo.com/1139399204?share=copy&amp;fl=sv&amp;fe=ci" target="_blank" class="text-sm text-blue-600 hover:underline">https://vimeo.com/1139399204?share=copy&amp;fl=sv&amp;fe=ci</a>
-              </div>
-              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/1139399204?share=copy&amp;fl=sv&amp;fe=ci">Copy URL</button>
-            </li>
-            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
-              <div>
-                <p class="font-medium">Quick Add a Shift</p>
-                <a href="https://vimeo.com/1139400114?share=copy&amp;fl=sv&amp;fe=ci" target="_blank" class="text-sm text-blue-600 hover:underline">https://vimeo.com/1139400114?share=copy&amp;fl=sv&amp;fe=ci</a>
-              </div>
-              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/1139400114?share=copy&amp;fl=sv&amp;fe=ci">Copy URL</button>
-            </li>
-            <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
-              <div>
-                <p class="font-medium">Changing Event and Shift Details</p>
-                <a href="https://vimeo.com/search?q=Changing%20Event%20and%20Shift%20Details" target="_blank" class="text-sm text-blue-600 hover:underline">Changing Event and Shift Details on Vimeo</a>
-              </div>
-              <button type="button" class="copy-btn px-4 py-2 rounded-full border text-sm font-medium" data-copy-url="https://vimeo.com/search?q=Changing%20Event%20and%20Shift%20Details">Copy URL</button>
-            </li>
-          </ul>
+        <div class="rounded-2xl bg-white text-emerald-900 p-5 shadow-xl">
+          <p class="text-sm font-semibold text-emerald-600">Human + automation</p>
+          <p class="mt-2 text-lg">Built for recruiters, payroll, sales, and HR teams that need clear answers without extra clicks.</p>
+          <div class="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-emerald-700">
+            <span class="bg-emerald-50 border border-emerald-100 rounded-full px-3 py-1">Excel ready</span>
+            <span class="bg-emerald-50 border border-emerald-100 rounded-full px-3 py-1">Downloadable outputs</span>
+            <span class="bg-emerald-50 border border-emerald-100 rounded-full px-3 py-1">Real-world templates</span>
+          </div>
         </div>
       </div>
-    </details>
+    </div>
+  </section>
+
+  <section class="grid gap-4 md:grid-cols-3" id="tool-collections">
+    <div class="rounded-2xl bg-white/80 border border-emerald-100 shadow-lg p-6">
+      <p class="text-sm font-semibold text-emerald-700">Made for people</p>
+      <h2 class="brand-serif text-2xl font-semibold mt-2">Guided like a product tour</h2>
+      <p class="text-gray-600 mt-2">Each section is grouped by team, with short descriptions to help you pick the right workflow.</p>
+    </div>
+    <div class="rounded-2xl bg-white/80 border border-emerald-100 shadow-lg p-6">
+      <p class="text-sm font-semibold text-emerald-700">Fast start</p>
+      <h2 class="brand-serif text-2xl font-semibold mt-2">Excel in, answers out</h2>
+      <p class="text-gray-600 mt-2">Upload your spreadsheets or PDFs and instantly get back lists, scores, and clean exports.</p>
+    </div>
+    <div class="rounded-2xl bg-white/80 border border-emerald-100 shadow-lg p-6">
+      <p class="text-sm font-semibold text-emerald-700">Confident delivery</p>
+      <h2 class="brand-serif text-2xl font-semibold mt-2">Clear, friendly cards</h2>
+      <p class="text-gray-600 mt-2">Soft shadows, iconography, and green accents keep the experience simple and on brand.</p>
+    </div>
+  </section>
+
+  <section class="space-y-6" aria-labelledby="recruiting-tools">
+    <div class="flex items-center gap-3">
+      <span class="h-10 w-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-semibold">R</span>
+      <div>
+        <p class="text-sm uppercase tracking-wide text-emerald-700 font-semibold">Recruiting Suite</p>
+        <h2 id="recruiting-tools" class="brand-serif text-3xl font-semibold leading-tight">Find, vet, and onboard faster</h2>
+        <p class="text-gray-600">Lightweight cards keep every recruiting workflow within one tap.</p>
+      </div>
+    </div>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <a href="/clickboarding-check" class="group block p-5 rounded-2xl bg-white border border-emerald-100 shadow hover:-translate-y-0.5 hover:shadow-lg transition">
+        <div class="flex items-start justify-between">
+          <h3 class="font-semibold text-lg">Clickboarding Check</h3>
+          <span class="text-emerald-600">↗</span>
+        </div>
+        <p class="text-sm text-gray-600 mt-2">Match Clickboarding names to recent employees and flag uncertain records.</p>
+      </a>
+      <a href="/concierge" class="group block p-5 rounded-2xl bg-white border border-emerald-100 shadow hover:-translate-y-0.5 hover:shadow-lg transition">
+        <div class="flex items-start justify-between">
+          <h3 class="font-semibold text-lg">Concierge</h3>
+          <span class="text-emerald-600">↗</span>
+        </div>
+        <p class="text-sm text-gray-600 mt-2">Upload employee rosters and track concierge calls, assignments, and outcomes.</p>
+      </a>
+      <a href="/interview-questions" class="group block p-5 rounded-2xl bg-white border border-emerald-100 shadow hover:-translate-y-0.5 hover:shadow-lg transition">
+        <div class="flex items-start justify-between">
+          <h3 class="font-semibold text-lg">Interview Questions</h3>
+          <span class="text-emerald-600">↗</span>
+        </div>
+        <p class="text-sm text-gray-600 mt-2">Paste interview transcripts and receive AI-generated JSON feedback.</p>
+      </a>
+      <a href="/resume-analyzer" class="group block p-5 rounded-2xl bg-white border border-emerald-100 shadow hover:-translate-y-0.5 hover:shadow-lg transition">
+        <div class="flex items-start justify-between">
+          <h3 class="font-semibold text-lg">Resume Analyzer</h3>
+          <span class="text-emerald-600">↗</span>
+        </div>
+        <p class="text-sm text-gray-600 mt-2">Upload a PDF or image resume for hospitality-focused JSON scoring.</p>
+      </a>
+      <a href="/text-blast-filter" class="group block p-5 rounded-2xl bg-white border border-emerald-100 shadow hover:-translate-y-0.5 hover:shadow-lg transition">
+        <div class="flex items-start justify-between">
+          <h3 class="font-semibold text-lg">Text Blast Filter</h3>
+          <span class="text-emerald-600">↗</span>
+        </div>
+        <p class="text-sm text-gray-600 mt-2">Clean/segment contacts and filter employee rosters before outbound SMS campaigns.</p>
+      </a>
+      <a href="/employee-phone-county-audit" class="group block p-5 rounded-2xl bg-white border border-emerald-100 shadow hover:-translate-y-0.5 hover:shadow-lg transition">
+        <div class="flex items-start justify-between">
+          <h3 class="font-semibold text-lg">Employee Phone &amp; County Audit</h3>
+          <span class="text-emerald-600">↗</span>
+        </div>
+        <p class="text-sm text-gray-600 mt-2">Find Active/Inactive employees with mobile numbers starting with 1 or Alabama in their county.</p>
+      </a>
+    </div>
+  </section>
+
+  <section class="space-y-6" aria-labelledby="sales-staffing">
+    <div class="flex items-center gap-3">
+      <span class="h-10 w-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-semibold">S</span>
+      <div>
+        <p class="text-sm uppercase tracking-wide text-emerald-700 font-semibold">Sales &amp; Staffing</p>
+        <h2 id="sales-staffing" class="brand-serif text-3xl font-semibold leading-tight">Plan confidently with fresh numbers</h2>
+        <p class="text-gray-600">Upload weekly payroll totals or employee counts to see clean dashboards.</p>
+      </div>
+    </div>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <a href="/sales-staffing-metrics" class="group block p-5 rounded-2xl bg-white border border-emerald-100 shadow hover:-translate-y-0.5 hover:shadow-lg transition">
+        <div class="flex items-start justify-between">
+          <h3 class="font-semibold text-lg">Sales &amp; Staffing Metrics</h3>
+          <span class="text-emerald-600">↗</span>
+        </div>
+        <p class="text-sm text-gray-600 mt-2">Upload weekly payroll totals to refresh revenue and fill rate dashboards.</p>
+      </a>
+      <a href="/recruiting-metrics" class="group block p-5 rounded-2xl bg-white border border-emerald-100 shadow hover:-translate-y-0.5 hover:shadow-lg transition">
+        <div class="flex items-start justify-between">
+          <h3 class="font-semibold text-lg">Recruiting Metrics</h3>
+          <span class="text-emerald-600">↗</span>
+        </div>
+        <p class="text-sm text-gray-600 mt-2">Upload employee lists to chart onboarding, rehires, and county-level activity.</p>
+      </a>
+    </div>
+  </section>
+
+  <section class="grid gap-6 md:grid-cols-2" aria-labelledby="hr-payroll">
+    <div class="p-6 rounded-3xl bg-white border border-emerald-100 shadow-lg space-y-4">
+      <p class="text-sm uppercase tracking-wide text-emerald-700 font-semibold">Human Resources</p>
+      <h2 id="hr-payroll" class="brand-serif text-3xl font-semibold leading-tight">Benefits that feel beautiful</h2>
+      <p class="text-gray-600">Stay ahead of enrollment with soft gradients and an easy-upload experience.</p>
+      <a href="/health-benefits" class="inline-flex items-center gap-2 text-emerald-700 font-semibold">Health Benefits <span aria-hidden="true">→</span></a>
+    </div>
+    <div class="p-6 rounded-3xl bg-gradient-to-br from-white to-emerald-50 border border-emerald-100 shadow-lg space-y-4">
+      <p class="text-sm uppercase tracking-wide text-emerald-700 font-semibold">Payroll</p>
+      <h2 class="brand-serif text-3xl font-semibold leading-tight">Accurate hours, exported instantly</h2>
+      <p class="text-gray-600">Upload Payroll + Assignment List and download a ready-to-send UCLA Timesheet.</p>
+      <a href="/ucla-hours-tool" class="inline-flex items-center gap-2 text-emerald-700 font-semibold">UCLA Hours Tool <span aria-hidden="true">→</span></a>
+    </div>
+  </section>
+
+  <section id="training" class="space-y-6">
+    <div class="flex flex-col gap-2">
+      <p class="text-sm uppercase tracking-wide text-emerald-700 font-semibold">Learning library</p>
+      <h2 class="brand-serif text-3xl font-semibold leading-tight">Training and walkthroughs</h2>
+      <p class="text-gray-600 max-w-3xl">Share these tutorials with employees and clients. Use the Copy URL buttons to grab links instantly.</p>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+      <details class="rounded-3xl bg-white/90 border border-emerald-100 shadow-lg overflow-hidden" open>
+        <summary class="flex items-start justify-between gap-4 px-6 py-5 cursor-pointer bg-gradient-to-r from-emerald-50 to-white">
+          <div>
+            <h3 class="text-2xl font-semibold">Employee Training &amp; Videos</h3>
+            <p class="text-gray-600 mt-1">Copy, share, and send the right video in a couple of clicks.</p>
+          </div>
+          <span class="text-sm text-emerald-700">Tap to collapse</span>
+        </summary>
+
+        <div class="space-y-6 px-6 pb-6 pt-2">
+          <div>
+            <h4 class="text-lg font-semibold mb-2">Recruiting</h4>
+            <ul class="divide-y divide-emerald-50 border border-emerald-100 rounded-2xl bg-emerald-50/40">
+              <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+                <div>
+                  <p class="font-medium">GoLive! Profile Setup Tutorial</p>
+                  <a href="https://vimeo.com/1136692102" target="_blank" class="text-sm text-emerald-700 hover:underline">https://vimeo.com/1136692102</a>
+                </div>
+                <button type="button" class="copy-btn px-4 py-2 rounded-full border border-emerald-200 text-sm font-semibold text-emerald-700 bg-white hover:bg-emerald-50" data-copy-url="https://vimeo.com/1136692102">Copy URL</button>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="text-lg font-semibold mb-2">Payroll</h4>
+            <ul class="divide-y divide-emerald-50 border border-emerald-100 rounded-2xl bg-emerald-50/40">
+              <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+                <div>
+                  <p class="font-medium">Setup Direct Deposit</p>
+                  <a href="https://vimeo.com/1136697684?share=copy&amp;fl=sv&amp;fe=ci" target="_blank" class="text-sm text-emerald-700 hover:underline">https://vimeo.com/1136697684?share=copy&amp;fl=sv&amp;fe=ci</a>
+                </div>
+                <button type="button" class="copy-btn px-4 py-2 rounded-full border border-emerald-200 text-sm font-semibold text-emerald-700 bg-white hover:bg-emerald-50" data-copy-url="https://vimeo.com/1136697684?share=copy&amp;fl=sv&amp;fe=ci">Copy URL</button>
+              </li>
+              <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+                <div>
+                  <p class="font-medium">How to Use Electronic Timekeeping</p>
+                  <a href="https://vimeo.com/858718767" target="_blank" class="text-sm text-emerald-700 hover:underline">https://vimeo.com/858718767</a>
+                </div>
+                <button type="button" class="copy-btn px-4 py-2 rounded-full border border-emerald-200 text-sm font-semibold text-emerald-700 bg-white hover:bg-emerald-50" data-copy-url="https://vimeo.com/858718767">Copy URL</button>
+              </li>
+              <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+                <div>
+                  <p class="font-medium">How to Clock In Staff as an Event Supervisor</p>
+                  <a href="https://vimeo.com/864626948" target="_blank" class="text-sm text-emerald-700 hover:underline">https://vimeo.com/864626948</a>
+                </div>
+                <button type="button" class="copy-btn px-4 py-2 rounded-full border border-emerald-200 text-sm font-semibold text-emerald-700 bg-white hover:bg-emerald-50" data-copy-url="https://vimeo.com/864626948">Copy URL</button>
+              </li>
+              <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+                <div>
+                  <p class="font-medium">Manually Adjusting Timesheet Hours</p>
+                  <a href="https://vimeo.com/1038016232" target="_blank" class="text-sm text-emerald-700 hover:underline">https://vimeo.com/1038016232</a>
+                </div>
+                <button type="button" class="copy-btn px-4 py-2 rounded-full border border-emerald-200 text-sm font-semibold text-emerald-700 bg-white hover:bg-emerald-50" data-copy-url="https://vimeo.com/1038016232">Copy URL</button>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="text-lg font-semibold mb-2">Staffing</h4>
+            <ul class="divide-y divide-emerald-50 border border-emerald-100 rounded-2xl bg-emerald-50/40">
+              <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+                <div>
+                  <p class="font-medium">How to Pick Up Shifts</p>
+                  <a href="https://vimeo.com/830714275?share=copy" target="_blank" class="text-sm text-emerald-700 hover:underline">https://vimeo.com/830714275?share=copy</a>
+                </div>
+                <button type="button" class="copy-btn px-4 py-2 rounded-full border border-emerald-200 text-sm font-semibold text-emerald-700 bg-white hover:bg-emerald-50" data-copy-url="https://vimeo.com/830714275?share=copy">Copy URL</button>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="text-lg font-semibold mb-2">Certificates</h4>
+            <ul class="divide-y divide-emerald-50 border border-emerald-100 rounded-2xl bg-emerald-50/40">
+              <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+                <div>
+                  <p class="font-medium">How to Upload Certificates</p>
+                  <a href="https://vimeo.com/1118920639?share=copy&amp;fl=sv&amp;fe=ci" target="_blank" class="text-sm text-emerald-700 hover:underline">https://vimeo.com/1118920639?share=copy&amp;fl=sv&amp;fe=ci</a>
+                </div>
+                <button type="button" class="copy-btn px-4 py-2 rounded-full border border-emerald-200 text-sm font-semibold text-emerald-700 bg-white hover:bg-emerald-50" data-copy-url="https://vimeo.com/1118920639?share=copy&amp;fl=sv&amp;fe=ci">Copy URL</button>
+              </li>
+              <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+                <div>
+                  <p class="font-medium">How to get your RBS Certification in California</p>
+                  <a href="https://vimeo.com/816292509?share=copy&amp;fl=sv&amp;fe=ci" target="_blank" class="text-sm text-emerald-700 hover:underline">https://vimeo.com/816292509?share=copy&amp;fl=sv&amp;fe=ci</a>
+                </div>
+                <button type="button" class="copy-btn px-4 py-2 rounded-full border border-emerald-200 text-sm font-semibold text-emerald-700 bg-white hover:bg-emerald-50" data-copy-url="https://vimeo.com/816292509?share=copy&amp;fl=sv&amp;fe=ci">Copy URL</button>
+              </li>
+              <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+                <div>
+                  <p class="font-medium">How to Get a UCLA Acknowledgment Certificate</p>
+                  <a href="https://vimeo.com/838823928" target="_blank" class="text-sm text-emerald-700 hover:underline">https://vimeo.com/838823928</a>
+                </div>
+                <button type="button" class="copy-btn px-4 py-2 rounded-full border border-emerald-200 text-sm font-semibold text-emerald-700 bg-white hover:bg-emerald-50" data-copy-url="https://vimeo.com/838823928">Copy URL</button>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="text-lg font-semibold mb-2">Human Resources</h4>
+            <ul class="divide-y divide-emerald-50 border border-emerald-100 rounded-2xl bg-emerald-50/40">
+              <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+                <div>
+                  <p class="font-medium">Orientation Video</p>
+                  <a href="https://vimeo.com/1025253188?share=copy&amp;fl=sv&amp;fe=ci" target="_blank" class="text-sm text-emerald-700 hover:underline">https://vimeo.com/1025253188?share=copy&amp;fl=sv&amp;fe=ci</a>
+                </div>
+                <button type="button" class="copy-btn px-4 py-2 rounded-full border border-emerald-200 text-sm font-semibold text-emerald-700 bg-white hover:bg-emerald-50" data-copy-url="https://vimeo.com/1025253188?share=copy&amp;fl=sv&amp;fe=ci">Copy URL</button>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="text-lg font-semibold mb-2">GoLive!</h4>
+            <ul class="divide-y divide-emerald-50 border border-emerald-100 rounded-2xl bg-emerald-50/40">
+              <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+                <div>
+                  <p class="font-medium">How to Reset Your Password</p>
+                  <a href="https://vimeo.com/1038025282?share=copy&amp;fl=sv&amp;fe=ci" target="_blank" class="text-sm text-emerald-700 hover:underline">https://vimeo.com/1038025282?share=copy&amp;fl=sv&amp;fe=ci</a>
+                </div>
+                <button type="button" class="copy-btn px-4 py-2 rounded-full border border-emerald-200 text-sm font-semibold text-emerald-700 bg-white hover:bg-emerald-50" data-copy-url="https://vimeo.com/1038025282?share=copy&amp;fl=sv&amp;fe=ci">Copy URL</button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </details>
+
+      <details class="rounded-3xl bg-white/90 border border-emerald-100 shadow-lg overflow-hidden">
+        <summary class="flex items-start justify-between gap-4 px-6 py-5 cursor-pointer bg-gradient-to-r from-emerald-50 to-white">
+          <div>
+            <h3 class="text-2xl font-semibold">Client Training &amp; Videos</h3>
+            <p class="text-gray-600 mt-1">A simple, shareable library for GoLive! browser and Pro clients.</p>
+          </div>
+          <span class="text-sm text-emerald-700">Tap to expand</span>
+        </summary>
+
+        <div class="space-y-6 px-6 pb-6 pt-2">
+          <div>
+            <h4 class="text-lg font-semibold mb-2">GoLive! Basic</h4>
+            <ul class="divide-y divide-emerald-50 border border-emerald-100 rounded-2xl bg-emerald-50/40">
+              <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+                <div>
+                  <p class="font-medium">How to Use GoLive! and Timesheet</p>
+                  <a href="https://vimeo.com/search?q=Introduction%20to%20GoLive!%20for%20Clients" target="_blank" class="text-sm text-emerald-700 hover:underline">Introduction to GoLive! for Clients on Vimeo</a>
+                </div>
+                <button type="button" class="copy-btn px-4 py-2 rounded-full border border-emerald-200 text-sm font-semibold text-emerald-700 bg-white hover:bg-emerald-50" data-copy-url="https://vimeo.com/search?q=Introduction%20to%20GoLive!%20for%20Clients">Copy URL</button>
+              </li>
+              <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+                <div>
+                  <p class="font-medium">Managing Timesheets in GoLive! Browser</p>
+                  <a href="https://vimeo.com/1139398260?share=copy&amp;fl=sv&amp;fe=ci" target="_blank" class="text-sm text-emerald-700 hover:underline">https://vimeo.com/1139398260?share=copy&amp;fl=sv&amp;fe=ci</a>
+                </div>
+                <button type="button" class="copy-btn px-4 py-2 rounded-full border border-emerald-200 text-sm font-semibold text-emerald-700 bg-white hover:bg-emerald-50" data-copy-url="https://vimeo.com/1139398260?share=copy&amp;fl=sv&amp;fe=ci">Copy URL</button>
+              </li>
+              <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+                <div>
+                  <p class="font-medium">Introduction to GoLive!</p>
+                  <a href="https://vimeo.com/search?q=Client%20App%20Introduction%20Video" target="_blank" class="text-sm text-emerald-700 hover:underline">Client App Introduction Video on Vimeo</a>
+                </div>
+                <button type="button" class="copy-btn px-4 py-2 rounded-full border border-emerald-200 text-sm font-semibold text-emerald-700 bg-white hover:bg-emerald-50" data-copy-url="https://vimeo.com/search?q=Client%20App%20Introduction%20Video">Copy URL</button>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="text-lg font-semibold mb-2">GoLive! Pro</h4>
+            <ul class="divide-y divide-emerald-50 border border-emerald-100 rounded-2xl bg-emerald-50/40">
+              <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+                <div>
+                  <p class="font-medium">GoLive! Pro Introduction</p>
+                  <a href="https://vimeo.com/1139399204?share=copy&amp;fl=sv&amp;fe=ci" target="_blank" class="text-sm text-emerald-700 hover:underline">https://vimeo.com/1139399204?share=copy&amp;fl=sv&amp;fe=ci</a>
+                </div>
+                <button type="button" class="copy-btn px-4 py-2 rounded-full border border-emerald-200 text-sm font-semibold text-emerald-700 bg-white hover:bg-emerald-50" data-copy-url="https://vimeo.com/1139399204?share=copy&amp;fl=sv&amp;fe=ci">Copy URL</button>
+              </li>
+              <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+                <div>
+                  <p class="font-medium">Quick Add a Shift</p>
+                  <a href="https://vimeo.com/1139400114?share=copy&amp;fl=sv&amp;fe=ci" target="_blank" class="text-sm text-emerald-700 hover:underline">https://vimeo.com/1139400114?share=copy&amp;fl=sv&amp;fe=ci</a>
+                </div>
+                <button type="button" class="copy-btn px-4 py-2 rounded-full border border-emerald-200 text-sm font-semibold text-emerald-700 bg-white hover:bg-emerald-50" data-copy-url="https://vimeo.com/1139400114?share=copy&amp;fl=sv&amp;fe=ci">Copy URL</button>
+              </li>
+              <li class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4">
+                <div>
+                  <p class="font-medium">Changing Event and Shift Details</p>
+                  <a href="https://vimeo.com/search?q=Changing%20Event%20and%20Shift%20Details" target="_blank" class="text-sm text-emerald-700 hover:underline">Changing Event and Shift Details on Vimeo</a>
+                </div>
+                <button type="button" class="copy-btn px-4 py-2 rounded-full border border-emerald-200 text-sm font-semibold text-emerald-700 bg-white hover:bg-emerald-50" data-copy-url="https://vimeo.com/search?q=Changing%20Event%20and%20Shift%20Details">Copy URL</button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </details>
+    </div>
   </section>
 </div>
 {% endblock %}
