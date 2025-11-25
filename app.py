@@ -28,6 +28,11 @@ async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
+@app.get("/external-ai-tools", response_class=HTMLResponse)
+async def external_ai_tools(request: Request):
+    return templates.TemplateResponse("external_ai_tools.html", {"request": request})
+
+
 @app.head("/")
 async def index_head() -> Response:
     """Render expects HEAD requests on the root path to succeed."""
