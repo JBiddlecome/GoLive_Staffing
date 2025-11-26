@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}GoLive! Pro Account Form{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-8">
+  <div class="flex items-center justify-between flex-wrap gap-4">
+    <div class="space-y-2">
+      <p class="text-sm uppercase tracking-wide text-emerald-700 font-semibold">Account setup</p>
+      <h1 class="brand-serif text-4xl font-semibold leading-tight">GoLive! Pro Account Form</h1>
+      <p class="text-gray-600">Complete the embedded form below to submit your GoLive! Pro account details.</p>
+    </div>
+    <a
+      href="/pro-account-form"
+      class="inline-flex items-center gap-2 rounded-full bg-emerald-600 text-white px-5 py-3 font-semibold shadow-lg shadow-emerald-900/10 hover:bg-emerald-700"
+    >
+      GoLive! Pro Account Form
+      <span aria-hidden="true">↗</span>
+    </a>
+  </div>
+
+  <section class="rounded-3xl bg-white shadow-lg border border-emerald-100 p-6 space-y-6">
+    <div class="space-y-2">
+      <h2 class="text-2xl font-semibold">Submit your details</h2>
+      <p class="text-gray-600">Fill out the Jotform to share the information needed for your GoLive! Pro account.</p>
+    </div>
+    <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+      <script type="text/javascript" src="https://form.jotform.com/jsform/253287076399068"></script>
+    </div>
+  </section>
+
+  <section class="rounded-3xl bg-white shadow-lg border border-emerald-100 p-6 space-y-6">
+    <div class="space-y-2">
+      <h2 class="text-2xl font-semibold">Need help?</h2>
+      <p class="text-gray-600">Chat with Sienna, our account setup specialist, directly on this page.</p>
+    </div>
+    <div class="rounded-2xl border border-gray-200 overflow-hidden">
+      <iframe id="JotFormIFrame-019abd702148725a81bbdc32bbfbc40cc731"
+        title="Sienna: Account Setup Specialist" onload="window.parent.scrollTo(0,0)"
+        allowtransparency="true" allow="geolocation; microphone; camera; fullscreen"
+        src="https://agent.jotform.com/019abd702148725a81bbdc32bbfbc40cc731?embedMode=iframe&background=1&shadow=1"
+        frameborder="0" style="
+          max-width:100%;
+          height:688px;
+          border:none;
+          width:100%;
+        " scrolling="no">
+      </iframe>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src='https://cdn.jotfor.ms/s/umd/74180b6bf8d/for-form-embed-handler.js'></script>
+  <script>
+    window.jotformEmbedHandler("iframe[id='JotFormIFrame-019abd702148725a81bbdc32bbfbc40cc731']",
+      "https://www.jotform.com")
+  </script>
+{% endblock %}
