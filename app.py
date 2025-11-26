@@ -15,6 +15,7 @@ from apps.resume_analyzer.views import router as resume_analyzer_router
 from apps.sales_staffing_metrics.views import router as sales_staffing_router
 from apps.text_blast_filter.views import router as text_blast_router
 from apps.ucla_hours_tool.views import router as ucla_hours_router
+from apps.golive_profile_creator import router as golive_profile_creator_router
 
 app = FastAPI(title="GoLive Staffing — Tools")
 
@@ -60,6 +61,11 @@ app.include_router(
 )
 app.include_router(
     interview_questions_router, prefix="/interview-questions", tags=["Interview Questions"]
+)
+app.include_router(
+    golive_profile_creator_router,
+    prefix="/golive-profile-creator",
+    tags=["GoLive Profile Creator"],
 )
 
 # Simple health check for Render

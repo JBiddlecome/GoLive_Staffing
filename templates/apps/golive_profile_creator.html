@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}GoLive Profile Creator — Staffing{% endblock %}
+{% block content %}
+<section class="space-y-6">
+  <header class="space-y-2">
+    <p class="text-sm uppercase tracking-wide text-emerald-700 font-semibold">Staffing</p>
+    <h1 class="text-3xl font-semibold">GoLive Profile Creator</h1>
+    <p class="text-sm text-gray-700 max-w-3xl">
+      Upload the single-sheet client, positions, contacts, and venue template (.xlsx or .csv) and this tool will run
+      the provided Playwright automation to create the records in GoLive! automatically.
+    </p>
+  </header>
+
+  {% if notice %}
+    <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+      {{ notice }}
+    </div>
+  {% endif %}
+
+  {% if error %}
+    <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+      {{ error }}
+    </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" class="space-y-4 rounded-2xl border bg-white p-6 shadow-sm">
+    <div>
+      <label for="data_file" class="block text-sm font-medium text-gray-700">Template file (.xlsx, .xls, or .csv)</label>
+      <input
+        type="file"
+        id="data_file"
+        name="data_file"
+        accept=".xlsx,.xls,.csv"
+        required
+        class="mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+      />
+    </div>
+    <button
+      type="submit"
+      class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+    >
+      Run automation
+    </button>
+    <p class="text-xs text-gray-500">Uploads are processed immediately; keep this tab open to watch for errors.</p>
+  </form>
+
+  <section class="grid gap-4 md:grid-cols-2">
+    <div class="rounded-2xl border bg-white p-4 shadow-sm">
+      <h2 class="text-sm font-semibold text-gray-800">Environment variables</h2>
+      <ul class="mt-2 space-y-1 text-sm text-gray-600">
+        <li><code class="bg-gray-100 px-2 py-1 rounded">GOLIVE_BASE_URL</code> — GoLive! base URL (defaults to dev7)</li>
+        <li><code class="bg-gray-100 px-2 py-1 rounded">GOLIVE_USERNAME</code> — login email</li>
+        <li><code class="bg-gray-100 px-2 py-1 rounded">GOLIVE_PASSWORD</code> — login password</li>
+      </ul>
+      <p class="mt-2 text-xs text-gray-500">Do not commit credentials. Set them in your hosting environment.</p>
+    </div>
+    <div class="rounded-2xl border bg-white p-4 shadow-sm">
+      <h2 class="text-sm font-semibold text-gray-800">Notes</h2>
+      <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-600">
+        <li>The automation runs headless Chromium via Playwright.</li>
+        <li>Make sure the upload follows the <strong>Field Name</strong> / <strong>Entry</strong> column template.</li>
+        <li>Logs will stream to the server output for debugging if anything fails.</li>
+      </ul>
+    </div>
+  </section>
+</section>
+{% endblock %}
