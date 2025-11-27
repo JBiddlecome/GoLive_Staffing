@@ -38,3 +38,6 @@ python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 uvicorn app:app --reload
+
+# Playwright browsers (required for GoLive Profile Creator automation)
+python -m playwright install chromium
