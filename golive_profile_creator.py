@@ -1,6 +1,8 @@
 import math
 import os
 import re
+import subprocess
+import sys
 from pathlib import Path
 from datetime import date
 
@@ -160,6 +162,32 @@ def parse_client_positions_venue(df: pd.DataFrame):
             venue_data[field] = entry
 
     return client_data, positions, contacts, venue_data
+
+
+def ensure_chromium_installed():
+    """Install Playwright's Chromium browser if it is missing."""
+
+    default_cache_dir = Path.home() / ".cache" / "ms-playwright"
+    browsers_dir = Path(os.environ.get("PLAYWRIGHT_BROWSERS_PATH", default_cache_dir))
+
+    chromium_present = any(
+        browsers_dir.glob("chromium*/*/chrome-linux/*chrome")
+    ) or any(browsers_dir.glob("chromium*/*/chrome-linux/headless_shell"))
+
+    if chromium_present:
+        return
+
+    log("Chromium not found. Installing Playwright browsers (chromium)...")
+    try:
+        subprocess.run(
+            [sys.executable, "-m", "playwright", "install", "chromium"],
+            check=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(
+            "Failed to install Playwright Chromium. "
+            "Please run `python -m playwright install chromium` manually and retry."
+        ) from exc
 
 
 # ----------------------------------------------------------------------
@@ -496,6 +524,8 @@ def run_profile_creator(data_file: Path):
     log(f"Loading data from: {data_file}")
     df = load_data(data_file)
     client_data, positions, contacts, venue_data = parse_client_positions_venue(df)
+
+    ensure_chromium_installed()
 
     with sync_playwright() as p:
         # headless=True for cloud/server environments
