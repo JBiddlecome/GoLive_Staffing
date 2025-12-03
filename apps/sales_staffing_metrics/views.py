@@ -1187,7 +1187,7 @@ def _build_page_context(**extra: Any) -> Dict[str, Any]:
     return base_context
 
 
-@router.get("")
+@router.get("", name="sales_staffing_metrics_page")
 async def page(request: Request):
     logger.info("Rendering Sales & Staffing Metrics page for %s", request.client)
     if not _is_authorized(request):
@@ -1199,7 +1199,7 @@ async def page(request: Request):
     return templates.TemplateResponse("apps/sales_staffing_metrics.html", context)
 
 
-@router.post("/auth")
+@router.post("/auth", name="sales_staffing_metrics_authorize")
 async def authorize(request: Request, email: str = Form(...)):
     try:
         normalized_email = _validate_email(email)
@@ -1210,7 +1210,9 @@ async def authorize(request: Request, email: str = Form(...)):
             status_code=400,
         )
 
-    response = RedirectResponse(url=request.url_for("page"), status_code=303)
+    response = RedirectResponse(
+        url=request.url_for("sales_staffing_metrics_page"), status_code=303
+    )
     response.set_cookie(
         AUTH_COOKIE_NAME,
         normalized_email,
