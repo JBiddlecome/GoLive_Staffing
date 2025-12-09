@@ -34,6 +34,11 @@ async def external_ai_tools(request: Request):
     return templates.TemplateResponse("external_ai_tools.html", {"request": request})
 
 
+@app.get("/contacts", response_class=HTMLResponse)
+async def contacts(request: Request):
+    return templates.TemplateResponse("contacts.html", {"request": request})
+
+
 @app.get("/pro-account-form", response_class=HTMLResponse)
 async def pro_account_form(request: Request):
     return templates.TemplateResponse("pro_account_form.html", {"request": request})
