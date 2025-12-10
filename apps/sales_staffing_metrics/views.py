@@ -700,7 +700,12 @@ def _load_revenue_goal_data(path: Path | None = None) -> List[Dict[str, Any]]:
         return []
 
     records.sort(key=lambda item: item[0])
-    return [record for _, record in records]
+
+    latest_week = records[-1][0]
+    cutoff = latest_week - relativedelta(months=3)
+
+    recent_records = [record for week_dt, record in records if week_dt >= cutoff]
+    return recent_records
 
 
 def _summarize_top_clients(df: pd.DataFrame) -> List[Dict[str, Any]]:
