@@ -27,7 +27,7 @@ For each question that IS present and answered in the transcript, classify the c
 - Yellow Flag: Mixed signals; attempts the right behavior but with inconsistency or limited follow-through.
 - Red Flag: Unprofessional, resistant, or harmful behaviors that conflict with team expectations.
 
-Use ONLY the interview transcript when evaluating; do not rely on the question list as if they were sample answers. If an answer is missing, incomplete, or unclear, rate conservatively.
+Use ONLY the interview transcript when evaluating; do not rely on the question list as if they were sample answers. If an answer is missing, incomplete, or unclear, rate conservatively. For questions that require an example do not deduct points if they answer the question but do not provide an example. If their answer to the main question is green flag worthy, then give them a green flag.
 
 Return ONLY valid JSON with this exact structure:
 
