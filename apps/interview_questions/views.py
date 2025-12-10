@@ -3,7 +3,10 @@ from __future__ import annotations
 import json
 import logging
 import os
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, List
+import re
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -14,21 +17,23 @@ from pydantic import BaseModel
 SYSTEM_PROMPT = """
 You are a hiring evaluator for our staffing agency.
 
-Read the full interview transcript (questions and answers) and evaluate the candidate's responses to each of these five questions:
+You will read a full interview transcript containing questions and answers. Evaluate ONLY the candidate's responses to the questions that were actually asked and answered in the transcript. The five possible questions are:
+
 1) "When your manager gives you feedback or asks you to work on something, how do you usually handle it? Can you give me an example?"
 2) "Has there been a time your manager asked you to do something that wasn’t really in your usual job? How did you handle it?"
 3) "Tell me about a time during a busy shift when you felt really overwhelmed. What did you do to stay on track?"
 4) "Have you ever felt stressed or frustrated at work? How did you make sure it didn’t affect your work or your team?"
 5) "Has a coworker ever made your job harder because of their attitude or behavior? How did you deal with it professionally?"
 
-For each question, classify the candidate's answer as:
+For each question that IS present and answered in the transcript, classify the candidate’s response as:
 - Green Flag: Positive behaviors (proactive, collaborative, professional) with clear examples.
 - Yellow Flag: Mixed signals; attempts the right behavior but with inconsistency or limited follow-through.
 - Red Flag: Unprofessional, resistant, or harmful behaviors that conflict with team expectations.
 
-Use the transcript only—do not rely on the example prompts themselves as the answers. If an answer is missing or unclear, rate it conservatively.
+Use ONLY the interview transcript when evaluating; do not rely on the question list as if they were sample answers. If an answer is missing, incomplete, or unclear, rate conservatively. For questions that require an example do not deduct points if they answer the question but do not provide an example. If their answer to the main question is green flag worthy, then give them a green flag.
 
 Return ONLY valid JSON with this exact structure:
+
 {
   "overall_recommendation": {
     "flag": "Green Flag | Yellow Flag | Red Flag",
@@ -48,12 +53,18 @@ Return ONLY valid JSON with this exact structure:
   "notes_for_hiring_manager": "string"
 }
 
-Always include all five questions in order within "question_evaluations" with their corresponding question text, flags, confidences, and rationales. Base the overall recommendation on the pattern of flags across all answers and your confidence in the transcript.
+Important rules:
+• Include ONLY the questions that were actually asked and answered in the transcript.  
+• Do NOT include or score any of the five questions that do not appear in the transcript.  
+• The “question_evaluations” array should list the evaluated questions IN NUMERICAL ORDER based on their question number.  
+• Base the overall recommendation on the pattern of flags across the evaluated questions and your confidence in the transcript.
 """
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 logger = logging.getLogger(__name__)
+DATA_FILE = Path("data/interview_question_responses.json")
+DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 
 class EvaluateInterviewRequest(BaseModel):
@@ -71,6 +82,13 @@ def _get_openai_client() -> OpenAI:
 async def interview_questions_page(request: Request) -> HTMLResponse:
     context = {"request": request}
     return templates.TemplateResponse("apps/interview_questions.html", context)
+
+
+@router.get("/responses", response_class=HTMLResponse)
+async def interview_question_responses(request: Request) -> HTMLResponse:
+    entries = [_format_entry_for_display(entry) for entry in _load_saved_entries()]
+    context = {"request": request, "entries": entries}
+    return templates.TemplateResponse("apps/interview_question_responses.html", context)
 
 
 @router.post("/evaluate")
@@ -111,6 +129,11 @@ async def evaluate_interview(payload: EvaluateInterviewRequest) -> JSONResponse:
     except json.JSONDecodeError as exc:
         raise HTTPException(status_code=502, detail="AI response was not valid JSON.") from exc
 
+    try:
+        _persist_transcript(transcript, parsed)
+    except Exception:  # pragma: no cover - file I/O safety net
+        logger.exception("Unable to persist interview transcript.")
+
     return JSONResponse(parsed)
 
 
@@ -147,3 +170,67 @@ def _harmonize_overall_flag(response: Dict[str, Any]) -> Dict[str, Any]:
         response["overall_recommendation"] = {"flag": majority_flag, "confidence": None}
 
     return response
+
+
+def _persist_transcript(transcript: str, evaluation: Dict[str, Any]) -> None:
+    entry = {
+        "transcript": transcript,
+        "evaluation": evaluation,
+        "saved_at": datetime.now(timezone.utc).isoformat(),
+        "interviewer_name": _extract_interviewer_name(transcript),
+    }
+
+    entries = _load_saved_entries()
+    entries.insert(0, entry)  # newest first
+    DATA_FILE.write_text(json.dumps(entries, indent=2))
+
+
+def _load_saved_entries() -> List[Dict[str, Any]]:
+    if not DATA_FILE.exists():
+        return []
+    try:
+        entries = json.loads(DATA_FILE.read_text())
+        if isinstance(entries, list):
+            return entries
+    except json.JSONDecodeError:
+        logger.exception("Saved interview responses file is not valid JSON.")
+    except Exception:
+        logger.exception("Unexpected error reading interview responses file.")
+    return []
+
+
+def _format_entry_for_display(entry: Dict[str, Any]) -> Dict[str, Any]:
+    raw_timestamp = entry.get("saved_at")
+    display_timestamp = ""
+    if isinstance(raw_timestamp, str):
+        try:
+            parsed = datetime.fromisoformat(raw_timestamp)
+            display_timestamp = parsed.astimezone(timezone.utc).strftime("%Y-%m-%d %I:%M %p %Z")
+        except ValueError:
+            display_timestamp = raw_timestamp
+
+    return {
+        "transcript": entry.get("transcript", ""),
+        "evaluation_pretty": json.dumps(entry.get("evaluation", {}), indent=2),
+        "saved_at": display_timestamp,
+        "interviewer_name": entry.get("interviewer_name"),
+    }
+
+
+def _extract_interviewer_name(transcript: str) -> str | None:
+    lines = [line.strip() for line in transcript.splitlines()]
+    for idx, line in enumerate(lines):
+        if _looks_like_time(line):
+            for previous in reversed(lines[:idx]):
+                if not previous or _looks_like_time(previous) or _looks_like_phone(previous):
+                    continue
+                return previous
+    return None
+
+
+def _looks_like_time(line: str) -> bool:
+    return bool(re.search(r"\b\d{1,2}:\d{2}\s?(AM|PM)\b", line, flags=re.IGNORECASE))
+
+
+def _looks_like_phone(line: str) -> bool:
+    return bool(re.fullmatch(r"[\d\-()+\s]{7,}", line))
