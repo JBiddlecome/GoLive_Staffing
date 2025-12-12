@@ -16,6 +16,7 @@ from apps.sales_staffing_metrics.views import router as sales_staffing_router
 from apps.text_blast_filter.views import router as text_blast_router
 from apps.ucla_hours_tool.views import router as ucla_hours_router
 from apps.golive_profile_creator import router as golive_profile_creator_router
+from apps.reports import router as reports_router
 
 app = FastAPI(title="GoLive Staffing — Tools")
 
@@ -72,6 +73,7 @@ app.include_router(
     prefix="/golive-profile-creator",
     tags=["GoLive Profile Creator"],
 )
+app.include_router(reports_router, prefix="/reports", tags=["Reports"])
 
 # Simple health check for Render
 @app.get("/healthz")
