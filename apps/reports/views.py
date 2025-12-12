@@ -82,9 +82,29 @@ def read_csv_resilient(path: Path) -> pd.DataFrame:
     )
 
 
+def ensure_dataframe_has_columns(df: pd.DataFrame, source: Path) -> pd.DataFrame:
+    """Validate that the downloaded CSV produced real columns.
+
+    If the OneDrive link is wrong (e.g., points to an HTML page or XLSX
+    download) pandas can return an empty DataFrame. DuckDB refuses to
+    register such a table and surfaces the opaque error seen by users.
+    """
+
+    if df.shape[1] == 0:
+        size = source.stat().st_size if source.exists() else 0
+        raise RuntimeError(
+            "Downloaded file contains no columns. "
+            "Confirm ONEDRIVE_CSV_URL is a direct CSV export link "
+            f"(saved {size:,} bytes to {source})."
+        )
+
+    return df
+
+
 def load_data() -> int:
     download_csv_from_onedrive()
     df = read_csv_resilient(LOCAL_CSV_PATH)
+    df = ensure_dataframe_has_columns(df, LOCAL_CSV_PATH)
 
     DB.register("raw_df", df)
     DB.execute(
