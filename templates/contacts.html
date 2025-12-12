@@ -13,10 +13,21 @@
   </section>
 
   <section class="rounded-3xl bg-white shadow-xl border border-emerald-100 overflow-hidden">
-    <div class="border-b border-emerald-100 bg-emerald-50/70 px-6 py-4 flex items-center justify-between">
+    <div class="border-b border-emerald-100 bg-emerald-50/70 px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
       <div>
         <p class="text-sm uppercase tracking-wide text-emerald-700 font-semibold">Directory</p>
         <h2 class="brand-serif text-2xl font-semibold leading-tight">Internal company contacts</h2>
+      </div>
+      <div class="flex items-center gap-2 bg-white text-emerald-700 rounded-full p-1 shadow-inner">
+        <button data-filter="all" class="filter-btn active px-4 py-2 rounded-full font-semibold transition hover:bg-emerald-50">
+          All Staff
+        </button>
+        <button data-filter="internal" class="filter-btn px-4 py-2 rounded-full font-semibold transition hover:bg-emerald-50">
+          Internal Staff
+        </button>
+        <button data-filter="smartline" class="filter-btn px-4 py-2 rounded-full font-semibold transition hover:bg-emerald-50">
+          Smartline Core Staff
+        </button>
       </div>
     </div>
     <div class="overflow-x-auto">
@@ -34,42 +45,42 @@
           <tr class="bg-emerald-50 text-emerald-900 font-semibold">
             <td colspan="5" class="px-4 py-3">Staffing (staffingteam@culinarystaffing.com)</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="internal">
             <td class="px-4 py-3">Trina McCue</td>
             <td class="px-4 py-3">Staffing Manager</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:trina@culinarymanager.com">trina@culinarymanager.com</a></td>
             <td class="px-4 py-3">(949) 514-6720</td>
             <td class="px-4 py-3">437</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="internal">
             <td class="px-4 py-3">Monica Sanchez</td>
             <td class="px-4 py-3">Staffing Manager</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:monica@culinarymanager.com">monica@culinarymanager.com</a></td>
             <td class="px-4 py-3">(323) 986-6590</td>
             <td class="px-4 py-3">1003</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="smartline">
             <td class="px-4 py-3">Max Singh</td>
             <td class="px-4 py-3">On-Call Weekends</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:staffingteam@culinarystaffing.com">staffingteam@culinarystaffing.com</a></td>
             <td class="px-4 py-3">(323) 607-9083</td>
             <td class="px-4 py-3">431</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="smartline">
             <td class="px-4 py-3">Mohammad Aquib</td>
             <td class="px-4 py-3">On-Call Weeknights</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:staffingteam@culinarystaffing.com">staffingteam@culinarystaffing.com</a></td>
             <td class="px-4 py-3">(323) 607-9083</td>
             <td class="px-4 py-3">431</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="internal">
             <td class="px-4 py-3">Event Supervisor</td>
             <td class="px-4 py-3">Number #1</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:eventsupervisor1@culinarystaffing.com">eventsupervisor1@culinarystaffing.com</a></td>
             <td class="px-4 py-3">(323) 743-8076</td>
             <td class="px-4 py-3">1000</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="internal">
             <td class="px-4 py-3">Event Supervisor</td>
             <td class="px-4 py-3">Number #2</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:eventsupervisor2@culinarystaffing.com">eventsupervisor2@culinarystaffing.com</a></td>
@@ -79,28 +90,28 @@
           <tr class="bg-emerald-50 text-emerald-900 font-semibold">
             <td colspan="5" class="px-4 py-3">HR &amp; Office Management (hr@culinarystaffing.com)</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="internal">
             <td class="px-4 py-3">Rebecca Moran</td>
             <td class="px-4 py-3">Human Resources Generalist</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:rebecca@culinarystaffing.com">rebecca@culinarystaffing.com</a></td>
             <td class="px-4 py-3">(323) 965-7585</td>
             <td class="px-4 py-3">402</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="internal">
             <td class="px-4 py-3">Front Office/Administrative</td>
             <td class="px-4 py-3"></td>
             <td class="px-4 py-3"></td>
             <td class="px-4 py-3"></td>
             <td class="px-4 py-3"></td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="internal">
             <td class="px-4 py-3">Natalie Romero</td>
             <td class="px-4 py-3">Administrative Assistant</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:natalie@culinarystaffing.com">natalie@culinarystaffing.com</a></td>
             <td class="px-4 py-3">(323) 370-7099</td>
             <td class="px-4 py-3">418</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="smartline">
             <td class="px-4 py-3">Monish Kumar</td>
             <td class="px-4 py-3">Compliance &amp; Assistance</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:compliance@culinarystaffing.com">compliance@culinarystaffing.com</a></td>
@@ -110,35 +121,35 @@
           <tr class="bg-emerald-50 text-emerald-900 font-semibold">
             <td colspan="5" class="px-4 py-3">Recruiting (gethired@culinarystaffing.com)</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="internal">
             <td class="px-4 py-3">Recruiting</td>
             <td class="px-4 py-3">Main Line</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:gethired@culinarystaffing.com">gethired@culinarystaffing.com</a></td>
             <td class="px-4 py-3">(323) 870-8207</td>
             <td class="px-4 py-3">4</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="internal">
             <td class="px-4 py-3">Christina Marquez</td>
             <td class="px-4 py-3">Recruiting</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:christina.marquez@culinarystaffing.com">christina.marquez@culinarystaffing.com</a></td>
             <td class="px-4 py-3">(949) 523-1103</td>
             <td class="px-4 py-3">446</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="smartline">
             <td class="px-4 py-3">Anmol Singh</td>
             <td class="px-4 py-3">Support</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:support1@culinarystaffing.com">support1@culinarystaffing.com</a></td>
             <td class="px-4 py-3">(725) 529-3508</td>
             <td class="px-4 py-3">1005</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="smartline">
             <td class="px-4 py-3">Prafull Kumar</td>
             <td class="px-4 py-3">Onboarding Specialist</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:onboardingexpert1@culinarystaffing.com">onboardingexpert1@culinarystaffing.com</a></td>
             <td class="px-4 py-3">(323) 471-4278</td>
             <td class="px-4 py-3">441</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="smartline">
             <td class="px-4 py-3">Piyush Kumar</td>
             <td class="px-4 py-3">Onboarding Specialist</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:onboardingexpert2@culinarystaffing.com">onboardingexpert2@culinarystaffing.com</a></td>
@@ -148,35 +159,35 @@
           <tr class="bg-emerald-50 text-emerald-900 font-semibold">
             <td colspan="5" class="px-4 py-3">Billing &amp; Payroll (timesheets@culinarystaffing.com or accounting@culinarystaffing.com)</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="internal">
             <td class="px-4 py-3">Andrew Hopp</td>
             <td class="px-4 py-3">Senior Account Manager/AR</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:andrew@culinarystaffing.com">andrew@culinarystaffing.com</a></td>
             <td class="px-4 py-3">(323) 306-4492</td>
             <td class="px-4 py-3">445</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="internal">
             <td class="px-4 py-3">Corrinne Bellinger</td>
             <td class="px-4 py-3">Director of Payroll &amp; Billing</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:corrinne@culinarystaffing.com">corrinne@culinarystaffing.com</a></td>
             <td class="px-4 py-3">(323) 761-2619</td>
             <td class="px-4 py-3">426</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="internal">
             <td class="px-4 py-3">Debra Vega</td>
             <td class="px-4 py-3">Payroll Manager</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:debra@culinarystaffing.com">debra@culinarystaffing.com</a></td>
             <td class="px-4 py-3">(323) 673-5657</td>
             <td class="px-4 py-3">436</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="smartline">
             <td class="px-4 py-3">Ashish Kumar</td>
             <td class="px-4 py-3">MSP Support</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:mspsupport@culinarystaffing.com">mspsupport@culinarystaffing.com</a></td>
             <td class="px-4 py-3">(323) 282-3465</td>
             <td class="px-4 py-3">502</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="smartline">
             <td class="px-4 py-3">Suraj Singh</td>
             <td class="px-4 py-3">MSP Support</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:mspsupport@culinarystaffing.com">mspsupport@culinarystaffing.com</a></td>
@@ -186,21 +197,14 @@
           <tr class="bg-emerald-50 text-emerald-900 font-semibold">
             <td colspan="5" class="px-4 py-3">Sales (info@culinarystaffing.com)</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="internal">
             <td class="px-4 py-3">Dan Stone</td>
             <td class="px-4 py-3">Business Development Specialist</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:dan.stone@culinarystaffing.com">dan.stone@culinarystaffing.com</a></td>
             <td class="px-4 py-3">(323) 965-7584</td>
             <td class="px-4 py-3">410</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
-            <td class="px-4 py-3">Christopher O'Brien</td>
-            <td class="px-4 py-3">Sales Consultant</td>
-            <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:chris@culinarystaffing.com">chris@culinarystaffing.com</a></td>
-            <td class="px-4 py-3">(951) 900-1421</td>
-            <td class="px-4 py-3">447</td>
-          </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="internal">
             <td class="px-4 py-3">Jacob Ehrenreich</td>
             <td class="px-4 py-3">Sales Consultant</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:jacob@culinarystaffing.com">jacob@culinarystaffing.com</a></td>
@@ -210,7 +214,7 @@
           <tr class="bg-emerald-50 text-emerald-900 font-semibold">
             <td colspan="5" class="px-4 py-3">Tech Support</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="internal">
             <td class="px-4 py-3">Jake Biddlecome</td>
             <td class="px-4 py-3">Project Manager</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:jake@culinarystaffing.com">jake@culinarystaffing.com</a></td>
@@ -220,21 +224,21 @@
           <tr class="bg-emerald-50 text-emerald-900 font-semibold">
             <td colspan="5" class="px-4 py-3">Owner &amp; Operators</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="internal">
             <td class="px-4 py-3">Jessica Seastead</td>
             <td class="px-4 py-3">Chief Operating Officer</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:jessica@culinarystaffing.com">jessica@culinarystaffing.com</a></td>
             <td class="px-4 py-3">(323) 655-6004</td>
             <td class="px-4 py-3">406</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="internal">
             <td class="px-4 py-3">Randy Hopp</td>
             <td class="px-4 py-3">Owner</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:randy@culinarystaffing.com">randy@culinarystaffing.com</a></td>
             <td class="px-4 py-3">(323) 965-7583</td>
             <td class="px-4 py-3">409</td>
           </tr>
-          <tr class="hover:bg-emerald-50/70">
+          <tr class="hover:bg-emerald-50/70" data-staff-type="internal">
             <td class="px-4 py-3">Liz Dickler</td>
             <td class="px-4 py-3">Project Manager</td>
             <td class="px-4 py-3"><a class="text-emerald-700 hover:underline" href="mailto:liz@culinarystaffing.com">liz@culinarystaffing.com</a></td>
@@ -246,4 +250,37 @@
     </div>
   </section>
 </div>
+
+<script>
+  const filterButtons = document.querySelectorAll('.filter-btn');
+  const contactRows = document.querySelectorAll('[data-staff-type]');
+
+  function setActiveFilter(selectedFilter) {
+    filterButtons.forEach((button) => {
+      const isActive = button.dataset.filter === selectedFilter;
+      button.classList.toggle('active', isActive);
+      button.classList.toggle('bg-emerald-600', isActive);
+      button.classList.toggle('text-white', isActive);
+    });
+  }
+
+  function applyFilter(filterValue) {
+    contactRows.forEach((row) => {
+      const isVisible = filterValue === 'all' || row.dataset.staffType === filterValue;
+      row.classList.toggle('hidden', !isVisible);
+    });
+  }
+
+  filterButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const selectedFilter = button.dataset.filter;
+      setActiveFilter(selectedFilter);
+      applyFilter(selectedFilter);
+    });
+  });
+
+  // Initialize default state
+  setActiveFilter('all');
+  applyFilter('all');
+</script>
 {% endblock %}
