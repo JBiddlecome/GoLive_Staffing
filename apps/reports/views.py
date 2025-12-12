@@ -56,9 +56,35 @@ def download_csv_from_onedrive() -> None:
 # -------------------------------------------------------------------
 # 2. LOAD DATA INTO DUCKDB
 # -------------------------------------------------------------------
+def read_csv_resilient(path: Path) -> pd.DataFrame:
+    """Load CSV data while tolerating encoding issues and bad rows.
+
+    We try multiple encodings and use the Python engine so that malformed
+    lines are skipped instead of crashing the entire load.
+    """
+
+    errors: list[str] = []
+    for encoding in ("utf-8-sig", "utf-8", "latin1", "cp1252"):
+        try:
+            return pd.read_csv(
+                path,
+                encoding=encoding,
+                engine="python",
+                sep=None,  # auto-detect comma vs tab, etc.
+                on_bad_lines="warn",  # skip malformed rows but log them
+            )
+        except Exception as exc:  # pragma: no cover - runtime safeguard
+            errors.append(f"{encoding}: {exc}")
+
+    raise RuntimeError(
+        "CSV parse failed after trying multiple encodings. Errors: "
+        + "; ".join(errors)
+    )
+
+
 def load_data() -> int:
     download_csv_from_onedrive()
-    df = pd.read_csv(LOCAL_CSV_PATH)
+    df = read_csv_resilient(LOCAL_CSV_PATH)
 
     DB.register("raw_df", df)
     DB.execute(
