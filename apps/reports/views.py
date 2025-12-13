@@ -6,13 +6,13 @@ from typing import Any, Dict
 
 import duckdb
 import pandas as pd
-import requests
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from openai import OpenAI
 from pydantic import BaseModel
+from sqlalchemy import create_engine, text
 
 from .schema_docs import COLUMN_DOCS
 
@@ -20,7 +20,14 @@ router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 client = OpenAI()
 
-ONEDRIVE_URL = os.environ.get("ONEDRIVE_CSV_URL")
+DATABASE_URL = os.environ.get(
+    "REPORTS_DATABASE_URL",
+    os.environ.get(
+        "DATABASE_URL",
+        "postgresql://jakebiddlecome:ae7QYzwVnGPED65@clientdata.coq6m1rznxjt.us-east-1.rds.amazonaws.com:5432/clientdata",
+    ),
+)
+DATA_TABLE_NAME = os.environ.get("REPORTS_TABLE_NAME", "shifts")
 
 # Paths
 MODULE_BASE_DIR = Path(__file__).resolve().parents[2]
@@ -32,7 +39,6 @@ elif RENDER_DATA_DIR.exists():
 else:
     DATA_DIR = MODULE_BASE_DIR / "data"
 
-LOCAL_CSV_PATH = DATA_DIR / "shifts.csv"
 DB = duckdb.connect(database=":memory:")
 IGNORE_COLUMNS = COLUMN_DOCS["IGNORE_COLUMNS"]
 DATA_READY = False
@@ -40,71 +46,32 @@ DATA_LOAD_ERROR: str | None = None
 
 
 # -------------------------------------------------------------------
-# 1. DOWNLOAD CSV FROM ONEDRIVE
+# 1. LOAD DATA FROM POSTGRES
 # -------------------------------------------------------------------
-def download_csv_from_onedrive() -> None:
-    if not ONEDRIVE_URL:
-        raise RuntimeError("ONEDRIVE_CSV_URL environment variable not set.")
-
-    response = requests.get(ONEDRIVE_URL, timeout=30)
-    response.raise_for_status()
-
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    LOCAL_CSV_PATH.write_bytes(response.content)
-
-
-# -------------------------------------------------------------------
-# 2. LOAD DATA INTO DUCKDB
-# -------------------------------------------------------------------
-def read_csv_resilient(path: Path) -> pd.DataFrame:
-    """Load CSV data while tolerating encoding issues and bad rows.
-
-    We try multiple encodings and use the Python engine so that malformed
-    lines are skipped instead of crashing the entire load.
-    """
-
-    errors: list[str] = []
-    for encoding in ("utf-8-sig", "utf-8", "latin1", "cp1252"):
-        try:
-            return pd.read_csv(
-                path,
-                encoding=encoding,
-                engine="python",
-                sep=None,  # auto-detect comma vs tab, etc.
-                on_bad_lines="warn",  # skip malformed rows but log them
-            )
-        except Exception as exc:  # pragma: no cover - runtime safeguard
-            errors.append(f"{encoding}: {exc}")
-
-    raise RuntimeError(
-        "CSV parse failed after trying multiple encodings. Errors: "
-        + "; ".join(errors)
-    )
-
-
-def ensure_dataframe_has_columns(df: pd.DataFrame, source: Path) -> pd.DataFrame:
-    """Validate that the downloaded CSV produced real columns.
-
-    If the OneDrive link is wrong (e.g., points to an HTML page or XLSX
-    download) pandas can return an empty DataFrame. DuckDB refuses to
-    register such a table and surfaces the opaque error seen by users.
-    """
+def ensure_dataframe_has_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Validate that the downloaded data produced real columns."""
 
     if df.shape[1] == 0:
-        size = source.stat().st_size if source.exists() else 0
         raise RuntimeError(
-            "Downloaded file contains no columns. "
-            "Confirm ONEDRIVE_CSV_URL is a direct CSV export link "
-            f"(saved {size:,} bytes to {source})."
+            "Downloaded table contains no columns. "
+            "Confirm REPORTS_DATABASE_URL points to a valid PostgreSQL database."
         )
 
     return df
 
 
 def load_data() -> int:
-    download_csv_from_onedrive()
-    df = read_csv_resilient(LOCAL_CSV_PATH)
-    df = ensure_dataframe_has_columns(df, LOCAL_CSV_PATH)
+    if not DATABASE_URL:
+        raise RuntimeError("REPORTS_DATABASE_URL environment variable not set.")
+
+    engine = create_engine(DATABASE_URL)
+    try:
+        with engine.begin() as connection:
+            df = pd.read_sql(text(f"SELECT * FROM {DATA_TABLE_NAME}"), connection)
+    finally:
+        engine.dispose()
+
+    df = ensure_dataframe_has_columns(df)
 
     DB.register("raw_df", df)
     DB.execute(
