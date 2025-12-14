@@ -64,7 +64,13 @@ def load_data() -> int:
     if not DATABASE_URL:
         raise RuntimeError("REPORTS_DATABASE_URL environment variable not set.")
 
-    engine = create_engine(DATABASE_URL)
+    url = (
+        DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+        if DATABASE_URL.startswith("postgresql://")
+        else DATABASE_URL
+    )
+
+    engine = create_engine(url)
     try:
         with engine.begin() as connection:
             df = pd.read_sql(text(f"SELECT * FROM {DATA_TABLE_NAME}"), connection)
