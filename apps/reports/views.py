@@ -60,24 +60,69 @@ def ensure_dataframe_has_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def load_data() -> int:
-    if not DATABASE_URL:
-        raise RuntimeError("REPORTS_DATABASE_URL environment variable not set.")
+def _load_local_payroll_dataframe() -> pd.DataFrame:
+    """Load payroll data from local CSV/Excel files as a fallback."""
 
-    url = (
-        DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
-        if DATABASE_URL.startswith("postgresql://")
-        else DATABASE_URL
+    candidates = (
+        DATA_DIR / "Payroll 2.csv",
+        DATA_DIR / "payroll.csv",
+        DATA_DIR / "payroll.xlsx",
+        MODULE_BASE_DIR / "Payroll 2.csv",
+        MODULE_BASE_DIR / "payroll.csv",
+        MODULE_BASE_DIR / "payroll.xlsx",
     )
 
-    engine = create_engine(url)
-    try:
-        with engine.begin() as connection:
-            df = pd.read_sql(text(f"SELECT * FROM {DATA_TABLE_NAME}"), connection)
-    finally:
-        engine.dispose()
+    for path in candidates:
+        if not path.exists():
+            continue
 
-    df = ensure_dataframe_has_columns(df)
+        if path.suffix.lower() == ".csv":
+            df = pd.read_csv(path)
+        else:
+            df = pd.read_excel(path)
+
+        return ensure_dataframe_has_columns(df)
+
+    raise RuntimeError(
+        "No payroll data found locally. Upload payroll.csv/payroll.xlsx or set REPORTS_DATABASE_URL."
+    )
+
+
+def load_data() -> int:
+    df: pd.DataFrame | None = None
+    db_error: Exception | None = None
+
+    if not DATABASE_URL:
+        db_error = RuntimeError("REPORTS_DATABASE_URL environment variable not set.")
+
+    if DATABASE_URL:
+        url = (
+            DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+            if DATABASE_URL.startswith("postgresql://")
+            else DATABASE_URL
+        )
+
+        engine = create_engine(url)
+        try:
+            with engine.begin() as connection:
+                df = pd.read_sql(text(f"SELECT * FROM {DATA_TABLE_NAME}"), connection)
+        except Exception as exc:  # pragma: no cover - runtime safeguard
+            db_error = exc
+        finally:
+            engine.dispose()
+
+        if df is not None:
+            df = ensure_dataframe_has_columns(df)
+
+    if df is None:
+        try:
+            df = _load_local_payroll_dataframe()
+        except Exception as exc:  # pragma: no cover - runtime safeguard
+            if db_error:
+                raise RuntimeError(
+                    f"Unable to load data from database ({db_error}) and fallback failed: {exc}"
+                )
+            raise
 
     DB.register("raw_df", df)
     DB.execute(
