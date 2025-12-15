@@ -115,12 +115,22 @@
         body: JSON.stringify({ question }),
       });
 
+      const contentType = response.headers.get('content-type') || '';
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || errorData.error || 'Unable to fetch results');
+        if (contentType.includes('application/json')) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || errorData.error || 'Unable to fetch results');
+        }
+
+        const text = await response.text();
+        throw new Error(text || 'Unable to fetch results');
       }
 
-      const data = await response.json();
+      const data = contentType.includes('application/json')
+        ? await response.json()
+        : JSON.parse(await response.text());
+
       answerEl.textContent = data.answer;
       sqlEl.textContent = data.sql;
       resultsBox.classList.remove('hidden');
