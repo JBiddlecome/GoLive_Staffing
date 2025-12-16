@@ -26,7 +26,7 @@ You will read a full interview transcript containing questions and answers. Eval
 5) "Has a coworker ever made your job harder because of their attitude or behavior? How did you deal with it professionally?"
 
 For each question that IS present and answered in the transcript, classify the candidate’s response as:
-- Green Flag: Positive behaviors (proactive, collaborative, professional) with clear examples.
+- Green Flag: Positive behaviors (proactive, collaborative, professional). Clear examples are preferred, but absence of an example should not deduct from consideration of a green flag.
 - Yellow Flag: Mixed signals; attempts the right behavior but with inconsistency or limited follow-through.
 - Red Flag: Unprofessional, resistant, or harmful behaviors that conflict with team expectations.
 
