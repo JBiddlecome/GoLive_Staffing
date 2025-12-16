@@ -154,7 +154,7 @@ async def update_employee(
         )
 
     normalized_status = follow_up_status if follow_up_status in FOLLOW_UP_OPTIONS else ""
-    normalized_flag = flag if flag in {"green", "yellow", "red"} else ""
+    normalized_flag = flag if flag in {"green", "orange", "red"} else ""
 
     record["called_date"] = normalized_called
     record["call_count"] = parsed_calls
