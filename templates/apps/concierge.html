@@ -143,7 +143,32 @@
           <td class="py-3 pr-3">{{ record.language or '-' }}</td>
           <td class="py-3 pr-3">
               <div class="flex items-center gap-2">
+                <input type="hidden" name="flag" form="{{ form_id }}" value="{{ record.flag }}" data-flag-input="{{ form_id }}" />
                 <input type="checkbox" name="concierged" form="{{ form_id }}" {% if record.concierged %}checked{% endif %} class="h-4 w-4" />
+                <div class="relative">
+                  <button
+                    type="button"
+                    data-flag-toggle="{{ form_id }}"
+                    class="p-1 rounded-full border text-gray-300 border-gray-200 hover:text-gray-500 hover:border-gray-300 transition-colors"
+                    aria-label="Set flag"
+                    aria-expanded="false"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
+                      <path d="M3.5 3.75a.75.75 0 0 1 1.5 0v1.163c.43-.24.915-.363 1.409-.363.696 0 1.378.218 1.976.593.68.427 1.317.657 1.815.657.408 0 .79-.14 1.212-.36l.075-.04c.46-.243.992-.52 1.597-.52.48 0 .921.139 1.266.41.384.304.6.77.6 1.268v4.483a.75.75 0 0 1-1.5 0V8.554c-.268.104-.553.166-.85.166-.696 0-1.378-.218-1.976-.593-.68-.427-1.317-.657-1.815-.657-.408 0-.79.14-1.212.36l-.075.04c-.46.243-.992.52-1.597.52-.304 0-.59-.06-.85-.166v6.922a.75.75 0 0 1-1.5 0Z" />
+                    </svg>
+                  </button>
+                  <div
+                    class="absolute right-0 mt-1 w-32 rounded-md border bg-white shadow-lg hidden"
+                    data-flag-menu="{{ form_id }}"
+                  >
+                    <ul class="py-1 text-sm text-gray-700">
+                      <li><button type="button" class="flex w-full items-center gap-2 px-3 py-2 hover:bg-gray-50" data-flag-option="">No flag</button></li>
+                      <li><button type="button" class="flex w-full items-center gap-2 px-3 py-2 hover:bg-gray-50" data-flag-option="green">Green flag</button></li>
+                      <li><button type="button" class="flex w-full items-center gap-2 px-3 py-2 hover:bg-gray-50" data-flag-option="yellow">Yellow flag</button></li>
+                      <li><button type="button" class="flex w-full items-center gap-2 px-3 py-2 hover:bg-gray-50" data-flag-option="red">Red flag</button></li>
+                    </ul>
+                  </div>
+                </div>
                 <button
                   type="button"
                   data-notes-toggle="{{ form_id }}"
@@ -213,6 +238,62 @@
   (() => {
     const rows = Array.from(document.querySelectorAll('tr[data-row-id]'));
     if (!rows.length) return;
+
+    const FLAG_CLASSES = [
+      'text-gray-300',
+      'text-green-500',
+      'text-yellow-500',
+      'text-red-500',
+      'border-gray-200',
+      'border-green-200',
+      'border-yellow-200',
+      'border-red-200',
+    ];
+
+    const closeAllFlagMenus = (exceptId = null) => {
+      document.querySelectorAll('[data-flag-menu]').forEach((menu) => {
+        if (menu.dataset.flagMenu === exceptId) return;
+        menu.classList.add('hidden');
+        const toggle = document.querySelector(`[data-flag-toggle="${menu.dataset.flagMenu}"]`);
+        if (toggle) toggle.setAttribute('aria-expanded', 'false');
+      });
+    };
+
+    const updateFlagButton = (formId, value) => {
+      const button = document.querySelector(`[data-flag-toggle="${formId}"]`);
+      if (!button) return;
+
+      button.classList.remove(...FLAG_CLASSES);
+      button.classList.add('border');
+
+      const colorMap = {
+        '': { label: 'No flag', classes: ['text-gray-300', 'border-gray-200'] },
+        green: { label: 'Green flag', classes: ['text-green-500', 'border-green-200'] },
+        yellow: { label: 'Yellow flag', classes: ['text-yellow-500', 'border-yellow-200'] },
+        red: { label: 'Red flag', classes: ['text-red-500', 'border-red-200'] },
+      };
+
+      const config = colorMap[value] || colorMap[''];
+      button.classList.add(...config.classes);
+      button.setAttribute('aria-label', config.label);
+      button.dataset.activeFlag = value || '';
+    };
+
+    const setFlag = (formId, value) => {
+      const input = document.querySelector(`[data-flag-input="${formId}"]`);
+      if (!input) return;
+
+      input.value = value;
+      updateFlagButton(formId, value);
+      closeAllFlagMenus();
+      saveRow(formId);
+    };
+
+    document.addEventListener('click', (event) => {
+      if (!(event.target instanceof Element)) return;
+      if (event.target.closest('[data-flag-menu]') || event.target.closest('[data-flag-toggle]')) return;
+      closeAllFlagMenus();
+    });
 
     const setNotesButtonState = (formId, value) => {
       const button = document.querySelector(`[data-notes-toggle="${formId}"]`);
@@ -326,6 +407,32 @@
       if (notesButton && notesField) {
         notesButton.addEventListener('click', () => toggleNotesContainer(formId));
         setNotesButtonState(formId, notesField.value);
+      }
+
+      const flagButton = row.querySelector(`[data-flag-toggle="${formId}"]`);
+      const flagMenu = row.querySelector(`[data-flag-menu="${formId}"]`);
+      const flagInput = row.querySelector(`[data-flag-input="${formId}"]`);
+
+      if (flagButton && flagMenu && flagInput) {
+        updateFlagButton(formId, flagInput.value);
+
+        flagButton.addEventListener('click', (event) => {
+          event.stopPropagation();
+          const isHidden = flagMenu.classList.contains('hidden');
+          closeAllFlagMenus(formId);
+          flagMenu.classList.toggle('hidden', !isHidden);
+          flagButton.setAttribute('aria-expanded', String(isHidden));
+        });
+
+        flagMenu.querySelectorAll('[data-flag-option]').forEach((option) => {
+          option.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const value = option.dataset.flagOption || '';
+            flagMenu.classList.add('hidden');
+            flagButton.setAttribute('aria-expanded', 'false');
+            setFlag(formId, value);
+          });
+        });
       }
     };
 

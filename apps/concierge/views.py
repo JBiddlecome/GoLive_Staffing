@@ -111,6 +111,7 @@ async def update_employee(
     recruiter: str = Form(""),
     concierged: str | None = Form(None),
     follow_up_status: str = Form(""),
+    flag: str = Form(""),
     concierged_filter: str = Form("all"),
     sort: str = Form("employee_id_asc"),
     start_date: str = Form(""),
@@ -153,6 +154,7 @@ async def update_employee(
         )
 
     normalized_status = follow_up_status if follow_up_status in FOLLOW_UP_OPTIONS else ""
+    normalized_flag = flag if flag in {"green", "yellow", "red"} else ""
 
     record["called_date"] = normalized_called
     record["call_count"] = parsed_calls
@@ -160,6 +162,7 @@ async def update_employee(
     record["concierged"] = concierged is not None
     record["follow_up_status"] = normalized_status
     record["notes"] = notes.strip()
+    record["flag"] = normalized_flag
 
     _save_records(records)
 
@@ -480,6 +483,7 @@ def _merge_new_employees(dataframe: pd.DataFrame) -> int:
             "language": language,
             "follow_up_status": "",
             "notes": "",
+            "flag": "",
         }
 
         records.append(record)
@@ -574,6 +578,7 @@ def _ensure_record_defaults(record: Dict[str, object]) -> Dict[str, object]:
         "mobile": "",
         "language": "",
         "notes": "",
+        "flag": "",
     }
     for key, value in defaults.items():
         record.setdefault(key, value)
