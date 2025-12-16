@@ -116,6 +116,7 @@ async def update_employee(
     start_date: str = Form(""),
     end_date: str = Form(""),
     search: str = Form(""),
+    notes: str = Form(""),
 ) -> HTMLResponse:
     records = _load_records()
     existing = {record.get("employee_id"): record for record in records}
@@ -158,6 +159,7 @@ async def update_employee(
     record["recruiter"] = recruiter if recruiter in ALLOWED_RECRUITERS else ""
     record["concierged"] = concierged is not None
     record["follow_up_status"] = normalized_status
+    record["notes"] = notes.strip()
 
     _save_records(records)
 
@@ -477,6 +479,7 @@ def _merge_new_employees(dataframe: pd.DataFrame) -> int:
             "mobile": mobile,
             "language": language,
             "follow_up_status": "",
+            "notes": "",
         }
 
         records.append(record)
@@ -570,6 +573,7 @@ def _ensure_record_defaults(record: Dict[str, object]) -> Dict[str, object]:
         "follow_up_status": "",
         "mobile": "",
         "language": "",
+        "notes": "",
     }
     for key, value in defaults.items():
         record.setdefault(key, value)

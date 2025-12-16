@@ -139,15 +139,38 @@
                 {% endfor %}
               </select>
           </td>
-          <td class="py-3 pr-3">{{ record.mobile or '—' }}</td>
-          <td class="py-3 pr-3">{{ record.language or '—' }}</td>
+          <td class="py-3 pr-3">{{ record.mobile or '-' }}</td>
+          <td class="py-3 pr-3">{{ record.language or '-' }}</td>
           <td class="py-3 pr-3">
-              <input type="checkbox" name="concierged" form="{{ form_id }}" {% if record.concierged %}checked{% endif %} class="h-4 w-4" />
+              <div class="flex items-center gap-2">
+                <input type="checkbox" name="concierged" form="{{ form_id }}" {% if record.concierged %}checked{% endif %} class="h-4 w-4" />
+                <button
+                  type="button"
+                  data-notes-toggle="{{ form_id }}"
+                  class="p-1 rounded-full border border-gray-200 text-gray-400 hover:text-gray-700 hover:border-gray-300 transition-colors"
+                  aria-label="Add concierge notes"
+                  data-has-notes="{{ 'true' if record.notes else 'false' }}"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
+                    <path d="M4.5 3A1.5 1.5 0 0 0 3 4.5v11A1.5 1.5 0 0 0 4.5 17h7.879a1.5 1.5 0 0 0 1.06-.44l2.121-2.121a1.5 1.5 0 0 0 .44-1.06V4.5A1.5 1.5 0 0 0 14.5 3h-10Zm1 3.25c0-.138.112-.25.25-.25h8.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-8.5a.25.25 0 0 1-.25-.25v-.5Zm0 3c0-.138.112-.25.25-.25h6.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-6.5a.25.25 0 0 1-.25-.25v-.5Zm0 3c0-.138.112-.25.25-.25h4.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-4.5a.25.25 0 0 1-.25-.25v-.5Z" />
+                  </svg>
+                </button>
+              </div>
           </td>
           <td class="py-3 pr-3 text-right">
               <div class="flex items-center justify-end gap-2">
                 <span data-save-status="{{ form_id }}" class="text-xs text-gray-500" aria-live="polite"></span>
                 <button type="button" data-save-button="{{ form_id }}" class="px-3 py-1 rounded-md bg-blue-600 text-white">Save</button>
+              </div>
+              <div class="mt-2 hidden" data-notes-container="{{ form_id }}">
+                <label for="notes-{{ form_id }}" class="sr-only">Notes for {{ record.first_name }} {{ record.last_name }}</label>
+                <textarea
+                  id="notes-{{ form_id }}"
+                  name="notes"
+                  form="{{ form_id }}"
+                  rows="3"
+                  class="w-full border rounded-md px-2 py-2 text-sm"
+                  placeholder="Add a note">{{ record.notes | e }}</textarea>
               </div>
           </td>
         </tr>
@@ -191,6 +214,31 @@
     const rows = Array.from(document.querySelectorAll('tr[data-row-id]'));
     if (!rows.length) return;
 
+    const setNotesButtonState = (formId, value) => {
+      const button = document.querySelector(`[data-notes-toggle="${formId}"]`);
+      if (!button) return;
+
+      const hasNotes = !!(value && value.trim());
+      button.dataset.hasNotes = hasNotes ? 'true' : 'false';
+      button.classList.toggle('text-amber-600', hasNotes);
+      button.classList.toggle('bg-amber-50', hasNotes);
+      button.classList.toggle('text-gray-400', !hasNotes);
+    };
+
+    const toggleNotesContainer = (formId) => {
+      const container = document.querySelector(`[data-notes-container="${formId}"]`);
+      const button = document.querySelector(`[data-notes-toggle="${formId}"]`);
+      if (!container || !button) return;
+
+      const isHidden = container.classList.contains('hidden');
+      container.classList.toggle('hidden');
+      button.setAttribute('aria-expanded', String(isHidden));
+
+      if (!isHidden) return;
+      const textarea = container.querySelector('textarea');
+      if (textarea) textarea.focus();
+    };
+
     const buildFormData = (formId) => {
       const form = document.getElementById(formId);
       const data = new FormData(form);
@@ -217,6 +265,8 @@
     const saveRow = async (formId) => {
       const form = document.getElementById(formId);
       const status = document.querySelector(`[data-save-status="${formId}"]`);
+      const notesContainer = document.querySelector(`[data-notes-container="${formId}"]`);
+      const notesField = notesContainer ? notesContainer.querySelector('textarea[name="notes"]') : null;
       if (!form || !status) return;
 
       status.classList.remove('text-red-600', 'text-green-700');
@@ -236,6 +286,17 @@
 
         status.textContent = payload.notice || 'Saved';
         status.classList.add('text-green-700');
+
+        const nextNotes = payload.record?.notes ?? notesField?.value ?? '';
+        if (notesField) {
+          notesField.value = nextNotes;
+        }
+        setNotesButtonState(formId, nextNotes);
+        if (notesContainer) {
+          notesContainer.classList.add('hidden');
+          const toggleBtn = document.querySelector(`[data-notes-toggle="${formId}"]`);
+          if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
+        }
       } catch (error) {
         status.textContent = error.message;
         status.classList.add('text-red-600');
@@ -257,6 +318,14 @@
           event.preventDefault();
           saveRow(formId);
         });
+      }
+
+      const notesButton = row.querySelector(`[data-notes-toggle="${formId}"]`);
+      const notesContainer = row.querySelector(`[data-notes-container="${formId}"]`);
+      const notesField = notesContainer ? notesContainer.querySelector('textarea[name="notes"]') : null;
+      if (notesButton && notesField) {
+        notesButton.addEventListener('click', () => toggleNotesContainer(formId));
+        setNotesButtonState(formId, notesField.value);
       }
     };
 
