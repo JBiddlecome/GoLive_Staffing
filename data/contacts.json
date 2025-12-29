@@ -1,0 +1,307 @@
+{
+  "departments": [
+    {
+      "name": "Staffing",
+      "group_email": "staffingteam@culinarystaffing.com",
+      "contacts": [
+        {
+          "name": "Trina McCue",
+          "title": "Staffing Manager",
+          "email": "trina@culinarymanager.com",
+          "phone": "(949) 514-6720",
+          "extension": "437",
+          "staff_type": "internal",
+          "id": "4d174b2a-4845-483a-9c0f-33453e425d02"
+        },
+        {
+          "name": "Monica Sanchez",
+          "title": "Staffing Manager",
+          "email": "monica@culinarymanager.com",
+          "phone": "(323) 986-6590",
+          "extension": "1003",
+          "staff_type": "internal",
+          "id": "5b5516a7-4e9c-4bea-884f-fbb2c504ba33"
+        },
+        {
+          "name": "Max Singh",
+          "title": "On-Call Weekends",
+          "email": "max@culinarystaffing.com",
+          "phone": "(323) 607-9083",
+          "extension": "431",
+          "staff_type": "smartline",
+          "id": "05f7dfad-3059-4227-8f85-46b234be733d"
+        },
+        {
+          "name": "Mohammad Aquib",
+          "title": "On-Call Weeknights",
+          "email": "mohammad@culinarystaffing.com",
+          "phone": "(323) 607-9083",
+          "extension": "431",
+          "staff_type": "smartline",
+          "id": "2f106139-4638-4cf3-869e-661276cc66cb"
+        },
+        {
+          "name": "Rohit Balani",
+          "title": "On-Call (Backup)",
+          "email": "rohit@culinarystaffing.com",
+          "phone": "N/A",
+          "extension": "N/A",
+          "staff_type": "smartline",
+          "id": "daeb4a47-99b6-4192-88a1-385d39e898a7"
+        },
+        {
+          "name": "Event Supervisor",
+          "title": "Number #1",
+          "email": "eventsupervisor1@culinarystaffing.com",
+          "phone": "(323) 743-8076",
+          "extension": "1000",
+          "staff_type": "internal",
+          "id": "934935c9-42d0-408b-b040-96a3eb419039"
+        },
+        {
+          "name": "Event Supervisor",
+          "title": "Number #2",
+          "email": "eventsupervisor2@culinarystaffing.com",
+          "phone": "(323) 391-2965",
+          "extension": "1001",
+          "staff_type": "internal",
+          "id": "bc9f96a0-a95b-4651-9cce-c4b0b6df1057"
+        }
+      ]
+    },
+    {
+      "name": "HR & Office Management",
+      "group_email": "hr@culinarystaffing.com",
+      "contacts": [
+        {
+          "name": "Rebecca Moran",
+          "title": "Human Resources Generalist",
+          "email": "rebecca@culinarystaffing.com",
+          "phone": "(323) 965-7585",
+          "extension": "402",
+          "staff_type": "internal",
+          "id": "eba8a780-5575-430b-9a1b-f81d5e7ae9d0"
+        },
+        {
+          "name": "Front Office/Administrative",
+          "title": "",
+          "email": "",
+          "phone": "",
+          "extension": "",
+          "staff_type": "internal",
+          "id": "30edc00b-3b39-4f1c-ba3f-7813cf8a194e"
+        },
+        {
+          "name": "Natalie Romero",
+          "title": "Administrative Assistant",
+          "email": "natalie@culinarystaffing.com",
+          "phone": "(323) 370-7099",
+          "extension": "418",
+          "staff_type": "internal",
+          "id": "892fbd4e-120c-4af0-a85c-d941e1c87a45"
+        },
+        {
+          "name": "Monish Kumar",
+          "title": "Compliance & Assistance",
+          "email": "monish@culinarystaffing.com",
+          "phone": "(714) 252-4648",
+          "extension": "488",
+          "staff_type": "smartline",
+          "id": "27a96711-574f-44fa-8846-6fd783b712fc"
+        }
+      ]
+    },
+    {
+      "name": "Recruiting",
+      "group_email": "gethired@culinarystaffing.com",
+      "contacts": [
+        {
+          "name": "Recruiting",
+          "title": "Main Line",
+          "email": "gethired@culinarystaffing.com",
+          "phone": "(323) 870-8207",
+          "extension": "4",
+          "staff_type": "internal",
+          "id": "905174a3-124e-4d07-bd92-839cffdf34cb"
+        },
+        {
+          "name": "Christina Marquez",
+          "title": "Recruiting",
+          "email": "christina.marquez@culinarystaffing.com",
+          "phone": "(949) 523-1103",
+          "extension": "446",
+          "staff_type": "internal",
+          "id": "d56cc486-fad9-4c7c-9cb9-f06a5c953dbc"
+        },
+        {
+          "name": "Anmol Singh",
+          "title": "Support",
+          "email": "anmol@culinarystaffing.com",
+          "phone": "(725) 529-3508",
+          "extension": "1005",
+          "staff_type": "smartline",
+          "id": "46bfa5d1-1a83-49d9-988b-839eeb594dff"
+        },
+        {
+          "name": "Prafull Kumar",
+          "title": "Onboarding Specialist",
+          "email": "prafull@culinarystaffing.com",
+          "phone": "(323) 471-4278",
+          "extension": "441",
+          "staff_type": "smartline",
+          "id": "fb1f9f59-3d44-4088-b11a-2386cc62673e"
+        },
+        {
+          "name": "Piyush Kumar",
+          "title": "Onboarding Specialist",
+          "email": "piyush@culinarystaffing.com",
+          "phone": "(323) 900-0643",
+          "extension": "433",
+          "staff_type": "smartline",
+          "id": "7fb6e4be-2948-41de-bbaf-1cae4488cd7c"
+        },
+        {
+          "name": "Mukul Sharma",
+          "title": "Onboarding Specialist (Backup)",
+          "email": "mukul@culinarystaffing.com",
+          "phone": "N/A",
+          "extension": "N/A",
+          "staff_type": "smartline",
+          "id": "8c32bb62-2fba-410b-86e1-215df6c8b24b"
+        },
+        {
+          "name": "Rahul Pal",
+          "title": "Onboarding Specialist (Backup)",
+          "email": "rahul@culinarystaffing.com",
+          "phone": "N/A",
+          "extension": "N/A",
+          "staff_type": "smartline",
+          "id": "226616d5-13f7-439c-96b1-563fa8cb5ac2"
+        }
+      ]
+    },
+    {
+      "name": "Billing & Payroll",
+      "group_email": "timesheets@culinarystaffing.com or accounting@culinarystaffing.com",
+      "contacts": [
+        {
+          "name": "Andrew Hopp",
+          "title": "Senior Account Manager/AR",
+          "email": "andrew@culinarystaffing.com",
+          "phone": "(323) 306-4492",
+          "extension": "445",
+          "staff_type": "internal",
+          "id": "59485517-5848-4930-902c-aead4cb714bd"
+        },
+        {
+          "name": "Corrinne Bellinger",
+          "title": "Director of Payroll & Billing",
+          "email": "corrinne@culinarystaffing.com",
+          "phone": "(323) 761-2619",
+          "extension": "426",
+          "staff_type": "internal",
+          "id": "0c0c976e-023c-4a4a-ad13-f8ae8c144059"
+        },
+        {
+          "name": "Debra Vega",
+          "title": "Payroll Manager",
+          "email": "debra@culinarystaffing.com",
+          "phone": "(323) 673-5657",
+          "extension": "436",
+          "staff_type": "internal",
+          "id": "2d9cf8a5-f67b-49d9-b415-90b992e01134"
+        },
+        {
+          "name": "Suraj Singh",
+          "title": "MSP Support",
+          "email": "suraj@culinarystaffing.com",
+          "phone": "(323) 282-3492",
+          "extension": "503",
+          "staff_type": "smartline",
+          "id": "f439f709-d474-4ce7-a957-251ace835f7b"
+        },
+        {
+          "name": "Sankalp Srivastava",
+          "title": "MSP Support",
+          "email": "sankalp@culinarystaffing.com",
+          "phone": "(323) 282-3465",
+          "extension": "502",
+          "staff_type": "smartline",
+          "id": "2be6c300-575b-4599-b984-d13fb6411218"
+        },
+        {
+          "name": "Akshay Khurana",
+          "title": "MSP Support (Backup)",
+          "email": "akshay@culinarystaffing.com",
+          "phone": "N/A",
+          "extension": "N/A",
+          "staff_type": "smartline",
+          "id": "9d548243-e076-4dd0-bd2d-26127bfa80a7"
+        }
+      ]
+    },
+    {
+      "name": "Sales",
+      "group_email": "info@culinarystaffing.com",
+      "contacts": [
+        {
+          "name": "Dan Stone",
+          "title": "Business Development Specialist",
+          "email": "dan.stone@culinarystaffing.com",
+          "phone": "(323) 965-7584",
+          "extension": "410",
+          "staff_type": "internal",
+          "id": "b156805c-1aa8-4584-b31f-2e8c07ad01ee"
+        }
+      ]
+    },
+    {
+      "name": "Tech Support",
+      "group_email": "",
+      "contacts": [
+        {
+          "name": "Jake Biddlecome",
+          "title": "Project Manager",
+          "email": "jake@culinarystaffing.com",
+          "phone": "(323) 815-8728",
+          "extension": "419",
+          "staff_type": "internal",
+          "id": "e84dd88e-4480-4eb5-a549-e0245c518c9a"
+        }
+      ]
+    },
+    {
+      "name": "Owner & Operators",
+      "group_email": "",
+      "contacts": [
+        {
+          "name": "Jessica Seastead",
+          "title": "Chief Operating Officer",
+          "email": "jessica@culinarystaffing.com",
+          "phone": "(323) 655-6004",
+          "extension": "406",
+          "staff_type": "internal",
+          "id": "bccab1c6-d4d1-44e4-8e8e-099a6bbb0218"
+        },
+        {
+          "name": "Randy Hopp",
+          "title": "Owner",
+          "email": "randy@culinarystaffing.com",
+          "phone": "(323) 965-7583",
+          "extension": "409",
+          "staff_type": "internal",
+          "id": "e7afb090-f0b7-46c1-b9fe-8514e9c91ce7"
+        },
+        {
+          "name": "Liz Dickler",
+          "title": "Project Manager",
+          "email": "liz@culinarystaffing.com",
+          "phone": "(323) 968-0449",
+          "extension": "428",
+          "staff_type": "internal",
+          "id": "868c5307-7549-4b77-8811-b6c6ab0e437a"
+        }
+      ]
+    }
+  ]
+}
