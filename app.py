@@ -17,6 +17,7 @@ from apps.text_blast_filter.views import router as text_blast_router
 from apps.ucla_hours_tool.views import router as ucla_hours_router
 from apps.golive_profile_creator import router as golive_profile_creator_router
 from apps.reports import router as reports_router
+from apps.contacts_data import add_contact, load_contacts, remove_contact
 
 app = FastAPI(title="GoLive Staffing — Tools")
 
@@ -37,7 +38,65 @@ async def external_ai_tools(request: Request):
 
 @app.get("/contacts", response_class=HTMLResponse)
 async def contacts(request: Request):
-    return templates.TemplateResponse("contacts.html", {"request": request})
+    contacts_data = load_contacts()
+    return templates.TemplateResponse(
+        "contacts.html", {"request": request, "departments": contacts_data["departments"]}
+    )
+
+
+@app.get("/contacts/update", response_class=HTMLResponse)
+async def contacts_update(request: Request):
+    contacts_data = load_contacts()
+    department_options = list(
+        {
+            "Staffing",
+            "HR & Office Management",
+            "Recruiting",
+            "Billing & Payroll",
+            "Sales",
+            "Tech Support",
+            "Owner & Operators",
+        }
+    )
+    department_options.sort()
+
+    return templates.TemplateResponse(
+        "contacts_update.html",
+        {
+            "request": request,
+            "departments": contacts_data["departments"],
+            "department_options": department_options,
+        },
+    )
+
+
+@app.post("/contacts/update/add")
+async def add_contact_entry(
+    request: Request,
+    department: str = Form(...),
+    name: str = Form(...),
+    title: str = Form(""),
+    email: str = Form(""),
+    phone: str = Form(""),
+    extension: str = Form(""),
+    staff_type: str = Form(...),
+):
+    add_contact(
+        department=department,
+        name=name,
+        title=title,
+        email=email,
+        phone=phone,
+        extension=extension,
+        staff_type=staff_type,
+    )
+    return RedirectResponse("/contacts/update", status_code=303)
+
+
+@app.post("/contacts/update/remove")
+async def remove_contact_entry(contact_id: str = Form(...)):
+    remove_contact(contact_id)
+    return RedirectResponse("/contacts/update", status_code=303)
 
 
 @app.get("/pro-account-form", response_class=HTMLResponse)
