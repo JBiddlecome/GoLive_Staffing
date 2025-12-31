@@ -93,6 +93,13 @@ def _seq_similarity(a: str, b: str) -> float:
     return SequenceMatcher(None, a or "", b or "").ratio() * 100.0
 
 
+def _normalize_email(value: object) -> str:
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return ""
+
+    return str(value).strip().lower()
+
+
 def _stringify_row(row: Dict[str, object], date_columns: Iterable[str]) -> Dict[str, str]:
     formatted: Dict[str, str] = {}
 
@@ -193,53 +200,79 @@ def _process(cb: pd.DataFrame, emp: pd.DataFrame, confidence: int, days_back: in
             emp_status_col = column
             break
 
+    cb_email_col = None
+    for column in cb.columns:
+        if str(column).strip().lower() == "email address":
+            cb_email_col = column
+            break
+
+    emp_email_col = None
+    for column in emp.columns:
+        if str(column).strip().lower() == "email":
+            emp_email_col = column
+            break
+
     review_rows: List[Dict[str, object]] = []
     match_rows: List[Dict[str, object]] = []
+
+    if emp_email_col:
+        recent["_email_norm"] = recent[emp_email_col].apply(_normalize_email)
 
     for _, row in cb.iterrows():
         raw_name = row.get(name_col, None)
         cb_status_value = row.get(status_col, "") if status_col else ""
         status_value = cb_status_value
-        key, last, _first = _normalize_clickboarding_name(raw_name)
-        if key is None:
-            continue
-
-        if last:
-            candidates = recent[recent["_last"] == last]
-        else:
-            candidates = recent
-
-        if candidates.empty:
-            review_rows.append(
-                {
-                    "Clickboarding Name": raw_name,
-                    "Status": status_value,
-                    "Best Match (Employee List)": "",
-                    "Confidence %": 0,
-                    "Reason": "No candidates with matching last name in recent employees",
-                }
-            )
-            continue
 
         best_score = -1.0
         best_emp = None
-        for _, emp_row in candidates.iterrows():
-            score = _seq_similarity(key, emp_row["_name_key"])
-            if score > best_score:
-                best_score = score
-                best_emp = emp_row
+
+        if cb_email_col and emp_email_col:
+            cb_email = _normalize_email(row.get(cb_email_col, ""))
+            if cb_email:
+                email_matches = recent[recent["_email_norm"] == cb_email]
+                if not email_matches.empty:
+                    best_emp = email_matches.iloc[0]
+                    best_score = 100.0
 
         if best_emp is None:
-            review_rows.append(
-                {
-                    "Clickboarding Name": raw_name,
-                    "Status": status_value,
-                    "Best Match (Employee List)": "",
-                    "Confidence %": 0,
-                    "Reason": "Unable to determine a best match",
-                }
-            )
-            continue
+            key, last, _first = _normalize_clickboarding_name(raw_name)
+            if key is None:
+                continue
+
+            if last:
+                candidates = recent[recent["_last"] == last]
+            else:
+                candidates = recent
+
+            if candidates.empty:
+                review_rows.append(
+                    {
+                        "Clickboarding Name": raw_name,
+                        "Status": status_value,
+                        "Best Match (Employee List)": "",
+                        "Confidence %": 0,
+                        "Reason": "No candidates with matching last name in recent employees",
+                    }
+                )
+                continue
+
+            for _, emp_row in candidates.iterrows():
+                score = _seq_similarity(key, emp_row["_name_key"])
+                if score > best_score:
+                    best_score = score
+                    best_emp = emp_row
+
+            if best_emp is None:
+                review_rows.append(
+                    {
+                        "Clickboarding Name": raw_name,
+                        "Status": status_value,
+                        "Best Match (Employee List)": "",
+                        "Confidence %": 0,
+                        "Reason": "Unable to determine a best match",
+                    }
+                )
+                continue
 
         if emp_status_col:
             status_value = best_emp.get(emp_status_col, "")
