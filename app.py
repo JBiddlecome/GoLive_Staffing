@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI, Request, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -20,6 +22,9 @@ from apps.reports import router as reports_router
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 
 app = FastAPI(title="GoLive Staffing — Tools")
+SALES_PAYROLL_STREAMLIT_URL = os.getenv(
+    "SALES_PAYROLL_STREAMLIT_URL", "http://localhost:8501"
+)
 
 # Static + templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -34,6 +39,11 @@ async def index(request: Request):
 @app.get("/external-ai-tools", response_class=HTMLResponse)
 async def external_ai_tools(request: Request):
     return templates.TemplateResponse("external_ai_tools.html", {"request": request})
+
+
+@app.get("/sales-payroll-analyzer")
+async def sales_payroll_analyzer() -> RedirectResponse:
+    return RedirectResponse(SALES_PAYROLL_STREAMLIT_URL, status_code=307)
 
 
 @app.get("/contacts", response_class=HTMLResponse)
