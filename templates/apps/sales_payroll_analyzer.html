@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Payroll Rate Analyzer — GoLive Tools{% endblock %}
+{% block content %}
+<section class="space-y-6">
+  <header class="space-y-2">
+    <h1 class="text-2xl font-semibold">Payroll Rate Analyzer</h1>
+    <p class="text-sm text-gray-600">
+      Analyze bill rate and pay rate data by date range, position, industry, and county of venue.
+      Data is loaded from the payroll workbook stored in the repository.
+    </p>
+  </header>
+
+  {% if error %}
+    <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+      {{ error }}
+    </div>
+  {% else %}
+    <form class="space-y-4 rounded-xl border bg-white p-6 shadow-sm" method="get">
+      <div class="grid gap-4 md:grid-cols-2">
+        <div>
+          <label for="start_date" class="block text-sm font-medium text-gray-700">Start date</label>
+          <input
+            id="start_date"
+            name="start_date"
+            type="date"
+            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            value="{{ selected_start }}"
+            min="{{ min_date }}"
+            max="{{ max_date }}"
+          />
+        </div>
+        <div>
+          <label for="end_date" class="block text-sm font-medium text-gray-700">End date</label>
+          <input
+            id="end_date"
+            name="end_date"
+            type="date"
+            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            value="{{ selected_end }}"
+            min="{{ min_date }}"
+            max="{{ max_date }}"
+          />
+        </div>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-3">
+        <div>
+          <label for="position" class="block text-sm font-medium text-gray-700">Position</label>
+          <select
+            id="position"
+            name="position"
+            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          >
+            <option value="(All)" {% if selected_position == "(All)" %}selected{% endif %}>(All)</option>
+            {% for value in positions %}
+              <option value="{{ value }}" {% if value == selected_position %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="industry" class="block text-sm font-medium text-gray-700">Industry</label>
+          <select
+            id="industry"
+            name="industry"
+            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          >
+            <option value="(All)" {% if selected_industry == "(All)" %}selected{% endif %}>(All)</option>
+            {% for value in industries %}
+              <option value="{{ value }}" {% if value == selected_industry %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="county" class="block text-sm font-medium text-gray-700">County of Venue</label>
+          <select
+            id="county"
+            name="county"
+            multiple
+            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          >
+            {% for value in counties %}
+              <option value="{{ value }}" {% if value in selected_counties %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+          </select>
+          <p class="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple counties.</p>
+        </div>
+      </div>
+
+      <button
+        type="submit"
+        class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+      >
+        Apply filters
+      </button>
+    </form>
+
+    {% if filtered_rows == 0 %}
+      <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+        No rows match the current filters.
+      </div>
+    {% else %}
+      <section class="grid gap-4 md:grid-cols-3">
+        <div class="rounded-xl border bg-white p-4 shadow-sm">
+          <p class="text-xs uppercase tracking-wide text-gray-500">Filtered Shifts</p>
+          <p class="mt-2 text-2xl font-semibold text-gray-800">{{ metrics.total_shifts }}</p>
+        </div>
+        <div class="rounded-xl border bg-white p-4 shadow-sm">
+          <p class="text-xs uppercase tracking-wide text-gray-500">Bill Rate (Min / Avg / Max)</p>
+          <p class="mt-2 text-sm text-gray-700">
+            {{ '%.2f'|format(metrics.bill_min) }} / {{ '%.2f'|format(metrics.bill_avg) }} / {{ '%.2f'|format(metrics.bill_max) }}
+          </p>
+        </div>
+        <div class="rounded-xl border bg-white p-4 shadow-sm">
+          <p class="text-xs uppercase tracking-wide text-gray-500">Pay Rate (Min / Avg / Max)</p>
+          <p class="mt-2 text-sm text-gray-700">
+            {{ '%.2f'|format(metrics.pay_min) }} / {{ '%.2f'|format(metrics.pay_avg) }} / {{ '%.2f'|format(metrics.pay_max) }}
+          </p>
+        </div>
+      </section>
+
+      <section class="space-y-2">
+        <h2 class="text-sm font-semibold text-gray-700">Shifts per Bill Rate</h2>
+        <div class="overflow-x-auto rounded-xl border bg-white shadow-sm">
+          <table class="min-w-full divide-y divide-gray-200 text-sm">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-3 py-2 text-left font-medium text-gray-600">Bill Rate</th>
+                <th class="px-3 py-2 text-left font-medium text-gray-600">Shift Count</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 bg-white">
+              {% for row in rate_counts %}
+                <tr>
+                  <td class="px-3 py-2 text-gray-700">{{ '%.2f'|format(row['Bill Rate']) }}</td>
+                  <td class="px-3 py-2 text-gray-600">{{ row['Shift Count'] }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="space-y-2">
+        <h2 class="text-sm font-semibold text-gray-700">Sample of Filtered Rows</h2>
+        <div class="overflow-x-auto rounded-xl border bg-white shadow-sm">
+          <table class="min-w-full divide-y divide-gray-200 text-sm">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-3 py-2 text-left font-medium text-gray-600">Date</th>
+                <th class="px-3 py-2 text-left font-medium text-gray-600">Position</th>
+                <th class="px-3 py-2 text-left font-medium text-gray-600">Industry</th>
+                <th class="px-3 py-2 text-left font-medium text-gray-600">County of Venue</th>
+                <th class="px-3 py-2 text-left font-medium text-gray-600">Bill Rate</th>
+                <th class="px-3 py-2 text-left font-medium text-gray-600">Pay Rate</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 bg-white">
+              {% for row in preview_rows %}
+                <tr>
+                  <td class="px-3 py-2 text-gray-700">{{ row['Date'] }}</td>
+                  <td class="px-3 py-2 text-gray-700">{{ row['Position'] }}</td>
+                  <td class="px-3 py-2 text-gray-700">{{ row['Industry'] }}</td>
+                  <td class="px-3 py-2 text-gray-700">{{ row['County of Venue'] }}</td>
+                  <td class="px-3 py-2 text-gray-700">{{ '%.2f'|format(row['Bill Rate']) }}</td>
+                  <td class="px-3 py-2 text-gray-700">{{ '%.2f'|format(row['Pay Rate']) }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    {% endif %}
+  {% endif %}
+</section>
+{% endblock %}
