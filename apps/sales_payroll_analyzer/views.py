@@ -68,8 +68,8 @@ async def payroll_rate_analyzer(
     )
 
     metrics: Dict[str, Any] = {}
-    rate_counts: List[Dict[str, Any]] = []
-    preview_rows: List[Dict[str, Any]] = []
+    bill_rate_counts: List[Dict[str, Any]] = []
+    pay_rate_counts: List[Dict[str, Any]] = []
 
     if not filtered.empty:
         bill_series = filtered["Bill Rate"]
@@ -84,14 +84,8 @@ async def payroll_rate_analyzer(
             "pay_max": float(pay_series.max()),
         }
 
-        rate_counts_df = (
-            filtered.groupby("Bill Rate", dropna=False)
-            .size()
-            .reset_index(name="Shift Count")
-            .sort_values("Bill Rate", ascending=True)
-        )
-        rate_counts = rate_counts_df.to_dict(orient="records")
-        preview_rows = filtered.head(200).to_dict(orient="records")
+        bill_rate_counts = _top_rate_counts(filtered, "Bill Rate")
+        pay_rate_counts = _top_rate_counts(filtered, "Pay Rate")
 
     context = {
         "request": request,
@@ -107,8 +101,8 @@ async def payroll_rate_analyzer(
         "selected_counties": county or [],
         "filtered_rows": len(filtered),
         "metrics": metrics,
-        "rate_counts": rate_counts,
-        "preview_rows": preview_rows,
+        "bill_rate_counts": bill_rate_counts,
+        "pay_rate_counts": pay_rate_counts,
     }
     return templates.TemplateResponse("apps/sales_payroll_analyzer.html", context)
 
@@ -138,3 +132,20 @@ def _apply_filters(
         filtered = filtered[filtered["County of Venue"].isin(counties)]
 
     return filtered
+
+
+def _top_rate_counts(
+    dataframe: pd.DataFrame,
+    column: str,
+    limit: int = 10,
+) -> List[Dict[str, Any]]:
+    counts = (
+        dataframe.dropna(subset=[column])
+        .groupby(column)
+        .size()
+        .reset_index(name="Shift Count")
+        .sort_values("Shift Count", ascending=False)
+        .head(limit)
+        .sort_values(column, ascending=True)
+    )
+    return counts.to_dict(orient="records")

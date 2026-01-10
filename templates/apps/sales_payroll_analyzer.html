@@ -118,58 +118,94 @@
         </div>
       </section>
 
-      <section class="space-y-2">
-        <h2 class="text-sm font-semibold text-gray-700">Shifts per Bill Rate</h2>
-        <div class="overflow-x-auto rounded-xl border bg-white shadow-sm">
-          <table class="min-w-full divide-y divide-gray-200 text-sm">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-3 py-2 text-left font-medium text-gray-600">Bill Rate</th>
-                <th class="px-3 py-2 text-left font-medium text-gray-600">Shift Count</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100 bg-white">
-              {% for row in rate_counts %}
-                <tr>
-                  <td class="px-3 py-2 text-gray-700">{{ '%.2f'|format(row['Bill Rate']) }}</td>
-                  <td class="px-3 py-2 text-gray-600">{{ row['Shift Count'] }}</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="space-y-2">
-        <h2 class="text-sm font-semibold text-gray-700">Sample of Filtered Rows</h2>
-        <div class="overflow-x-auto rounded-xl border bg-white shadow-sm">
-          <table class="min-w-full divide-y divide-gray-200 text-sm">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-3 py-2 text-left font-medium text-gray-600">Date</th>
-                <th class="px-3 py-2 text-left font-medium text-gray-600">Position</th>
-                <th class="px-3 py-2 text-left font-medium text-gray-600">Industry</th>
-                <th class="px-3 py-2 text-left font-medium text-gray-600">County of Venue</th>
-                <th class="px-3 py-2 text-left font-medium text-gray-600">Bill Rate</th>
-                <th class="px-3 py-2 text-left font-medium text-gray-600">Pay Rate</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100 bg-white">
-              {% for row in preview_rows %}
-                <tr>
-                  <td class="px-3 py-2 text-gray-700">{{ row['Date'] }}</td>
-                  <td class="px-3 py-2 text-gray-700">{{ row['Position'] }}</td>
-                  <td class="px-3 py-2 text-gray-700">{{ row['Industry'] }}</td>
-                  <td class="px-3 py-2 text-gray-700">{{ row['County of Venue'] }}</td>
-                  <td class="px-3 py-2 text-gray-700">{{ '%.2f'|format(row['Bill Rate']) }}</td>
-                  <td class="px-3 py-2 text-gray-700">{{ '%.2f'|format(row['Pay Rate']) }}</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+      <section class="space-y-4">
+        <header class="space-y-1">
+          <h2 class="text-sm font-semibold text-gray-700">Top 10 Shifts by Rate</h2>
+          <p class="text-xs text-gray-500">Showing the bill and pay rates with the highest shift counts.</p>
+        </header>
+        <div class="grid gap-4 lg:grid-cols-2">
+          <div class="rounded-xl border bg-white p-4 shadow-sm">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Bill Rate Shifts</p>
+            <div class="mt-3 h-64">
+              <canvas id="bill-rate-chart"></canvas>
+            </div>
+          </div>
+          <div class="rounded-xl border bg-white p-4 shadow-sm">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Pay Rate Shifts</p>
+            <div class="mt-3 h-64">
+              <canvas id="pay-rate-chart"></canvas>
+            </div>
+          </div>
         </div>
       </section>
     {% endif %}
   {% endif %}
 </section>
+{% endblock %}
+
+{% block scripts %}
+  {% if not error and filtered_rows > 0 %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script>
+      const billRateCounts = {{ bill_rate_counts | tojson(indent=2) | safe }};
+      const payRateCounts = {{ pay_rate_counts | tojson(indent=2) | safe }};
+
+      const buildRateChart = (canvasId, datasetLabel, data) => {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) {
+          return;
+        }
+
+        const labels = data.map((row) => row[datasetLabel].toFixed(2));
+        const values = data.map((row) => row["Shift Count"]);
+        const ctx = canvas.getContext("2d");
+
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels,
+            datasets: [
+              {
+                label: "Shifts",
+                data: values,
+                backgroundColor: "rgba(79, 70, 229, 0.7)",
+                borderColor: "rgba(79, 70, 229, 1)",
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: datasetLabel,
+                },
+              },
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  precision: 0,
+                },
+              },
+            },
+            plugins: {
+              legend: {
+                display: false,
+              },
+              tooltip: {
+                callbacks: {
+                  title: (tooltipItems) => `${datasetLabel}: ${tooltipItems[0].label}`,
+                },
+              },
+            },
+          },
+        });
+      };
+
+      buildRateChart("bill-rate-chart", "Bill Rate", billRateCounts);
+      buildRateChart("pay-rate-chart", "Pay Rate", payRateCounts);
+    </script>
+  {% endif %}
 {% endblock %}
