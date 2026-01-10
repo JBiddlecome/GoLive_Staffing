@@ -57,4 +57,9 @@ def load_payroll_data(path: Path | None = None) -> pd.DataFrame:
         ]
     )
 
+    if df.empty:
+        raise PayrollDataError(
+            "Payroll workbook has no rows with the required data after cleaning."
+        )
+
     return df
