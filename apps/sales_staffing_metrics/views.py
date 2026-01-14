@@ -585,7 +585,17 @@ def _load_chart_data(path: Path | None = None) -> Dict[str, Any]:
     records.sort(key=lambda item: item[0])
     weeks = [record for _, record in records]
 
-    payload = {"weeks": weeks, "selectedWeek": weeks[-1]["weekEnding"]}
+    today = date.today()
+    selected_week = None
+    for week_date, record in reversed(records):
+        if week_date <= today:
+            selected_week = record["weekEnding"]
+            break
+
+    if selected_week is None:
+        selected_week = weeks[-1]["weekEnding"]
+
+    payload = {"weeks": weeks, "selectedWeek": selected_week}
     logger.debug(
         "Loaded %s weeks of chart data from '%s'. Selected week=%s",
         len(weeks),
