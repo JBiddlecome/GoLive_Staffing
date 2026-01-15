@@ -1188,6 +1188,24 @@
         if (!value) {
           return null;
         }
+        if (typeof value === "string") {
+          const parts = value.trim().split("-");
+          if (parts.length === 3) {
+            const [year, month, day] = parts.map((part) => Number.parseInt(part, 10));
+            if (
+              Number.isFinite(year) &&
+              Number.isFinite(month) &&
+              Number.isFinite(day) &&
+              year > 0 &&
+              month >= 1 &&
+              month <= 12 &&
+              day >= 1 &&
+              day <= 31
+            ) {
+              return new Date(year, month - 1, day);
+            }
+          }
+        }
         const parsed = new Date(value);
         if (Number.isNaN(parsed.getTime())) {
           return null;
