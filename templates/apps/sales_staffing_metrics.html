@@ -1168,9 +1168,6 @@
         upcoming: Array.isArray(dealTables.upcoming) ? dealTables.upcoming.map((entry) => normalizeDealEntry(entry)) : [],
       };
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
       const dateFormatter = new Intl.DateTimeFormat("en-US", {
         month: "short",
         day: "numeric",
@@ -1227,12 +1224,10 @@
           if (!bDate) {
             return -1;
           }
-          const aDiff = Math.abs(aDate.getTime() - today.getTime());
-          const bDiff = Math.abs(bDate.getTime() - today.getTime());
-          if (aDiff !== bDiff) {
-            return aDiff - bDiff;
+          if (aDate.getTime() !== bDate.getTime()) {
+            return bDate.getTime() - aDate.getTime();
           }
-          return aDate.getTime() - bDate.getTime();
+          return a.clientName.localeCompare(b.clientName);
         });
       }
 
