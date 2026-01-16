@@ -1,7 +1,34 @@
 {% extends "base.html" %}
 {% block title %}Sales & Staffing Metrics — GoLive Tools{% endblock %}
 {% block content %}
-<section class="space-y-6">
+<section class="space-y-6" data-presentation-root>
+  <style>
+    [data-presentation="true"] [data-chart-slide] {
+      display: none;
+    }
+
+    [data-presentation="true"] [data-chart-slide].is-active {
+      display: block;
+    }
+
+    [data-presentation="true"] [data-chart-hide] {
+      display: none;
+    }
+
+    [data-presentation="true"] [data-chart-grid] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    [data-presentation="true"] [data-chart-canvas] {
+      height: 28rem;
+    }
+
+    @media (min-width: 1024px) {
+      [data-presentation="true"] [data-chart-canvas] {
+        height: 32rem;
+      }
+    }
+  </style>
   <header>
     <h1 class="text-2xl font-semibold text-gray-900">Sales &amp; Staffing Metrics</h1>
     <p class="mt-2 text-sm text-gray-600">
@@ -12,6 +39,25 @@
 
   {% if chart_data.weeks %}
     <div class="space-y-6">
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 class="text-sm font-semibold text-gray-900">Presentation mode</h2>
+            <p class="mt-1 text-xs text-gray-500">
+              Show one chart at a time with larger visuals for meeting screens.
+            </p>
+          </div>
+          <label class="inline-flex items-center gap-2 text-sm font-semibold text-gray-700">
+            <input
+              id="presentation-toggle"
+              type="checkbox"
+              class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            Slideshow view
+          </label>
+        </div>
+      </div>
+
       <div>
         <label class="block text-sm font-medium text-gray-700" for="week-ending-select">Week ending</label>
         <select
@@ -29,23 +75,23 @@
         </p>
       </div>
 
-      <div class="grid gap-6 lg:grid-cols-2">
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div class="grid gap-6 lg:grid-cols-2" data-chart-grid>
+        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm" data-chart-slide>
           <h2 class="text-base font-semibold text-gray-900">Shift Count</h2>
-          <div class="mt-4 h-72">
+          <div class="mt-4 h-72" data-chart-canvas>
             <canvas id="shift-count-chart"></canvas>
           </div>
         </div>
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm" data-chart-slide>
           <h2 class="text-base font-semibold text-gray-900">Fill Rate</h2>
-          <div class="mt-4 h-72">
+          <div class="mt-4 h-72" data-chart-canvas>
             <canvas id="fill-rate-chart"></canvas>
           </div>
         </div>
       </div>
 
-      <div class="grid gap-6 lg:grid-cols-2">
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div class="grid gap-6 lg:grid-cols-2" data-chart-grid>
+        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm" data-chart-hide>
           <h2 class="text-base font-semibold text-gray-900">Top 5 Clients</h2>
           <p class="mt-1 text-xs text-gray-500">
             Based on total revenue for the selected week.
@@ -76,28 +122,28 @@
           </div>
         </div>
 
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm" data-chart-slide>
           <h2 class="text-base font-semibold text-gray-900">Revenue and Goal</h2>
           <p class="mt-1 text-xs text-gray-500">
             Weekly revenue performance against 1% increase goal over last year.
           </p>
-          <div class="mt-4 h-72">
+          <div class="mt-4 h-72" data-chart-canvas>
             <canvas id="revenue-goal-chart"></canvas>
           </div>
         </div>
       </div>
 
-      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm" data-chart-slide>
         <h2 class="text-base font-semibold text-gray-900">New Sales</h2>
         <p class="mt-1 text-xs text-gray-500">
           Weekly revenue & percentage of revenue for new clients (clients won within the last 6 months).
         </p>
-        <div class="mt-4 h-72">
+        <div class="mt-4 h-72" data-chart-canvas>
           <canvas id="new-sales-chart"></canvas>
         </div>
       </div>
 
-      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm" data-chart-hide>
         <h2 class="text-base font-semibold text-gray-900">New Clients</h2>
         <p class="mt-1 text-xs text-gray-500">
           All new clients with revenue for the selected week. Hightlighted clients were won during the selected week.
@@ -131,14 +177,14 @@
         </p>
       </div>
 
-      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm" data-chart-slide>
         <h2 class="text-base font-semibold text-gray-900">Revenue by Industry</h2>
         <p class="mt-1 text-xs text-gray-500">
           Revenue totals for each industry in the selected week.
         </p>
-        <div class="mt-4 grid gap-6 lg:grid-cols-2">
+        <div class="mt-4 grid gap-6 lg:grid-cols-2" data-chart-grid>
           <div>
-            <div class="relative h-72">
+            <div class="relative h-72" data-chart-canvas>
               <canvas id="industry-bar-chart" class="hidden"></canvas>
               <div
                 id="industry-bar-empty"
@@ -149,7 +195,7 @@
             </div>
           </div>
           <div>
-            <div class="relative h-72">
+            <div class="relative h-72" data-chart-canvas>
               <canvas id="industry-pie-chart" class="hidden"></canvas>
               <div
                 id="industry-pie-empty"
@@ -162,7 +208,25 @@
         </div>
       </div>
 
-      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div class="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm hidden" data-chart-nav>
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+          data-chart-prev
+        >
+          ← Previous
+        </button>
+        <div class="text-sm font-semibold text-gray-600" data-chart-count>1 of 1</div>
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+          data-chart-next
+        >
+          Next →
+        </button>
+      </div>
+
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm" data-chart-hide>
         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h2 class="text-base font-semibold text-gray-900">Closed &amp; Upcoming</h2>
@@ -386,6 +450,13 @@
       const industryPieCtx = document.getElementById("industry-pie-chart");
       const industryBarEmpty = document.getElementById("industry-bar-empty");
       const industryPieEmpty = document.getElementById("industry-pie-empty");
+      const presentationToggle = document.getElementById("presentation-toggle");
+      const presentationRoot = document.querySelector("[data-presentation-root]");
+      const chartSlides = Array.from(document.querySelectorAll("[data-chart-slide]"));
+      const chartNav = document.querySelector("[data-chart-nav]");
+      const chartPrevButton = document.querySelector("[data-chart-prev]");
+      const chartNextButton = document.querySelector("[data-chart-next]");
+      const chartCount = document.querySelector("[data-chart-count]");
       if (!selectEl || !shiftCtx || !fillCtx) {
         return;
       }
@@ -1002,6 +1073,76 @@
             })
           : null;
 
+      const chartInstances = [
+        shiftChart,
+        fillChart,
+        revenueChart,
+        newSalesChart,
+        industryBarChart,
+        industryPieChart,
+      ].filter(Boolean);
+
+      let activeSlideIndex = 0;
+
+      function updateChartCount() {
+        if (!chartCount) {
+          return;
+        }
+        chartCount.textContent = `${activeSlideIndex + 1} of ${chartSlides.length}`;
+      }
+
+      function updateSlideNavigation() {
+        if (chartPrevButton) {
+          chartPrevButton.disabled = activeSlideIndex <= 0;
+        }
+        if (chartNextButton) {
+          chartNextButton.disabled = activeSlideIndex >= chartSlides.length - 1;
+        }
+        updateChartCount();
+      }
+
+      function resizeCharts() {
+        chartInstances.forEach((chart) => {
+          if (chart && typeof chart.resize === "function") {
+            chart.resize();
+          }
+        });
+      }
+
+      function setActiveSlide(index) {
+        if (!chartSlides.length) {
+          return;
+        }
+        activeSlideIndex = Math.min(Math.max(index, 0), chartSlides.length - 1);
+        chartSlides.forEach((slide, slideIndex) => {
+          slide.classList.toggle("is-active", slideIndex === activeSlideIndex);
+        });
+        updateSlideNavigation();
+        window.requestAnimationFrame(() => {
+          resizeCharts();
+        });
+      }
+
+      function setPresentationMode(isEnabled) {
+        if (!presentationRoot) {
+          return;
+        }
+        presentationRoot.dataset.presentation = isEnabled ? "true" : "false";
+        if (chartNav) {
+          chartNav.classList.toggle("hidden", !isEnabled || !chartSlides.length);
+        }
+        if (isEnabled) {
+          setActiveSlide(activeSlideIndex);
+        } else {
+          chartSlides.forEach((slide) => {
+            slide.classList.remove("is-active");
+          });
+          window.requestAnimationFrame(() => {
+            resizeCharts();
+          });
+        }
+      }
+
       function updateTopClients(weekEnding) {
         if (!topClientsTableBody) {
           return;
@@ -1451,6 +1592,29 @@
         selectEl.value = initialWeek;
       }
       updateCharts(initialWeek);
+
+      if (chartPrevButton) {
+        chartPrevButton.addEventListener("click", () => {
+          setActiveSlide(activeSlideIndex - 1);
+        });
+      }
+
+      if (chartNextButton) {
+        chartNextButton.addEventListener("click", () => {
+          setActiveSlide(activeSlideIndex + 1);
+        });
+      }
+
+      if (presentationToggle) {
+        presentationToggle.addEventListener("change", (event) => {
+          const target = event.target;
+          if (!(target instanceof HTMLInputElement)) {
+            return;
+          }
+          setPresentationMode(target.checked);
+        });
+        setPresentationMode(presentationToggle.checked);
+      }
 
       selectEl.addEventListener("change", (event) => {
         updateCharts(event.target.value);
