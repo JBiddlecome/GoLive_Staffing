@@ -28,6 +28,14 @@ async def client_drop_off(request: Request) -> HTMLResponse:
             status_code=400,
         )
 
+    staffing_managers = sorted(
+        {
+            row.get("Staffing Manager", "")
+            for row in records
+            if row.get("Staffing Manager")
+        }
+    )
+
     context = {
         "request": request,
         "records": records,
@@ -35,5 +43,6 @@ async def client_drop_off(request: Request) -> HTMLResponse:
         "recent_cutoff": recent_cutoff,
         "max_date": max_date,
         "total_clients": len(records),
+        "staffing_managers": staffing_managers,
     }
     return templates.TemplateResponse("apps/client_drop_off.html", context)
