@@ -199,7 +199,7 @@
         <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h3 class="text-base font-semibold text-gray-900">Active Staff (Last 12 Months)</h3>
           <p class="mt-1 text-xs text-gray-500">
-            Total active staff from the Active Staff workbook. Data source:
+            Number of staff with Active status. Data source:
             <span class="font-medium text-gray-800">{{ rm_active_staff_source }}</span>
           </p>
           {% if rm_active_staff_error %}
@@ -219,7 +219,7 @@
         <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h3 class="text-base font-semibold text-gray-900">Active Staff Working % (Last 12 Months)</h3>
           <p class="mt-1 text-xs text-gray-500">
-            Percentage of active staff working from the Active Staff workbook.
+            Percentage of active staff working trend.
           </p>
           {% if rm_active_staff_error %}
             <div class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -440,7 +440,8 @@
         destroyChart(id);
 
         const sorted = [...points].sort((a, b) => a.date.localeCompare(b.date));
-        const labels = sorted.map((point) => point.date);
+        const labelFormatter = options.labelFormatter || ((value) => value);
+        const labels = sorted.map((point) => labelFormatter(point.date));
         const values = sorted.map((point) => (point.value ?? 0));
         const datasets = [
           {
@@ -625,6 +626,8 @@
       );
 
       if (metrics.activeStaff?.activeCounts?.length) {
+        const monthFormatter = (value) =>
+          luxon.DateTime.fromISO(value, { zone: 'utc' }).toFormat('MMMM');
         buildValueLineChart(
           'rm-active-staff-count',
           metrics.activeStaff.activeCounts,
@@ -632,11 +635,13 @@
           '#16a34a',
           'Active Staff',
           undefined,
-          { yMin: 800, yMax: 1600 },
+          { yMin: 800, yMax: 1600, labelFormatter: monthFormatter },
         );
       }
 
       if (metrics.activeStaff?.percentWorking?.length) {
+        const monthFormatter = (value) =>
+          luxon.DateTime.fromISO(value, { zone: 'utc' }).toFormat('MMMM');
         buildValueLineChart(
           'rm-active-staff-percent',
           metrics.activeStaff.percentWorking,
@@ -644,7 +649,7 @@
           '#0f766e',
           'Percent',
           (value) => `${value}%`,
-          { trendline: true },
+          { trendline: true, trendlineColor: '#f97316', labelFormatter: monthFormatter },
         );
       }
 
