@@ -70,48 +70,6 @@
 
       <div class="grid gap-6 lg:grid-cols-2">
         <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h3 class="text-base font-semibold text-gray-900">Active Staff (Last 12 Months)</h3>
-          <p class="mt-1 text-xs text-gray-500">
-            Total active staff from the Active Staff workbook. Data source:
-            <span class="font-medium text-gray-800">{{ rm_active_staff_source }}</span>
-          </p>
-          {% if rm_active_staff_error %}
-            <div class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {{ rm_active_staff_error }}
-            </div>
-          {% elif rm_has_active_staff %}
-            <div class="mt-4 h-72">
-              <canvas id="rm-active-staff-count"></canvas>
-            </div>
-          {% else %}
-            <div class="mt-4 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-10 text-center text-sm text-gray-500">
-              No active staff records available for the past 12 months.
-            </div>
-          {% endif %}
-        </div>
-        <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h3 class="text-base font-semibold text-gray-900">Active Staff Working % (Last 12 Months)</h3>
-          <p class="mt-1 text-xs text-gray-500">
-            Percentage of active staff working from the Active Staff workbook.
-          </p>
-          {% if rm_active_staff_error %}
-            <div class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {{ rm_active_staff_error }}
-            </div>
-          {% elif rm_has_active_staff_percent %}
-            <div class="mt-4 h-72">
-              <canvas id="rm-active-staff-percent"></canvas>
-            </div>
-          {% else %}
-            <div class="mt-4 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-10 text-center text-sm text-gray-500">
-              No active staff percentage records available for the past 12 months.
-            </div>
-          {% endif %}
-        </div>
-      </div>
-
-      <div class="grid gap-6 lg:grid-cols-2">
-        <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h3 class="text-base font-semibold text-gray-900">Onboarded This Year</h3>
           <p class="mt-1 text-xs text-gray-500">
             Counts include new starts and rehires for the selected week ending and the four prior week endings.
@@ -234,6 +192,48 @@
             </p>
             <p class="text-xs text-gray-500">Concierge Date falls in the same week as the selected week ending.</p>
           </div>
+        </div>
+      </div>
+
+      <div class="grid gap-6 lg:grid-cols-2">
+        <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h3 class="text-base font-semibold text-gray-900">Active Staff (Last 12 Months)</h3>
+          <p class="mt-1 text-xs text-gray-500">
+            Total active staff from the Active Staff workbook. Data source:
+            <span class="font-medium text-gray-800">{{ rm_active_staff_source }}</span>
+          </p>
+          {% if rm_active_staff_error %}
+            <div class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {{ rm_active_staff_error }}
+            </div>
+          {% elif rm_has_active_staff %}
+            <div class="mt-4 h-72">
+              <canvas id="rm-active-staff-count"></canvas>
+            </div>
+          {% else %}
+            <div class="mt-4 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-10 text-center text-sm text-gray-500">
+              No active staff records available for the past 12 months.
+            </div>
+          {% endif %}
+        </div>
+        <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h3 class="text-base font-semibold text-gray-900">Active Staff Working % (Last 12 Months)</h3>
+          <p class="mt-1 text-xs text-gray-500">
+            Percentage of active staff working from the Active Staff workbook.
+          </p>
+          {% if rm_active_staff_error %}
+            <div class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {{ rm_active_staff_error }}
+            </div>
+          {% elif rm_has_active_staff_percent %}
+            <div class="mt-4 h-72">
+              <canvas id="rm-active-staff-percent"></canvas>
+            </div>
+          {% else %}
+            <div class="mt-4 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-10 text-center text-sm text-gray-500">
+              No active staff percentage records available for the past 12 months.
+            </div>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -425,7 +425,15 @@
         });
       }
 
-      function buildValueLineChart(id, points, datasetLabel, color, yTitle, tickFormatter) {
+      function buildValueLineChart(
+        id,
+        points,
+        datasetLabel,
+        color,
+        yTitle,
+        tickFormatter,
+        options = {},
+      ) {
         const ctx = document.getElementById(id);
         if (!ctx) return;
 
@@ -434,21 +442,43 @@
         const sorted = [...points].sort((a, b) => a.date.localeCompare(b.date));
         const labels = sorted.map((point) => point.date);
         const values = sorted.map((point) => (point.value ?? 0));
+        const datasets = [
+          {
+            label: datasetLabel,
+            data: values,
+            borderColor: color,
+            backgroundColor: color,
+            tension: 0.2,
+            pointRadius: 4,
+          },
+        ];
+
+        if (options.trendline && values.length > 1) {
+          const indices = values.map((_, index) => index);
+          const meanX = indices.reduce((sum, x) => sum + x, 0) / indices.length;
+          const meanY = values.reduce((sum, y) => sum + y, 0) / values.length;
+          const numerator = indices.reduce((sum, x, idx) => sum + (x - meanX) * (values[idx] - meanY), 0);
+          const denominator = indices.reduce((sum, x) => sum + (x - meanX) ** 2, 0);
+          const slope = denominator === 0 ? 0 : numerator / denominator;
+          const intercept = meanY - slope * meanX;
+          const trendData = indices.map((x) => slope * x + intercept);
+
+          datasets.push({
+            label: 'Trend',
+            data: trendData,
+            borderColor: options.trendlineColor || '#115e59',
+            backgroundColor: options.trendlineColor || '#115e59',
+            borderDash: [6, 4],
+            pointRadius: 0,
+            tension: 0.2,
+          });
+        }
 
         chartInstances[id] = new Chart(ctx, {
           type: 'line',
           data: {
             labels,
-            datasets: [
-              {
-                label: datasetLabel,
-                data: values,
-                borderColor: color,
-                backgroundColor: color,
-                tension: 0.2,
-                pointRadius: 4,
-              },
-            ],
+            datasets,
           },
           options: {
             responsive: true,
@@ -466,7 +496,9 @@
                 },
               },
               y: {
-                beginAtZero: true,
+                beginAtZero: options.beginAtZero ?? true,
+                min: options.yMin,
+                max: options.yMax,
                 title: {
                   display: true,
                   text: yTitle,
@@ -599,6 +631,8 @@
           'Active Staff',
           '#16a34a',
           'Active Staff',
+          undefined,
+          { yMin: 800, yMax: 1600 },
         );
       }
 
@@ -610,6 +644,7 @@
           '#0f766e',
           'Percent',
           (value) => `${value}%`,
+          { trendline: true },
         );
       }
 
