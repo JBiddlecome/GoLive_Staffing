@@ -8,7 +8,7 @@ import pandas as pd
 BASE_DIR = Path(__file__).resolve().parents[2]
 PAYROLL_PATH = BASE_DIR / "payroll.xlsx"
 
-REQUIRED_COLS = ["Date", "Client"]
+REQUIRED_COLS = ["Date", "Client", "Staffing Manager"]
 
 
 class PayrollDataError(ValueError):
@@ -34,6 +34,10 @@ def load_payroll_data(path: Path | None = None) -> pd.DataFrame:
     df = df[REQUIRED_COLS].copy()
     df["Date"] = pd.to_datetime(df["Date"], errors="coerce").dt.date
     df["Client"] = df["Client"].astype(str).str.strip()
+    df["Staffing Manager"] = (
+        df["Staffing Manager"].fillna("").astype(str).str.strip()
+    )
+    df.loc[df["Staffing Manager"] == "", "Staffing Manager"] = "Unassigned"
 
     df = df.dropna(subset=["Date", "Client"])
     df = df[df["Client"] != ""]
@@ -75,11 +79,12 @@ def calculate_drop_offs(
     if filtered.empty:
         return [], lookback_start, recent_cutoff, max_date
 
-    summary = (
-        filtered.groupby("Client", as_index=False)["Date"].max().rename(
-            columns={"Date": "Last Shift"}
-        )
+    latest_rows = (
+        filtered.sort_values(["Client", "Date"])
+        .drop_duplicates(subset=["Client"], keep="last")
+        .rename(columns={"Date": "Last Shift"})
     )
+    summary = latest_rows[["Client", "Last Shift", "Staffing Manager"]].copy()
     summary["Days Since Last Shift"] = (
         pd.to_datetime(max_date) - pd.to_datetime(summary["Last Shift"])
     ).dt.days

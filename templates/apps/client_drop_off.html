@@ -27,12 +27,26 @@
 
   {% if records %}
     <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 class="text-base font-semibold text-gray-900">Clients without recent shifts</h2>
           <p class="text-xs text-gray-500">
             Total clients: <span id="client-drop-off-total">{{ total_clients }}</span>
           </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 text-xs text-gray-600">
+          <label for="staffing-manager-filter" class="font-semibold uppercase tracking-wide text-gray-500">
+            Staffing Manager
+          </label>
+          <select
+            id="staffing-manager-filter"
+            class="rounded-md border border-gray-200 bg-white px-3 py-1 text-sm text-gray-700 shadow-sm focus:border-gray-300 focus:outline-none"
+          >
+            <option value="">All managers</option>
+            {% for manager in staffing_managers %}
+              <option value="{{ manager }}">{{ manager }}</option>
+            {% endfor %}
+          </select>
         </div>
       </div>
       <div class="mt-4 overflow-x-auto">
@@ -40,6 +54,9 @@
           <thead class="bg-gray-50">
             <tr>
               <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Client</th>
+              <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Staffing Manager
+              </th>
               <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Last Shift Date
               </th>
@@ -53,7 +70,10 @@
           </thead>
           <tbody class="divide-y divide-gray-200">
             {% for row in records %}
-              <tr data-client-row="{{ row["Client"] }}">
+              <tr
+                data-client-row="{{ row["Client"] }}"
+                data-staffing-manager="{{ row["Staffing Manager"] }}"
+              >
                 <td class="px-4 py-2 font-medium text-gray-900">
                   <div class="flex flex-wrap items-center gap-2">
                     <span>{{ row["Client"] }}</span>
@@ -87,6 +107,7 @@
                     </button>
                   </div>
                 </td>
+                <td class="px-4 py-2 text-gray-600">{{ row["Staffing Manager"] }}</td>
                 <td class="px-4 py-2">{{ row["Last Shift"] }}</td>
                 <td class="px-4 py-2 text-right">{{ row["Days Since Last Shift"] }}</td>
                 <td class="px-4 py-2 text-right">
@@ -150,6 +171,43 @@
         </table>
       </div>
     </div>
+    <div
+      id="ignored-clients-section"
+      class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
+    >
+      <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="text-base font-semibold text-gray-900">Contacted clients</h2>
+          <p class="text-xs text-gray-500">
+            Clients currently ignored after outreach.
+          </p>
+        </div>
+      </div>
+      <div class="mt-4 overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 text-sm text-gray-700">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Client
+              </th>
+              <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Staffing Manager
+              </th>
+              <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Ignored Until
+              </th>
+              <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Notes
+              </th>
+              <th class="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Action
+              </th>
+            </tr>
+          </thead>
+          <tbody id="ignored-clients-body" class="divide-y divide-gray-200"></tbody>
+        </table>
+      </div>
+    </div>
   {% else %}
     <div class="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-10 text-center text-sm text-gray-500">
       No clients matched the drop-off criteria for the last two months of payroll data.
@@ -158,6 +216,7 @@
 </section>
 <script>
   const ignoreStorageKey = "clientDropOffIgnoreUntil";
+  const managerFilter = document.getElementById("staffing-manager-filter");
 
   const loadIgnoreMap = () => {
     const stored = localStorage.getItem(ignoreStorageKey);
@@ -176,6 +235,7 @@
   };
 
   const normalizeClientKey = (clientName) => clientName.trim().toLowerCase();
+  const normalizeManagerKey = (managerName) => managerName.trim().toLowerCase();
 
   const parseDate = (value) => {
     const parsed = new Date(value);
@@ -195,11 +255,25 @@
     if (!totalElement) {
       return;
     }
-    const visibleRows = document.querySelectorAll(
-      "tbody tr[data-client-row]:not([data-ignored='true'])"
-    );
+    const visibleRows = document.querySelectorAll("tbody tr[data-client-row]:not(.hidden)");
     totalElement.textContent = visibleRows.length.toString();
   };
+
+  const updateRowVisibility = () => {
+    document.querySelectorAll("tr[data-client-row]").forEach((row) => {
+      const isIgnored = row.dataset.ignored === "true";
+      const managerMatch = row.dataset.managerMatch !== "false";
+      if (isIgnored || !managerMatch) {
+        row.classList.add("hidden");
+      } else {
+        row.classList.remove("hidden");
+      }
+    });
+    updateTotals();
+  };
+
+  const ignoredSection = document.getElementById("ignored-clients-section");
+  const ignoredBody = document.getElementById("ignored-clients-body");
 
   const hideExpiredIgnoreEntries = () => {
     const map = loadIgnoreMap();
@@ -231,14 +305,26 @@
 
       if (ignoreDate && ignoreDate > now) {
         row.dataset.ignored = "true";
-        row.classList.add("hidden");
       } else {
         row.dataset.ignored = "false";
-        row.classList.remove("hidden");
       }
     });
 
-    updateTotals();
+    updateRowVisibility();
+    renderIgnoredList();
+  };
+
+  const applyManagerFilter = () => {
+    const selected = managerFilter ? managerFilter.value : "";
+    const selectedKey = normalizeManagerKey(selected);
+
+    document.querySelectorAll("tr[data-client-row]").forEach((row) => {
+      const managerName = row.dataset.staffingManager || "";
+      const managerKey = normalizeManagerKey(managerName);
+      row.dataset.managerMatch = selectedKey === "" || managerKey === selectedKey;
+    });
+
+    updateRowVisibility();
   };
 
   const closeAllMenus = () => {
@@ -280,6 +366,69 @@
 
   const saveNotesMap = (map) => {
     localStorage.setItem(notesStorageKey, JSON.stringify(map));
+  };
+
+  const renderIgnoredList = () => {
+    if (!ignoredSection || !ignoredBody) {
+      return;
+    }
+
+    const ignoreMap = loadIgnoreMap();
+    const notesMap = loadNotesMap();
+    const ignoredEntries = Object.entries(ignoreMap);
+    const now = new Date();
+
+    ignoredBody.innerHTML = "";
+
+    const rows = document.querySelectorAll("tr[data-client-row]");
+    const rowMap = new Map();
+    rows.forEach((row) => {
+      rowMap.set(normalizeClientKey(row.dataset.clientRow || ""), row);
+    });
+
+    ignoredEntries.forEach(([clientKey, ignoreUntil]) => {
+      const ignoreDate = parseDate(ignoreUntil);
+      if (!ignoreDate || ignoreDate <= now) {
+        return;
+      }
+      const row = rowMap.get(clientKey);
+      if (!row) {
+        return;
+      }
+      const clientName = row.dataset.clientRow || "";
+      const managerName = row.dataset.staffingManager || "Unassigned";
+      const notes = notesMap[clientKey] || [];
+      const notesHtml =
+        notes.length === 0
+          ? '<span class="text-gray-400">No notes yet.</span>'
+          : `<ul class="space-y-1">${notes
+              .map(
+                (note) =>
+                  `<li><span class="font-semibold text-gray-500">${note.date}</span><br>${note.text}</li>`
+              )
+              .join("")}</ul>`;
+
+      const tableRow = document.createElement("tr");
+      tableRow.innerHTML = `
+        <td class="px-4 py-2 font-medium text-gray-900">${clientName}</td>
+        <td class="px-4 py-2 text-gray-600">${managerName}</td>
+        <td class="px-4 py-2 text-gray-600">${ignoreUntil}</td>
+        <td class="px-4 py-2 text-gray-600">${notesHtml}</td>
+        <td class="px-4 py-2 text-right">
+          <button
+            type="button"
+            class="client-restore-btn rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700 transition hover:border-gray-300 hover:text-gray-900"
+            data-client="${clientName}"
+          >
+            Restore
+          </button>
+        </td>
+      `;
+      ignoredBody.appendChild(tableRow);
+    });
+
+    const hasIgnored = ignoredBody.children.length > 0;
+    ignoredSection.classList.toggle("hidden", !hasIgnored);
   };
 
   const renderNotesIconState = (clientName, notes) => {
@@ -399,12 +548,26 @@
       saveNotesMap(map);
       input.value = "";
       renderNotesList(clientName);
+      renderIgnoredList();
       return;
     }
 
     const closeNotesButton = event.target.closest(".client-notes-close");
     if (closeNotesButton) {
       closeAllNotes();
+      return;
+    }
+
+    const restoreButton = event.target.closest(".client-restore-btn");
+    if (restoreButton) {
+      const clientName = restoreButton.dataset.client || "";
+      const clientKey = normalizeClientKey(clientName);
+      const map = loadIgnoreMap();
+      if (map[clientKey]) {
+        delete map[clientKey];
+        saveIgnoreMap(map);
+        applyIgnoreMap();
+      }
       return;
     }
 
@@ -420,5 +583,12 @@
   hideExpiredIgnoreEntries();
   applyIgnoreMap();
   seedNotesIcons();
+  applyManagerFilter();
+
+  if (managerFilter) {
+    managerFilter.addEventListener("change", () => {
+      applyManagerFilter();
+    });
+  }
 </script>
 {% endblock %}
