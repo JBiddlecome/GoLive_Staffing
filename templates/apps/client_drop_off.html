@@ -30,7 +30,9 @@
       <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 class="text-base font-semibold text-gray-900">Clients without recent shifts</h2>
-          <p class="text-xs text-gray-500">Total clients: {{ total_clients }}</p>
+          <p class="text-xs text-gray-500">
+            Total clients: <span id="client-drop-off-total">{{ total_clients }}</span>
+          </p>
         </div>
       </div>
       <div class="mt-4 overflow-x-auto">
@@ -44,14 +46,104 @@
               <th class="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Days Since Last Shift
               </th>
+              <th class="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Contacted
+              </th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200">
             {% for row in records %}
-              <tr>
-                <td class="px-4 py-2 font-medium text-gray-900">{{ row["Client"] }}</td>
+              <tr data-client-row="{{ row["Client"] }}">
+                <td class="px-4 py-2 font-medium text-gray-900">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span>{{ row["Client"] }}</span>
+                    <button
+                      type="button"
+                      class="client-notes-btn inline-flex items-center justify-center rounded-full border border-gray-200 bg-white p-1 text-gray-500 transition hover:border-gray-300 hover:text-gray-700"
+                      aria-label="View notes"
+                      data-client="{{ row["Client"] }}"
+                    >
+                      <svg
+                        class="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M9 7h6" />
+                        <path d="M9 11h6" />
+                        <path d="M7 4h10a2 2 0 0 1 2 2v12l-4-3H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      class="client-contacted-btn rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:border-gray-300 hover:text-gray-900"
+                      data-client="{{ row["Client"] }}"
+                    >
+                      Contacted
+                    </button>
+                  </div>
+                </td>
                 <td class="px-4 py-2">{{ row["Last Shift"] }}</td>
                 <td class="px-4 py-2 text-right">{{ row["Days Since Last Shift"] }}</td>
+                <td class="px-4 py-2 text-right">
+                  <div class="relative inline-flex">
+                    <div
+                      class="client-ignore-menu absolute right-0 top-0 z-10 hidden w-40 rounded-lg border border-gray-200 bg-white p-2 text-left text-xs shadow-lg"
+                      data-client-menu="{{ row["Client"] }}"
+                    >
+                      <p class="px-2 pb-1 text-[11px] font-semibold uppercase text-gray-400">Ignore for</p>
+                      {% for weeks in [1, 2, 3, 4] %}
+                        <button
+                          type="button"
+                          class="client-ignore-option w-full rounded-md px-2 py-1 text-left text-gray-700 hover:bg-gray-100"
+                          data-client="{{ row["Client"] }}"
+                          data-weeks="{{ weeks }}"
+                        >
+                          {{ weeks }} Week{% if weeks > 1 %}s{% endif %}
+                        </button>
+                      {% endfor %}
+                    </div>
+                  </div>
+                  <div class="relative mt-2 inline-flex">
+                    <div
+                      class="client-notes-panel absolute right-0 top-0 z-10 hidden w-64 rounded-lg border border-gray-200 bg-white p-3 text-left text-xs shadow-lg"
+                      data-client-notes="{{ row["Client"] }}"
+                    >
+                      <div class="flex items-center justify-between">
+                        <p class="text-[11px] font-semibold uppercase text-gray-400">Notes</p>
+                        <button
+                          type="button"
+                          class="client-notes-close text-gray-400 hover:text-gray-600"
+                          data-client="{{ row["Client"] }}"
+                          aria-label="Close notes"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <ul class="client-notes-list mt-2 space-y-2 text-xs text-gray-700"></ul>
+                      <div class="mt-3">
+                        <label class="block text-[11px] font-semibold uppercase text-gray-400">Add note</label>
+                        <textarea
+                          class="client-notes-input mt-1 w-full rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:border-gray-300 focus:outline-none"
+                          rows="2"
+                          data-client="{{ row["Client"] }}"
+                          placeholder="Type a note"
+                        ></textarea>
+                        <button
+                          type="button"
+                          class="client-notes-save mt-2 w-full rounded-md bg-gray-900 px-2 py-1 text-xs font-semibold text-white hover:bg-gray-800"
+                          data-client="{{ row["Client"] }}"
+                        >
+                          Save note
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </td>
               </tr>
             {% endfor %}
           </tbody>
@@ -64,4 +156,269 @@
     </div>
   {% endif %}
 </section>
+<script>
+  const ignoreStorageKey = "clientDropOffIgnoreUntil";
+
+  const loadIgnoreMap = () => {
+    const stored = localStorage.getItem(ignoreStorageKey);
+    if (!stored) {
+      return {};
+    }
+    try {
+      return JSON.parse(stored);
+    } catch (error) {
+      return {};
+    }
+  };
+
+  const saveIgnoreMap = (map) => {
+    localStorage.setItem(ignoreStorageKey, JSON.stringify(map));
+  };
+
+  const normalizeClientKey = (clientName) => clientName.trim().toLowerCase();
+
+  const parseDate = (value) => {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
+  const addWeeks = (weeks) => {
+    const date = new Date();
+    date.setDate(date.getDate() + weeks * 7);
+    return date;
+  };
+
+  const formatDate = (date) => date.toISOString().split("T")[0];
+
+  const updateTotals = () => {
+    const totalElement = document.getElementById("client-drop-off-total");
+    if (!totalElement) {
+      return;
+    }
+    const visibleRows = document.querySelectorAll(
+      "tbody tr[data-client-row]:not([data-ignored='true'])"
+    );
+    totalElement.textContent = visibleRows.length.toString();
+  };
+
+  const hideExpiredIgnoreEntries = () => {
+    const map = loadIgnoreMap();
+    const now = new Date();
+    let updated = false;
+
+    Object.entries(map).forEach(([clientKey, ignoreUntil]) => {
+      const ignoreDate = parseDate(ignoreUntil);
+      if (!ignoreDate || ignoreDate <= now) {
+        delete map[clientKey];
+        updated = true;
+      }
+    });
+
+    if (updated) {
+      saveIgnoreMap(map);
+    }
+  };
+
+  const applyIgnoreMap = () => {
+    const map = loadIgnoreMap();
+    const now = new Date();
+
+    document.querySelectorAll("tr[data-client-row]").forEach((row) => {
+      const clientName = row.dataset.clientRow || "";
+      const clientKey = normalizeClientKey(clientName);
+      const ignoreUntil = map[clientKey];
+      const ignoreDate = ignoreUntil ? parseDate(ignoreUntil) : null;
+
+      if (ignoreDate && ignoreDate > now) {
+        row.dataset.ignored = "true";
+        row.classList.add("hidden");
+      } else {
+        row.dataset.ignored = "false";
+        row.classList.remove("hidden");
+      }
+    });
+
+    updateTotals();
+  };
+
+  const closeAllMenus = () => {
+    document.querySelectorAll(".client-ignore-menu").forEach((menu) => {
+      menu.classList.add("hidden");
+    });
+  };
+
+  const closeAllNotes = () => {
+    document.querySelectorAll(".client-notes-panel").forEach((panel) => {
+      panel.classList.add("hidden");
+    });
+  };
+
+  const showMenuForClient = (clientName) => {
+    const menu = document.querySelector(
+      `.client-ignore-menu[data-client-menu="${CSS.escape(clientName)}"]`
+    );
+    if (!menu) {
+      return;
+    }
+    closeAllMenus();
+    menu.classList.remove("hidden");
+  };
+
+  const notesStorageKey = "clientDropOffNotes";
+
+  const loadNotesMap = () => {
+    const stored = localStorage.getItem(notesStorageKey);
+    if (!stored) {
+      return {};
+    }
+    try {
+      return JSON.parse(stored);
+    } catch (error) {
+      return {};
+    }
+  };
+
+  const saveNotesMap = (map) => {
+    localStorage.setItem(notesStorageKey, JSON.stringify(map));
+  };
+
+  const renderNotesIconState = (clientName, notes) => {
+    const button = document.querySelector(
+      `.client-notes-btn[data-client="${CSS.escape(clientName)}"]`
+    );
+    if (!button) {
+      return;
+    }
+    if (notes.length > 0) {
+      button.classList.add("border-gray-400", "text-gray-800");
+      button.classList.remove("text-gray-500");
+    } else {
+      button.classList.remove("border-gray-400", "text-gray-800");
+      button.classList.add("text-gray-500");
+    }
+  };
+
+  const renderNotesList = (clientName) => {
+    const map = loadNotesMap();
+    const clientKey = normalizeClientKey(clientName);
+    const notes = map[clientKey] || [];
+    const list = document.querySelector(
+      `.client-notes-panel[data-client-notes="${CSS.escape(clientName)}"] .client-notes-list`
+    );
+    if (!list) {
+      return;
+    }
+    list.innerHTML = "";
+    if (notes.length === 0) {
+      const emptyItem = document.createElement("li");
+      emptyItem.className = "text-gray-400";
+      emptyItem.textContent = "No notes yet.";
+      list.appendChild(emptyItem);
+    } else {
+      notes.forEach((note) => {
+        const item = document.createElement("li");
+        item.innerHTML = `<span class="font-semibold text-gray-500">${note.date}</span><br>${note.text}`;
+        list.appendChild(item);
+      });
+    }
+    renderNotesIconState(clientName, notes);
+  };
+
+  const showNotesForClient = (clientName) => {
+    const panel = document.querySelector(
+      `.client-notes-panel[data-client-notes="${CSS.escape(clientName)}"]`
+    );
+    if (!panel) {
+      return;
+    }
+    closeAllMenus();
+    closeAllNotes();
+    renderNotesList(clientName);
+    panel.classList.remove("hidden");
+  };
+
+  const seedNotesIcons = () => {
+    const map = loadNotesMap();
+    document.querySelectorAll("tr[data-client-row]").forEach((row) => {
+      const clientName = row.dataset.clientRow || "";
+      const notes = map[normalizeClientKey(clientName)] || [];
+      renderNotesIconState(clientName, notes);
+    });
+  };
+
+  document.addEventListener("click", (event) => {
+    const contactButton = event.target.closest(".client-contacted-btn");
+    if (contactButton) {
+      const clientName = contactButton.dataset.client || "";
+      showMenuForClient(clientName);
+      return;
+    }
+
+    const notesButton = event.target.closest(".client-notes-btn");
+    if (notesButton) {
+      const clientName = notesButton.dataset.client || "";
+      showNotesForClient(clientName);
+      return;
+    }
+
+    const optionButton = event.target.closest(".client-ignore-option");
+    if (optionButton) {
+      const clientName = optionButton.dataset.client || "";
+      const weeks = Number(optionButton.dataset.weeks || 0);
+      if (!clientName || !weeks) {
+        return;
+      }
+      const map = loadIgnoreMap();
+      const clientKey = normalizeClientKey(clientName);
+      const ignoreUntil = addWeeks(weeks);
+      map[clientKey] = formatDate(ignoreUntil);
+      saveIgnoreMap(map);
+      closeAllMenus();
+      applyIgnoreMap();
+      return;
+    }
+
+    const saveNotesButton = event.target.closest(".client-notes-save");
+    if (saveNotesButton) {
+      const clientName = saveNotesButton.dataset.client || "";
+      const input = document.querySelector(
+        `.client-notes-input[data-client="${CSS.escape(clientName)}"]`
+      );
+      if (!input) {
+        return;
+      }
+      const noteText = input.value.trim();
+      if (!noteText) {
+        return;
+      }
+      const map = loadNotesMap();
+      const clientKey = normalizeClientKey(clientName);
+      const notes = map[clientKey] || [];
+      notes.unshift({ text: noteText, date: formatDate(new Date()) });
+      map[clientKey] = notes;
+      saveNotesMap(map);
+      input.value = "";
+      renderNotesList(clientName);
+      return;
+    }
+
+    const closeNotesButton = event.target.closest(".client-notes-close");
+    if (closeNotesButton) {
+      closeAllNotes();
+      return;
+    }
+
+    if (!event.target.closest(".client-ignore-menu")) {
+      closeAllMenus();
+    }
+
+    if (!event.target.closest(".client-notes-panel")) {
+      closeAllNotes();
+    }
+  });
+
+  hideExpiredIgnoreEntries();
+  applyIgnoreMap();
+  seedNotesIcons();
+</script>
 {% endblock %}
