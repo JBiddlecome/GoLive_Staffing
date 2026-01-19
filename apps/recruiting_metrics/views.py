@@ -287,17 +287,20 @@ def _pick_week_ending_sundays(
 def _resolve_selected_sunday(
     week_ending: str | None, sundays: List[pd.Timestamp]
 ) -> pd.Timestamp:
-    latest_sunday = max(sundays)
+    today = pd.Timestamp.today().normalize()
+    past_sundays = [sunday for sunday in sundays if sunday <= today]
+    latest_sunday = max(past_sundays) if past_sundays else max(sundays)
     selected_sunday = pd.to_datetime(week_ending, errors="coerce")
     if pd.isna(selected_sunday):
         return latest_sunday
 
     selected_sunday = selected_sunday.normalize()
-    if selected_sunday in sundays:
+    if selected_sunday in sundays and selected_sunday <= today:
         return selected_sunday
 
     # Fall back to the closest matching week ending that is not after the requested date
-    return max((s for s in sundays if s <= selected_sunday), default=latest_sunday)
+    cutoff = selected_sunday if selected_sunday <= today else today
+    return max((s for s in sundays if s <= cutoff), default=latest_sunday)
 
 
 def _compute_week_ending_sunday(any_date: pd.Timestamp) -> pd.Timestamp:
