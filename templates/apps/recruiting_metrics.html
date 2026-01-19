@@ -70,6 +70,48 @@
 
       <div class="grid gap-6 lg:grid-cols-2">
         <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h3 class="text-base font-semibold text-gray-900">Active Staff (Last 12 Months)</h3>
+          <p class="mt-1 text-xs text-gray-500">
+            Total active staff from the Active Staff workbook. Data source:
+            <span class="font-medium text-gray-800">{{ rm_active_staff_source }}</span>
+          </p>
+          {% if rm_active_staff_error %}
+            <div class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {{ rm_active_staff_error }}
+            </div>
+          {% elif rm_has_active_staff %}
+            <div class="mt-4 h-72">
+              <canvas id="rm-active-staff-count"></canvas>
+            </div>
+          {% else %}
+            <div class="mt-4 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-10 text-center text-sm text-gray-500">
+              No active staff records available for the past 12 months.
+            </div>
+          {% endif %}
+        </div>
+        <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h3 class="text-base font-semibold text-gray-900">Active Staff Working % (Last 12 Months)</h3>
+          <p class="mt-1 text-xs text-gray-500">
+            Percentage of active staff working from the Active Staff workbook.
+          </p>
+          {% if rm_active_staff_error %}
+            <div class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {{ rm_active_staff_error }}
+            </div>
+          {% elif rm_has_active_staff_percent %}
+            <div class="mt-4 h-72">
+              <canvas id="rm-active-staff-percent"></canvas>
+            </div>
+          {% else %}
+            <div class="mt-4 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-10 text-center text-sm text-gray-500">
+              No active staff percentage records available for the past 12 months.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="grid gap-6 lg:grid-cols-2">
+        <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h3 class="text-base font-semibold text-gray-900">Onboarded This Year</h3>
           <p class="mt-1 text-xs text-gray-500">
             Counts include new starts and rehires for the selected week ending and the four prior week endings.
@@ -383,6 +425,63 @@
         });
       }
 
+      function buildValueLineChart(id, points, datasetLabel, color, yTitle, tickFormatter) {
+        const ctx = document.getElementById(id);
+        if (!ctx) return;
+
+        destroyChart(id);
+
+        const sorted = [...points].sort((a, b) => a.date.localeCompare(b.date));
+        const labels = sorted.map((point) => point.date);
+        const values = sorted.map((point) => (point.value ?? 0));
+
+        chartInstances[id] = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [
+              {
+                label: datasetLabel,
+                data: values,
+                borderColor: color,
+                backgroundColor: color,
+                tension: 0.2,
+                pointRadius: 4,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              mode: 'nearest',
+              intersect: false,
+            },
+            scales: {
+              x: {
+                type: 'category',
+                title: {
+                  display: true,
+                  text: 'Month',
+                },
+              },
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: yTitle,
+                },
+                ticks: tickFormatter
+                  ? {
+                      callback: tickFormatter,
+                    }
+                  : {},
+              },
+            },
+          },
+        });
+      }
+
       function buildBarChart(id, labels, data) {
         const ctx = document.getElementById(id);
         if (!ctx) return;
@@ -492,6 +591,27 @@
         'Rehires (Last Year)',
         '#6366f1',
       );
+
+      if (metrics.activeStaff?.activeCounts?.length) {
+        buildValueLineChart(
+          'rm-active-staff-count',
+          metrics.activeStaff.activeCounts,
+          'Active Staff',
+          '#16a34a',
+          'Active Staff',
+        );
+      }
+
+      if (metrics.activeStaff?.percentWorking?.length) {
+        buildValueLineChart(
+          'rm-active-staff-percent',
+          metrics.activeStaff.percentWorking,
+          'Active Staff Working %',
+          '#0f766e',
+          'Percent',
+          (value) => `${value}%`,
+        );
+      }
 
       if (metrics.hiresByCounty.length > 0) {
         const labels = metrics.hiresByCounty.map((item) => item.county);
