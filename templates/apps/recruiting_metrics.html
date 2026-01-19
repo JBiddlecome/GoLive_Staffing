@@ -441,7 +441,7 @@
 
         const sorted = [...points].sort((a, b) => a.date.localeCompare(b.date));
         const labelFormatter = options.labelFormatter || ((value) => value);
-        const labels = sorted.map((point) => labelFormatter(point.date));
+        const labels = sorted.map((point) => point.date);
         const values = sorted.map((point) => (point.value ?? 0));
         const datasets = [
           {
@@ -495,6 +495,19 @@
                   display: true,
                   text: 'Month',
                 },
+                ticks: {
+                  callback: (value, index, ticks) => {
+                    if (!options.uniqueMonthTicks) {
+                      return labelFormatter(value);
+                    }
+                    const current = labelFormatter(value);
+                    if (index === 0) {
+                      return current;
+                    }
+                    const previous = labelFormatter(ticks[index - 1]?.value);
+                    return current === previous ? '' : current;
+                  },
+                },
               },
               y: {
                 beginAtZero: options.beginAtZero ?? true,
@@ -509,6 +522,20 @@
                       callback: tickFormatter,
                     }
                   : {},
+              },
+            },
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  title: (items) => {
+                    if (!items.length) return '';
+                    const rawValue = labels[items[0].dataIndex];
+                    if (options.tooltipTitleFormatter) {
+                      return options.tooltipTitleFormatter(rawValue);
+                    }
+                    return rawValue;
+                  },
+                },
               },
             },
           },
@@ -628,6 +655,8 @@
       if (metrics.activeStaff?.activeCounts?.length) {
         const monthFormatter = (value) =>
           luxon.DateTime.fromISO(value, { zone: 'utc' }).toFormat('MMMM');
+        const tooltipFormatter = (value) =>
+          luxon.DateTime.fromISO(value, { zone: 'utc' }).toFormat('MMMM dd, yyyy');
         buildValueLineChart(
           'rm-active-staff-count',
           metrics.activeStaff.activeCounts,
@@ -635,13 +664,21 @@
           '#16a34a',
           'Active Staff',
           undefined,
-          { yMin: 800, yMax: 1600, labelFormatter: monthFormatter },
+          {
+            yMin: 800,
+            yMax: 1600,
+            labelFormatter: monthFormatter,
+            uniqueMonthTicks: true,
+            tooltipTitleFormatter: tooltipFormatter,
+          },
         );
       }
 
       if (metrics.activeStaff?.percentWorking?.length) {
         const monthFormatter = (value) =>
           luxon.DateTime.fromISO(value, { zone: 'utc' }).toFormat('MMMM');
+        const tooltipFormatter = (value) =>
+          luxon.DateTime.fromISO(value, { zone: 'utc' }).toFormat('MMMM dd, yyyy');
         buildValueLineChart(
           'rm-active-staff-percent',
           metrics.activeStaff.percentWorking,
@@ -649,7 +686,13 @@
           '#0f766e',
           'Percent',
           (value) => `${value}%`,
-          { trendline: true, trendlineColor: '#f97316', labelFormatter: monthFormatter },
+          {
+            trendline: true,
+            trendlineColor: '#f97316',
+            labelFormatter: monthFormatter,
+            uniqueMonthTicks: true,
+            tooltipTitleFormatter: tooltipFormatter,
+          },
         );
       }
 

@@ -25,6 +25,22 @@
         radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.1), transparent 30%),
         #f9fbf8;
     }
+    .page-loader {
+      z-index: 50;
+    }
+    .page-loader-spinner {
+      width: 3rem;
+      height: 3rem;
+      border: 4px solid rgba(16, 185, 129, 0.2);
+      border-top-color: rgba(16, 185, 129, 0.9);
+      border-radius: 9999px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
   </style>
 </head>
 <body class="fallback text-gray-900">
@@ -50,6 +66,43 @@
   <footer class="max-w-screen-2xl mx-auto px-4 py-8 text-xs text-gray-500">
     © {{ 2025 }} GoLive! Staffing — Internal tools
   </footer>
+  <div
+    id="page-loader"
+    class="page-loader hidden fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center"
+    role="status"
+    aria-live="polite"
+  >
+    <div class="flex flex-col items-center gap-4 text-emerald-700">
+      <div class="page-loader-spinner" aria-hidden="true"></div>
+      <span class="text-sm font-semibold tracking-wide">Loading...</span>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const loader = document.getElementById('page-loader');
+      if (!loader) return;
+
+      const links = document.querySelectorAll('a[href]');
+      links.forEach((link) => {
+        const href = link.getAttribute('href') || '';
+        if (
+          href.startsWith('#') ||
+          href.startsWith('mailto:') ||
+          href.startsWith('tel:') ||
+          (link.target && link.target !== '_self')
+        ) {
+          return;
+        }
+        link.addEventListener('click', () => {
+          loader.classList.remove('hidden');
+        });
+      });
+
+      window.addEventListener('pageshow', () => {
+        loader.classList.add('hidden');
+      });
+    });
+  </script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
