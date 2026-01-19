@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Client Drop Off — GoLive Tools{% endblock %}
+{% block content %}
+<section class="space-y-6">
+  <header class="space-y-2">
+    <h1 class="text-2xl font-semibold text-gray-900">Client Drop Off</h1>
+    <p class="text-sm text-gray-600">
+      Review clients who have not scheduled shifts in the most recent week of payroll activity. The report only
+      considers the last two months of data from Payroll.xlsx and ignores any client names containing “Private”.
+    </p>
+  </header>
+
+  <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+    <h2 class="text-base font-semibold text-gray-900">Data scope</h2>
+    <p class="mt-1 text-xs text-gray-500">
+      Window: <span class="font-medium text-gray-800">{{ lookback_start }} through {{ max_date }}</span><br />
+      Excluding clients with shifts on or after
+      <span class="font-medium text-gray-800">{{ recent_cutoff }}</span>.
+    </p>
+  </div>
+
+  {% if error %}
+    <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+      {{ error }}
+    </div>
+  {% endif %}
+
+  {% if records %}
+    <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="text-base font-semibold text-gray-900">Clients without recent shifts</h2>
+          <p class="text-xs text-gray-500">Total clients: {{ total_clients }}</p>
+        </div>
+      </div>
+      <div class="mt-4 overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 text-sm text-gray-700">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Client</th>
+              <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Last Shift Date
+              </th>
+              <th class="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Days Since Last Shift
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            {% for row in records %}
+              <tr>
+                <td class="px-4 py-2 font-medium text-gray-900">{{ row["Client"] }}</td>
+                <td class="px-4 py-2">{{ row["Last Shift"] }}</td>
+                <td class="px-4 py-2 text-right">{{ row["Days Since Last Shift"] }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% else %}
+    <div class="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-10 text-center text-sm text-gray-500">
+      No clients matched the drop-off criteria for the last two months of payroll data.
+    </div>
+  {% endif %}
+</section>
+{% endblock %}
