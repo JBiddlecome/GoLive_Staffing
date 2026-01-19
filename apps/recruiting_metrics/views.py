@@ -38,6 +38,13 @@ CONCIERGE_COL_CANDIDATES = [
 TARGET_POSITIONS = ["Cook 2", "Server 2", "Dishwasher"]
 
 DATA_FILE = Path("Employee List Data.xlsx")
+ACTIVE_STAFF_WORKBOOK = "Sales and Staffing Charts.xlsx"
+ACTIVE_STAFF_SHEET = "Active Staff"
+ACTIVE_STAFF_COL_CANDIDATES = {
+    "date": ["Date"],
+    "active_staff": ["Active Staff"],
+    "percent_working": ["Percentage of Active Staff Working", "Percent Working"],
+}
 
 templates = Jinja2Templates(directory="templates")
 router = APIRouter()
@@ -81,6 +88,8 @@ async def _render_page(request: Request, week_ending: str | None) -> HTMLRespons
     selected_sunday = _resolve_selected_sunday(week_ending, sundays)
 
     metrics, details = _build_metrics(dataframe, selected_sunday, resolved)
+    active_staff_data, active_staff_source, active_staff_error = _load_active_staff_trends()
+    metrics["activeStaff"] = active_staff_data
 
     context = _build_context(
         request=request,
@@ -89,6 +98,8 @@ async def _render_page(request: Request, week_ending: str | None) -> HTMLRespons
         selected_sunday=selected_sunday,
         metrics=metrics,
         details=details,
+        active_staff_source=active_staff_source,
+        active_staff_error=active_staff_error,
     )
     return templates.TemplateResponse("apps/recruiting_metrics.html", context)
 
@@ -132,6 +143,87 @@ def _load_dataframe(file_bytes: bytes, filename: str) -> pd.DataFrame:
         raise ValueError(f"Could not read file: {exc}") from exc
 
     return df
+
+
+def _resolve_active_staff_workbook() -> Path:
+    module_root = Path(__file__).resolve().parents[2]
+    data_dir = module_root / "data"
+    candidates = [
+        data_dir / ACTIVE_STAFF_WORKBOOK,
+        module_root / ACTIVE_STAFF_WORKBOOK,
+        Path.cwd() / ACTIVE_STAFF_WORKBOOK,
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return data_dir / ACTIVE_STAFF_WORKBOOK
+
+
+def _load_active_staff_trends() -> Tuple[Dict[str, List[Dict[str, object]]], str, str | None]:
+    workbook_path = _resolve_active_staff_workbook()
+    source_name = workbook_path.name
+    empty_payload = {"activeCounts": [], "percentWorking": []}
+
+    if not workbook_path.exists():
+        return (
+            empty_payload,
+            source_name,
+            f"Active staff workbook not found: {workbook_path}",
+        )
+
+    try:
+        df = pd.read_excel(workbook_path, sheet_name=ACTIVE_STAFF_SHEET)
+    except Exception as exc:  # pragma: no cover - pandas specific errors
+        return empty_payload, source_name, f"Could not read active staff data: {exc}"
+
+    date_col = _resolve_column(df, ACTIVE_STAFF_COL_CANDIDATES["date"])
+    active_col = _resolve_column(df, ACTIVE_STAFF_COL_CANDIDATES["active_staff"])
+    percent_col = _resolve_column(df, ACTIVE_STAFF_COL_CANDIDATES["percent_working"])
+
+    if not date_col or not active_col or not percent_col:
+        return (
+            empty_payload,
+            source_name,
+            "Active staff sheet is missing one or more required columns (Date, Active Staff, Percentage of Active Staff Working).",
+        )
+
+    df = df[[date_col, active_col, percent_col]].copy()
+    df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
+    df = df.dropna(subset=[date_col])
+    if df.empty:
+        return empty_payload, source_name, "Active staff sheet does not include any valid dates."
+
+    df[active_col] = pd.to_numeric(df[active_col], errors="coerce")
+    df[percent_col] = pd.to_numeric(df[percent_col], errors="coerce")
+
+    last_date = df[date_col].max()
+    if pd.isna(last_date):
+        return empty_payload, source_name, "Active staff sheet does not include any valid dates."
+
+    start_date = (last_date - relativedelta(months=12)).normalize()
+    df = df[(df[date_col] >= start_date) & (df[date_col] <= last_date)]
+    df = df.sort_values(date_col)
+
+    active_counts = [
+        {
+            "date": row[date_col].strftime("%Y-%m-%d"),
+            "value": float(row[active_col]),
+        }
+        for _, row in df.dropna(subset=[active_col]).iterrows()
+    ]
+    percent_working = [
+        {
+            "date": row[date_col].strftime("%Y-%m-%d"),
+            "value": float(row[percent_col]),
+        }
+        for _, row in df.dropna(subset=[percent_col]).iterrows()
+    ]
+
+    return (
+        {"activeCounts": active_counts, "percentWorking": percent_working},
+        source_name,
+        None,
+    )
 
 
 def _resolve_columns(df: pd.DataFrame) -> Dict[str, str]:
@@ -495,6 +587,8 @@ def _build_context(
     selected_sunday: pd.Timestamp,
     metrics: Dict[str, object],
     details: Dict[str, object],
+    active_staff_source: str,
+    active_staff_error: str | None,
 ) -> Dict[str, object]:
     weeks = [
         {
@@ -520,6 +614,10 @@ def _build_context(
         "rm_position_table": metrics["positionTable"],
         "rm_data_source": filename,
         "rm_concierge_numbers": metrics["conciergeNumbers"],
+        "rm_active_staff_source": active_staff_source,
+        "rm_active_staff_error": active_staff_error,
+        "rm_has_active_staff": bool(metrics.get("activeStaff", {}).get("activeCounts")),
+        "rm_has_active_staff_percent": bool(metrics.get("activeStaff", {}).get("percentWorking")),
     }
 
     return context
