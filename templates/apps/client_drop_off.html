@@ -75,8 +75,13 @@
                 data-staffing-manager="{{ row["Staffing Manager"] }}"
               >
                 <td class="px-4 py-2 font-medium text-gray-900">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <span>{{ row["Client"] }}</span>
+                  <span>{{ row["Client"] }}</span>
+                </td>
+                <td class="px-4 py-2 text-gray-600">{{ row["Staffing Manager"] }}</td>
+                <td class="px-4 py-2">{{ row["Last Shift"] }}</td>
+                <td class="px-4 py-2 text-right">{{ row["Days Since Last Shift"] }}</td>
+                <td class="px-4 py-2 text-right">
+                  <div class="flex items-center justify-end gap-2">
                     <button
                       type="button"
                       class="client-notes-btn inline-flex items-center justify-center rounded-full border border-gray-200 bg-white p-1 text-gray-500 transition hover:border-gray-300 hover:text-gray-700"
@@ -106,12 +111,7 @@
                       Contacted
                     </button>
                   </div>
-                </td>
-                <td class="px-4 py-2 text-gray-600">{{ row["Staffing Manager"] }}</td>
-                <td class="px-4 py-2">{{ row["Last Shift"] }}</td>
-                <td class="px-4 py-2 text-right">{{ row["Days Since Last Shift"] }}</td>
-                <td class="px-4 py-2 text-right">
-                  <div class="relative inline-flex">
+                  <div class="relative mt-2 inline-flex justify-end">
                     <div
                       class="client-ignore-menu absolute right-0 top-0 z-10 hidden w-40 rounded-lg border border-gray-200 bg-white p-2 text-left text-xs shadow-lg"
                       data-client-menu="{{ row["Client"] }}"
@@ -129,7 +129,7 @@
                       {% endfor %}
                     </div>
                   </div>
-                  <div class="relative mt-2 inline-flex">
+                  <div class="relative mt-2 inline-flex justify-end">
                     <div
                       class="client-notes-panel absolute right-0 top-0 z-10 hidden w-64 rounded-lg border border-gray-200 bg-white p-3 text-left text-xs shadow-lg"
                       data-client-notes="{{ row["Client"] }}"
@@ -439,11 +439,11 @@
       return;
     }
     if (notes.length > 0) {
-      button.classList.add("border-gray-400", "text-gray-800");
-      button.classList.remove("text-gray-500");
+      button.classList.add("border-emerald-500", "text-emerald-600");
+      button.classList.remove("border-gray-200", "text-gray-500", "text-gray-700");
     } else {
-      button.classList.remove("border-gray-400", "text-gray-800");
-      button.classList.add("text-gray-500");
+      button.classList.remove("border-emerald-500", "text-emerald-600");
+      button.classList.add("border-gray-200", "text-gray-500");
     }
   };
 
@@ -549,6 +549,7 @@
       input.value = "";
       renderNotesList(clientName);
       renderIgnoredList();
+      closeAllNotes();
       return;
     }
 
