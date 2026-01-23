@@ -7,15 +7,16 @@ import logging
 import os
 from typing import List
 
-from fastapi import APIRouter, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from openai import OpenAI, OpenAIError
 from pypdf import PdfReader
+from docx import Document
 
 RESUME_SYSTEM_PROMPT = """
 You are a resume screener for a hospitality staffing agency.
-The user will send you a resume (as text or transcribed from a PDF/image).
+The user will send you a resume (as text or transcribed from a PDF/Word doc/image).
 Your job is to decide how qualified the candidate is for specific hospitality positions. 
 Count experience at fine-dining or equivalent venues normally, but treat fast-food experience differently (see updated rules below).
 
@@ -227,10 +228,16 @@ async def page(request: Request) -> HTMLResponse:
 
 
 @router.post("/analyze", response_class=JSONResponse)
-async def analyze_resume(file: UploadFile = File(...)) -> JSONResponse:
-    contents = await file.read()
-    if not contents:
-        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+async def analyze_resume(
+    file: UploadFile | None = File(None),
+    resume_text: str | None = Form(None),
+) -> JSONResponse:
+    if file:
+        contents = await file.read()
+        if not contents:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+    else:
+        contents = b""
 
     try:
         client = _get_openai_client()
@@ -238,7 +245,12 @@ async def analyze_resume(file: UploadFile = File(...)) -> JSONResponse:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     try:
-        ai_payload = _build_resume_messages(file.filename, file.content_type, contents)
+        ai_payload = _build_resume_messages(
+            file.filename if file else "",
+            file.content_type if file else "",
+            contents,
+            resume_text,
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -277,15 +289,33 @@ def _get_openai_client() -> OpenAI:
     return OpenAI(api_key=api_key)
 
 
-def _build_resume_messages(filename: str, content_type: str, contents: bytes) -> list[dict]:
+def _build_resume_messages(
+    filename: str,
+    content_type: str,
+    contents: bytes,
+    resume_text: str | None,
+) -> list[dict]:
     name = (filename or "uploaded file").strip()
     mime = (content_type or "").lower()
     lower_name = name.lower()
+    text_input = (resume_text or "").strip()
 
     if "pdf" in mime or lower_name.endswith(".pdf"):
         text = _extract_pdf_text(contents)
         if not text:
             raise ValueError("Could not read any text from the uploaded PDF.")
+        return [
+            {"role": "system", "content": RESUME_SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": f"Resume extracted from {name}. Return only the JSON schema provided.\n\n{text}",
+            },
+        ]
+
+    if _is_docx_file(mime, lower_name):
+        text = _extract_docx_text(contents)
+        if not text:
+            raise ValueError("Could not read any text from the uploaded Word document.")
         return [
             {"role": "system", "content": RESUME_SYSTEM_PROMPT},
             {
@@ -310,7 +340,16 @@ def _build_resume_messages(filename: str, content_type: str, contents: bytes) ->
             },
         ]
 
-    raise ValueError("Only PDF or image resume files are supported.")
+    if text_input:
+        return [
+            {"role": "system", "content": RESUME_SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": f"Resume provided as pasted text. Return only the JSON schema provided.\n\n{text_input}",
+            },
+        ]
+
+    raise ValueError("Upload a PDF, Word document, image, or paste resume text.")
 
 
 def _extract_pdf_text(file_bytes: bytes) -> str:
@@ -329,6 +368,31 @@ def _extract_pdf_text(file_bytes: bytes) -> str:
         if text:
             texts.append(text)
     return "\n\n".join(texts).strip()
+
+
+def _extract_docx_text(file_bytes: bytes) -> str:
+    buffer = io.BytesIO(file_bytes)
+    try:
+        document = Document(buffer)
+    except Exception as exc:  # pragma: no cover - external library
+        raise ValueError(f"Could not read Word document: {exc}") from exc
+
+    texts = [para.text.strip() for para in document.paragraphs if para.text.strip()]
+    for table in document.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                cell_text = cell.text.strip()
+                if cell_text:
+                    texts.append(cell_text)
+
+    return "\n\n".join(texts).strip()
+
+
+def _is_docx_file(mime: str, lower_name: str) -> bool:
+    return (
+        mime == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        or lower_name.endswith(".docx")
+    )
 
 
 def _is_image_file(mime: str, lower_name: str) -> bool:
