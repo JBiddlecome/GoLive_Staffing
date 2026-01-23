@@ -497,14 +497,16 @@
                 },
                 ticks: {
                   callback: (value, index, ticks) => {
+                    const labelValue = labels[index] ?? value;
                     if (!options.uniqueMonthTicks) {
-                      return labelFormatter(value);
+                      return labelFormatter(labelValue);
                     }
-                    const current = labelFormatter(value);
+                    const current = labelFormatter(labelValue);
                     if (index === 0) {
                       return current;
                     }
-                    const previous = labelFormatter(ticks[index - 1]?.value);
+                    const previousLabel = labels[index - 1] ?? ticks[index - 1]?.value;
+                    const previous = labelFormatter(previousLabel);
                     return current === previous ? '' : current;
                   },
                 },

@@ -38,6 +38,11 @@ async def external_ai_tools(request: Request):
     return templates.TemplateResponse("external_ai_tools.html", {"request": request})
 
 
+@app.get("/work-in-progress", response_class=HTMLResponse)
+async def work_in_progress(request: Request):
+    return templates.TemplateResponse("work_in_progress.html", {"request": request})
+
+
 @app.get("/contacts", response_class=HTMLResponse)
 async def contacts(request: Request):
     contacts_data = load_contacts()
