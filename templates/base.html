@@ -64,7 +64,10 @@
   </main>
 
   <footer class="max-w-screen-2xl mx-auto px-4 py-8 text-xs text-gray-500">
-    © {{ 2025 }} GoLive! Staffing — Internal tools
+    <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <span>© {{ 2025 }} GoLive! Staffing — Internal tools</span>
+      {% block footer_links %}{% endblock %}
+    </div>
   </footer>
   <div
     id="page-loader"
