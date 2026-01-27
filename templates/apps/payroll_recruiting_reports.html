@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}Payroll &amp; Recruiting Reports — GoLive Tools{% endblock %}
+{% block content %}
+<section class="space-y-8">
+  <header class="space-y-2">
+    <h1 class="text-2xl font-semibold">Payroll &amp; Recruiting Reports</h1>
+    <p class="text-sm text-gray-600">
+      Upload the latest Payroll or Employee workbook to generate filtered reports and download the results.
+    </p>
+  </header>
+
+  <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
+    <div>
+      <h2 class="text-lg font-semibold">Payroll File</h2>
+      <p class="text-sm text-gray-600">Analyze totals, status breakdowns, and the last 185 days of client wins.</p>
+    </div>
+
+    <form class="space-y-4" method="post" enctype="multipart/form-data" action="/payroll-recruiting-reports/payroll">
+      <div>
+        <label class="block text-sm font-medium mb-1" for="payroll_file">Payroll Excel file (.xlsx / .xls)</label>
+        <input class="border rounded-lg p-2 w-full bg-white" type="file" id="payroll_file" name="payroll_file" accept=".xlsx,.xls" required />
+      </div>
+      <button class="px-4 py-2 rounded-lg border border-slate-300 shadow-sm bg-indigo-600 text-white hover:bg-indigo-500" type="submit">
+        Run payroll report
+      </button>
+    </form>
+
+    {% if payroll_error %}
+      <p class="text-sm text-red-600">{{ payroll_error }}</p>
+    {% endif %}
+
+    {% if payroll_status_message %}
+      <p class="text-xs text-gray-500">{{ payroll_status_message }}</p>
+    {% endif %}
+
+    {% if payroll_messages %}
+      <ul class="text-sm text-amber-700 space-y-1">
+        {% for message in payroll_messages %}
+          <li>• {{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    {% if payroll_metrics %}
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="rounded-lg border border-gray-100 bg-gray-50 p-4">
+          <p class="text-xs uppercase tracking-wide text-gray-500">Total Count</p>
+          <p class="text-xl font-semibold text-gray-900">{{ payroll_metrics.total_count }}</p>
+          <p class="text-xs text-gray-500">Cancelled · No Show · Sent Home · Worked</p>
+        </div>
+        <div class="rounded-lg border border-gray-100 bg-gray-50 p-4">
+          <p class="text-xs uppercase tracking-wide text-gray-500">Shift Count</p>
+          <p class="text-xl font-semibold text-gray-900">{{ payroll_metrics.shift_count }}</p>
+          <p class="text-xs text-gray-500">Total Bill &gt; 0</p>
+        </div>
+        <div class="rounded-lg border border-gray-100 bg-gray-50 p-4">
+          <p class="text-xs uppercase tracking-wide text-gray-500">Sum of Total Bill (185 days)</p>
+          <p class="text-xl font-semibold text-gray-900">
+            {% if payroll_metrics.total_bill_sum is not none %}
+              {{ '%.2f'|format(payroll_metrics.total_bill_sum) }}
+            {% else %}
+              —
+            {% endif %}
+          </p>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if payroll_breakdown %}
+      <div class="overflow-x-auto rounded-xl border bg-white shadow-sm">
+        <table class="min-w-full divide-y divide-gray-200 text-sm">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-3 py-2 text-left font-medium text-gray-600">Metric</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-600">Count</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 bg-white">
+            {% for row in payroll_breakdown %}
+              <tr>
+                <td class="px-3 py-2 text-gray-700">{{ row[0] }}</td>
+                <td class="px-3 py-2 text-gray-700">{{ row[1] }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+
+    {% if payroll_filter_error %}
+      <p class="text-sm text-red-600">{{ payroll_filter_error }}</p>
+    {% endif %}
+
+    {% if payroll_preview %}
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-gray-700">Filtered preview (first {{ payroll_preview.rows|length }} rows)</h3>
+          {% if payroll_download_token %}
+            <a class="text-sm font-semibold text-emerald-700 hover:underline" href="/payroll-recruiting-reports/download/payroll/{{ payroll_download_token }}">
+              Download filtered Payroll file
+            </a>
+          {% endif %}
+        </div>
+        <div class="overflow-x-auto rounded-xl border bg-white shadow-sm">
+          <table class="min-w-full divide-y divide-gray-200 text-sm">
+            <thead class="bg-gray-50">
+              <tr>
+                {% for header in payroll_preview.headers %}
+                  <th class="px-3 py-2 text-left font-medium text-gray-600">{{ header }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 bg-white">
+              {% for row in payroll_preview.rows %}
+                <tr>
+                  {% for header in payroll_preview.headers %}
+                    <td class="px-3 py-2 text-gray-700">{{ row[header] }}</td>
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
+    <div>
+      <h2 class="text-lg font-semibold">Employee File</h2>
+      <p class="text-sm text-gray-600">Filter the employee roster by Start Date or Rehire Date.</p>
+    </div>
+
+    <form class="space-y-4" method="post" enctype="multipart/form-data" action="/payroll-recruiting-reports/employee">
+      <div>
+        <label class="block text-sm font-medium mb-1" for="employee_file">Employee Excel file (.xlsx / .xls)</label>
+        <input class="border rounded-lg p-2 w-full bg-white" type="file" id="employee_file" name="employee_file" accept=".xlsx,.xls" required />
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="block text-sm font-medium mb-1" for="start_date">Start of date range</label>
+          <input class="border rounded-lg p-2 w-full bg-white" type="date" id="start_date" name="start_date" value="{{ employee_start_date }}" required />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="end_date">End of date range</label>
+          <input class="border rounded-lg p-2 w-full bg-white" type="date" id="end_date" name="end_date" value="{{ employee_end_date }}" required />
+        </div>
+      </div>
+      <button class="px-4 py-2 rounded-lg border border-slate-300 shadow-sm bg-indigo-600 text-white hover:bg-indigo-500" type="submit">
+        Run employee report
+      </button>
+    </form>
+
+    {% if employee_error %}
+      <p class="text-sm text-red-600">{{ employee_error }}</p>
+    {% endif %}
+
+    {% if employee_count is not none %}
+      <p class="text-sm text-gray-700">Rows kept: <span class="font-semibold">{{ employee_count }}</span></p>
+    {% endif %}
+
+    {% if employee_preview %}
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-gray-700">Filtered preview (first {{ employee_preview.rows|length }} rows)</h3>
+          {% if employee_download_token %}
+            <a class="text-sm font-semibold text-emerald-700 hover:underline" href="/payroll-recruiting-reports/download/employee/{{ employee_download_token }}">
+              Download filtered Employee file
+            </a>
+          {% endif %}
+        </div>
+        <div class="overflow-x-auto rounded-xl border bg-white shadow-sm">
+          <table class="min-w-full divide-y divide-gray-200 text-sm">
+            <thead class="bg-gray-50">
+              <tr>
+                {% for header in employee_preview.headers %}
+                  <th class="px-3 py-2 text-left font-medium text-gray-600">{{ header }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 bg-white">
+              {% for row in employee_preview.rows %}
+                <tr>
+                  {% for header in employee_preview.headers %}
+                    <td class="px-3 py-2 text-gray-700">{{ row[header] }}</td>
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
+  </section>
+</section>
+{% endblock %}
