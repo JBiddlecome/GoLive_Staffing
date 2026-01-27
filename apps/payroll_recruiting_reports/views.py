@@ -89,7 +89,7 @@ def _pick_status_before_industry(df: pd.DataFrame) -> Tuple[Optional[str], str]:
 
 def _prepare_table(df: pd.DataFrame, max_rows: int = 25) -> Dict[str, List[Dict[str, Any]]]:
     preview = df.head(max_rows).copy()
-    preview = preview.replace({pd.NA: "", np.nan: ""})
+    preview = preview.replace({pd.NA: "", np.nan: ""}).infer_objects(copy=False)
 
     for column in preview.columns:
         if pd.api.types.is_datetime64_any_dtype(preview[column]):
