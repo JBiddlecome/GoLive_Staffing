@@ -350,22 +350,37 @@
     menu.classList.remove("hidden");
   };
 
-  const notesStorageKey = "clientDropOffNotes";
+  const notesEndpoint = "{{ request.url_for('client_drop_off_notes') }}";
+  let notesCache = {};
 
-  const loadNotesMap = () => {
-    const stored = localStorage.getItem(notesStorageKey);
-    if (!stored) {
-      return {};
-    }
+  const loadNotesMap = async () => {
     try {
-      return JSON.parse(stored);
+      const response = await fetch(notesEndpoint);
+      if (!response.ok) {
+        return {};
+      }
+      const payload = await response.json();
+      notesCache = payload.notes || {};
+      return notesCache;
     } catch (error) {
       return {};
     }
   };
 
-  const saveNotesMap = (map) => {
-    localStorage.setItem(notesStorageKey, JSON.stringify(map));
+  const saveNoteForClient = async (clientName, noteText) => {
+    try {
+      const response = await fetch(notesEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ client: clientName, text: noteText }),
+      });
+      if (!response.ok) {
+        return null;
+      }
+      return response.json();
+    } catch (error) {
+      return null;
+    }
   };
 
   const renderIgnoredList = () => {
@@ -374,7 +389,7 @@
     }
 
     const ignoreMap = loadIgnoreMap();
-    const notesMap = loadNotesMap();
+    const notesMap = notesCache;
     const ignoredEntries = Object.entries(ignoreMap);
     const now = new Date();
 
@@ -448,7 +463,7 @@
   };
 
   const renderNotesList = (clientName) => {
-    const map = loadNotesMap();
+    const map = notesCache;
     const clientKey = normalizeClientKey(clientName);
     const notes = map[clientKey] || [];
     const list = document.querySelector(
@@ -487,7 +502,7 @@
   };
 
   const seedNotesIcons = () => {
-    const map = loadNotesMap();
+    const map = notesCache;
     document.querySelectorAll("tr[data-client-row]").forEach((row) => {
       const clientName = row.dataset.clientRow || "";
       const notes = map[normalizeClientKey(clientName)] || [];
@@ -495,7 +510,7 @@
     });
   };
 
-  document.addEventListener("click", (event) => {
+  document.addEventListener("click", async (event) => {
     const contactButton = event.target.closest(".client-contacted-btn");
     if (contactButton) {
       const clientName = contactButton.dataset.client || "";
@@ -540,12 +555,12 @@
       if (!noteText) {
         return;
       }
-      const map = loadNotesMap();
-      const clientKey = normalizeClientKey(clientName);
-      const notes = map[clientKey] || [];
-      notes.unshift({ text: noteText, date: formatDate(new Date()) });
-      map[clientKey] = notes;
-      saveNotesMap(map);
+      const payload = await saveNoteForClient(clientName, noteText);
+      if (!payload || !payload.notes) {
+        return;
+      }
+      const clientKey = payload.client_key || normalizeClientKey(clientName);
+      notesCache[clientKey] = payload.notes;
       input.value = "";
       renderNotesList(clientName);
       renderIgnoredList();
@@ -581,9 +596,15 @@
     }
   });
 
+  const initializeNotes = async () => {
+    await loadNotesMap();
+    seedNotesIcons();
+    renderIgnoredList();
+  };
+
   hideExpiredIgnoreEntries();
   applyIgnoreMap();
-  seedNotesIcons();
+  initializeNotes();
   applyManagerFilter();
 
   if (managerFilter) {
