@@ -215,24 +215,7 @@
   {% endif %}
 </section>
 <script>
-  const ignoreStorageKey = "clientDropOffIgnoreUntil";
   const managerFilter = document.getElementById("staffing-manager-filter");
-
-  const loadIgnoreMap = () => {
-    const stored = localStorage.getItem(ignoreStorageKey);
-    if (!stored) {
-      return {};
-    }
-    try {
-      return JSON.parse(stored);
-    } catch (error) {
-      return {};
-    }
-  };
-
-  const saveIgnoreMap = (map) => {
-    localStorage.setItem(ignoreStorageKey, JSON.stringify(map));
-  };
 
   const normalizeClientKey = (clientName) => clientName.trim().toLowerCase();
   const normalizeManagerKey = (managerName) => managerName.trim().toLowerCase();
@@ -275,26 +258,8 @@
   const ignoredSection = document.getElementById("ignored-clients-section");
   const ignoredBody = document.getElementById("ignored-clients-body");
 
-  const hideExpiredIgnoreEntries = () => {
-    const map = loadIgnoreMap();
-    const now = new Date();
-    let updated = false;
-
-    Object.entries(map).forEach(([clientKey, ignoreUntil]) => {
-      const ignoreDate = parseDate(ignoreUntil);
-      if (!ignoreDate || ignoreDate <= now) {
-        delete map[clientKey];
-        updated = true;
-      }
-    });
-
-    if (updated) {
-      saveIgnoreMap(map);
-    }
-  };
-
   const applyIgnoreMap = () => {
-    const map = loadIgnoreMap();
+    const map = contactedCache;
     const now = new Date();
 
     document.querySelectorAll("tr[data-client-row]").forEach((row) => {
@@ -351,7 +316,11 @@
   };
 
   const notesEndpoint = "{{ request.url_for('client_drop_off_notes') }}";
+  const contactedEndpoint = "{{ request.url_for('client_drop_off_contacted') }}";
+  const contactedSaveEndpoint = "{{ request.url_for('client_drop_off_contacted_save') }}";
+  const contactedDeleteEndpoint = "{{ request.url_for('client_drop_off_contacted_delete') }}";
   let notesCache = {};
+  let contactedCache = {};
 
   const loadNotesMap = async () => {
     try {
@@ -383,12 +352,58 @@
     }
   };
 
+  const loadContactedMap = async () => {
+    try {
+      const response = await fetch(contactedEndpoint);
+      if (!response.ok) {
+        return {};
+      }
+      const payload = await response.json();
+      contactedCache = payload.contacted || {};
+      return contactedCache;
+    } catch (error) {
+      return {};
+    }
+  };
+
+  const saveContactedClient = async (clientName, ignoreUntil) => {
+    try {
+      const response = await fetch(contactedSaveEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ client: clientName, ignore_until: ignoreUntil }),
+      });
+      if (!response.ok) {
+        return null;
+      }
+      return response.json();
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const deleteContactedClient = async (clientName) => {
+    try {
+      const response = await fetch(contactedDeleteEndpoint, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ client: clientName }),
+      });
+      if (!response.ok) {
+        return null;
+      }
+      return response.json();
+    } catch (error) {
+      return null;
+    }
+  };
+
   const renderIgnoredList = () => {
     if (!ignoredSection || !ignoredBody) {
       return;
     }
 
-    const ignoreMap = loadIgnoreMap();
+    const ignoreMap = contactedCache;
     const notesMap = notesCache;
     const ignoredEntries = Object.entries(ignoreMap);
     const now = new Date();
@@ -532,11 +547,11 @@
       if (!clientName || !weeks) {
         return;
       }
-      const map = loadIgnoreMap();
-      const clientKey = normalizeClientKey(clientName);
       const ignoreUntil = addWeeks(weeks);
-      map[clientKey] = formatDate(ignoreUntil);
-      saveIgnoreMap(map);
+      const payload = await saveContactedClient(clientName, formatDate(ignoreUntil));
+      if (payload && payload.contacted) {
+        contactedCache = payload.contacted;
+      }
       closeAllMenus();
       applyIgnoreMap();
       return;
@@ -577,13 +592,14 @@
     const restoreButton = event.target.closest(".client-restore-btn");
     if (restoreButton) {
       const clientName = restoreButton.dataset.client || "";
-      const clientKey = normalizeClientKey(clientName);
-      const map = loadIgnoreMap();
-      if (map[clientKey]) {
-        delete map[clientKey];
-        saveIgnoreMap(map);
-        applyIgnoreMap();
+      if (!clientName) {
+        return;
       }
+      const payload = await deleteContactedClient(clientName);
+      if (payload && payload.contacted) {
+        contactedCache = payload.contacted;
+      }
+      applyIgnoreMap();
       return;
     }
 
@@ -602,8 +618,12 @@
     renderIgnoredList();
   };
 
-  hideExpiredIgnoreEntries();
-  applyIgnoreMap();
+  const initializeContacted = async () => {
+    await loadContactedMap();
+    applyIgnoreMap();
+  };
+
+  initializeContacted();
   initializeNotes();
   applyManagerFilter();
 
