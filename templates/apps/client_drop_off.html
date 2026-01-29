@@ -384,6 +384,11 @@
     }
   };
 
+  const refreshContacted = async () => {
+    await loadContactedMap();
+    applyIgnoreMap();
+  };
+
   const saveContactedClient = async (clientName, ignoreUntil) => {
     try {
       const response = await fetch(contactedSaveEndpoint, {
@@ -648,21 +653,18 @@
     await refreshNotes();
   };
 
-  const initializeContacted = async () => {
-    await loadContactedMap();
-    applyIgnoreMap();
-  };
-
   const initializePage = async () => {
-    await initializeContacted();
+    await refreshContacted();
     await initializeNotes();
     applyManagerFilter();
 
     setInterval(refreshNotes, 30000);
+    setInterval(refreshContacted, 30000);
 
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") {
         refreshNotes();
+        refreshContacted();
       }
     });
 
