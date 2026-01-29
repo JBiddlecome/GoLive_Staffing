@@ -76,7 +76,7 @@ async def client_drop_off(request: Request) -> HTMLResponse:
 
 @router.get("/notes", response_class=JSONResponse, name="client_drop_off_notes")
 async def client_drop_off_notes() -> JSONResponse:
-    return JSONResponse({"notes": _load_notes_map()})
+    return JSONResponse({"notes": _load_notes_map()}, headers={"Cache-Control": "no-store"})
 
 
 @router.post("/notes", response_class=JSONResponse, name="client_drop_off_notes_save")
@@ -110,7 +110,9 @@ async def client_drop_off_notes_save(payload: ClientNotePayload) -> JSONResponse
 
 @router.get("/contacted", response_class=JSONResponse, name="client_drop_off_contacted")
 async def client_drop_off_contacted() -> JSONResponse:
-    return JSONResponse({"contacted": _load_contacted_map()})
+    return JSONResponse(
+        {"contacted": _load_contacted_map()}, headers={"Cache-Control": "no-store"}
+    )
 
 
 @router.post(
