@@ -354,7 +354,7 @@
 
   const loadContactedMap = async () => {
     try {
-      const response = await fetch(contactedEndpoint);
+      const response = await fetch(contactedEndpoint, { cache: "no-store" });
       if (!response.ok) {
         return {};
       }
@@ -635,21 +635,26 @@
     applyIgnoreMap();
   };
 
-  initializeContacted();
-  initializeNotes();
-  setInterval(refreshNotes, 30000);
+  const initializePage = async () => {
+    await initializeContacted();
+    await initializeNotes();
+    applyManagerFilter();
 
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") {
-      refreshNotes();
-    }
-  });
-  applyManagerFilter();
+    setInterval(refreshNotes, 30000);
 
-  if (managerFilter) {
-    managerFilter.addEventListener("change", () => {
-      applyManagerFilter();
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        refreshNotes();
+      }
     });
-  }
+
+    if (managerFilter) {
+      managerFilter.addEventListener("change", () => {
+        applyManagerFilter();
+      });
+    }
+  };
+
+  initializePage();
 </script>
 {% endblock %}
