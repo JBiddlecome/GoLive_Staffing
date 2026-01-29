@@ -324,7 +324,7 @@
 
   const loadNotesMap = async () => {
     try {
-      const response = await fetch(notesEndpoint);
+      const response = await fetch(notesEndpoint, { cache: "no-store" });
       if (!response.ok) {
         return {};
       }
@@ -612,10 +612,22 @@
     }
   });
 
-  const initializeNotes = async () => {
+  const refreshNotes = async () => {
     await loadNotesMap();
     seedNotesIcons();
     renderIgnoredList();
+
+    const openPanel = document.querySelector(".client-notes-panel:not(.hidden)");
+    if (openPanel) {
+      const openClient = openPanel.dataset.clientNotes || "";
+      if (openClient) {
+        renderNotesList(openClient);
+      }
+    }
+  };
+
+  const initializeNotes = async () => {
+    await refreshNotes();
   };
 
   const initializeContacted = async () => {
@@ -625,6 +637,13 @@
 
   initializeContacted();
   initializeNotes();
+  setInterval(refreshNotes, 30000);
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      refreshNotes();
+    }
+  });
   applyManagerFilter();
 
   if (managerFilter) {
