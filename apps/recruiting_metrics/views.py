@@ -44,6 +44,8 @@ ACTIVE_STAFF_COL_CANDIDATES = {
     "date": ["Date"],
     "active_staff": ["Active Staff"],
     "percent_working": ["Percentage of Active Staff Working", "Percent Working"],
+    "ad_clicks": ["Ad Clicks"],
+    "clickboarding_applicants": ["Clickboarding Applicants"],
 }
 
 templates = Jinja2Templates(directory="templates")
@@ -179,6 +181,8 @@ def _load_active_staff_trends() -> Tuple[Dict[str, List[Dict[str, object]]], str
     date_col = _resolve_column(df, ACTIVE_STAFF_COL_CANDIDATES["date"])
     active_col = _resolve_column(df, ACTIVE_STAFF_COL_CANDIDATES["active_staff"])
     percent_col = _resolve_column(df, ACTIVE_STAFF_COL_CANDIDATES["percent_working"])
+    ad_clicks_col = _resolve_column(df, ACTIVE_STAFF_COL_CANDIDATES["ad_clicks"])
+    clickboarding_col = _resolve_column(df, ACTIVE_STAFF_COL_CANDIDATES["clickboarding_applicants"])
 
     if not date_col or not active_col or not percent_col:
         return (
@@ -187,7 +191,8 @@ def _load_active_staff_trends() -> Tuple[Dict[str, List[Dict[str, object]]], str
             "Active staff sheet is missing one or more required columns (Date, Active Staff, Percentage of Active Staff Working).",
         )
 
-    df = df[[date_col, active_col, percent_col]].copy()
+    base_columns = [date_col, active_col, percent_col, ad_clicks_col, clickboarding_col]
+    df = df[[column for column in base_columns if column]].copy()
     df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
     df = df.dropna(subset=[date_col])
     if df.empty:
@@ -195,6 +200,10 @@ def _load_active_staff_trends() -> Tuple[Dict[str, List[Dict[str, object]]], str
 
     df[active_col] = pd.to_numeric(df[active_col], errors="coerce")
     df[percent_col] = pd.to_numeric(df[percent_col], errors="coerce")
+    if ad_clicks_col:
+        df[ad_clicks_col] = pd.to_numeric(df[ad_clicks_col], errors="coerce")
+    if clickboarding_col:
+        df[clickboarding_col] = pd.to_numeric(df[clickboarding_col], errors="coerce")
 
     last_date = df[date_col].max()
     if pd.isna(last_date):
@@ -219,8 +228,33 @@ def _load_active_staff_trends() -> Tuple[Dict[str, List[Dict[str, object]]], str
         for _, row in df.dropna(subset=[percent_col]).iterrows()
     ]
 
+    recruiting_start = (last_date - pd.Timedelta(weeks=5)).normalize()
+    recruiting_df = df[(df[date_col] >= recruiting_start) & (df[date_col] <= last_date)]
+
+    ad_clicks = (
+        [
+            {"date": row[date_col].strftime("%Y-%m-%d"), "value": float(row[ad_clicks_col])}
+            for _, row in recruiting_df.dropna(subset=[ad_clicks_col]).iterrows()
+        ]
+        if ad_clicks_col
+        else []
+    )
+    clickboarding_applicants = (
+        [
+            {"date": row[date_col].strftime("%Y-%m-%d"), "value": float(row[clickboarding_col])}
+            for _, row in recruiting_df.dropna(subset=[clickboarding_col]).iterrows()
+        ]
+        if clickboarding_col
+        else []
+    )
+
     return (
-        {"activeCounts": active_counts, "percentWorking": percent_working},
+        {
+            "activeCounts": active_counts,
+            "percentWorking": percent_working,
+            "adClicks": ad_clicks,
+            "clickboardingApplicants": clickboarding_applicants,
+        },
         source_name,
         None,
     )
@@ -622,6 +656,10 @@ def _build_context(
         "rm_active_staff_error": active_staff_error,
         "rm_has_active_staff": bool(metrics.get("activeStaff", {}).get("activeCounts")),
         "rm_has_active_staff_percent": bool(metrics.get("activeStaff", {}).get("percentWorking")),
+        "rm_has_ad_clicks": bool(metrics.get("activeStaff", {}).get("adClicks")),
+        "rm_has_clickboarding_applicants": bool(
+            metrics.get("activeStaff", {}).get("clickboardingApplicants")
+        ),
     }
 
     return context
