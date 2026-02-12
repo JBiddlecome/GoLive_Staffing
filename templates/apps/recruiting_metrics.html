@@ -236,6 +236,26 @@
           {% endif %}
         </div>
       </div>
+
+      <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h3 class="text-base font-semibold text-gray-900">Recruiting Funnel Activity (Last 6 Weeks)</h3>
+        <p class="mt-1 text-xs text-gray-500">
+          Weekly counts from the Active Staff tab for ad clicks and Clickboarding applicants.
+        </p>
+        {% if rm_active_staff_error %}
+          <div class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {{ rm_active_staff_error }}
+          </div>
+        {% elif rm_has_ad_clicks or rm_has_clickboarding_applicants %}
+          <div class="mt-4 h-80">
+            <canvas id="rm-recruiting-funnel"></canvas>
+          </div>
+        {% else %}
+          <div class="mt-4 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-10 text-center text-sm text-gray-500">
+            No recruiting funnel data available for the last six weeks.
+          </div>
+        {% endif %}
+      </div>
     </div>
   {% endif %}
 </section>
@@ -582,6 +602,47 @@
         });
       }
 
+      function buildMultiLineChart(id, labels, datasets, yTitle) {
+        const ctx = document.getElementById(id);
+        if (!ctx) return;
+        destroyChart(id);
+
+        chartInstances[id] = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets,
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              mode: 'nearest',
+              intersect: false,
+            },
+            scales: {
+              x: {
+                type: 'category',
+                title: {
+                  display: true,
+                  text: 'Week ending (Sunday)',
+                },
+              },
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: yTitle,
+                },
+                ticks: {
+                  precision: 0,
+                },
+              },
+            },
+          },
+        });
+      }
+
       function buildStackedChart(id, counties, positions, matrix) {
         const ctx = document.getElementById(id);
         if (!ctx) return;
@@ -710,6 +771,43 @@
           metrics.positions.counties,
           metrics.positions.positions,
           metrics.positions.matrix,
+        );
+      }
+
+      if (metrics.activeStaff?.adClicks?.length || metrics.activeStaff?.clickboardingApplicants?.length) {
+        const adClicks = metrics.activeStaff.adClicks || [];
+        const applicants = metrics.activeStaff.clickboardingApplicants || [];
+        const dateSet = new Set([
+          ...adClicks.map((item) => item.date),
+          ...applicants.map((item) => item.date),
+        ]);
+        const labels = Array.from(dateSet).sort((a, b) => a.localeCompare(b));
+        const lookup = (items) => {
+          const map = new Map(items.map((item) => [item.date, item.value ?? 0]));
+          return labels.map((label) => map.get(label) ?? 0);
+        };
+        buildMultiLineChart(
+          'rm-recruiting-funnel',
+          labels,
+          [
+            {
+              label: 'Ad Clicks',
+              data: lookup(adClicks),
+              borderColor: '#2563eb',
+              backgroundColor: '#2563eb',
+              tension: 0.2,
+              pointRadius: 4,
+            },
+            {
+              label: 'Clickboarding Applicants',
+              data: lookup(applicants),
+              borderColor: '#16a34a',
+              backgroundColor: '#16a34a',
+              tension: 0.2,
+              pointRadius: 4,
+            },
+          ],
+          'Count',
         );
       }
 
