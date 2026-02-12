@@ -123,15 +123,13 @@ METRICS_EXPORT_PATH = DATA_DIR / "sales_staffing_metrics.csv"
 DASHBOARD_DATA_PATH = DATA_DIR / "sales_staffing_dashboard.json"
 DEALS_DATA_PATH = DATA_DIR / "sales_staffing_deals.json"
 PAYROLL_CANDIDATE_FILENAMES = [
-    "payroll.xlsx",
-    "Payroll.xlsx",
     "payroll 2.csv",
     "Payroll 2.csv",
 ]
 
 
 def _resolve_payroll_source_path() -> Path:
-    """Return the path to the payroll file (Excel or CSV), tolerating filename casing."""
+    """Return the path to the payroll CSV, tolerating filename casing."""
 
     search_roots = [DATA_DIR, BASE_DIR]
 
@@ -142,16 +140,11 @@ def _resolve_payroll_source_path() -> Path:
                 return candidate
 
     for root in search_roots:
-        # Check for Excel files first
-        for candidate in root.glob("*.xlsx"):
-            if candidate.name.lower() == "payroll.xlsx":
-                return candidate
-        # Then check for CSV files
         for candidate in root.glob("*.csv"):
             if candidate.name.lower() == "payroll 2.csv":
                 return candidate
 
-    # Fall back to the preferred filename so callers get a sensible path
+    # Fall back to the preferred lowercase filename so callers get a sensible path
     return DATA_DIR / PAYROLL_CANDIDATE_FILENAMES[0]
 
 
@@ -306,7 +299,7 @@ def _write_deal_tables(
     return cleaned
 
 
-def _load_payroll_data(path: Path | None = None) -> pd.DataFrame:
+def _load_payroll_csv(path: Path | None = None) -> pd.DataFrame:
     if path is None:
         path = _resolve_payroll_source_path()
 
@@ -314,10 +307,7 @@ def _load_payroll_data(path: Path | None = None) -> pd.DataFrame:
         return pd.DataFrame()
 
     try:
-        if path.suffix.lower() == ".xlsx":
-            df = pd.read_excel(path, engine="openpyxl")
-        else:
-            df = pd.read_csv(path, encoding="utf-8-sig", low_memory=False)
+        df = pd.read_csv(path, encoding="utf-8-sig", low_memory=False)
     except Exception:  # pragma: no cover - defensive
         return pd.DataFrame()
 
@@ -1163,7 +1153,7 @@ def _build_chart_payload() -> Dict[str, Any]:
         if isinstance(week, dict) and week.get("weekEnding")
     ]
 
-    payroll_df = _load_payroll_data()
+    payroll_df = _load_payroll_csv()
     top_clients_by_week = _calculate_top_clients_by_week(payroll_df, weeks)
     new_clients_by_week = _calculate_new_clients_by_week(payroll_df, weeks)
     industry_totals_by_week = _calculate_industry_totals_by_week(payroll_df, weeks)
