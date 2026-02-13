@@ -44,6 +44,11 @@ async def work_in_progress(request: Request):
     return templates.TemplateResponse("work_in_progress.html", {"request": request})
 
 
+@app.get("/reportable", response_class=HTMLResponse)
+async def reportable(request: Request):
+    return templates.TemplateResponse("apps/reportable.html", {"request": request})
+
+
 @app.get("/contacts", response_class=HTMLResponse)
 async def contacts(request: Request):
     contacts_data = load_contacts()
