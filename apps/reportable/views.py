@@ -25,6 +25,12 @@ class ExportPayload(BaseModel):
     limit: int = Field(default=50000, ge=1, le=100000)
 
 
+class TimesheetVerificationPayload(BaseModel):
+    start_date: str = Field(..., min_length=1)
+    end_date: str = Field(..., min_length=1)
+    limit: int = Field(default=50000, ge=1, le=100000)
+
+
 def _db_url_from_env() -> URL:
     host = os.getenv("DB_HOST")
     name = os.getenv("DB_NAME")
@@ -169,6 +175,83 @@ async def reportable_export(payload: ExportPayload) -> StreamingResponse:
 
     filename = f"{payload.table}_report.xlsx"
     headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers,
+    )
+
+
+@router.post("/export/timesheet-verification")
+async def reportable_timesheet_verification_export(
+    payload: TimesheetVerificationPayload,
+) -> StreamingResponse:
+    engine = _engine()
+    try:
+        sql = text(
+            """
+            SELECT
+                DAYNAME(e.date) AS day,
+                e.date AS date,
+                COALESCE(wc.wc_code, CONCAT(emp.state, '8810')) AS wc,
+                c.name AS client,
+                c.markup AS markup,
+                v.name AS venue,
+                e.title AS event,
+                p.description AS position,
+                sp.code AS code,
+                emp.payroll_id AS emp_number,
+                emp.first_name AS first_name,
+                emp.last_name AS last_name,
+                mw.description AS work_state,
+                se.bill_rate AS reg_rate_c,
+                se.pay_rate AS pay_rate,
+                t.client_tips AS tip_c,
+                t.client_parking AS park_c,
+                t.client_travel AS travel_c,
+                t.client_service_charge AS service_c,
+                t.client_no_break_penalty AS meal_c,
+                se.bill_rate AS bill_rate,
+                t.client_worked AS status,
+                se.cancel_reason AS cancellation_reason,
+                t.start_verified AS verification_start,
+                t.end_verified AS verification_end,
+                t.start_verified_at AS verification_start_at,
+                t.end_verified_at AS verification_end_at
+            FROM shift_employee se
+            JOIN event e ON se.event_id = e.event_id
+            JOIN client c ON e.client_id = c.client_id
+            LEFT JOIN wc_code wc ON c.wc_id = wc.wc_id
+            LEFT JOIN venue v ON e.venue_id = v.venue_id
+            JOIN employee emp ON se.employee_id = emp.employee_id
+            LEFT JOIN min_wage_rate mw ON emp.min_wage_id = mw.min_wage_id
+            LEFT JOIN timesheet t ON se.shift_employee_id = t.shift_employee_id
+            LEFT JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
+            LEFT JOIN position p ON sp.position_id = p.position_id
+            WHERE e.date >= :start_date
+              AND e.date <= :end_date
+            ORDER BY e.date, c.name, emp.last_name, emp.first_name
+            LIMIT :limit
+            """
+        )
+
+        params = {
+            "start_date": payload.start_date,
+            "end_date": payload.end_date,
+            "limit": payload.limit,
+        }
+
+        with engine.begin() as connection:
+            dataframe = pd.read_sql(sql, connection, params=params)
+    finally:
+        engine.dispose()
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        dataframe.to_excel(writer, index=False, sheet_name="timesheet_verification")
+    output.seek(0)
+
+    headers = {"Content-Disposition": 'attachment; filename="timesheet_verification_report.xlsx"'}
     return StreamingResponse(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
