@@ -195,7 +195,7 @@ async def reportable_timesheet_verification_export(
                 e.date AS date,
                 COALESCE(wc.wc_code, CONCAT(emp.state, '8810')) AS wc,
                 c.name AS client,
-                c.markup AS markup,
+                NULL AS markup,
                 v.name AS venue,
                 e.title AS event,
                 p.description AS position,
