@@ -219,7 +219,11 @@ async def reportable_timesheet_verification_export(
                 t.client_service_charge AS service_c,
                 t.mealpenalty AS meal_c,
                 se.bill_rate AS bill_rate,
-                t.client_worked AS status,
+                CASE
+                    WHEN t.noshow = 1 THEN 'NOSHOW'
+                    WHEN t.workedless = 1 THEN 'SENTHOME'
+                    ELSE 'WORKED'
+                END AS status,
                 se.cancel_reason AS cancellation_reason,
                 t.start_verified AS verification_start,
                 t.end_verified AS verification_end,
