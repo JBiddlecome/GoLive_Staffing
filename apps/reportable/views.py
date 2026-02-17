@@ -188,8 +188,15 @@ async def reportable_timesheet_verification_export(
 ) -> StreamingResponse:
     engine = _engine()
     try:
+        inspector = inspect(engine)
+        client_columns = {column["name"] for column in inspector.get_columns("client")}
+        shift_position_columns = {column["name"] for column in inspector.get_columns("shift_position")}
+
+        markup_select = "c.markup AS markup" if "markup" in client_columns else "NULL AS markup"
+        code_select = "sp.code AS code" if "code" in shift_position_columns else "NULL AS code"
+
         sql = text(
-            """
+            f"""
             SELECT
                 DAYNAME(e.date) AS day,
                 e.date AS date,
@@ -199,7 +206,7 @@ async def reportable_timesheet_verification_export(
                 v.name AS venue,
                 e.title AS event,
                 p.description AS position,
-                sp.code AS code,
+                {code_select},
                 emp.payroll_id AS emp_number,
                 emp.first_name AS first_name,
                 emp.last_name AS last_name,
