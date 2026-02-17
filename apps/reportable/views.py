@@ -31,6 +31,28 @@ class TimesheetVerificationPayload(BaseModel):
     limit: int = Field(default=50000, ge=1, le=100000)
 
 
+TIMESHEET_VERIFICATION_EXCLUDED_COLUMNS = {
+    "Day",
+    "WC",
+    "Reg H (c)",
+    "OT H (c)",
+    "Non-Worked Hours (c)",
+    "Cert Cost (e)",
+    "OT R",
+    "DT R",
+    "Non-Worked Bill (c)",
+    "Total Bill",
+    "Verification (c)",
+    "Verification (e)",
+    "day",
+    "wc",
+    "verification_start",
+    "verification_end",
+    "verification_start_at",
+    "verification_end_at",
+}
+
+
 def _db_url_from_env() -> URL:
     host = os.getenv("DB_HOST")
     name = os.getenv("DB_NAME")
@@ -238,7 +260,11 @@ async def reportable_timesheet_verification_export(
                 t.client_service_charge AS service_c,
                 t.mealpenalty AS meal_c,
                 se.bill_rate AS bill_rate,
-                t.client_worked AS status,
+                CASE
+                    WHEN t.noshow = 1 THEN 'NOSHOW'
+                    WHEN t.workedless = 1 THEN 'SENTHOME'
+                    ELSE 'WORKED'
+                END AS status,
                 se.cancel_reason AS cancellation_reason,
                 t.start_verified AS verification_start,
                 t.end_verified AS verification_end,
@@ -271,26 +297,16 @@ async def reportable_timesheet_verification_export(
         }
 
         with engine.begin() as connection:
-            df = pd.read_sql(sql, connection, params=params)
-            
-            # Additional fetch for shift durations if needed for min billing calculation
-            # We need shift start/end to calculate scheduled duration
-            # Since we can't easily join efficiently without row duplication risks or complex logic,
-            # we'll fetch shifts separately or do a quick join.
-            # Let's try to get shift duration in the main query if possible.
-            # Shift table has start/end.
-            # Let's simple fetch shift info
-            if not df.empty:
-                shift_ids = df['shift_id'].unique().tolist()
-                if shift_ids:
-                    shift_query = text("SELECT shift_id, start, end FROM shift WHERE shift_id IN :shift_ids")
-                    shift_df = pd.read_sql(shift_query, connection, params={"shift_ids": tuple(shift_ids)})
-                    shift_df['start'] = pd.to_datetime(shift_df['start'])
-                    shift_df['end'] = pd.to_datetime(shift_df['end'])
-                    shift_df['scheduled_seconds'] = (shift_df['end'] - shift_df['start']).dt.total_seconds()
-                    
-                    df = df.merge(shift_df[['shift_id', 'scheduled_seconds']], on='shift_id', how='left')
-            
+            dataframe = pd.read_sql(sql, connection, params=params)
+
+        dataframe = dataframe.drop(
+            columns=[
+                column
+                for column in dataframe.columns
+                if column in TIMESHEET_VERIFICATION_EXCLUDED_COLUMNS
+            ],
+            errors="ignore",
+        )
     finally:
         engine.dispose()
 
