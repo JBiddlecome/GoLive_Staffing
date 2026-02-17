@@ -31,6 +31,28 @@ class TimesheetVerificationPayload(BaseModel):
     limit: int = Field(default=50000, ge=1, le=100000)
 
 
+TIMESHEET_VERIFICATION_EXCLUDED_COLUMNS = {
+    "Day",
+    "WC",
+    "Reg H (c)",
+    "OT H (c)",
+    "Non-Worked Hours (c)",
+    "Cert Cost (e)",
+    "OT R",
+    "DT R",
+    "Non-Worked Bill (c)",
+    "Total Bill",
+    "Verification (c)",
+    "Verification (e)",
+    "day",
+    "wc",
+    "verification_start",
+    "verification_end",
+    "verification_start_at",
+    "verification_end_at",
+}
+
+
 def _db_url_from_env() -> URL:
     host = os.getenv("DB_HOST")
     name = os.getenv("DB_NAME")
@@ -254,6 +276,15 @@ async def reportable_timesheet_verification_export(
 
         with engine.begin() as connection:
             dataframe = pd.read_sql(sql, connection, params=params)
+
+        dataframe = dataframe.drop(
+            columns=[
+                column
+                for column in dataframe.columns
+                if column in TIMESHEET_VERIFICATION_EXCLUDED_COLUMNS
+            ],
+            errors="ignore",
+        )
     finally:
         engine.dispose()
 
