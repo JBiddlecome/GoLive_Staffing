@@ -3,58 +3,190 @@
 {% block content %}
 <section class="max-w-5xl mx-auto space-y-8">
   <header class="space-y-3">
-    <p class="text-sm uppercase tracking-[0.25em] text-emerald-600 font-semibold">Work in Progress</p>
+    <p class="text-sm uppercase tracking-[0.25em] text-emerald-600 font-semibold">Report Builder (MVP)</p>
     <h1 class="brand-serif text-3xl md:text-4xl font-semibold text-gray-900">Reportable</h1>
     <p class="text-gray-600 max-w-3xl">
-      Reportable is a planned Python data exporter for MariaDB on Render. It will connect to AWS RDS,
-      let users choose tables/columns and date ranges, and generate downloadable Excel files.
+      Reportable now connects to MariaDB through environment variables and supports table discovery,
+      column discovery, and one-click Excel export for selected fields.
     </p>
   </header>
 
   <section class="rounded-2xl border border-emerald-100 bg-white p-6 shadow-sm space-y-4">
-    <h2 class="text-xl font-semibold text-gray-900">Planned capabilities</h2>
+    <h2 class="text-xl font-semibold text-gray-900">Connection details</h2>
     <ul class="list-disc space-y-2 pl-5 text-gray-700">
-      <li>Secure MariaDB connection (hosted in AWS RDS) using environment variables for secrets.</li>
-      <li>Automatic schema discovery with <code class="text-sm">SHOW TABLES;</code> and <code class="text-sm">DESCRIBE &lt;table_name&gt;;</code>.</li>
-      <li>Date range filtering against timestamp fields such as <code class="text-sm">created_at</code>.</li>
-      <li>Column-level selection and export to <code class="text-sm">.xlsx</code> via pandas + openpyxl.</li>
-      <li>Schema reference grounded in <code class="text-sm">database_schema.md</code> from this repository.</li>
+      <li>Uses <code class="text-sm">DB_HOST</code>, <code class="text-sm">DB_PORT</code>, <code class="text-sm">DB_NAME</code>, <code class="text-sm">DB_USER</code>, and <code class="text-sm">DB_PASSWORD</code>.</li>
+      <li>Discovers schema with backend metadata endpoints.</li>
+      <li>Exports selected records to <code class="text-sm">.xlsx</code> using pandas + openpyxl.</li>
+      <li>Optional date filtering is supported when you choose a date/time column.</li>
     </ul>
   </section>
 
   <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-5">
-    <h2 class="text-xl font-semibold text-gray-900">Early UI draft</h2>
-    <p class="text-sm text-gray-600">This draft previews the inputs planned for the first release.</p>
+    <h2 class="text-xl font-semibold text-gray-900">Build a report</h2>
+    <p id="statusMessage" class="text-sm text-gray-600">Loading tables…</p>
 
-    <div class="grid gap-4 md:grid-cols-2">
-      <div>
-        <label class="block text-sm font-medium mb-1 text-gray-700">Table</label>
-        <select disabled class="w-full rounded-lg border border-gray-300 bg-gray-100 p-2 text-gray-500">
-          <option>Select a table</option>
-        </select>
+    <form id="reportForm" class="space-y-4">
+      <div class="grid gap-4 md:grid-cols-2">
+        <div>
+          <label class="block text-sm font-medium mb-1 text-gray-700">Table</label>
+          <select id="tableSelect" class="w-full rounded-lg border border-gray-300 bg-white p-2 text-gray-700"></select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1 text-gray-700">Columns</label>
+          <select id="columnSelect" multiple class="w-full rounded-lg border border-gray-300 bg-white p-2 text-gray-700 h-[160px]"></select>
+          <p class="mt-1 text-xs text-gray-500">Tip: hold Ctrl/Cmd to select multiple columns.</p>
+        </div>
       </div>
-      <div>
-        <label class="block text-sm font-medium mb-1 text-gray-700">Columns</label>
-        <select multiple disabled class="w-full rounded-lg border border-gray-300 bg-gray-100 p-2 text-gray-500 h-[88px]">
-          <option>Available after table selection</option>
-        </select>
-      </div>
-    </div>
 
-    <div class="grid gap-4 md:grid-cols-2">
-      <div>
-        <label class="block text-sm font-medium mb-1 text-gray-700">Start date</label>
-        <input disabled type="date" class="w-full rounded-lg border border-gray-300 bg-gray-100 p-2 text-gray-500" />
+      <div class="grid gap-4 md:grid-cols-3">
+        <div>
+          <label class="block text-sm font-medium mb-1 text-gray-700">Date column (optional)</label>
+          <select id="dateColumnSelect" class="w-full rounded-lg border border-gray-300 bg-white p-2 text-gray-700"></select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1 text-gray-700">Start date</label>
+          <input id="startDate" type="date" class="w-full rounded-lg border border-gray-300 bg-white p-2 text-gray-700" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1 text-gray-700">End date</label>
+          <input id="endDate" type="date" class="w-full rounded-lg border border-gray-300 bg-white p-2 text-gray-700" />
+        </div>
       </div>
-      <div>
-        <label class="block text-sm font-medium mb-1 text-gray-700">End date</label>
-        <input disabled type="date" class="w-full rounded-lg border border-gray-300 bg-gray-100 p-2 text-gray-500" />
-      </div>
-    </div>
 
-    <button disabled class="inline-flex items-center rounded-lg bg-gray-300 px-4 py-2 text-sm font-semibold text-gray-600">
-      Export to Excel (.xlsx)
-    </button>
+      <button id="exportButton" type="submit" class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">
+        Export to Excel (.xlsx)
+      </button>
+    </form>
   </section>
 </section>
+
+<script>
+  const statusEl = document.getElementById('statusMessage');
+  const tableSelect = document.getElementById('tableSelect');
+  const columnSelect = document.getElementById('columnSelect');
+  const dateColumnSelect = document.getElementById('dateColumnSelect');
+  const form = document.getElementById('reportForm');
+
+  function setStatus(message, isError = false) {
+    statusEl.textContent = message;
+    statusEl.className = isError ? 'text-sm text-red-600' : 'text-sm text-gray-600';
+  }
+
+  function selectedValues(selectEl) {
+    return Array.from(selectEl.selectedOptions).map(option => option.value);
+  }
+
+  async function loadTables() {
+    const response = await fetch('/reportable/schema/tables');
+    if (!response.ok) throw new Error(`Unable to load tables (${response.status})`);
+
+    const payload = await response.json();
+    tableSelect.innerHTML = '';
+
+    if (!payload.tables || payload.tables.length === 0) {
+      throw new Error('No tables were returned from the database.');
+    }
+
+    payload.tables.forEach(tableName => {
+      const option = document.createElement('option');
+      option.value = tableName;
+      option.textContent = tableName;
+      tableSelect.appendChild(option);
+    });
+  }
+
+  async function loadColumns(tableName) {
+    const response = await fetch(`/reportable/schema/columns?table=${encodeURIComponent(tableName)}`);
+    if (!response.ok) throw new Error(`Unable to load columns (${response.status})`);
+
+    const payload = await response.json();
+    columnSelect.innerHTML = '';
+    dateColumnSelect.innerHTML = '';
+
+    const noDateOption = document.createElement('option');
+    noDateOption.value = '';
+    noDateOption.textContent = 'No date filter';
+    dateColumnSelect.appendChild(noDateOption);
+
+    payload.columns.forEach(column => {
+      const columnOption = document.createElement('option');
+      columnOption.value = column.name;
+      columnOption.textContent = `${column.name} (${column.type})`;
+      columnSelect.appendChild(columnOption);
+
+      const dateType = String(column.type || '').toLowerCase();
+      if (dateType.includes('date') || dateType.includes('time')) {
+        const dateOption = document.createElement('option');
+        dateOption.value = column.name;
+        dateOption.textContent = `${column.name} (${column.type})`;
+        dateColumnSelect.appendChild(dateOption);
+      }
+    });
+
+    Array.from(columnSelect.options).slice(0, 8).forEach(option => { option.selected = true; });
+  }
+
+  tableSelect.addEventListener('change', async () => {
+    try {
+      await loadColumns(tableSelect.value);
+      setStatus(`Loaded columns for table: ${tableSelect.value}`);
+    } catch (error) {
+      setStatus(error.message, true);
+    }
+  });
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const selectedColumns = selectedValues(columnSelect);
+
+    if (selectedColumns.length === 0) {
+      setStatus('Select at least one column before exporting.', true);
+      return;
+    }
+
+    const payload = {
+      table: tableSelect.value,
+      columns: selectedColumns,
+      date_column: dateColumnSelect.value || null,
+      start_date: document.getElementById('startDate').value || null,
+      end_date: document.getElementById('endDate').value || null,
+      limit: 50000,
+    };
+
+    try {
+      setStatus('Generating report…');
+      const response = await fetch('/reportable/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.detail || `Export failed (${response.status})`);
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = downloadUrl;
+      anchor.download = `${tableSelect.value}_report.xlsx`;
+      anchor.click();
+      URL.revokeObjectURL(downloadUrl);
+      setStatus('Report ready. Download started.');
+    } catch (error) {
+      setStatus(error.message, true);
+    }
+  });
+
+  (async function init() {
+    try {
+      await loadTables();
+      await loadColumns(tableSelect.value);
+      setStatus(`Connected. Loaded ${tableSelect.options.length} tables.`);
+    } catch (error) {
+      setStatus(error.message, true);
+    }
+  })();
+</script>
 {% endblock %}
