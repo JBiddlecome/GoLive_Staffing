@@ -212,7 +212,6 @@ async def reportable_timesheet_verification_export(
                 emp.last_name AS last_name,
                 mw.description AS work_state,
                 se.bill_rate AS reg_rate_c,
-                se.pay_rate AS pay_rate,
                 t.client_tips AS tip_c,
                 t.client_parking AS park_c,
                 t.client_travel AS travel_c,
