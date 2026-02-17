@@ -20,6 +20,7 @@ from apps.text_blast_filter.views import router as text_blast_router
 from apps.ucla_hours_tool.views import router as ucla_hours_router
 from apps.golive_profile_creator import router as golive_profile_creator_router
 from apps.reports import router as reports_router
+from apps.reportable import router as reportable_router
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 
 app = FastAPI(title="GoLive Staffing — Tools")
@@ -42,11 +43,6 @@ async def external_ai_tools(request: Request):
 @app.get("/work-in-progress", response_class=HTMLResponse)
 async def work_in_progress(request: Request):
     return templates.TemplateResponse("work_in_progress.html", {"request": request})
-
-
-@app.get("/reportable", response_class=HTMLResponse)
-async def reportable(request: Request):
-    return templates.TemplateResponse("apps/reportable.html", {"request": request})
 
 
 @app.get("/contacts", response_class=HTMLResponse)
@@ -152,6 +148,7 @@ app.include_router(
     tags=["GoLive Profile Creator"],
 )
 app.include_router(reports_router, prefix="/reports", tags=["Reports"])
+app.include_router(reportable_router, prefix="/reportable", tags=["Reportable"])
 app.include_router(
     payroll_recruiting_reports_router,
     prefix="/payroll-recruiting-reports",
