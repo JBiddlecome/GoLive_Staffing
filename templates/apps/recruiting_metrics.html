@@ -258,6 +258,20 @@
       </div>
     </div>
   {% endif %}
+
+  <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+    <h2 class="text-base font-semibold text-gray-900">Current Event Locations</h2>
+    <p class="mt-1 text-xs text-gray-500">Map view of active event locations.</p>
+    <div class="mt-4 overflow-hidden rounded-lg border border-gray-200">
+      <iframe
+        title="Current Event Locations"
+        src="https://www.google.com/maps/d/u/0/embed?mid=1A6HIIjP-VAsggoPj6Z0ZoqjA2ekN2zA"
+        class="h-[420px] w-full"
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"
+      ></iframe>
+    </div>
+  </div>
 </section>
 {% endblock %}
 
