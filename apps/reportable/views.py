@@ -55,7 +55,9 @@ TIMESHEET_VERIFICATION_EXCLUDED_COLUMNS = {
 
 def _db_url_from_env() -> URL:
     host = os.getenv("DB_HOST")
-    name = os.getenv("DB_NAME")
+    # The Reportable app should always target the production staffing schema unless
+    # explicitly overridden for controlled environments.
+    name = os.getenv("REPORTABLE_DB_NAME", "cstaffing_live")
     user = os.getenv("DB_USER")
     password = os.getenv("DB_PASSWORD")
     port = int(os.getenv("DB_PORT", "3306"))
@@ -64,7 +66,6 @@ def _db_url_from_env() -> URL:
         env_name
         for env_name, value in (
             ("DB_HOST", host),
-            ("DB_NAME", name),
             ("DB_USER", user),
             ("DB_PASSWORD", password),
         )
