@@ -245,6 +245,7 @@ async def reportable_employee_list_export(
                 e.referred_by AS `Referred By`,
                 e.sex AS `Gender`,
                 c.name AS `County of Residence`,
+                DATE_FORMAT(e.created_on, '%m/%d/%Y %H:%i:%s') AS `Created On`,
                 
                 -- Aggregates
                 lang_agg.languages AS `Language`,
@@ -297,6 +298,7 @@ async def reportable_employee_list_export(
                 GROUP BY employee_id
             ) sh_agg ON e.employee_id = sh_agg.employee_id
 
+            WHERE (e.payroll_id IS NULL OR e.payroll_id NOT LIKE '%DELETED%')
             ORDER BY e.first_name
             LIMIT :limit
             """
@@ -435,7 +437,8 @@ async def reportable_employee_list_export(
         'Backgrounds',
         'Concierge Date',
         'Gender',
-        'SS Number'
+        'SS Number',
+        'Created On'
     ]
     
     # Ensure all columns exist
