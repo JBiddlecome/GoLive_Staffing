@@ -321,7 +321,7 @@ async def reportable_timesheet_verification_export(
                 'Reg H (c)', 'OT H (c)', 'DT H (c)', 'Reg Rate (c)', 'Non-Worked Hours (c)',
                 'Cert Cost (e)', 'OT R', 'DT R', 'Tip (c)', 'Park (c)', 'Travel (c)',
                 'Service (c)', 'Meal (c)', 'Non-Worked Bill (c)', 'Reimb Pay (e)',
-                'Bill Rate', 'Total Bill', 'Status', 'Cancellation Reason',
+                'Pay Rate', 'Bill Rate', 'Total Bill', 'Status', 'Cancellation Reason',
                 'Verification (c)', 'Verification (e)'
             ]).to_excel(writer, index=False, sheet_name="timesheet_verification")
         output.seek(0)
@@ -464,6 +464,7 @@ async def reportable_timesheet_verification_export(
     final_df['Non-Worked Bill (c)'] = 0.0
     final_df['Reimb Pay (e)'] = 0.0
     
+    final_df['Pay Rate'] = df['pay_rate']
     final_df['Bill Rate'] = df['bill_rate']
     final_df['Total Bill'] = df['Total Bill'].round(2)
     
