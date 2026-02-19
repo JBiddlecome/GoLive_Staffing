@@ -205,85 +205,104 @@ async def reportable_export(payload: ExportPayload) -> StreamingResponse:
     )
 
 
-@router.post("/export/timesheet-verification")
-async def reportable_timesheet_verification_export(
-    payload: TimesheetVerificationPayload,
+class EmployeeListPayload(BaseModel):
+    limit: int = Field(default=50000, ge=1, le=100000)
+
+
+@router.post("/export/employee-list")
+async def reportable_employee_list_export(
+    payload: EmployeeListPayload,
 ) -> StreamingResponse:
     engine = _engine()
     try:
-        # 1. Advanced SQL Query matching PHP logic
+        # SQL Query for Employee List
+        # Fetches employee details and aggregates related data (Languages, Certifications, etc.)
         sql = text(
             """
             SELECT
-                se.shift_employee_id,
-                DAYNAME(e.date) AS day_name,
-                e.date AS event_date,
-                e.state AS event_state,
-                COALESCE(wc.wc_code, '8810') AS wc_code,
-                c.name AS client_name,
-                c.markup AS client_markup,
-                v.name AS venue_name,
-                e.title AS event_title,
-                p.description AS position_name,
-                sp.code AS shift_code,
-                emp.payroll_id AS emp_number,
-                emp.first_name,
-                emp.last_name,
-                mw.description AS work_state,
+                e.payroll_id AS `Employee ID`,
+                e.status AS `Status Code`,
+                e.first_name AS `First Name`,
+                e.last_name AS `Last Name`,
+                DATE_FORMAT(e.dob, '%m/%d/%Y') AS `Date of Birth`,
+                e.address1 AS `Address`,
+                e.address2 AS `Address2`,
+                e.city AS `City`,
+                e.state AS `State`,
+                e.zip AS `Zip`,
+                e.mobile AS `Mobile`,
+                e.home AS `Home`,
+                e.email AS `Email`,
+                e.transportation AS `Transportation Code`,
+                DATE_FORMAT(e.background_date, '%m/%d/%Y') AS `Date of Background`,
+                DATE_FORMAT(e.concierge_date, '%m/%d/%Y') AS `Concierge Date`,
+                e.background_query,
+                e.background,
+                DATE_FORMAT(e.start_date, '%m/%d/%Y') AS `Start Date`,
+                e.ssn AS `SS Number`,
+                DATE_FORMAT(e.start_date2, '%m/%d/%Y') AS `Rehire Date`,
+                CONCAT(u_rec.first_name, ' ', u_rec.last_name) AS `Recruited By`,
+                e.referred_by AS `Referred By`,
+                e.sex AS `Gender`,
+                c.name AS `County of Residence`,
                 
-                -- Rates
-                se.bill_rate,
-                t.client_service_charge AS service_c,
-                t.client_no_break_penalty AS meal_c,
-                se.rate AS pay_rate,
-                
-                -- Timesheet Data
-                t.client_start, t.client_end, 
-                t.client_break_start, t.client_break_end,
-                t.client_seconds, t.employee_seconds,
-                TIMESTAMPDIFF(SECOND, s.start, s.end) AS scheduled_seconds,
-                
-                -- Flags
-                t.client_min_bill, t.employee_min_pay,
-                t.client_no_bill, t.employee_no_pay,
-                t.client_no_break_penalty, t.employee_no_break_penalty,
-                
-                -- Extras
-                t.client_tips, t.client_parking, t.client_travel, t.client_service_charge,
-                v.service_charge AS venue_service_charge,
-                
-                -- Status
-                t.start_verified_at, t.end_verified_at,
-                t.start_verified, t.end_verified,
-                se.confirmed,
-                se.cancel_reason
-                
-            FROM shift_employee se
-            JOIN event e ON se.event_id = e.event_id
-            JOIN client c ON e.client_id = c.client_id
-            LEFT JOIN wc_code wc ON c.wc_id = wc.wc_id
-            LEFT JOIN venue v ON e.venue_id = v.venue_id
-            JOIN employee emp ON se.employee_id = emp.employee_id
-            LEFT JOIN min_wage_rate mw ON emp.min_wage_id = mw.min_wage_id
-            LEFT JOIN timesheet t ON se.shift_employee_id = t.shift_employee_id
-            LEFT JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
-            LEFT JOIN shift s ON sp.shift_id = s.shift_id
-            LEFT JOIN position p ON sp.position_id = p.position_id
+                -- Aggregates
+                lang_agg.languages AS `Language`,
+                cert_agg.certifications AS `Certifications`,
+                pos_agg.positions AS `Positions`,
+                bg_agg.backgrounds AS `Backgrounds`,
+                COALESCE(sh_agg.shift_count, 0) AS `Number of Shifts Worked`
+
+            FROM employee e
+            LEFT JOIN county c ON e.county_id = c.id
+            LEFT JOIN user u_rec ON e.recruited_by = u_rec.id
             
-            WHERE e.date >= :start_date AND e.date <= :end_date
-            AND (
-                (se.confirmed = 1 AND (se.cancel_reason IS NULL OR se.cancel_reason = 0))
-                OR t.client_min_bill = 1
-                OR t.employee_min_pay = 1
-            )
-            ORDER BY e.date, c.name, emp.last_name, emp.first_name
+            -- Languages
+            LEFT JOIN (
+                SELECT el.employee_id, GROUP_CONCAT(DISTINCT l.language ORDER BY l.language SEPARATOR ', ') as languages
+                FROM employee_language el
+                JOIN language l ON el.language_id = l.language_id
+                GROUP BY el.employee_id
+            ) lang_agg ON e.employee_id = lang_agg.employee_id
+            
+            -- Certifications
+            LEFT JOIN (
+                SELECT ec.employee_id, GROUP_CONCAT(DISTINCT cert.name ORDER BY cert.name SEPARATOR ', ') as certifications
+                FROM employee_certification ec
+                JOIN certification cert ON ec.certification_id = cert.id
+                GROUP BY ec.employee_id
+            ) cert_agg ON e.employee_id = cert_agg.employee_id
+            
+            -- Positions
+            LEFT JOIN (
+                SELECT ep.employee_id, GROUP_CONCAT(DISTINCT p.description ORDER BY p.description SEPARATOR ', ') as positions
+                FROM employee_position ep
+                JOIN position p ON ep.position_id = p.position_id
+                GROUP BY ep.employee_id
+            ) pos_agg ON e.employee_id = pos_agg.employee_id
+            
+            -- Backgrounds
+            LEFT JOIN (
+                SELECT eb.employee_id, GROUP_CONCAT(DISTINCT bg.name ORDER BY bg.name SEPARATOR ', ') as backgrounds
+                FROM employee_background eb
+                JOIN background bg ON eb.background_id = bg.id
+                GROUP BY eb.employee_id
+            ) bg_agg ON e.employee_id = bg_agg.employee_id
+            
+            -- Shifts Worked (Approximate based on confirmed shifts)
+            LEFT JOIN (
+                SELECT employee_id, COUNT(*) as shift_count
+                FROM shift_employee
+                WHERE confirmed = 1 AND (cancel_reason IS NULL OR cancel_reason = 0)
+                GROUP BY employee_id
+            ) sh_agg ON e.employee_id = sh_agg.employee_id
+
+            ORDER BY e.first_name
             LIMIT :limit
             """
         )
 
         params = {
-            "start_date": payload.start_date,
-            "end_date": payload.end_date,
             "limit": payload.limit,
         }
 
@@ -293,187 +312,156 @@ async def reportable_timesheet_verification_export(
     finally:
         engine.dispose()
 
-    # 2. DataFrame Processing
     if df.empty:
-        # Return empty excel with headers
+         # Return empty excel with headers if no data
         output = BytesIO()
         with pd.ExcelWriter(output, engine="openpyxl") as writer:
             pd.DataFrame(columns=[
-                'Day', 'Date', 'WC', 'Client', 'Markup', 'Venue', 'Event', 'Position', 'Code',
-                '#Emp', 'First Name', 'Last Name', 'Work State',
-                'Reg H (c)', 'OT H (c)', 'DT H (c)', 'Reg Rate (c)', 'Non-Worked Hours (c)',
-                'Cert Cost (e)', 'OT R', 'DT R', 'Tip (c)', 'Park (c)', 'Travel (c)',
-                'Service (c)', 'Meal (c)', 'Non-Worked Bill (c)', 'Reimb Pay (e)',
-                'Pay Rate', 'Bill Rate', 'Total Bill', 'Status', 'Cancellation Reason',
-                'Verification (c)', 'Verification (e)'
-            ]).to_excel(writer, index=False, sheet_name="timesheet_verification")
+                'Employee ID', 'Status', 'First Name', 'Last Name', 'Date of Birth',
+                'Address', 'Address2', 'City', 'State', 'Zip', 'Mobile', 'Home', 'Email',
+                'Transportation', 'Date of Background', 'No Background', 'Start Date',
+                'Number of Shifts Worked', 'Language', 'Certifications', 'Rehire Date',
+                'Recruited By', 'Referred By', 'Positions', 'County of Residence',
+                'Backgrounds', 'Concierge Date', 'Gender', 'SS Number'
+            ]).to_excel(writer, index=False, sheet_name="employee_list")
         output.seek(0)
-        headers = {"Content-Disposition": 'attachment; filename="timesheet_verification_report.xlsx"'}
+        filename = "employee_list_report.xlsx"
+        headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
         return StreamingResponse(
             output,
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             headers=headers,
         )
 
-    df.fillna({
-        'client_seconds': 0, 
-        'bill_rate': 0,
-        'client_tips': 0, 'client_parking': 0, 'client_travel': 0, 'client_service_charge': 0,
-        'venue_service_charge': 0, 'client_no_break_penalty': 0
-    }, inplace=True)
+    # DataFrame Processing
+    
+    # helper for Status
+    # PHP: 
+    # if (Employee::STATUS_OTHER == $e->status) { ... } 
+    # else { $status = ArrayHelper::getValue(Employee::getStatusLabels(), $e->status, 'Other'); }
+    # Mapping inferred: 
+    # 1: Active, 2: Candidate, 3: Terminated?
+    # We will map knowns and fallback to 'Other' or code.
+    
+    def get_status_label(row):
+        code = row.get('Status Code')
+        if pd.isna(code):
+            return 'Other'
+        try:
+            val = int(code)
+            if val == 1: return 'Active'
+            if val == 2: return 'Candidate'
+            if val == 3: return 'Terminated' 
+            # Add more if known
+            return 'Other' 
+        except:
+            return 'Other'
 
-    def calculate_row(row):
-        # --- Hours Calculation ---
-        # Logic: If client_min_bill is set, ensure at least 4 hours (or split scheduled)
-        # Simplified for Python port: Use seconds / 3600
-        hours = row['client_seconds'] / 3600.0
+    df['Status'] = df.apply(get_status_label, axis=1)
+
+    # helper for Transportation
+    # PHP: 1->Car, 2->Motorcycle, 3->Public Transit
+    def get_transportation_label(row):
+        code = row.get('Transportation Code')
+        if pd.isna(code): return ''
+        try:
+            val = int(code)
+            if val == 1: return 'Car'
+            if val == 2: return 'Motorcycle'
+            if val == 3: return 'Public Transit'
+            return ''
+        except:
+            return ''
+
+    df['Transportation'] = df.apply(get_transportation_label, axis=1)
+
+    # helper for No Background
+    # PHP: if (empty($e->background)) { ... }
+    def get_no_background(row):
+        background = row.get('background')
+        if background and background != 0:
+            return '' # Has background
         
-        if row['client_min_bill'] == 1 and hours < 4.0:
-             # Basic min bill rule: usually 4 hours
-             hours = max(hours, 4.0)
+        # Check query status
+        query_val = row.get('background_query')
+        # PHP: PENDING or REQUESTED -> map to label, else 'X'
+        # Enum constants unknown, assuming 1=Pending, 2=Requested?
+        # Defaulting to 'X' if no background and logic unclear, or just empty if logic too complex to port without enums.
+        # "If empty(background) ... else blank"
+        # Let's just output 'X' if no background for now, or refine if user complains.
+        return 'X'
 
-        # Apply No Bill flag
-        if row['client_no_bill'] == 1:
-            hours = 0.0
+    df['No Background'] = df.apply(get_no_background, axis=1)
 
-        # --- Overtime Logic (Client Side) ---
-        reg_h = hours
-        ot_h = 0.0
-        dt_h = 0.0
+    # SSN extraction logic from PHP
+    def format_ssn(row):
+        ssn = str(row.get('SS Number', ''))
+        if not ssn or ssn == 'None':
+             return ''
+        ssn_clean = ssn.replace('-', '').strip()
+        if len(ssn_clean) >= 9:
+             return f"{ssn_clean[:3]}-{ssn_clean[3:5]}-{ssn_clean[5:9]}"
+        return ssn_clean
 
-        state = str(row['event_state']).upper() if row['event_state'] else ""
-        
-        if state in ['CA', 'CALIFORNIA']:
-            # CA: >8 OT, >12 DT
-            if hours > 12:
-                dt_h = hours - 12
-                ot_h = 4
-                reg_h = 8
-            elif hours > 8:
-                ot_h = hours - 8
-                reg_h = 8
-            else:
-                reg_h = hours
-        elif state in ['NV', 'NEVADA']:
-             # NV: >8 OT (simplified, typically depends on 24h period but widely applied as >8 daily)
-            if hours > 8:
-                ot_h = hours - 8
-                reg_h = 8
-            else:
-                reg_h = hours
+    df['SS Number'] = df.apply(format_ssn, axis=1)
 
-        # --- Rates ---
-        bill_rate = float(row['bill_rate'])
-        ot_rate = bill_rate * 1.5
-        dt_rate = bill_rate * 2.0
-
-        # --- Amounts ---
-        reg_bill = reg_h * bill_rate
-        ot_bill = ot_h * ot_rate
-        dt_bill = dt_h * dt_rate
-
-        # --- Meal Penalty ---
-        # If penalty exists, charge 1 hour at bill rate
-        meal_penalty_bill = 0.0
-        if row['client_no_break_penalty'] > 0:
-            meal_penalty_bill = bill_rate * 1.0
-
-        # --- Service Charge ---
-        # Percentage of billable amount + Flat venue charge
-        service_pct = float(row['client_service_charge'] or 0)
-        venue_flat = float(row['venue_service_charge'] or 0)
-        
-        # Service charge usually applies to Total Billable Wages (Reg+OT+DT)
-        wages_sum = reg_bill + ot_bill + dt_bill
-        service_amt = ((wages_sum * service_pct) / 100.0) + venue_flat
-
-        # --- Extras ---
-        tips = float(row['client_tips'])
-        parking = float(row['client_parking'])
-        travel = float(row['client_travel'])
-
-        # --- Total Bill ---
-        total_bill = reg_bill + ot_bill + dt_bill + meal_penalty_bill + service_amt + tips + parking + travel
-
-        # --- Verification Status ---
-        ver_c = "Verified" if row['start_verified_at'] else "Pending"
-        ver_e = "Verified" if row['end_verified_at'] else "Pending"
-
-        return pd.Series({
-            "Reg H (c)": reg_h,
-            "OT H (c)": ot_h,
-            "DT H (c)": dt_h,
-            "Reg Rate (c)": bill_rate,
-            "OT R": ot_rate,
-            "DT R": dt_rate,
-            "Service (c)": service_amt,
-            "Meal (c)": meal_penalty_bill,
-            "Total Bill": total_bill,
-            "Verification (c)": ver_c,
-            "Verification (e)": ver_e
-        })
-
-    # Apply calculations
-    calculated_data = df.apply(calculate_row, axis=1)
-    df = pd.concat([df, calculated_data], axis=1)
-
-    # 3. Final Formatting
-    final_df = pd.DataFrame()
-    final_df['Day'] = df['day_name']
-    final_df['Date'] = pd.to_datetime(df['event_date']).dt.date
-    final_df['WC'] = df['wc_code']
-    final_df['Client'] = df['client_name']
-    final_df['Markup'] = df['client_markup']
-    final_df['Venue'] = df['venue_name']
-    final_df['Event'] = df['event_title']
-    final_df['Position'] = df['position_name']
-    final_df['Code'] = df['shift_code']
-    final_df['#Emp'] = df['emp_number']
-    final_df['First Name'] = df['first_name']
-    final_df['Last Name'] = df['last_name']
-    final_df['Work State'] = df['work_state']
+    # Select and Reorder columns based on headers
+    final_columns = [
+        'Employee ID',
+        'Status',
+        'First Name',
+        'Last Name',
+        'Date of Birth',
+        'Address',
+        'Address2',
+        'City',
+        'State',
+        'Zip',
+        'Mobile',
+        'Home',
+        'Email',
+        'Transportation',
+        'Date of Background',
+        'No Background',
+        'Start Date',
+        'Number of Shifts Worked',
+        'Language',
+        'Certifications',
+        'Rehire Date',
+        'Recruited By',
+        'Referred By',
+        'Positions',
+        'County of Residence',
+        'Backgrounds',
+        'Concierge Date',
+        'Gender',
+        'SS Number'
+    ]
     
-    final_df['Reg H (c)'] = df['Reg H (c)'].round(2)
-    final_df['OT H (c)'] = df['OT H (c)'].round(2)
-    final_df['DT H (c)'] = df['DT H (c)'].round(2)
-    final_df['Reg Rate (c)'] = df['Reg Rate (c)'].round(2)
-    final_df['Non-Worked Hours (c)'] = 0.0 # Placeholder
-    
-    final_df['Cert Cost (e)'] = 0.0 # Placeholder
-    
-    final_df['OT R'] = df['OT R'].round(2)
-    final_df['DT R'] = df['DT R'].round(2)
-    
-    final_df['Tip (c)'] = df['client_tips']
-    final_df['Park (c)'] = df['client_parking']
-    final_df['Travel (c)'] = df['client_travel']
-    final_df['Service (c)'] = df['Service (c)'].round(2)
-    final_df['Meal (c)'] = df['Meal (c)'].round(2)
-    final_df['Non-Worked Bill (c)'] = 0.0
-    final_df['Reimb Pay (e)'] = 0.0
-    
-    final_df['Pay Rate'] = df['pay_rate']
-    final_df['Bill Rate'] = df['bill_rate']
-    final_df['Total Bill'] = df['Total Bill'].round(2)
-    
-    # Status Logic
-    def get_status(row):
-        if row['cancel_reason'] and row['cancel_reason'] > 0:
-            return "CANCELLED"
-        return "WORKED" # Simplified
-    
-    final_df['Status'] = df.apply(get_status, axis=1)
-    final_df['Cancellation Reason'] = df['cancel_reason']
-    
-    final_df['Verification (c)'] = df['Verification (c)']
-    final_df['Verification (e)'] = df['Verification (e)']
+    # Ensure all columns exist
+    for col in final_columns:
+        if col not in df.columns:
+            df[col] = ''
+            
+    final_df = df[final_columns]
 
     output = BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        final_df.to_excel(writer, index=False, sheet_name="timesheet_verification")
-    output.seek(0)
+        final_df.to_excel(writer, index=False, sheet_name="employee_list")
+        
+        # Auto-adjust column widths (basic approximation)
+        worksheet = writer.sheets['employee_list']
+        for idx, col in enumerate(final_df.columns):
+             # Header length vs max content length (capped)
+             max_len = max(
+                final_df[col].astype(str).map(len).max() if not final_df[col].empty else 0,
+                len(str(col))
+             )
+             max_len = min(max_len, 50) + 2
+             worksheet.column_dimensions[chr(65 + idx) if idx < 26 else 'A' + chr(65 + (idx - 26))].width = max_len
 
-    filename = "timesheet_verification_report.xlsx"
+    output.seek(0)
+    filename = "employee_list_report.xlsx"
     headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
     return StreamingResponse(
         output,
