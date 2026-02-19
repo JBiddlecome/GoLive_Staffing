@@ -245,6 +245,7 @@ async def reportable_employee_list_export(
                 e.referred_by AS `Referred By`,
                 e.sex AS `Gender`,
                 c.name AS `County of Residence`,
+                sr.reason AS `Status Reason`,
                 
                 -- Aggregates
                 lang_agg.languages AS `Language`,
@@ -256,6 +257,7 @@ async def reportable_employee_list_export(
             FROM employee e
             LEFT JOIN county c ON e.county_id = c.id
             LEFT JOIN user u_rec ON e.recruited_by = u_rec.id
+            LEFT JOIN status_reason sr ON e.status_reason = sr.id
             
             -- Languages
             LEFT JOIN (
@@ -345,17 +347,35 @@ async def reportable_employee_list_export(
     
     def get_status_label(row):
         code = row.get('Status Code')
+        reason_text = row.get('Status Reason')
+        
         if pd.isna(code):
+            if pd.notna(reason_text):
+                 return reason_text
             return 'Other'
+            
         try:
             val = int(code)
             if val == 1: return 'Active'
             if val == 2: return 'Candidate'
-            if val == 3: return 'Terminated' 
-            # Add more if known
+            if val == 3: return 'Hiatus'
+            if val == 4: return 'Inactive'
+            if val == 5: return 'Terminated'
+            if val == 6: return 'Resigned'
+            if val == 10: return 'Inactive (60)'
+            if val == 12: return 'Inactive (180)'
+            
+            # For 'Other' (14) or any unmapped code, try to use the reason text
+            if pd.notna(reason_text) and str(reason_text).strip():
+                return reason_text
+                
+            if val == 14: return 'Other'
+            
             return 'Other' 
         except:
-            return 'Other'
+             if pd.notna(reason_text) and str(reason_text).strip():
+                return reason_text
+             return 'Other'
 
     df['Status'] = df.apply(get_status_label, axis=1)
 
