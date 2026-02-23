@@ -3,7 +3,8 @@ import uuid
 from pathlib import Path
 from typing import Dict, List, Optional
 
-DATA_FILE = Path("data/contacts.json")
+REPO_ROOT = Path(__file__).resolve().parent.parent
+DATA_FILE = REPO_ROOT / "data" / "contacts.json"
 
 DEPARTMENT_HEADERS: Dict[str, str] = {
     "Staffing": "staffingteam@culinarystaffing.com",
@@ -18,6 +19,7 @@ DEPARTMENT_HEADERS: Dict[str, str] = {
 
 def _ensure_data_file() -> None:
     if not DATA_FILE.exists():
+        DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
         DATA_FILE.write_text(json.dumps({"departments": []}, indent=2))
 
 

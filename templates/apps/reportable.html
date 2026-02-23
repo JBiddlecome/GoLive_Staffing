@@ -113,6 +113,36 @@
   const dateColumnSelect = document.getElementById('dateColumnSelect');
   const form = document.getElementById('reportForm');
   const timesheetVerificationForm = document.getElementById('timesheetVerificationForm');
+  const allowedDomain = 'culinarystaffing.com';
+
+  function isAllowedEmail(email) {
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    return normalizedEmail.endsWith(`@${allowedDomain}`) && normalizedEmail.includes('@');
+  }
+
+  function requireAuthorizedEmail() {
+    const sessionKey = 'reportableAuthorizedEmail';
+    const existingEmail = sessionStorage.getItem(sessionKey);
+    if (isAllowedEmail(existingEmail)) {
+      return true;
+    }
+
+    while (true) {
+      const enteredEmail = window.prompt('Enter your email to continue.');
+
+      if (enteredEmail === null) {
+        window.location.href = '/';
+        return false;
+      }
+
+      if (isAllowedEmail(enteredEmail)) {
+        sessionStorage.setItem(sessionKey, enteredEmail.trim().toLowerCase());
+        return true;
+      }
+
+      window.alert(`Access denied. Please use an @${allowedDomain} email address.`);
+    }
+  }
 
   function setStatus(message, isError = false) {
     statusEl.textContent = message;
@@ -305,6 +335,10 @@
     }
   });
   (async function init() {
+    if (!requireAuthorizedEmail()) {
+      return;
+    }
+
     try {
       await loadTables();
       await loadColumns(tableSelect.value);
