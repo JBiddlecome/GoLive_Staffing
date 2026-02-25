@@ -57,7 +57,7 @@ def _db_url_from_env() -> URL:
     host = os.getenv("DB_HOST")
     # The Reportable app should always target the production staffing schema unless
     # explicitly overridden for controlled environments.
-    name = os.getenv("REPORTABLE_DB_NAME", "cstaffing_live")
+    name = os.getenv("REPORTABLE_DB_NAME") or os.getenv("DB_NAME", "cstaffing_live")
     user = os.getenv("DB_USER")
     password = os.getenv("DB_PASSWORD")
     port = int(os.getenv("DB_PORT", "3306"))
