@@ -10,6 +10,7 @@ from apps.concierge.views import router as concierge_router
 from apps.employee_list_filter.views import router as employee_list_router
 from apps.employee_phone_county_audit.views import router as employee_audit_router
 from apps.health_benefits.views import router as health_benefits_router
+from apps.employee_access.views import router as employee_access_router
 from apps.interview_questions.views import router as interview_questions_router
 from apps.payroll_recruiting_reports.views import router as payroll_recruiting_reports_router
 from apps.recruiting_metrics.views import router as recruiting_metrics_router
@@ -120,6 +121,7 @@ async def index_head() -> Response:
 
 # Mount tool routers
 app.include_router(clickboarding_router, prefix="/clickboarding-check", tags=["Clickboarding Check"])
+app.include_router(employee_access_router, prefix="/employee-access", tags=["Employee Access"])
 app.include_router(health_benefits_router, prefix="/health-benefits", tags=["Health Benefits"])
 app.include_router(sales_staffing_router, prefix="/sales-staffing-metrics", tags=["Sales & Staffing Metrics"])
 app.include_router(recruiting_metrics_router, prefix="/recruiting-metrics", tags=["Recruiting Metrics"])
