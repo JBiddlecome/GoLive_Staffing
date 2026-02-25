@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}Employee Access{% endblock %}
+{% block content %}
+<div class="space-y-8">
+  <section class="rounded-3xl border border-emerald-100 bg-white shadow-lg p-6">
+    <h1 class="brand-serif text-3xl font-semibold text-emerald-800">Employee Access</h1>
+    <p class="text-gray-600 mt-2">Track each employee's system, service, and equipment access across departments.</p>
+    {% if notice %}
+      <p class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-800 text-sm">{{ notice }}</p>
+    {% endif %}
+    {% if error %}
+      <p class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm">{{ error }}</p>
+    {% endif %}
+  </section>
+
+  <section class="grid lg:grid-cols-2 gap-6">
+    <form action="/employee-access/employees" method="post" class="rounded-2xl border border-emerald-100 bg-white p-5 space-y-4">
+      <h2 class="text-xl font-semibold">Add Employee</h2>
+      <div>
+        <label class="block text-sm font-medium mb-1">Name</label>
+        <input name="name" required class="w-full rounded-lg border border-gray-300 px-3 py-2" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Title</label>
+        <input name="title" class="w-full rounded-lg border border-gray-300 px-3 py-2" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Department</label>
+        <select name="department" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+          {% for department in departments %}
+            <option value="{{ department }}">{{ department }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button class="rounded-full bg-emerald-600 text-white px-4 py-2 text-sm font-semibold">Add Employee</button>
+    </form>
+
+    <form action="/employee-access/access-items" method="post" class="rounded-2xl border border-emerald-100 bg-white p-5 space-y-4">
+      <h2 class="text-xl font-semibold">Add Access Item</h2>
+      <div>
+        <label class="block text-sm font-medium mb-1">Access Name</label>
+        <input name="name" required class="w-full rounded-lg border border-gray-300 px-3 py-2" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Department</label>
+        <input name="department" required placeholder="Example: Recruiting or All Departments" class="w-full rounded-lg border border-gray-300 px-3 py-2" />
+      </div>
+      <button class="rounded-full bg-emerald-600 text-white px-4 py-2 text-sm font-semibold">Add Access Item</button>
+    </form>
+  </section>
+
+  {% for department, employees in grouped_employees.items() %}
+    <section class="rounded-2xl border border-emerald-100 bg-white shadow-sm p-5 space-y-5">
+      <h2 class="text-2xl font-semibold text-emerald-800">{{ department }}</h2>
+      {% if employees %}
+        {% for employee in employees %}
+          {% set view = employees_view.get(employee.id, {}) %}
+          <article class="rounded-xl border border-gray-200 p-4 space-y-4">
+            <div class="flex flex-wrap justify-between gap-3">
+              <div>
+                <h3 class="text-lg font-semibold">{{ employee.name }}</h3>
+                <p class="text-sm text-gray-600">{{ employee.title or 'No title listed' }}</p>
+              </div>
+              <form action="/employee-access/employees/{{ employee.id }}/terminate" method="post" onsubmit="return confirm('Archive this employee and preserve access history?');">
+                <button class="rounded-full border border-red-200 text-red-700 px-4 py-2 text-sm font-semibold hover:bg-red-50">Terminate</button>
+              </form>
+            </div>
+
+            <div class="overflow-auto border rounded-lg">
+              <table class="min-w-full text-sm">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="text-left px-3 py-2">Access</th>
+                    <th class="text-left px-3 py-2">Department</th>
+                    <th class="text-left px-3 py-2">Granted</th>
+                    <th class="text-left px-3 py-2">Removed</th>
+                    <th class="text-left px-3 py-2">Save</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y">
+                  {% for group_name, rows in [('All Departments', view.get('all', [])), ('Department Specific', view.get('own', [])), ('Other Departments', view.get('other', []))] %}
+                    {% if rows %}
+                      <tr class="bg-emerald-50/50">
+                        <td colspan="5" class="px-3 py-2 font-semibold text-emerald-800">{{ group_name }}</td>
+                      </tr>
+                      {% for item in rows %}
+                        <tr>
+                          <td class="px-3 py-2">{{ item.name }}</td>
+                          <td class="px-3 py-2 text-gray-600">{{ item.department }}</td>
+                          <td class="px-3 py-2">
+                            <input form="form-{{ employee.id }}-{{ item.id }}" type="checkbox" name="granted" {% if item.granted %}checked{% endif %} />
+                          </td>
+                          <td class="px-3 py-2">
+                            <input form="form-{{ employee.id }}-{{ item.id }}" type="checkbox" name="removed" {% if item.removed %}checked{% endif %} />
+                          </td>
+                          <td class="px-3 py-2">
+                            <form id="form-{{ employee.id }}-{{ item.id }}" action="/employee-access/employees/{{ employee.id }}/access" method="post" class="inline">
+                              <input type="hidden" name="access_id" value="{{ item.id }}" />
+                              <button class="rounded-md bg-emerald-600 text-white px-3 py-1">Save</button>
+                            </form>
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    {% endif %}
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <details>
+              <summary class="cursor-pointer text-sm font-semibold text-emerald-700">Access History</summary>
+              <ul class="mt-2 space-y-2 text-sm text-gray-700">
+                {% for event in view.get('history', []) %}
+                  <li class="rounded border border-gray-200 px-3 py-2">
+                    <span class="font-medium">{{ event.when }}</span> — {{ event.action }}
+                    {% if event.access_id %}(Access ID: {{ event.access_id }}){% endif %}
+                  </li>
+                {% else %}
+                  <li class="text-gray-500">No recorded updates yet.</li>
+                {% endfor %}
+              </ul>
+            </details>
+          </article>
+        {% endfor %}
+      {% else %}
+        <p class="text-sm text-gray-500">No active employees in this department.</p>
+      {% endif %}
+    </section>
+  {% endfor %}
+
+  <section class="rounded-2xl border border-emerald-100 bg-white p-5 space-y-4">
+    <h2 class="text-2xl font-semibold text-emerald-800">Manage Access Catalog</h2>
+    <div class="overflow-auto border rounded-lg">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50"><tr><th class="px-3 py-2 text-left">Access</th><th class="px-3 py-2 text-left">Department</th><th class="px-3 py-2 text-left">Action</th></tr></thead>
+        <tbody class="divide-y">
+          {% for item in access_items %}
+            <tr>
+              <td class="px-3 py-2">{{ item.name }}</td>
+              <td class="px-3 py-2 text-gray-600">{{ item.department }}</td>
+              <td class="px-3 py-2">
+                <form action="/employee-access/access-items/{{ item.id }}/remove" method="post" onsubmit="return confirm('Remove this access item from active lists?');">
+                  <button class="rounded-md border border-red-200 text-red-700 px-3 py-1 hover:bg-red-50">Remove</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="rounded-2xl border border-amber-100 bg-amber-50 p-5 space-y-4">
+    <h2 class="text-2xl font-semibold text-amber-900">Archived / Terminated Employees</h2>
+    {% if archived_employees %}
+      <div class="space-y-3">
+        {% for employee in archived_employees %}
+          {% set view = archived_view.get(employee.id, {}) %}
+          <details class="rounded-lg border border-amber-200 bg-white p-4">
+            <summary class="cursor-pointer font-semibold">{{ employee.name }} — {{ employee.department }}</summary>
+            <p class="text-sm text-gray-600 mt-2">Terminated: {{ employee.terminated_at }}</p>
+            <p class="text-sm text-gray-600">Title: {{ employee.title or 'No title listed' }}</p>
+            <p class="mt-3 text-sm font-semibold">Recorded access status:</p>
+            <ul class="text-sm text-gray-700 list-disc pl-5 mt-1">
+              {% for item in view.get('all', []) + view.get('own', []) + view.get('other', []) if item.granted or item.removed %}
+                <li>{{ item.name }} ({{ item.department }}) — granted: {{ 'Yes' if item.granted else 'No' }}, removed: {{ 'Yes' if item.removed else 'No' }}</li>
+              {% else %}
+                <li>No access updates were recorded before termination.</li>
+              {% endfor %}
+            </ul>
+          </details>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-sm text-gray-600">No terminated employees yet.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
