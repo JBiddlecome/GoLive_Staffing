@@ -12,19 +12,14 @@ services:
         value: ":all:"
       # optional: set this only if you want the Streamlit path by default
       # - key: APP_TYPE
-      #   value: "fastapi"
+      #   value: "streamlit"
 
     buildCommand: |
       pip install --upgrade pip setuptools wheel
       pip install -r requirements.txt
       python -m playwright install chromium
 
-    startCommand: |
-      if [ "$APP_TYPE" = "streamlit" ]; then
-        streamlit run app.py --server.port $PORT --server.address 0.0.0.0
-      else
-        uvicorn app:app --host 0.0.0.0 --port $PORT
-      fi
+    startCommand: ./scripts/render_start.sh
 
     autoDeploy: true
     healthCheckPath: /healthz

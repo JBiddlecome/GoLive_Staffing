@@ -41,3 +41,26 @@ uvicorn app:app --reload
 
 # Playwright browsers (required for GoLive Profile Creator automation)
 python -m playwright install chromium
+```
+
+## Render private RDS tunnel (Reportable)
+
+For private RDS connectivity from Render, the app starts an SSH tunnel through a bastion before launching Gunicorn.
+
+Required environment variables on Render:
+
+- `DB_HOST=127.0.0.1`
+- `DB_PORT=3307` (or the same value as `LOCAL_TUNNEL_PORT`)
+- `DB_NAME=cstaffing` (if used by other tools)
+- `DB_USER=...`
+- `DB_PASSWORD=...`
+- `BASTION_HOST=98.80.180.202`
+- `BASTION_USER=ec2-user`
+- `RDS_HOST=golive-production-230802.coq6m1rznxjt.us-east-1.rds.amazonaws.com`
+- `LOCAL_TUNNEL_PORT=3307`
+
+The startup script is `scripts/render_start.sh` and uses `/etc/secrets/golive-bastion-key.pem` by default (override with `BASTION_KEY_PATH`).
+
+Optional override for Gunicorn module:
+
+- `GUNICORN_APP_MODULE=app:app`

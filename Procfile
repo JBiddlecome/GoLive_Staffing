@@ -1,1 +1,1 @@
-web: gunicorn app:app
+web: ./scripts/render_start.sh
