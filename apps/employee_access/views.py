@@ -399,12 +399,27 @@ def _build_employee_access_view(employee: dict[str, Any], access_items: list[dic
     for dept_name in sorted(other_departments.keys(), key=lambda value: value.lower()):
         ordered_other.extend(other_departments[dept_name])
 
+    all_departments = _sort_access_rows_by_granted(all_departments)
+    own_department = _sort_access_rows_by_granted(own_department)
+    ordered_other = _sort_access_rows_by_granted(ordered_other)
+
     return {
         "all": all_departments,
         "own": own_department,
         "other": ordered_other,
         "history": list(reversed(employee.get("history", [])))[:30],
     }
+
+
+def _sort_access_rows_by_granted(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return sorted(
+        rows,
+        key=lambda row: (
+            not row.get("granted", False),
+            row.get("department", "").lower(),
+            row.get("name", "").lower(),
+        ),
+    )
 
 
 def _redirect(notice: str = "", error: str = ""):

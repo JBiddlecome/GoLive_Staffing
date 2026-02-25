@@ -156,9 +156,14 @@
     </section>
   {% endfor %}
 
-  <section class="rounded-2xl border border-emerald-100 bg-white p-5 space-y-4">
-    <h2 class="text-2xl font-semibold text-emerald-800">Manage Access Catalog</h2>
-    <div class="overflow-auto border rounded-lg">
+  <section class="rounded-2xl border border-emerald-100 bg-white p-5 space-y-4" data-catalog-card>
+    <button type="button" class="w-full text-left" data-catalog-toggle aria-expanded="false">
+      <div class="flex flex-wrap justify-between gap-3 items-center">
+        <h2 class="text-2xl font-semibold text-emerald-800">Manage Access Catalog</h2>
+        <span class="rounded-full border border-emerald-300 px-3 py-1 text-xs font-semibold text-emerald-700" data-catalog-label>Expand</span>
+      </div>
+    </button>
+    <div class="hidden overflow-auto border rounded-lg" data-catalog-content>
       <table class="min-w-full text-sm">
         <thead class="bg-gray-50"><tr><th class="px-3 py-2 text-left">Access</th><th class="px-3 py-2 text-left">Department</th><th class="px-3 py-2 text-left">Action</th></tr></thead>
         <tbody class="divide-y">
@@ -212,6 +217,19 @@
       const card = toggle.closest('[data-employee-card]');
       const content = card.querySelector('[data-collapsible-content]');
       const label = card.querySelector('[data-collapse-label]');
+      const isHidden = content.classList.contains('hidden');
+      content.classList.toggle('hidden', !isHidden);
+      toggle.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+      label.textContent = isHidden ? 'Collapse' : 'Expand';
+    });
+  });
+
+
+  document.querySelectorAll('[data-catalog-toggle]').forEach((toggle) => {
+    toggle.addEventListener('click', () => {
+      const card = toggle.closest('[data-catalog-card]');
+      const content = card.querySelector('[data-catalog-content]');
+      const label = card.querySelector('[data-catalog-label]');
       const isHidden = content.classList.contains('hidden');
       content.classList.toggle('hidden', !isHidden);
       toggle.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
