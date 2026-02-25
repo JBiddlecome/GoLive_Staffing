@@ -8,7 +8,7 @@ from typing import Any, Dict, List
 from uuid import uuid4
 
 from fastapi import APIRouter, Form, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 router = APIRouter()
@@ -149,6 +149,7 @@ async def employee_access_page(request: Request):
         grouped_employees.setdefault(employee["department"], []).append(employee)
 
     visible_access_items = [item for item in data["access_items"] if item.get("active", True)]
+    access_departments = _available_access_departments(data)
 
     employees_view = {}
     for employee in active:
@@ -172,6 +173,7 @@ async def employee_access_page(request: Request):
             "employees_view": employees_view,
             "archived_view": archived_view,
             "access_items": visible_access_items,
+            "access_departments": access_departments,
             "notice": request.query_params.get("notice", ""),
             "error": request.query_params.get("error", ""),
         },
@@ -216,9 +218,9 @@ async def update_employee_access(
     data = _load_data()
     employee = _find_employee(data, employee_id)
     if employee is None:
-        return _redirect(error="Employee was not found.")
+        return JSONResponse({"ok": False, "error": "Employee was not found."}, status_code=404)
     if employee.get("status") == "terminated":
-        return _redirect(error="Cannot update access for terminated employees.")
+        return JSONResponse({"ok": False, "error": "Cannot update access for terminated employees."}, status_code=400)
 
     _ensure_employee_access_maps(data)
 
@@ -252,7 +254,49 @@ async def update_employee_access(
         )
 
     _save_data(data)
-    return _redirect(notice="Access updated.")
+    return JSONResponse({"ok": True})
+
+
+@router.post("/employees/{employee_id}/profile")
+async def update_employee_profile(
+    employee_id: str,
+    title: str = Form(""),
+    department: str = Form(...),
+):
+    data = _load_data()
+    employee = _find_employee(data, employee_id)
+    if employee is None:
+        return JSONResponse({"ok": False, "error": "Employee was not found."}, status_code=404)
+    if employee.get("status") == "terminated":
+        return JSONResponse({"ok": False, "error": "Cannot update terminated employees."}, status_code=400)
+
+    previous_title = employee.get("title", "")
+    previous_department = employee.get("department", "")
+
+    cleaned_title = re.sub(r"\s+", " ", title).strip()
+    normalized_department = _normalize_department(department)
+    employee["title"] = cleaned_title
+    employee["department"] = normalized_department
+    employee["updated_at"] = _now_iso()
+
+    if previous_title != cleaned_title:
+        _append_history(
+            employee,
+            None,
+            "title_updated",
+            {"from": previous_title, "to": cleaned_title},
+        )
+
+    if previous_department != normalized_department:
+        _append_history(
+            employee,
+            None,
+            "department_updated",
+            {"from": previous_department, "to": normalized_department},
+        )
+
+    _save_data(data)
+    return JSONResponse({"ok": True})
 
 
 @router.post("/employees/{employee_id}/terminate")
@@ -279,7 +323,7 @@ async def add_access_item(name: str = Form(...), department: str = Form(...)):
     if not cleaned_name:
         return _redirect(error="Access name is required.")
 
-    department_name = re.sub(r"\s+", " ", department).strip() or "All Departments"
+    department_name = _normalize_access_department(department)
     existing = next(
         (
             item
@@ -378,6 +422,25 @@ def _normalize_department(department: str) -> str:
     if cleaned in DEPARTMENTS:
         return cleaned
     return cleaned or "Admin"
+
+
+def _normalize_access_department(department: str) -> str:
+    cleaned = re.sub(r"\s+", " ", department).strip()
+    if cleaned == "All Departments":
+        return cleaned
+    return _normalize_department(cleaned)
+
+
+def _available_access_departments(data: dict[str, Any]) -> list[str]:
+    from_data = {
+        re.sub(r"\s+", " ", item.get("department", "")).strip()
+        for item in data.get("access_items", [])
+        if item.get("department")
+    }
+    all_departments = set(DEPARTMENTS)
+    all_departments.update(from_data)
+    all_departments.add("All Departments")
+    return sorted(all_departments, key=lambda value: (value != "All Departments", value.lower()))
 
 
 def _find_employee(data: dict[str, Any], employee_id: str):
