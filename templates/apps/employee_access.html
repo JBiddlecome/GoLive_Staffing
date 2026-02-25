@@ -43,7 +43,11 @@
       </div>
       <div>
         <label class="block text-sm font-medium mb-1">Department</label>
-        <input name="department" required placeholder="Example: Recruiting or All Departments" class="w-full rounded-lg border border-gray-300 px-3 py-2" />
+        <select name="department" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+          {% for department in access_departments %}
+            <option value="{{ department }}">{{ department }}</option>
+          {% endfor %}
+        </select>
       </div>
       <button class="rounded-full bg-emerald-600 text-white px-4 py-2 text-sm font-semibold">Add Access Item</button>
     </form>
@@ -55,57 +59,80 @@
       {% if employees %}
         {% for employee in employees %}
           {% set view = employees_view.get(employee.id, {}) %}
-          <article class="rounded-xl border border-gray-200 p-4 space-y-4">
-            <div class="flex flex-wrap justify-between gap-3">
-              <div>
-                <h3 class="text-lg font-semibold">{{ employee.name }}</h3>
-                <p class="text-sm text-gray-600">{{ employee.title or 'No title listed' }}</p>
+          <article class="rounded-xl border border-gray-200 p-4 space-y-4" data-employee-card>
+            <button type="button" class="w-full text-left" data-collapse-toggle aria-expanded="false">
+              <div class="flex flex-wrap justify-between gap-3">
+                <div>
+                  <h3 class="text-lg font-semibold">{{ employee.name }}</h3>
+                  <p class="text-sm text-gray-600">{{ employee.title or 'No title listed' }} · {{ employee.department }}</p>
+                </div>
+                <span class="rounded-full border border-emerald-300 px-3 py-1 text-xs font-semibold text-emerald-700" data-collapse-label>Expand</span>
               </div>
-              <form action="/employee-access/employees/{{ employee.id }}/terminate" method="post" onsubmit="return confirm('Archive this employee and preserve access history?');">
-                <button class="rounded-full border border-red-200 text-red-700 px-4 py-2 text-sm font-semibold hover:bg-red-50">Terminate</button>
-              </form>
-            </div>
+            </button>
 
-            <div class="overflow-auto border rounded-lg">
-              <table class="min-w-full text-sm">
-                <thead class="bg-gray-50">
-                  <tr>
-                    <th class="text-left px-3 py-2">Access</th>
-                    <th class="text-left px-3 py-2">Department</th>
-                    <th class="text-left px-3 py-2">Granted</th>
-                    <th class="text-left px-3 py-2">Removed</th>
-                    <th class="text-left px-3 py-2">Save</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y">
-                  {% for group_name, rows in [('All Departments', view.get('all', [])), ('Department Specific', view.get('own', [])), ('Other Departments', view.get('other', []))] %}
-                    {% if rows %}
-                      <tr class="bg-emerald-50/50">
-                        <td colspan="5" class="px-3 py-2 font-semibold text-emerald-800">{{ group_name }}</td>
-                      </tr>
-                      {% for item in rows %}
-                        <tr>
-                          <td class="px-3 py-2">{{ item.name }}</td>
-                          <td class="px-3 py-2 text-gray-600">{{ item.department }}</td>
-                          <td class="px-3 py-2">
-                            <input form="form-{{ employee.id }}-{{ item.id }}" type="checkbox" name="granted" {% if item.granted %}checked{% endif %} />
-                          </td>
-                          <td class="px-3 py-2">
-                            <input form="form-{{ employee.id }}-{{ item.id }}" type="checkbox" name="removed" {% if item.removed %}checked{% endif %} />
-                          </td>
-                          <td class="px-3 py-2">
-                            <form id="form-{{ employee.id }}-{{ item.id }}" action="/employee-access/employees/{{ employee.id }}/access" method="post" class="inline">
-                              <input type="hidden" name="access_id" value="{{ item.id }}" />
-                              <button class="rounded-md bg-emerald-600 text-white px-3 py-1">Save</button>
-                            </form>
-                          </td>
+            <div class="hidden space-y-4" data-collapsible-content>
+              <div class="flex flex-wrap gap-3 items-end">
+                <div class="flex-1 min-w-[220px]">
+                  <label class="block text-sm font-medium mb-1">Title</label>
+                  <input
+                    name="title"
+                    value="{{ employee.title }}"
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2"
+                    data-profile-field
+                    data-employee-id="{{ employee.id }}"
+                  />
+                </div>
+                <div class="min-w-[220px]">
+                  <label class="block text-sm font-medium mb-1">Department</label>
+                  <select
+                    name="department"
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2"
+                    data-profile-field
+                    data-employee-id="{{ employee.id }}"
+                  >
+                    {% for option in departments %}
+                      <option value="{{ option }}" {% if option == employee.department %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <form action="/employee-access/employees/{{ employee.id }}/terminate" method="post" onsubmit="return confirm('Archive this employee and preserve access history?');">
+                  <button class="rounded-full border border-red-200 text-red-700 px-4 py-2 text-sm font-semibold hover:bg-red-50">Terminate</button>
+                </form>
+              </div>
+
+              <div class="overflow-auto border rounded-lg">
+                <table class="min-w-full text-sm">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="text-left px-3 py-2">Access</th>
+                      <th class="text-left px-3 py-2">Department</th>
+                      <th class="text-left px-3 py-2">Granted</th>
+                      <th class="text-left px-3 py-2">Removed</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y">
+                    {% for group_name, rows in [('All Departments', view.get('all', [])), ('Department Specific', view.get('own', [])), ('Other Departments', view.get('other', []))] %}
+                      {% if rows %}
+                        <tr class="bg-emerald-50/50">
+                          <td colspan="4" class="px-3 py-2 font-semibold text-emerald-800">{{ group_name }}</td>
                         </tr>
-                      {% endfor %}
-                    {% endif %}
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
+                        {% for item in rows %}
+                          <tr>
+                            <td class="px-3 py-2">{{ item.name }}</td>
+                            <td class="px-3 py-2 text-gray-600">{{ item.department }}</td>
+                            <td class="px-3 py-2">
+                              <input type="checkbox" name="granted" data-access-toggle data-employee-id="{{ employee.id }}" data-access-id="{{ item.id }}" data-field="granted" {% if item.granted %}checked{% endif %} />
+                            </td>
+                            <td class="px-3 py-2">
+                              <input type="checkbox" name="removed" data-access-toggle data-employee-id="{{ employee.id }}" data-access-id="{{ item.id }}" data-field="removed" {% if item.removed %}checked{% endif %} />
+                            </td>
+                          </tr>
+                        {% endfor %}
+                      {% endif %}
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
 
             <details>
               <summary class="cursor-pointer text-sm font-semibold text-emerald-700">Access History</summary>
@@ -120,6 +147,7 @@
                 {% endfor %}
               </ul>
             </details>
+            </div>
           </article>
         {% endfor %}
       {% else %}
@@ -176,4 +204,64 @@
     {% endif %}
   </section>
 </div>
+<script>
+  const profileSaveTimers = new Map();
+
+  document.querySelectorAll('[data-collapse-toggle]').forEach((toggle) => {
+    toggle.addEventListener('click', () => {
+      const card = toggle.closest('[data-employee-card]');
+      const content = card.querySelector('[data-collapsible-content]');
+      const label = card.querySelector('[data-collapse-label]');
+      const isHidden = content.classList.contains('hidden');
+      content.classList.toggle('hidden', !isHidden);
+      toggle.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+      label.textContent = isHidden ? 'Collapse' : 'Expand';
+    });
+  });
+
+  async function saveAccess(employeeId, accessId) {
+    const granted = document.querySelector(`[data-access-toggle][data-employee-id="${employeeId}"][data-access-id="${accessId}"][data-field="granted"]`);
+    const removed = document.querySelector(`[data-access-toggle][data-employee-id="${employeeId}"][data-access-id="${accessId}"][data-field="removed"]`);
+    const payload = new FormData();
+    payload.append('access_id', accessId);
+    if (granted && granted.checked) payload.append('granted', 'on');
+    if (removed && removed.checked) payload.append('removed', 'on');
+    await fetch(`/employee-access/employees/${employeeId}/access`, { method: 'POST', body: payload });
+  }
+
+  document.querySelectorAll('[data-access-toggle]').forEach((checkbox) => {
+    checkbox.addEventListener('change', async () => {
+      checkbox.disabled = true;
+      try {
+        await saveAccess(checkbox.dataset.employeeId, checkbox.dataset.accessId);
+      } finally {
+        checkbox.disabled = false;
+      }
+    });
+  });
+
+  async function saveProfile(employeeId) {
+    const title = document.querySelector(`[data-profile-field][data-employee-id="${employeeId}"][name="title"]`);
+    const department = document.querySelector(`[data-profile-field][data-employee-id="${employeeId}"][name="department"]`);
+    if (!title || !department) return;
+    const payload = new FormData();
+    payload.append('title', title.value);
+    payload.append('department', department.value);
+    await fetch(`/employee-access/employees/${employeeId}/profile`, { method: 'POST', body: payload });
+  }
+
+  document.querySelectorAll('[data-profile-field]').forEach((field) => {
+    const employeeId = field.dataset.employeeId;
+    field.addEventListener('change', () => {
+      clearTimeout(profileSaveTimers.get(employeeId));
+      profileSaveTimers.set(employeeId, setTimeout(() => saveProfile(employeeId), 250));
+    });
+    if (field.name === 'title') {
+      field.addEventListener('input', () => {
+        clearTimeout(profileSaveTimers.get(employeeId));
+        profileSaveTimers.set(employeeId, setTimeout(() => saveProfile(employeeId), 400));
+      });
+    }
+  });
+</script>
 {% endblock %}
