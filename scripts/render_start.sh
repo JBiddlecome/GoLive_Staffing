@@ -2,6 +2,8 @@
 set -euo pipefail
 
 APP_MODULE="${GUNICORN_APP_MODULE:-app:app}"
+GUNICORN_WORKER_CLASS="${GUNICORN_WORKER_CLASS:-uvicorn.workers.UvicornWorker}"
+WEB_CONCURRENCY="${WEB_CONCURRENCY:-1}"
 KEY_PATH="${BASTION_KEY_PATH:-/etc/secrets/golive-bastion-key.pem}"
 
 start_tunnel() {
@@ -35,4 +37,7 @@ fi
 
 start_tunnel
 
-exec gunicorn "${APP_MODULE}" --bind "0.0.0.0:${PORT}"
+exec gunicorn "${APP_MODULE}" \
+  --bind "0.0.0.0:${PORT}" \
+  --worker-class "${GUNICORN_WORKER_CLASS}" \
+  --workers "${WEB_CONCURRENCY}"
