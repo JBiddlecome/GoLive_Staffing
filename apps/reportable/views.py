@@ -216,6 +216,100 @@ async def reportable_export(payload: ExportPayload) -> StreamingResponse:
     )
 
 
+@router.post("/export/timesheet-verification")
+async def reportable_timesheet_verification_export(
+    payload: TimesheetVerificationPayload,
+) -> StreamingResponse:
+    engine = _engine()
+    try:
+        sql = text(
+            """
+            SELECT
+                event.date                          AS `Date`,
+                client.name                         AS `Client`,
+                venue.name                          AS `Venue`,
+                event.title                         AS `Event`,
+                event.state                         AS `Work State`,
+                position.description                AS `Position`,
+                shift_position.code                 AS `Code`,
+                shift_position.bill_rate            AS `Bill Rate`,
+                shift_position.rate                 AS `Pay Rate`,
+                employee.payroll_id                 AS `#Emp`,
+                employee.first_name                 AS `First Name`,
+                employee.last_name                  AS `Last Name`,
+                timesheet.client_start              AS `Client Start`,
+                timesheet.client_end                AS `Client End`,
+                timesheet.employee_start            AS `Employee Start`,
+                timesheet.employee_end              AS `Employee End`,
+                timesheet.client_tips               AS `Tip`,
+                timesheet.client_parking            AS `Park`,
+                timesheet.client_travel             AS `Travel`,
+                timesheet.client_service_charge     AS `Service`,
+                timesheet.client_adjustment         AS `Adj`,
+                timesheet.client_min_bill           AS `Min Bill`,
+                timesheet.employee_min_pay          AS `Min Pay`,
+                timesheet.client_po                 AS `Client PO`,
+                timesheet.client_worked             AS `Client Status`,
+                timesheet.employee_worked           AS `Employee Status`,
+                timesheet.status                    AS `Timesheet Status`,
+                timesheet.client_notes              AS `Client Notes`,
+                timesheet.employee_notes            AS `Employee Notes`
+            FROM timesheet
+            JOIN event          ON timesheet.event_id          = event.event_id
+            JOIN client         ON event.client_id             = client.client_id
+            JOIN venue          ON event.venue_id              = venue.venue_id
+            JOIN employee       ON timesheet.employee_id       = employee.employee_id
+            JOIN shift_employee ON timesheet.shift_employee_id = shift_employee.shift_employee_id
+            LEFT JOIN shift_position ON shift_employee.shift_position_id = shift_position.shift_position_id
+            LEFT JOIN position       ON shift_position.position_id       = position.position_id
+            WHERE
+                event.date BETWEEN :start_date AND :end_date
+                AND (
+                    (shift_employee.confirmed = 1 AND shift_employee.cancel_reason = 0)
+                    OR timesheet.client_min_bill  = 1
+                    OR timesheet.employee_min_pay = 1
+                )
+            ORDER BY event.date, client.name, employee.last_name, employee.first_name
+            LIMIT :limit
+            """
+        )
+
+        params = {
+            "start_date": payload.start_date,
+            "end_date": payload.end_date,
+            "limit": payload.limit,
+        }
+
+        with engine.begin() as connection:
+            df = pd.read_sql(sql, connection, params=params)
+
+    finally:
+        engine.dispose()
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="timesheet_verification")
+
+        worksheet = writer.sheets["timesheet_verification"]
+        for idx, col in enumerate(df.columns):
+            max_len = max(
+                df[col].astype(str).map(len).max() if not df[col].empty else 0,
+                len(str(col)),
+            )
+            max_len = min(max_len, 50) + 2
+            col_letter = chr(65 + idx) if idx < 26 else "A" + chr(65 + (idx - 26))
+            worksheet.column_dimensions[col_letter].width = max_len
+
+    output.seek(0)
+    filename = "timesheet_verification_report.xlsx"
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers,
+    )
+
+
 class EmployeeListPayload(BaseModel):
     limit: int = Field(default=50000, ge=1, le=100000)
 
