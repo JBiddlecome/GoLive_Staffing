@@ -27,11 +27,13 @@ start_tunnel() {
   echo "[render_start] Starting SSH tunnel localhost:${local_port} -> ${RDS_HOST}:3306 via ${BASTION_HOST}."
   ssh -o StrictHostKeyChecking=no \
     -o ExitOnForwardFailure=yes \
+    -o BatchMode=yes \
+    -o ConnectTimeout=15 \
     -o ServerAliveInterval=60 \
     -o ServerAliveCountMax=3 \
     -N -L "0.0.0.0:${local_port}:${RDS_HOST}:3306" \
     -i "${tmp_key}" \
-    "${BASTION_USER}@${BASTION_HOST}" &
+    "${BASTION_USER}@${BASTION_HOST}" >/tmp/ssh_tunnel.log 2>&1 &
 
   # Wait for the tunnel port to be ready before returning (up to 30 seconds)
   local deadline=$(( $(date +%s) + 30 ))
@@ -39,6 +41,9 @@ start_tunnel() {
   until nc -z 127.0.0.1 "${local_port}" 2>/dev/null; do
     if [[ $(date +%s) -ge ${deadline} ]]; then
       echo "[render_start] WARNING: Tunnel did not become ready within 30s; proceeding anyway."
+      echo "[render_start] --- SSH error output ---"
+      cat /tmp/ssh_tunnel.log 2>/dev/null || echo "(no ssh log output)"
+      echo "[render_start] --- end SSH output ---"
       return
     fi
     sleep 1
