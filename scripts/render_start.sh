@@ -29,6 +29,18 @@ start_tunnel() {
     -N -L "0.0.0.0:${local_port}:${RDS_HOST}:3306" \
     -i "${KEY_PATH}" \
     "${BASTION_USER}@${BASTION_HOST}" &
+
+  # Wait for the tunnel port to be ready before returning (up to 30 seconds)
+  local deadline=$(( $(date +%s) + 30 ))
+  echo "[render_start] Waiting for tunnel on port ${local_port}..."
+  until nc -z 127.0.0.1 "${local_port}" 2>/dev/null; do
+    if [[ $(date +%s) -ge ${deadline} ]]; then
+      echo "[render_start] WARNING: Tunnel did not become ready within 30s; proceeding anyway."
+      return
+    fi
+    sleep 1
+  done
+  echo "[render_start] Tunnel is ready."
 }
 
 if [[ "${APP_TYPE:-fastapi}" == "streamlit" ]]; then
