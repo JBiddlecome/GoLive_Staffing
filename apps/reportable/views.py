@@ -54,13 +54,24 @@ TIMESHEET_VERIFICATION_EXCLUDED_COLUMNS = {
 
 
 def _db_url_from_env() -> URL:
-    host = os.getenv("DB_HOST")
+    reportable_host = os.getenv("REPORTABLE_DB_HOST")
+    host = reportable_host or os.getenv("DB_HOST")
     # The Reportable app should always target the production staffing schema unless
     # explicitly overridden for controlled environments.
     name = os.getenv("REPORTABLE_DB_NAME") or os.getenv("DB_NAME", "cstaffing_live")
     user = os.getenv("DB_USER")
     password = os.getenv("DB_PASSWORD")
-    port = int(os.getenv("DB_PORT", "3306"))
+    reportable_port = os.getenv("REPORTABLE_DB_PORT")
+    port = int(reportable_port or os.getenv("DB_PORT", "3306"))
+
+    # Guardrail: DB_HOST is shared by multiple tools. If it is set to localhost
+    # but the Reportable SSH tunnel is not configured, prefer the direct RDS host
+    # when available so Reportable can still connect.
+    if host in {"127.0.0.1", "localhost"} and not reportable_host:
+        tunnel_port = os.getenv("LOCAL_TUNNEL_PORT")
+        rds_host = os.getenv("RDS_HOST")
+        if rds_host and (not tunnel_port or str(port) != tunnel_port):
+            host = rds_host
 
     missing = [
         env_name
