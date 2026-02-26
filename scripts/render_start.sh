@@ -19,7 +19,10 @@ start_tunnel() {
     return
   fi
 
-  chmod 600 "${KEY_PATH}"
+  # /etc/secrets is read-only on Render; copy the key to /tmp so we can chmod it
+  local tmp_key="/tmp/bastion_key.pem"
+  cp "${KEY_PATH}" "${tmp_key}"
+  chmod 600 "${tmp_key}"
 
   echo "[render_start] Starting SSH tunnel localhost:${local_port} -> ${RDS_HOST}:3306 via ${BASTION_HOST}."
   ssh -o StrictHostKeyChecking=no \
@@ -27,7 +30,7 @@ start_tunnel() {
     -o ServerAliveInterval=60 \
     -o ServerAliveCountMax=3 \
     -N -L "0.0.0.0:${local_port}:${RDS_HOST}:3306" \
-    -i "${KEY_PATH}" \
+    -i "${tmp_key}" \
     "${BASTION_USER}@${BASTION_HOST}" &
 
   # Wait for the tunnel port to be ready before returning (up to 30 seconds)
