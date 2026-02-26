@@ -222,54 +222,77 @@ async def reportable_timesheet_verification_export(
 ) -> StreamingResponse:
     engine = _engine()
     try:
+        # Dynamically check which optional columns exist to avoid errors on schema variations
+        inspector = inspect(engine)
+        client_columns = {col["name"] for col in inspector.get_columns("client")}
+        shift_position_columns = {col["name"] for col in inspector.get_columns("shift_position")}
+        timesheet_columns = {col["name"] for col in inspector.get_columns("timesheet")}
+
+        markup_select = "c.markup AS markup" if "markup" in client_columns else "NULL AS markup"
+        code_select = "sp.code AS code" if "code" in shift_position_columns else "NULL AS code"
+
+        # Select timesheet flag/seconds columns only if they exist in the schema
+        ts_cols = [
+            "client_seconds", "employee_seconds",
+            "client_min_bill", "employee_min_pay",
+            "client_no_bill", "employee_no_pay",
+            "client_no_break_penalty", "employee_no_break_penalty",
+        ]
+        ts_select_str = ", ".join(
+            f"t.{col}" if col in timesheet_columns else f"0 AS {col}"
+            for col in ts_cols
+        )
+
         sql = text(
-            """
+            f"""
             SELECT
-                event.date                          AS `Date`,
-                client.name                         AS `Client`,
-                venue.name                          AS `Venue`,
-                event.title                         AS `Event`,
-                event.state                         AS `Work State`,
-                position.description                AS `Position`,
-                shift_position.code                 AS `Code`,
-                shift_position.bill_rate            AS `Bill Rate`,
-                shift_position.rate                 AS `Pay Rate`,
-                employee.payroll_id                 AS `#Emp`,
-                employee.first_name                 AS `First Name`,
-                employee.last_name                  AS `Last Name`,
-                timesheet.client_start              AS `Client Start`,
-                timesheet.client_end                AS `Client End`,
-                timesheet.employee_start            AS `Employee Start`,
-                timesheet.employee_end              AS `Employee End`,
-                timesheet.client_tips               AS `Tip`,
-                timesheet.client_parking            AS `Park`,
-                timesheet.client_travel             AS `Travel`,
-                timesheet.client_service_charge     AS `Service`,
-                timesheet.client_adjustment         AS `Adj`,
-                timesheet.client_min_bill           AS `Min Bill`,
-                timesheet.employee_min_pay          AS `Min Pay`,
-                timesheet.client_po                 AS `Client PO`,
-                timesheet.client_worked             AS `Client Status`,
-                timesheet.employee_worked           AS `Employee Status`,
-                timesheet.status                    AS `Timesheet Status`,
-                timesheet.client_notes              AS `Client Notes`,
-                timesheet.employee_notes            AS `Employee Notes`
-            FROM timesheet
-            JOIN event          ON timesheet.event_id          = event.event_id
-            JOIN client         ON event.client_id             = client.client_id
-            JOIN venue          ON event.venue_id              = venue.venue_id
-            JOIN employee       ON timesheet.employee_id       = employee.employee_id
-            JOIN shift_employee ON timesheet.shift_employee_id = shift_employee.shift_employee_id
-            LEFT JOIN shift_position ON shift_employee.shift_position_id = shift_position.shift_position_id
-            LEFT JOIN position       ON shift_position.position_id       = position.position_id
-            WHERE
-                event.date BETWEEN :start_date AND :end_date
-                AND (
-                    (shift_employee.confirmed = 1 AND shift_employee.cancel_reason = 0)
-                    OR timesheet.client_min_bill  = 1
-                    OR timesheet.employee_min_pay = 1
-                )
-            ORDER BY event.date, client.name, employee.last_name, employee.first_name
+                DAYNAME(e.date)              AS day,
+                e.date                       AS date,
+                e.state                      AS event_state,
+                COALESCE(wc.wc_code, '8810') AS wc,
+                c.name                       AS client,
+                {markup_select},
+                v.name                       AS venue,
+                e.title                      AS event,
+                p.description                AS position,
+                {code_select},
+                emp.payroll_id               AS emp_number,
+                emp.first_name               AS first_name,
+                emp.last_name                AS last_name,
+                mw.description               AS work_state,
+                se.bill_rate                 AS bill_rate,
+                se.rate                      AS pay_rate,
+                t.client_tips                AS tip_c,
+                t.client_parking             AS park_c,
+                t.client_travel              AS travel_c,
+                t.client_service_charge      AS service_c,
+                v.service_charge             AS venue_service_charge,
+                CASE
+                    WHEN se.cancel_reason > 0 THEN 'CANCELLED'
+                    ELSE 'WORKED'
+                END                          AS status,
+                se.cancel_reason             AS cancellation_reason,
+                t.start_verified_at          AS verification_start_at,
+                t.end_verified_at            AS verification_end_at,
+                {ts_select_str}
+            FROM shift_employee se
+            JOIN event e            ON se.event_id             = e.event_id
+            JOIN client c           ON e.client_id             = c.client_id
+            LEFT JOIN wc_code wc    ON c.wc_id                 = wc.wc_id
+            LEFT JOIN venue v       ON e.venue_id              = v.venue_id
+            JOIN employee emp       ON se.employee_id           = emp.employee_id
+            LEFT JOIN min_wage_rate mw ON emp.min_wage_id       = mw.min_wage_id
+            LEFT JOIN timesheet t   ON se.shift_employee_id    = t.shift_employee_id
+            LEFT JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
+            LEFT JOIN position p    ON sp.position_id           = p.position_id
+            WHERE e.date >= :start_date
+              AND e.date <= :end_date
+              AND (
+                  (se.confirmed = 1 AND se.cancel_reason = 0)
+                  OR t.client_min_bill  = 1
+                  OR t.employee_min_pay = 1
+              )
+            ORDER BY e.date, c.name, emp.last_name, emp.first_name
             LIMIT :limit
             """
         )
@@ -286,23 +309,149 @@ async def reportable_timesheet_verification_export(
     finally:
         engine.dispose()
 
+    # Return empty sheet with correct headers when no data matches the date range
+    empty_columns = [
+        "Day", "Date", "WC", "Client", "Markup", "Venue", "Event", "Position", "Code",
+        "#Emp", "First Name", "Last Name", "Work State",
+        "Reg H (c)", "OT H (c)", "DT H (c)", "Reg Rate (c)", "Non-Worked Hours (c)",
+        "Cert Cost (e)", "OT R", "DT R", "Tip (c)", "Park (c)", "Travel (c)",
+        "Service (c)", "Meal (c)", "Non-Worked Bill (c)", "Reimb Pay (e)",
+        "Pay Rate", "Bill Rate", "Total Bill", "Status", "Cancellation Reason",
+        "Verification (c)", "Verification (e)",
+    ]
+    if df.empty:
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            pd.DataFrame(columns=empty_columns).to_excel(
+                writer, index=False, sheet_name="timesheet_verification"
+            )
+        output.seek(0)
+        headers = {"Content-Disposition": 'attachment; filename="timesheet_verification_report.xlsx"'}
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers=headers,
+        )
+
+    df.fillna(0, inplace=True)
+
+    def calculate_row(row: "pd.Series") -> "pd.Series":
+        # Hours (client side): use pre-calculated client_seconds, apply 4h min-bill floor
+        client_hours = float(row["client_seconds"]) / 3600.0
+        if row["client_min_bill"] and client_hours < 4.0:
+            client_hours = 4.0
+        if row["client_no_bill"]:
+            client_hours = 0.0
+
+        # Overtime split by state (daily rules)
+        reg_h = ot_h = dt_h = 0.0
+        state = str(row["event_state"]).upper() if row["event_state"] else ""
+        if state in ("CA", "CALIFORNIA"):
+            if client_hours > 12:
+                dt_h = client_hours - 12
+                ot_h = 4.0
+                reg_h = 8.0
+            elif client_hours > 8:
+                ot_h = client_hours - 8
+                reg_h = 8.0
+            else:
+                reg_h = client_hours
+        elif state in ("NV", "NEVADA"):
+            if client_hours > 8:
+                ot_h = client_hours - 8
+                reg_h = 8.0
+            else:
+                reg_h = client_hours
+        else:
+            reg_h = client_hours
+
+        # Rates
+        bill_rate = float(row["bill_rate"])
+        ot_rate = round(bill_rate * 1.5, 2)
+        dt_rate = round(bill_rate * 2.0, 2)
+
+        # Billing amounts
+        reg_bill = reg_h * bill_rate
+        ot_bill  = ot_h  * ot_rate
+        dt_bill  = dt_h  * dt_rate
+
+        # Service charge: % of wages + flat venue charge
+        service_pct  = float(row["service_c"] or 0)
+        venue_flat   = float(row["venue_service_charge"] or 0)
+        service_amt  = ((reg_bill + ot_bill + dt_bill) * service_pct / 100.0) + venue_flat
+
+        # Meal penalty: 1 hour at bill rate if a break penalty was recorded
+        meal_amt = bill_rate if float(row["client_no_break_penalty"]) > 0 else 0.0
+
+        total_bill = (
+            reg_bill + ot_bill + dt_bill
+            + service_amt + meal_amt
+            + float(row["tip_c"]) + float(row["park_c"]) + float(row["travel_c"])
+        )
+
+        return pd.Series({
+            "Reg H (c)":            round(reg_h, 2),
+            "OT H (c)":             round(ot_h, 2),
+            "DT H (c)":             round(dt_h, 2),
+            "Reg Rate (c)":         round(bill_rate, 2),
+            "Non-Worked Hours (c)": 0.0,
+            "OT R":                 ot_rate,
+            "DT R":                 dt_rate,
+            "Service (c)":          round(service_amt, 2),
+            "Meal (c)":             round(meal_amt, 2),
+            "Total Bill":           round(total_bill, 2),
+            "Verification (c)":     "Verified" if row["verification_start_at"] else "Pending",
+            "Verification (e)":     "Verified" if row["verification_end_at"] else "Pending",
+        })
+
+    calc_df = df.apply(calculate_row, axis=1)
+    df = pd.concat([df, calc_df], axis=1)
+
+    # Assemble final output in report column order
+    final_df = pd.DataFrame({
+        "Day":                  df["day"],
+        "Date":                 pd.to_datetime(df["date"]).dt.date,
+        "WC":                   df["wc"],
+        "Client":               df["client"],
+        "Markup":               df["markup"],
+        "Venue":                df["venue"],
+        "Event":                df["event"],
+        "Position":             df["position"],
+        "Code":                 df["code"],
+        "#Emp":                 df["emp_number"],
+        "First Name":           df["first_name"],
+        "Last Name":            df["last_name"],
+        "Work State":           df["work_state"],
+        "Reg H (c)":            df["Reg H (c)"],
+        "OT H (c)":             df["OT H (c)"],
+        "DT H (c)":             df["DT H (c)"],
+        "Reg Rate (c)":         df["Reg Rate (c)"],
+        "Non-Worked Hours (c)": df["Non-Worked Hours (c)"],
+        "Cert Cost (e)":        0.0,
+        "OT R":                 df["OT R"],
+        "DT R":                 df["DT R"],
+        "Tip (c)":              df["tip_c"],
+        "Park (c)":             df["park_c"],
+        "Travel (c)":           df["travel_c"],
+        "Service (c)":          df["Service (c)"],
+        "Meal (c)":             df["Meal (c)"],
+        "Non-Worked Bill (c)":  0.0,
+        "Reimb Pay (e)":        0.0,
+        "Pay Rate":             df["pay_rate"],
+        "Bill Rate":            df["bill_rate"],
+        "Total Bill":           df["Total Bill"],
+        "Status":               df["status"],
+        "Cancellation Reason":  df["cancellation_reason"],
+        "Verification (c)":     df["Verification (c)"],
+        "Verification (e)":     df["Verification (e)"],
+    })
+
     output = BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False, sheet_name="timesheet_verification")
-
-        worksheet = writer.sheets["timesheet_verification"]
-        for idx, col in enumerate(df.columns):
-            max_len = max(
-                df[col].astype(str).map(len).max() if not df[col].empty else 0,
-                len(str(col)),
-            )
-            max_len = min(max_len, 50) + 2
-            col_letter = chr(65 + idx) if idx < 26 else "A" + chr(65 + (idx - 26))
-            worksheet.column_dimensions[col_letter].width = max_len
-
+        final_df.to_excel(writer, index=False, sheet_name="timesheet_verification")
     output.seek(0)
-    filename = "timesheet_verification_report.xlsx"
-    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+
+    headers = {"Content-Disposition": 'attachment; filename="timesheet_verification_report.xlsx"'}
     return StreamingResponse(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
