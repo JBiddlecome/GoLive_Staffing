@@ -59,6 +59,14 @@ Required environment variables on Render:
 - `RDS_HOST=golive-production-230802.coq6m1rznxjt.us-east-1.rds.amazonaws.com`
 - `LOCAL_TUNNEL_PORT=3307`
 
+Reportable-specific overrides (optional):
+
+- `REPORTABLE_DB_HOST=...` (takes precedence over `DB_HOST` for the Reportable app)
+- `REPORTABLE_DB_PORT=...` (takes precedence over `DB_PORT` for the Reportable app)
+- `REPORTABLE_DB_NAME=...` (already supported)
+
+If `DB_HOST` is localhost and no matching tunnel port is in use, Reportable will automatically fall back to `RDS_HOST` when available.
+
 The startup script is `scripts/render_start.sh` and uses `/etc/secrets/golive-bastion-key.pem` by default (override with `BASTION_KEY_PATH`).
 
 Optional override for Gunicorn module:
