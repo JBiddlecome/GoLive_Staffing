@@ -341,9 +341,11 @@ async def reportable_timesheet_verification_export(
 
     numeric_cols = [
         "client_seconds", "tip_c", "park_c", "travel_c", "service_c", "venue_service_charge",
-        "client_no_break_penalty", "bill_rate", "rate"
+        "client_no_break_penalty", "bill_rate", "pay_rate",
     ]
-    df[numeric_cols] = df[numeric_cols].fillna(0)
+    existing_numeric_cols = [col for col in numeric_cols if col in df.columns]
+    if existing_numeric_cols:
+        df[existing_numeric_cols] = df[existing_numeric_cols].fillna(0)
     df["markup"] = df["markup"].fillna(0)
     df["code"] = df["code"].fillna("")
 
