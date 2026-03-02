@@ -25,6 +25,12 @@ class ExportPayload(BaseModel):
     limit: int = Field(default=50000, ge=1, le=100000)
 
 
+class ScheduledWorkedHoursPayload(BaseModel):
+    start_date: str = Field(..., min_length=1)
+    end_date: str = Field(..., min_length=1)
+    limit: int = Field(default=50000, ge=1, le=100000)
+
+
 class TimesheetVerificationPayload(BaseModel):
     start_date: str = Field(..., min_length=1)
     end_date: str = Field(..., min_length=1)
@@ -333,7 +339,13 @@ async def reportable_timesheet_verification_export(
             headers=headers,
         )
 
-    df.fillna(0, inplace=True)
+    numeric_cols = [
+        "client_seconds", "tip_c", "park_c", "travel_c", "service_c", "venue_service_charge",
+        "client_no_break_penalty", "bill_rate", "rate"
+    ]
+    df[numeric_cols] = df[numeric_cols].fillna(0)
+    df["markup"] = df["markup"].fillna(0)
+    df["code"] = df["code"].fillna("")
 
     def calculate_row(row: "pd.Series") -> "pd.Series":
         # Hours (client side): use pre-calculated client_seconds, apply 4h min-bill floor
@@ -400,8 +412,8 @@ async def reportable_timesheet_verification_export(
             "Service (c)":          round(service_amt, 2),
             "Meal (c)":             round(meal_amt, 2),
             "Total Bill":           round(total_bill, 2),
-            "Verification (c)":     "Verified" if row["verification_start_at"] else "Pending",
-            "Verification (e)":     "Verified" if row["verification_end_at"] else "Pending",
+            "Verification (c)":     "Verified" if pd.notnull(row["verification_start_at"]) else "Pending",
+            "Verification (e)":     "Verified" if pd.notnull(row["verification_end_at"]) else "Pending",
         })
 
     calc_df = df.apply(calculate_row, axis=1)
@@ -501,6 +513,7 @@ async def reportable_employee_list_export(
                 c.name AS `County of Residence`,
                 DATE_FORMAT(e.created_on, '%m/%d/%Y %H:%i:%s') AS `Created On`,
                 sr.reason AS `Status Reason`,
+                e.work_area_distance AS `Work Area`,
                 
                 -- Aggregates
                 lang_agg.languages AS `Language`,
@@ -712,6 +725,7 @@ async def reportable_employee_list_export(
         'Concierge Date',
         'Gender',
         'SS Number',
+        'Work Area',
         'Created On'
     ]
     
@@ -739,6 +753,261 @@ async def reportable_employee_list_export(
 
     output.seek(0)
     filename = "employee_list_report.xlsx"
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers,
+    )
+
+
+@router.post("/export/scheduled-worked-hours")
+async def reportable_scheduled_worked_hours_export(
+    payload: ScheduledWorkedHoursPayload,
+) -> StreamingResponse:
+    engine = _engine()
+    try:
+        sql = text(
+            """
+            SELECT
+                DAYNAME(e.date)              AS day,
+                e.date                       AS date,
+                c.name                       AS client,
+                v.name                       AS venue,
+                e.title                      AS event,
+                emp.payroll_id               AS employee_id,
+                emp.first_name               AS first_name,
+                emp.last_name                AS last_name,
+                s.shift_id                   AS shift_id,
+                s.event_id                   AS shift_event_id,
+                s.start                      AS raw_shift_start,
+                s.end                        AS raw_shift_end,
+                DATE_FORMAT(s.start, '%Y-%m-%d %H:%i:%s') AS shift_start,
+                DATE_FORMAT(s.end, '%Y-%m-%d %H:%i:%s')   AS shift_end,
+                e.state                      AS event_state,
+                se.bill_rate                 AS bill_rate,
+                se.rate                      AS pay_rate,
+                se.created_at                AS se_created_at,
+                se.confirmed_at              AS se_confirmed_at,
+                sp.rate                      AS shift_pos_rate,
+                t.client_seconds             AS client_seconds,
+                t.employee_seconds           AS employee_seconds,
+                t.client_min_bill            AS client_min_bill,
+                t.employee_min_pay           AS employee_min_pay,
+                t.client_no_bill             AS client_no_bill,
+                t.employee_no_pay            AS employee_no_pay,
+                t.client_no_break_penalty    AS client_no_break_penalty,
+                t.employee_no_break_penalty  AS employee_no_break_penalty,
+                t.client_worked              AS status,
+                t.timesheet_id               AS timesheet_id
+            FROM shift_employee se
+            JOIN event e            ON se.event_id             = e.event_id
+            JOIN client c           ON e.client_id             = c.client_id
+            JOIN venue v            ON e.venue_id              = v.venue_id
+            JOIN employee emp       ON se.employee_id           = emp.employee_id
+            JOIN shift_position sp  ON se.shift_position_id    = sp.shift_position_id
+            JOIN shift s            ON sp.shift_id             = s.shift_id
+            LEFT JOIN timesheet t   ON se.shift_employee_id    = t.shift_employee_id
+            WHERE e.date >= :start_date
+              AND e.date <= :end_date
+              AND (
+                  (se.confirmed = 1 AND se.cancel_reason = 0)
+                  OR t.client_min_bill  = 1
+                  OR t.employee_min_pay = 1
+              )
+            ORDER BY e.date, c.name, emp.last_name, emp.first_name
+            LIMIT :limit
+            """
+        )
+
+        params = {
+            "start_date": payload.start_date,
+            "end_date": payload.end_date,
+            "limit": payload.limit,
+        }
+
+        with engine.begin() as connection:
+            df = pd.read_sql(sql, connection, params=params)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        engine.dispose()
+
+    if df.empty:
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            pd.DataFrame(columns=[
+                "Day", "Date", "Client", "Venue", "Event", "Employee ID", "First Name", "Last Name",
+                "Shift ID", "Shift Event ID", "Shift Start Time", "Shift End Time",
+                "Request", "Confirmed", "Confirm Time",
+                "Reg H (e)", "OT H (e)", "DT H (e)", "Gross Pay",
+                "Reg H (c)", "OT H (c)", "DT H (c)", "Total Bill",
+                "Scheduled Hours", "Pay Rate", "Total Pay", "Status", "Timesheet ID"
+            ]).to_excel(writer, index=False, sheet_name="scheduled_worked_hours")
+        output.seek(0)
+        headers = {"Content-Disposition": 'attachment; filename="scheduled_worked_hours_report.xlsx"'}
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers=headers,
+        )
+
+    numeric_cols = [
+        "shift_pos_rate", "employee_seconds", "employee_no_pay", "pay_rate",
+        "employee_no_break_penalty", "client_seconds", "client_no_bill", "bill_rate",
+        "client_no_break_penalty", "client_min_bill", "employee_min_pay"
+    ]
+    df[numeric_cols] = df[numeric_cols].fillna(0)
+    df["status"] = df["status"].fillna(0)
+    df["timesheet_id"] = df["timesheet_id"].fillna(0)
+
+    def calculate_row(row: "pd.Series") -> "pd.Series":
+        # Ported logic from PayrollExportForm / ClientsAndEmployeesExportJob
+        
+        # --- Scheduled Hours ---
+        sched_hours = 0.0
+        if row["raw_shift_start"] and row["raw_shift_end"]:
+            delta = row["raw_shift_end"] - row["raw_shift_start"]
+            sched_hours = delta.total_seconds() / 3600.0
+
+        # --- Pay Rate ---
+        # User requested: "Pay Rate, which pulls the rate from table shift_position"
+        shift_pos_rate = float(row["shift_pos_rate"])
+        total_pay = sched_hours * shift_pos_rate
+
+        # --- Employee Side (Worked) ---
+        emp_seconds = float(row["employee_seconds"])
+        emp_hours = emp_seconds / 3600.0
+        
+        # Min pay logic (simplified port)
+        if row["employee_min_pay"] and emp_hours < 4.0:
+             emp_hours = 4.0
+             
+        if row["employee_no_pay"]:
+            emp_hours = 0.0
+
+        # Split emp hours
+        reg_h_e = ot_h_e = dt_h_e = 0.0
+        state = str(row["event_state"]).upper() if row["event_state"] else ""
+        if state in ("CA", "CALIFORNIA"):
+            if emp_hours > 12:
+                dt_h_e = emp_hours - 12
+                ot_h_e = 4.0
+                reg_h_e = 8.0
+            elif emp_hours > 8:
+                ot_h_e = emp_hours - 8
+                reg_h_e = 8.0
+            else:
+                reg_h_e = emp_hours
+        elif state in ("NV", "NEVADA"):
+            if emp_hours > 8:
+                ot_h_e = emp_hours - 8
+                reg_h_e = 8.0
+            else:
+                reg_h_e = emp_hours
+        else:
+            reg_h_e = emp_hours
+
+        pay_rate = float(row["pay_rate"])
+        gross_pay = (reg_h_e * pay_rate) + (ot_h_e * pay_rate * 1.5) + (dt_h_e * pay_rate * 2.0)
+        
+        # Add meal penalty if exists
+        if float(row["employee_no_break_penalty"]) > 0:
+            gross_pay += pay_rate # 1h penalty
+
+        # --- Client Side ---
+        client_seconds = float(row["client_seconds"])
+        client_hours = client_seconds / 3600.0
+        
+        if row["client_min_bill"] and client_hours < 4.0:
+            client_hours = 4.0
+        if row["client_no_bill"]:
+            client_hours = 0.0
+
+        reg_h_c = ot_h_c = dt_h_c = 0.0
+        if state in ("CA", "CALIFORNIA"):
+            if client_hours > 12:
+                dt_h_c = client_hours - 12
+                ot_h_c = 4.0
+                reg_h_c = 8.0
+            elif client_hours > 8:
+                ot_h_c = client_hours - 8
+                reg_h_c = 8.0
+            else:
+                reg_h_c = client_hours
+        elif state in ("NV", "NEVADA"):
+            if client_hours > 8:
+                ot_h_c = client_hours - 8
+                reg_h_c = 8.0
+            else:
+                reg_h_c = client_hours
+        else:
+            reg_h_c = client_hours
+
+        bill_rate = float(row["bill_rate"])
+        total_bill = (reg_h_c * bill_rate) + (ot_h_c * bill_rate * 1.5) + (dt_h_c * bill_rate * 2.0)
+        
+        if float(row["client_no_break_penalty"]) > 0:
+            total_bill += bill_rate
+
+        return pd.Series({
+            "Scheduled Hours": round(sched_hours, 2),
+            "Shift Pos Rate": round(shift_pos_rate, 2),
+            "Calc Total Pay": round(total_pay, 2),
+            "Reg H (e)": round(reg_h_e, 2),
+            "OT H (e)":  round(ot_h_e, 2),
+            "DT H (e)":  round(dt_h_e, 2),
+            "Gross Pay": round(gross_pay, 2),
+            "Reg H (c)": round(reg_h_c, 2),
+            "OT H (c)":  round(ot_h_c, 2),
+            "DT H (c)":  round(dt_h_c, 2),
+            "Total Bill": round(total_bill, 2),
+            "Request": row["se_created_at"] if pd.notnull(row["se_created_at"]) else "",
+            "Confirmed": row["se_confirmed_at"] if pd.notnull(row["se_confirmed_at"]) else "",
+            "Confirm Time": str(row["se_confirmed_at"] - row["se_created_at"]) if pd.notnull(row["se_confirmed_at"]) and pd.notnull(row["se_created_at"]) else "",
+        })
+
+    calc_df = df.apply(calculate_row, axis=1)
+    df = pd.concat([df, calc_df], axis=1)
+
+    final_df = pd.DataFrame({
+        "Day":           df["day"],
+        "Date":          pd.to_datetime(df["date"]).dt.date,
+        "Client":        df["client"],
+        "Venue":         df["venue"],
+        "Event":         df["event"],
+        "Employee ID":   df["employee_id"],
+        "First Name":    df["first_name"],
+        "Last Name":     df["last_name"],
+        "Shift ID":      df["shift_id"],
+        "Shift Event ID":df["shift_event_id"],
+        "Shift Start Time": df["shift_start"],
+        "Shift End Time":   df["shift_end"],
+        "Request":       df["Request"],
+        "Confirmed":     df["Confirmed"],
+        "Confirm Time":  df["Confirm Time"],
+        "Reg H (e)":     df["Reg H (e)"],
+        "OT H (e)":      df["OT H (e)"],
+        "DT H (e)":      df["DT H (e)"],
+        "Gross Pay":     df["Gross Pay"],
+        "Reg H (c)":     df["Reg H (c)"],
+        "OT H (c)":      df["OT H (c)"],
+        "DT H (c)":      df["DT H (c)"],
+        "Total Bill":    df["Total Bill"],
+        "Scheduled Hours": df["Scheduled Hours"],
+        "Pay Rate":      df["Shift Pos Rate"],
+        "Total Pay":     df["Calc Total Pay"],
+        "Status":        df["status"],
+        "Timesheet ID":  df["timesheet_id"]
+    })
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        final_df.to_excel(writer, index=False, sheet_name="scheduled_worked_hours")
+    output.seek(0)
+
+    filename = "scheduled_worked_hours_report.xlsx"
     headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
     return StreamingResponse(
         output,
