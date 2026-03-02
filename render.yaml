@@ -17,7 +17,6 @@ services:
     buildCommand: |
       pip install --upgrade pip setuptools wheel
       pip install -r requirements.txt
-      python -m playwright install chromium
 
     startCommand: ./scripts/render_start.sh
 

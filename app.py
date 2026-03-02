@@ -19,7 +19,6 @@ from apps.sales_payroll_analyzer.views import router as sales_payroll_analyzer_r
 from apps.sales_staffing_metrics.views import router as sales_staffing_router
 from apps.text_blast_filter.views import router as text_blast_router
 from apps.ucla_hours_tool.views import router as ucla_hours_router
-from apps.golive_profile_creator import router as golive_profile_creator_router
 from apps.reports import router as reports_router
 from apps.reportable import router as reportable_router
 from apps.contacts_data import add_contact, load_contacts, remove_contact
@@ -143,11 +142,6 @@ app.include_router(
 )
 app.include_router(
     interview_questions_router, prefix="/interview-questions", tags=["Interview Questions"]
-)
-app.include_router(
-    golive_profile_creator_router,
-    prefix="/golive-profile-creator",
-    tags=["GoLive Profile Creator"],
 )
 app.include_router(reports_router, prefix="/reports", tags=["Reports"])
 app.include_router(reportable_router, prefix="/reportable", tags=["Reportable"])
