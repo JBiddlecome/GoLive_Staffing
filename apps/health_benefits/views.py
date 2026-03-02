@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from io import BytesIO
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import pandas as pd
 from dateutil.relativedelta import relativedelta
@@ -17,6 +17,12 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 PAYROLL_PREFERRED = BASE_DIR / "data" / "payroll.xlsx"
 PAYROLL_FALLBACK = BASE_DIR / "payroll.xlsx"
 
+_PAYROLL_CACHE: Dict[str, object] = {
+    "cache_key": None,
+    "dataframe": None,
+    "source": None,
+}
+
 
 def _resolve_payroll_source() -> Path:
     """Return the payroll workbook path, preferring data/payroll.xlsx."""
@@ -26,6 +32,93 @@ def _resolve_payroll_source() -> Path:
     if PAYROLL_FALLBACK.exists():
         return PAYROLL_FALLBACK
     return PAYROLL_PREFERRED
+
+
+def _load_payroll_dataframe() -> Tuple[Optional[pd.DataFrame], Optional[str], Path]:
+    """Load and cache normalized payroll data with canonical analysis columns."""
+
+    payroll_source = _resolve_payroll_source()
+    if not payroll_source.exists():
+        return None, "Payroll workbook not found.", payroll_source
+
+    stat = payroll_source.stat()
+    cache_key = f"{payroll_source}:{stat.st_mtime_ns}:{stat.st_size}"
+    if _PAYROLL_CACHE.get("cache_key") == cache_key:
+        cached_df = _PAYROLL_CACHE.get("dataframe")
+        if isinstance(cached_df, pd.DataFrame):
+            return cached_df, None, payroll_source
+
+    try:
+        payroll_df = pd.read_excel(payroll_source, dtype=str)
+    except ValueError as exc:
+        return None, f"Unable to read the payroll workbook: {exc}", payroll_source
+
+    payroll_df = normalize_columns(payroll_df)
+    if payroll_df.empty:
+        return None, "The payroll workbook does not contain any rows.", payroll_source
+
+    payroll_date_col = find_col(
+        payroll_df,
+        [
+            "Date",
+            "Check Date",
+            "Pay Date",
+            "Period Ending",
+            "Period End Date",
+            "Work Date",
+            "Week End Date",
+        ],
+    )
+    payroll_emp_col = find_col(payroll_df, ["#Emp", "Emp", "Employee ID", "Emp ID", "ID"])
+    payroll_reg_col = find_col(payroll_df, ["Reg H (e)", "Reg H(e)", "Reg H", "Regular Hours", "Reg Hours"])
+    payroll_ot_col = find_col(payroll_df, ["OT H (e)", "OT H(e)", "OT H", "Overtime Hours", "OT Hours"])
+    payroll_dt_col = find_col(payroll_df, ["DT H (e)", "DT H(e)", "DT H", "Doubletime Hours", "DT Hours"])
+    payroll_nw_col = find_col(
+        payroll_df,
+        [
+            "Non-Worked Hours (e)",
+            "Non Worked Hours (e)",
+            "Non-Worked Hours",
+            "Non Worked Hours",
+            "NW Hours",
+        ],
+    )
+
+    missing_payroll_cols = [
+        name
+        for name, column in {
+            "Payroll Date": payroll_date_col,
+            "#Emp": payroll_emp_col,
+            "Reg H (e)": payroll_reg_col,
+            "OT H (e)": payroll_ot_col,
+            "DT H (e)": payroll_dt_col,
+            "Non-Worked Hours (e)": payroll_nw_col,
+        }.items()
+        if column is None
+    ]
+    if missing_payroll_cols:
+        return (
+            None,
+            f"Payroll workbook is missing required columns: {', '.join(missing_payroll_cols)}.",
+            payroll_source,
+        )
+
+    analysis_df = pd.DataFrame(
+        {
+            "__payroll_date": coerce_date(payroll_df[payroll_date_col]),
+            "__employee_id": payroll_df[payroll_emp_col].astype(str).str.strip(),
+            "__reg": safe_numeric(payroll_df[payroll_reg_col]),
+            "__ot": safe_numeric(payroll_df[payroll_ot_col]),
+            "__dt": safe_numeric(payroll_df[payroll_dt_col]),
+            "__nw": safe_numeric(payroll_df[payroll_nw_col]),
+        }
+    )
+    analysis_df["Total Hours"] = analysis_df[["__reg", "__ot", "__dt", "__nw"]].sum(axis=1)
+
+    _PAYROLL_CACHE["cache_key"] = cache_key
+    _PAYROLL_CACHE["dataframe"] = analysis_df
+    _PAYROLL_CACHE["source"] = payroll_source
+    return analysis_df, None, payroll_source
 
 
 def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -365,9 +458,9 @@ async def analyze(
     payroll_end_ts = pd.Timestamp(payroll_end)
     payroll_window = _format_window(payroll_start, payroll_end)
 
-    payroll_source = _resolve_payroll_source()
+    payroll_df, payroll_error, payroll_source = _load_payroll_dataframe()
 
-    if not payroll_source.exists():
+    if payroll_error and "not found" in payroll_error.lower():
         context = _build_context(
             request,
             selected_label=selected["value"],
@@ -381,89 +474,21 @@ async def analyze(
         )
         return templates.TemplateResponse("apps/health_benefits.html", context, status_code=400)
 
-    try:
-        payroll_df = pd.read_excel(payroll_source, dtype=str)
-    except ValueError as exc:
+    if payroll_error or payroll_df is None:
         context = _build_context(
             request,
             selected_label=selected["value"],
-            error=f"Unable to read the payroll workbook: {exc}",
+            error=payroll_error,
             employee_preview=employee_preview,
             employee_window=employee_window,
             employee_count=len(employee_ids),
         )
         return templates.TemplateResponse("apps/health_benefits.html", context, status_code=400)
-
-    payroll_df = normalize_columns(payroll_df)
-    if payroll_df.empty:
-        context = _build_context(
-            request,
-            selected_label=selected["value"],
-            error="The payroll workbook does not contain any rows.",
-            employee_preview=employee_preview,
-            employee_window=employee_window,
-            employee_count=len(employee_ids),
-        )
-        return templates.TemplateResponse("apps/health_benefits.html", context, status_code=400)
-
-    payroll_date_col = find_col(
-        payroll_df,
-        [
-            "Date",
-            "Check Date",
-            "Pay Date",
-            "Period Ending",
-            "Period End Date",
-            "Work Date",
-            "Week End Date",
-        ],
-    )
-    payroll_emp_col = find_col(payroll_df, ["#Emp", "Emp", "Employee ID", "Emp ID", "ID"])
-    payroll_reg_col = find_col(payroll_df, ["Reg H (e)", "Reg H(e)", "Reg H", "Regular Hours", "Reg Hours"])
-    payroll_ot_col = find_col(payroll_df, ["OT H (e)", "OT H(e)", "OT H", "Overtime Hours", "OT Hours"])
-    payroll_dt_col = find_col(payroll_df, ["DT H (e)", "DT H(e)", "DT H", "Doubletime Hours", "DT Hours"])
-    payroll_nw_col = find_col(
-        payroll_df,
-        [
-            "Non-Worked Hours (e)",
-            "Non Worked Hours (e)",
-            "Non-Worked Hours",
-            "Non Worked Hours",
-            "NW Hours",
-        ],
-    )
-
-    missing_payroll_cols = [
-        name
-        for name, column in {
-            "Payroll Date": payroll_date_col,
-            "#Emp": payroll_emp_col,
-            "Reg H (e)": payroll_reg_col,
-            "OT H (e)": payroll_ot_col,
-            "DT H (e)": payroll_dt_col,
-            "Non-Worked Hours (e)": payroll_nw_col,
-        }.items()
-        if column is None
-    ]
-
-    if missing_payroll_cols:
-        context = _build_context(
-            request,
-            selected_label=selected["value"],
-            error=f"Payroll workbook is missing required columns: {', '.join(missing_payroll_cols)}.",
-            employee_preview=employee_preview,
-            employee_window=employee_window,
-            employee_count=len(employee_ids),
-        )
-        return templates.TemplateResponse("apps/health_benefits.html", context, status_code=400)
-
-    payroll_df[payroll_date_col] = coerce_date(payroll_df[payroll_date_col])
-    payroll_df[payroll_emp_col] = payroll_df[payroll_emp_col].astype(str).str.strip()
 
     date_mask = (
-        payroll_df[payroll_date_col].notna()
-        & (payroll_df[payroll_date_col] >= payroll_start_ts)
-        & (payroll_df[payroll_date_col] <= payroll_end_ts)
+        payroll_df["__payroll_date"].notna()
+        & (payroll_df["__payroll_date"] >= payroll_start_ts)
+        & (payroll_df["__payroll_date"] <= payroll_end_ts)
     )
     payroll_within_window = payroll_df.loc[date_mask].copy()
     rows_considered = len(payroll_within_window)
@@ -484,7 +509,7 @@ async def analyze(
         )
         return templates.TemplateResponse("apps/health_benefits.html", context)
 
-    payroll_matched = payroll_within_window[payroll_within_window[payroll_emp_col].isin(employee_ids)].copy()
+    payroll_matched = payroll_within_window[payroll_within_window["__employee_id"].isin(set(employee_ids))].copy()
     rows_matched = len(payroll_matched)
 
     if payroll_matched.empty:
@@ -501,20 +526,14 @@ async def analyze(
         )
         return templates.TemplateResponse("apps/health_benefits.html", context)
 
-    payroll_matched["_reg"] = safe_numeric(payroll_matched[payroll_reg_col])
-    payroll_matched["_ot"] = safe_numeric(payroll_matched[payroll_ot_col])
-    payroll_matched["_dt"] = safe_numeric(payroll_matched[payroll_dt_col])
-    payroll_matched["_nw"] = safe_numeric(payroll_matched[payroll_nw_col])
-    payroll_matched["Total Hours"] = payroll_matched[["_reg", "_ot", "_dt", "_nw"]].sum(axis=1)
-
     totals = (
-        payroll_matched.groupby(payroll_emp_col, as_index=False)["Total Hours"].sum().sort_values("Total Hours", ascending=False)
+        payroll_matched.groupby("__employee_id", as_index=False)["Total Hours"].sum().sort_values("Total Hours", ascending=False)
     )
 
     qualified = totals[totals["Total Hours"] >= 360].copy()
     results = []
     for row in qualified.to_dict("records"):
-        employee_id = row[payroll_emp_col]
+        employee_id = row["__employee_id"]
         details = details_lookup.get(employee_id, {})
         results.append(
             {
