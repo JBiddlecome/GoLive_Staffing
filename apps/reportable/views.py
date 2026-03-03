@@ -37,6 +37,12 @@ class TimesheetVerificationPayload(BaseModel):
     limit: int = Field(default=50000, ge=1, le=100000)
 
 
+class UnconfirmedRequestsPayload(BaseModel):
+    start_date: str = Field(..., min_length=1)
+    end_date: str = Field(..., min_length=1)
+    limit: int = Field(default=50000, ge=1, le=100000)
+
+
 TIMESHEET_VERIFICATION_EXCLUDED_COLUMNS = {
     "Day",
     "WC",
@@ -1018,6 +1024,142 @@ async def reportable_scheduled_worked_hours_export(
     output.seek(0)
 
     filename = "scheduled_worked_hours_report.xlsx"
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers,
+    )
+
+
+@router.post("/export/unconfirmed-requests")
+async def reportable_unconfirmed_requests_export(
+    payload: UnconfirmedRequestsPayload,
+) -> StreamingResponse:
+    engine = _engine()
+    try:
+        sql = text(
+            """
+            SELECT
+                e.client_id,
+                e.venue_id,
+                e.date,
+                e.stat_waiting_for_admin_count,
+                v.staffing_manager_id,
+                se.shift_employee_id,
+                se.employee_id,
+                se.confirmed,
+                se.request_by,
+                se.confirmed_at,
+                se.created_at,
+                se.created_time,
+                se.remove_by AS removed_by,
+                se.deleted_at,
+                se.cancelled_at,
+                u_req.id AS requester_user_id,
+                u_req.first_name AS requester_first_name,
+                u_req.last_name AS requester_last_name,
+                u_req.role AS requester_role,
+                u_req.group AS requester_group,
+                u_rem.id AS remover_user_id,
+                u_rem.first_name AS remover_first_name,
+                u_rem.last_name AS remover_last_name,
+                u_rem.role AS remover_role,
+                u_rem.group AS remover_group,
+                s.shift_id,
+                emp.payroll_id,
+                emp.first_name,
+                emp.last_name
+            FROM shift_employee se
+            JOIN event e ON se.event_id = e.event_id
+            JOIN venue v ON e.venue_id = v.venue_id
+            JOIN employee emp ON se.employee_id = emp.employee_id
+            JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
+            JOIN shift s ON sp.shift_id = s.shift_id
+            LEFT JOIN user u_req ON se.request_by = u_req.id
+            LEFT JOIN user u_rem ON se.remove_by  = u_rem.id
+            WHERE e.date >= :start_date
+              AND e.date <= :end_date
+              AND se.confirmed = 0
+            ORDER BY e.date, emp.last_name, emp.first_name
+            LIMIT :limit
+            """
+        )
+
+        params = {
+            "start_date": payload.start_date,
+            "end_date": payload.end_date,
+            "limit": payload.limit,
+        }
+
+        with engine.begin() as connection:
+            df = pd.read_sql(sql, connection, params=params)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        engine.dispose()
+
+    if df.empty:
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            pd.DataFrame(columns=[
+                "Client ID", "Venue ID", "Date", "Stat Waiting For Admin",
+                "Staffing Manager ID", "Shift Employee ID", "Employee ID", "Confirmed",
+                "Requested By", "Confirmed At", "Created At", "Created Time",
+                "Removed By", "Deleted At", "Cancelled At",
+                "Requester ID", "Requester First Name", "Requester Last Name", "Requester Role", "Requester Group",
+                "Remover ID", "Remover First Name", "Remover Last Name", "Remover Role", "Remover Group",
+                "Shift ID", "Payroll ID", "First Name", "Last Name"
+            ]).to_excel(writer, index=False, sheet_name="unconfirmed_requests")
+        output.seek(0)
+        filename = "unconfirmed_requests_report.xlsx"
+        headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers=headers,
+        )
+
+    # DataFrame formatting (optional improvements)
+    final_df = df.rename(columns={
+        "client_id": "Client ID",
+        "venue_id": "Venue ID",
+        "date": "Date",
+        "stat_waiting_for_admin_count": "Stat Waiting For Admin",
+        "staffing_manager_id": "Staffing Manager ID",
+        "shift_employee_id": "Shift Employee ID",
+        "employee_id": "Employee ID",
+        "confirmed": "Confirmed",
+        "request_by": "Requested By",
+        "confirmed_at": "Confirmed At",
+        "created_at": "Created At",
+        "created_time": "Created Time",
+        "removed_by": "Removed By",
+        "deleted_at": "Deleted At",
+        "cancelled_at": "Cancelled At",
+        "requester_user_id": "Requester ID",
+        "requester_first_name": "Requester First Name",
+        "requester_last_name": "Requester Last Name",
+        "requester_role": "Requester Role",
+        "requester_group": "Requester Group",
+        "remover_user_id": "Remover ID",
+        "remover_first_name": "Remover First Name",
+        "remover_last_name": "Remover Last Name",
+        "remover_role": "Remover Role",
+        "remover_group": "Remover Group",
+        "shift_id": "Shift ID",
+        "payroll_id": "Payroll ID",
+        "first_name": "First Name",
+        "last_name": "Last Name"
+    })
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        final_df.to_excel(writer, index=False, sheet_name="unconfirmed_requests")
+    output.seek(0)
+
+    filename = "unconfirmed_requests_report.xlsx"
     headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
     return StreamingResponse(
         output,

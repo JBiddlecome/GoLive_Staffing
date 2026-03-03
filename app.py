@@ -21,6 +21,7 @@ from apps.text_blast_filter.views import router as text_blast_router
 from apps.ucla_hours_tool.views import router as ucla_hours_router
 from apps.reports import router as reports_router
 from apps.reportable import router as reportable_router
+from apps.unconfirmed_requests import router as unconfirmed_requests_router
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 
 app = FastAPI(title="GoLive Staffing — Tools")
@@ -150,6 +151,7 @@ app.include_router(
     prefix="/payroll-recruiting-reports",
     tags=["Payroll & Recruiting Reports"],
 )
+app.include_router(unconfirmed_requests_router, prefix="/unconfirmed-requests", tags=["Unconfirmed Requests"])
 
 # Simple health check for Render
 @app.get("/healthz")
