@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}Unconfirmed Requests — GoLive Tools{% endblock %}
+{% block content %}
+<section class="max-w-6xl mx-auto space-y-8">
+    <header class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div class="space-y-3">
+            <p class="text-sm uppercase tracking-[0.25em] text-emerald-600 font-semibold">Staffing Tools</p>
+            <h1 class="brand-serif text-3xl md:text-4xl font-semibold text-gray-900">Unconfirmed Requests</h1>
+            <p class="text-gray-600 max-w-2xl">
+                Monitor and manage employee shift requests that haven't been confirmed yet.
+                Data is pulled from the production database in real-time.
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-4">
+            <div class="px-4 py-2 bg-emerald-50 rounded-2xl border border-emerald-100">
+                <p class="text-xs text-emerald-700 font-semibold uppercase tracking-wider">Total Unconfirmed</p>
+                <p id="totalCount" class="text-2xl font-bold text-emerald-900">0</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Filters -->
+    <section class="rounded-3xl border border-emerald-100 bg-white p-6 shadow-lg space-y-6">
+        <div class="grid gap-6 md:grid-cols-4 items-end">
+            <div>
+                <label class="block text-sm font-semibold mb-2 text-gray-700">Start Date (Event)</label>
+                <input id="startDate" type="date" value="{{ default_start }}"
+                    class="w-full rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 p-3 text-gray-900 transition-all" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-2 text-gray-700">End Date (Event)</label>
+                <input id="endDate" type="date" value="{{ default_end }}"
+                    class="w-full rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 p-3 text-gray-900 transition-all" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-2 text-gray-700">Staffing Manager</label>
+                <select id="staffingManagerSelect"
+                    class="w-full rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 p-3 text-gray-900 transition-all">
+                    <option value="">All Managers</option>
+                </select>
+            </div>
+            <div>
+                <button id="refreshBtn"
+                    class="w-full inline-flex items-center justify-center rounded-xl bg-emerald-600 px-6 py-3.5 font-semibold text-white shadow-md shadow-emerald-900/10 hover:bg-emerald-700 transition-all">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                        </path>
+                    </svg>
+                    Refresh Data
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Data Table -->
+    <section class="rounded-3xl border border-gray-100 bg-white shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-50/50">
+                        <th
+                            class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100">
+                            Hours Passed</th>
+                        <th
+                            class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100">
+                            Employee</th>
+                        <th
+                            class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100">
+                            Event Date</th>
+                        <th
+                            class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100">
+                            Client</th>
+                        <th
+                            class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100">
+                            Venue</th>
+                        <th
+                            class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100">
+                            Requester (User)</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTableBody" class="divide-y divide-gray-50">
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500 italic">
+                            Click "Refresh Data" to load unconfirmed requests…
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const refreshBtn = document.getElementById('refreshBtn');
+        const tableBody = document.getElementById('dataTableBody');
+        const totalCount = document.getElementById('totalCount');
+        const managerSelect = document.getElementById('staffingManagerSelect');
+
+        async function loadData() {
+            const start = document.getElementById('startDate').value;
+            const end = document.getElementById('endDate').value;
+            const managerId = managerSelect.value;
+
+            tableBody.innerHTML = '<tr><td colspan="6" class="px-6 py-12 text-center text-gray-500">Loading requests…</td></tr>';
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Fetching…';
+
+            try {
+                const url = `/unconfirmed-requests/data?start_date=${start}&end_date=${end}&staffing_manager_id=${managerId}`;
+                const response = await fetch(url);
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    renderTable(result.data);
+                    updateManagers(result.staffing_managers);
+                    totalCount.textContent = result.data.length;
+                } else {
+                    throw new Error(result.message || 'Failed to fetch data');
+                }
+            } catch (err) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-red-500">Error: ${err.message}</td></tr>`;
+            } finally {
+                refreshBtn.disabled = false;
+                refreshBtn.innerHTML = '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Refresh Data';
+            }
+        }
+
+        function renderTable(data) {
+            if (!data || data.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="px-6 py-12 text-center text-gray-500">No unconfirmed requests found for this period.</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = data.map(row => {
+                const hoursAlertClass = row.hours_passed > 48 ? 'text-red-600 font-bold' : (row.hours_passed > 24 ? 'text-amber-600 font-bold' : 'text-gray-700');
+                return `
+          <tr class="hover:bg-emerald-50/30 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="${hoursAlertClass}">${row.hours_passed}h</span>
+            </td>
+            <td class="px-6 py-4">
+              <div class="font-semibold text-gray-900">${row.first_name} ${row.last_name}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-gray-700">
+              ${row.event_date}
+            </td>
+            <td class="px-6 py-4 text-gray-700">
+              ${row.client_name}
+            </td>
+            <td class="px-6 py-4 text-gray-700">
+              ${row.venue_name}
+            </td>
+            <td class="px-6 py-4">
+              <div class="text-sm font-medium text-gray-900">${row.requester_name || 'N/A'}</div>
+              <div class="text-xs text-gray-500">ID: ${row.requester_id || 'N/A'}</div>
+            </td>
+          </tr>
+        `;
+            }).join('');
+        }
+
+        function updateManagers(managers) {
+            const currentVal = managerSelect.value;
+            managerSelect.innerHTML = '<option value="">All Managers</option>';
+            managers.forEach(mgr => {
+                const opt = document.createElement('option');
+                opt.value = mgr.staffing_manager_id;
+                opt.textContent = mgr.staffing_manager_name;
+                if (mgr.staffing_manager_id == currentVal) opt.selected = true;
+                managerSelect.appendChild(opt);
+            });
+        }
+
+        refreshBtn.addEventListener('click', loadData);
+        managerSelect.addEventListener('change', loadData);
+
+        // Auto load on first run
+        loadData();
+    });
+</script>
+{% endblock %}
