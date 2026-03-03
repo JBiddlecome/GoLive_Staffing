@@ -95,13 +95,15 @@ async def get_open_shifts(start_date: str, end_date: str, position_id: int | Non
     try:
         sql_text = """
             SELECT
-                e.latitude, e.longitude, e.client_id, e.venue_id,
+                e.latitude, e.longitude, c.name AS client_name, v.name AS venue_name,
                 p.description AS position, sp.rate, e.title as event_title,
                 DATE_FORMAT(e.date, '%Y-%m-%d') as event_date
             FROM event e
             JOIN shift s ON e.event_id = s.event_id
             JOIN shift_position sp ON s.shift_id = sp.shift_id
             JOIN position p ON sp.position_id = p.position_id
+            JOIN client c ON e.client_id = c.client_id
+            JOIN venue v ON e.venue_id = v.venue_id
             LEFT JOIN shift_employee se ON sp.shift_position_id = se.shift_position_id AND se.cancel_reason = 0
             WHERE e.date >= :start_date AND e.date <= :end_date
               AND e.deleted_at IS NULL AND s.deleted_at IS NULL
