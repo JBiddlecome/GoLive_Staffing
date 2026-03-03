@@ -869,12 +869,16 @@ async def reportable_scheduled_worked_hours_export(
         
         # --- Scheduled Hours ---
         sched_hours = 0.0
-        if row["raw_shift_start"] and row["raw_shift_end"]:
-            delta = row["raw_shift_end"] - row["raw_shift_start"]
-            sched_hours = delta.total_seconds() / 3600.0
+        start_ts = pd.to_datetime(row["raw_shift_start"])
+        end_ts = pd.to_datetime(row["raw_shift_end"])
+        
+        if pd.notnull(start_ts) and pd.notnull(end_ts):
+            delta = end_ts - start_ts
+            total_seconds = delta.total_seconds()
+            sched_hours = total_seconds / 3600.0
             
-            # Subtract 0.5 for meal break if over 5 hours
-            if sched_hours > 5.0:
+            # Subtract 0.5 for meal break if over 5 hours (30 mins = 1800 seconds)
+            if total_seconds > 18000: # 5 hours * 3600
                 sched_hours -= 0.5
 
         # --- Pay Rate ---
