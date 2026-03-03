@@ -6,3 +6,4 @@ venv/
 .env.*
 .DS_Store
 tmp/
+data/client_drop_off.db
