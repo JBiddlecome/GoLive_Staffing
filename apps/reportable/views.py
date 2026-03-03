@@ -872,6 +872,10 @@ async def reportable_scheduled_worked_hours_export(
         if row["raw_shift_start"] and row["raw_shift_end"]:
             delta = row["raw_shift_end"] - row["raw_shift_start"]
             sched_hours = delta.total_seconds() / 3600.0
+            
+            # Subtract 0.5 for meal break if over 5 hours
+            if sched_hours > 5.0:
+                sched_hours -= 0.5
 
         # --- Pay Rate ---
         # User requested: "Pay Rate, which pulls the rate from table shift_position"
