@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block title %}Open Shifts Map — GoLive Tools{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<section class="max-w-6xl mx-auto space-y-8 pb-12">
+    <header class="space-y-3">
+        <p class="text-sm uppercase tracking-[0.25em] text-emerald-600 font-semibold">Staffing Visualization</p>
+        <h1 class="brand-serif text-3xl md:text-4xl font-semibold text-gray-900">Open Shifts Map</h1>
+        <p class="text-gray-600 max-w-3xl">
+            Locate available shifts by date and position. Click pins to see client and rate details.
+        </p>
+    </header>
+
+    <!-- Filters -->
+    <section class="rounded-2xl border border-emerald-100 bg-white p-6 shadow-sm">
+        <form id="mapFilters" class="grid gap-4 md:grid-cols-4 items-end">
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700">Start date</label>
+                <input id="startDate" type="date"
+                    class="w-full rounded-lg border border-gray-300 bg-white p-2 text-gray-700" required />
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700">End date</label>
+                <input id="endDate" type="date"
+                    class="w-full rounded-lg border border-gray-300 bg-white p-2 text-gray-700" required />
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700">Position</label>
+                <select id="positionSelect" class="w-full rounded-lg border border-gray-300 bg-white p-2 text-gray-700">
+                    <option value="">All Positions</option>
+                </select>
+            </div>
+            <button type="submit"
+                class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800 transition">
+                Update Map
+            </button>
+        </form>
+    </section>
+
+    <!-- Map Container -->
+    <section class="rounded-3xl border border-emerald-100 bg-white shadow-xl overflow-hidden h-[600px] relative z-0">
+        <div id="map" class="h-full w-full"></div>
+        <div id="mapLoader"
+            class="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-[1000] hidden">
+            <div class="flex flex-col items-center gap-3">
+                <div class="animate-spin rounded-full h-10 w-10 border-4 border-emerald-700 border-t-transparent"></div>
+                <p class="font-semibold text-emerald-900">Fetching shifts...</p>
+            </div>
+        </div>
+    </section>
+</section>
+
+<script>
+    let map;
+    let markers = [];
+
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    const positionSelect = document.getElementById('positionSelect');
+    const filtersForm = document.getElementById('mapFilters');
+    const loader = document.getElementById('mapLoader');
+
+    // Initialize dates to today and +7 days
+    const today = new Date().toISOString().split('T')[0];
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    const nextWeekStr = nextWeek.toISOString().split('T')[0];
+
+    startDateInput.value = today;
+    endDateInput.value = nextWeekStr;
+
+    function initMap() {
+        // Default to Los Angeles area if no pins
+        map = L.map('map').setView([34.0522, -118.2437], 10);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+    }
+
+    async function loadPositions() {
+        const start = startDateInput.value;
+        const end = endDateInput.value;
+        if (!start || !end) return;
+
+        try {
+            const resp = await fetch(`/open-shifts-map/positions?start_date=${start}&end_date=${end}`);
+            const data = await resp.json();
+
+            const currentVal = positionSelect.value;
+            positionSelect.innerHTML = '<option value="">All Positions</option>';
+
+            data.positions.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name;
+                positionSelect.appendChild(opt);
+            });
+
+            if (currentVal) positionSelect.value = currentVal;
+        } catch (err) {
+            console.error('Failed to load positions:', err);
+        }
+    }
+
+    async function updateMap() {
+        const start = startDateInput.value;
+        const end = endDateInput.value;
+        const posId = positionSelect.value;
+
+        if (!start || !end) return;
+
+        loader.classList.remove('hidden');
+
+        // Clear existing markers
+        markers.forEach(m => map.removeLayer(m));
+        markers = [];
+
+        let url = `/open-shifts-map/shifts?start_date=${start}&end_date=${end}`;
+        if (posId) url += `&position_id=${posId}`;
+
+        try {
+            const resp = await fetch(url);
+            const data = await resp.json();
+
+            console.log(`Shifts API returned ${data.shifts.length} shifts.`);
+
+            if (data.shifts.length === 0) {
+                alert('No open shifts found for the selected date range and position.');
+                loader.classList.add('hidden');
+                return;
+            }
+
+            const bounds = L.latLngBounds();
+            let hasPins = false;
+
+            data.shifts.forEach(s => {
+                const lat = parseFloat(s.latitude);
+                const lng = parseFloat(s.longitude);
+                if (isNaN(lat) || isNaN(lng)) {
+                    console.warn(`Invalid coordinates for shift: ${s.event_title}`, s);
+                    return;
+                }
+
+                const marker = L.marker([lat, lng]).addTo(map);
+                marker.bindPopup(`
+          <div class="p-1 space-y-1">
+            <h3 class="font-bold text-emerald-800 border-b border-emerald-100 pb-1 mb-2">${s.event_title}</h3>
+            <p class="text-xs"><strong>Client ID:</strong> ${s.client_id}</p>
+            <p class="text-xs"><strong>Venue ID:</strong> ${s.venue_id}</p>
+            <p class="text-xs"><strong>Position:</strong> ${s.position}</p>
+            <p class="text-xs"><strong>Rate:</strong> $${parseFloat(s.rate).toFixed(2)}</p>
+            <p class="text-xs text-gray-500 mt-2">${s.event_date}</p>
+          </div>
+        `);
+                markers.push(marker);
+                bounds.extend([lat, lng]);
+                hasPins = true;
+            });
+
+            if (hasPins) {
+                console.log(`Rendered ${markers.length} pins.`);
+                map.fitBounds(bounds, { padding: [50, 50] });
+            } else {
+                console.warn('No valid coordinates found among the shifts returned.');
+                alert('Items were found but they lack valid latitude/longitude coordinates to display on the map.');
+            }
+        } catch (err) {
+            console.error('Failed to update map:', err);
+        } finally {
+            loader.classList.add('hidden');
+        }
+    }
+
+    filtersForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        updateMap();
+    });
+
+    startDateInput.addEventListener('change', loadPositions);
+    endDateInput.addEventListener('change', loadPositions);
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        initMap();
+        await loadPositions();
+        await updateMap();
+    });
+</script>
+
+<style>
+    /* Ensure Leaflet popups follow our branding */
+    .leaflet-popup-content-wrapper {
+        border-radius: 1rem;
+        border: 1px solid #75B08C;
+        /* emerald-700/50 */
+        box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    }
+
+    .leaflet-popup-tip {
+        background: white;
+    }
+</style>
+{% endblock %}

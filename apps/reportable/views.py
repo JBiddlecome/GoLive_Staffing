@@ -43,6 +43,12 @@ class UnconfirmedRequestsPayload(BaseModel):
     limit: int = Field(default=50000, ge=1, le=100000)
 
 
+class MapsReportPayload(BaseModel):
+    start_date: str = Field(..., min_length=1)
+    end_date: str = Field(..., min_length=1)
+    limit: int = Field(default=50000, ge=1, le=100000)
+
+
 TIMESHEET_VERIFICATION_EXCLUDED_COLUMNS = {
     "Day",
     "WC",
@@ -1160,6 +1166,95 @@ async def reportable_unconfirmed_requests_export(
     output.seek(0)
 
     filename = "unconfirmed_requests_report.xlsx"
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers,
+    )
+
+
+@router.post("/export/maps-report")
+async def reportable_maps_report_export(
+    payload: MapsReportPayload,
+) -> StreamingResponse:
+    engine = _engine()
+    try:
+        sql = text(
+            """
+            SELECT
+                e.date                       AS `Event Date`,
+                e.title                      AS `Event Title`,
+                e.client_id                  AS `Client ID`,
+                e.venue_id                   AS `Venue ID`,
+                e.latitude                   AS `Latitude`,
+                e.longitude                  AS `Longitude`,
+                s.shift_id                   AS `Shift ID`,
+                DATE_FORMAT(s.start, '%Y-%m-%d %H:%i:%s') AS `Shift Start`,
+                DATE_FORMAT(s.end, '%Y-%m-%d %H:%i:%s')   AS `Shift End`,
+                sp.shift_position_id         AS `Shift Position ID`,
+                p.description                AS `Position`,
+                sp.rate                      AS `Rate`,
+                se.employee_id               AS `Employee ID`,
+                emp.first_name               AS `First Name`,
+                emp.last_name                AS `Last Name`,
+                CASE 
+                    WHEN se.confirmed = 1 THEN 'Confirmed'
+                    WHEN se.confirmed = 0 AND se.shift_employee_id IS NOT NULL THEN 'Request'
+                    ELSE 'Open'
+                END AS `Status`
+            FROM event e
+            JOIN shift s ON e.event_id = s.event_id
+            JOIN shift_position sp ON s.shift_id = sp.shift_id
+            JOIN position p ON sp.position_id = p.position_id
+            LEFT JOIN shift_employee se ON sp.shift_position_id = se.shift_position_id AND se.cancel_reason = 0
+            LEFT JOIN employee emp ON se.employee_id = emp.employee_id
+            WHERE e.date >= :start_date
+              AND e.date <= :end_date
+              AND e.deleted_at IS NULL
+              AND s.deleted_at IS NULL
+            ORDER BY e.date, e.title, s.start, p.description
+            LIMIT :limit
+            """
+        )
+
+        params = {
+            "start_date": payload.start_date,
+            "end_date": payload.end_date,
+            "limit": payload.limit,
+        }
+
+        with engine.begin() as connection:
+            df = pd.read_sql(sql, connection, params=params)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        engine.dispose()
+
+    if df.empty:
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            pd.DataFrame(columns=[
+                "Event Date", "Event Title", "Client ID", "Venue ID", "Latitude", "Longitude",
+                "Shift ID", "Shift Start", "Shift End", "Shift Position ID", "Position", "Rate",
+                "Employee ID", "First Name", "Last Name", "Status"
+            ]).to_excel(writer, index=False, sheet_name="maps_report")
+        output.seek(0)
+        filename = "maps_report.xlsx"
+        headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers=headers,
+        )
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="maps_report")
+    output.seek(0)
+
+    filename = "maps_report.xlsx"
     headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
     return StreamingResponse(
         output,
