@@ -1,0 +1,653 @@
+{% extends "base.html" %}
+{% block title %}Client Drop Off v2 — GoLive Tools{% endblock %}
+{% block content %}
+<section class="space-y-6">
+    <header class="space-y-2">
+        <div class="flex items-center gap-2">
+            <h1 class="text-2xl font-semibold text-gray-900">Client Drop Off v2</h1>
+            <span
+                class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700">Work
+                In Progress</span>
+        </div>
+        <p class="text-sm text-gray-600">
+            Review clients who have had a shift in the last 60 days but have not scheduled any shifts in the last 7 days
+            or any time in the future.
+            This report pulls <strong>live data</strong> from the database and ignores any client names containing
+            “Private”.
+        </p>
+    </header>
+
+    {% if error %}
+    <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    {% if records %}
+    <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h2 class="text-base font-semibold text-gray-900">Potential Drop Offs</h2>
+                <p class="text-xs text-gray-500">
+                    Total clients: <span id="client-drop-off-total">{{ total_clients }}</span>
+                </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                <label for="staffing-manager-filter" class="font-semibold uppercase tracking-wide text-gray-500">
+                    Staffing Manager
+                </label>
+                <select id="staffing-manager-filter"
+                    class="rounded-md border border-gray-200 bg-white px-3 py-1 text-sm text-gray-700 shadow-sm focus:border-gray-300 focus:outline-none">
+                    <option value="">All managers</option>
+                    {% for manager in staffing_managers %}
+                    <option value="{{ manager }}">{{ manager }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="mt-4 overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 text-sm text-gray-700">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Client</th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Staffing Manager
+                        </th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Last Shift Date
+                        </th>
+                        <th class="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Days Since Last Shift
+                        </th>
+                        <th class="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Contacted
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for row in records %}
+                    <tr data-client-row="{{ row['Client'] }}" data-staffing-manager="{{ row['Staffing Manager'] }}">
+                        <td class="px-4 py-2 font-medium text-gray-900">
+                            <span>{{ row['Client'] }}</span>
+                        </td>
+                        <td class="px-4 py-2 text-gray-600">{{ row['Staffing Manager'] }}</td>
+                        <td class="px-4 py-2">{{ row['Last Shift'] }}</td>
+                        <td class="px-4 py-2 text-right">{{ row['Days Since Last Shift'] }}</td>
+                        <td class="px-4 py-2 text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <button type="button"
+                                    class="client-notes-btn inline-flex items-center justify-center rounded-full border border-gray-200 bg-white p-1 text-gray-500 transition hover:border-gray-300 hover:text-gray-700"
+                                    aria-label="View notes" data-client="{{ row['Client'] }}">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+                                        aria-hidden="true">
+                                        <path d="M9 7h6" />
+                                        <path d="M9 11h6" />
+                                        <path d="M7 4h10a2 2 0 0 1 2 2v12l-4-3H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
+                                    </svg>
+                                </button>
+                                <button type="button"
+                                    class="client-contacted-btn rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:border-gray-300 hover:text-gray-900"
+                                    data-client="{{ row[" Client"] }}">
+                                    Contacted
+                                </button>
+                            </div>
+                            <div class="relative mt-2 inline-flex justify-end">
+                                <div class="client-ignore-menu absolute right-0 top-0 z-10 hidden w-40 rounded-lg border border-gray-200 bg-white p-2 text-left text-xs shadow-lg"
+                                    data-client-menu="{{ row['Client'] }}">
+                                    <p class="px-2 pb-1 text-[11px] font-semibold uppercase text-gray-400">Ignore for
+                                    </p>
+                                    {% for weeks in [1, 2, 3, 4] %}
+                                    <button type="button"
+                                        class="client-ignore-option w-full rounded-md px-2 py-1 text-left text-gray-700 hover:bg-gray-100"
+                                        data-client="{{ row['Client'] }}" data-weeks="{{ weeks }}">
+                                        {{ weeks }} Week{% if weeks > 1 %}s{% endif %}
+                                    </button>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="relative mt-2 inline-flex justify-end">
+                                <div class="client-notes-panel absolute right-0 top-0 z-10 hidden w-64 rounded-lg border border-gray-200 bg-white p-3 text-left text-xs shadow-lg"
+                                    data-client-notes="{{ row['Client'] }}">
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-[11px] font-semibold uppercase text-gray-400">Notes</p>
+                                        <button type="button"
+                                            class="client-notes-close text-gray-400 hover:text-gray-600"
+                                            data-client="{{ row['Client'] }}" aria-label="Close notes">
+                                            ✕
+                                        </button>
+                                    </div>
+                                    <ul class="client-notes-list mt-2 space-y-2 text-xs text-gray-700"></ul>
+                                    <div class="mt-3">
+                                        <label class="block text-[11px] font-semibold uppercase text-gray-400">Add
+                                            note</label>
+                                        <textarea
+                                            class="client-notes-input mt-1 w-full rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:border-gray-300 focus:outline-none"
+                                            rows="2" data-client="{{ row['Client'] }}"
+                                            placeholder="Type a note"></textarea>
+                                        <button type="button"
+                                            class="client-notes-save mt-2 w-full rounded-md bg-gray-900 px-2 py-1 text-xs font-semibold text-white hover:bg-gray-800"
+                                            data-client="{{ row['Client'] }}">
+                                            Save note
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div id="ignored-clients-section" class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h2 class="text-base font-semibold text-gray-900">Contacted clients</h2>
+                <p class="text-xs text-gray-500">
+                    Clients currently ignored after outreach.
+                </p>
+            </div>
+        </div>
+        <div class="mt-4 overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 text-sm text-gray-700">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Client
+                        </th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Staffing Manager
+                        </th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Ignored Until
+                        </th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Notes
+                        </th>
+                        <th class="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Action
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="ignored-clients-body" class="divide-y divide-gray-200"></tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div
+        class="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-10 text-center text-sm text-gray-500">
+        No clients matched the drop-off criteria based on live database activity.
+    </div>
+    {% endif %}
+
+    <div class="text-center pt-4">
+        <a href="/work-in-progress" class="text-sm font-semibold text-emerald-700 hover:underline">← Back to WIP</a>
+    </div>
+</section>
+
+<script>
+    const managerFilter = document.getElementById("staffing-manager-filter");
+
+    const normalizeClientKey = (clientName) => clientName.trim().toLowerCase();
+    const normalizeManagerKey = (managerName) => managerName.trim().toLowerCase();
+
+    const parseDate = (value) => {
+        if (!value) {
+            return null;
+        }
+        const trimmed = value.trim();
+        const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+        if (match) {
+            const parsed = new Date(
+                Number(match[1]),
+                Number(match[2]) - 1,
+                Number(match[3])
+            );
+            return Number.isNaN(parsed.getTime()) ? null : parsed;
+        }
+        const parsed = new Date(trimmed);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    const addWeeks = (weeks) => {
+        const date = new Date();
+        date.setDate(date.getDate() + weeks * 7);
+        return date;
+    };
+
+    const formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    };
+
+    const updateTotals = () => {
+        const totalElement = document.getElementById("client-drop-off-total");
+        if (!totalElement) {
+            return;
+        }
+        const visibleRows = document.querySelectorAll("tbody tr[data-client-row]:not(.hidden)");
+        totalElement.textContent = visibleRows.length.toString();
+    };
+
+    const updateRowVisibility = () => {
+        document.querySelectorAll("tr[data-client-row]").forEach((row) => {
+            const isIgnored = row.dataset.ignored === "true";
+            const managerMatch = row.dataset.managerMatch !== "false";
+            if (isIgnored || !managerMatch) {
+                row.classList.add("hidden");
+            } else {
+                row.classList.remove("hidden");
+            }
+        });
+        updateTotals();
+    };
+
+    const ignoredSection = document.getElementById("ignored-clients-section");
+    const ignoredBody = document.getElementById("ignored-clients-body");
+
+    const applyIgnoreMap = () => {
+        const map = contactedCache;
+        const now = new Date();
+
+        document.querySelectorAll("tr[data-client-row]").forEach((row) => {
+            const clientName = row.dataset.clientRow || "";
+            const clientKey = normalizeClientKey(clientName);
+            const ignoreUntil = map[clientKey];
+            const ignoreDate = ignoreUntil ? parseDate(ignoreUntil) : null;
+
+            if (ignoreDate && ignoreDate > now) {
+                row.dataset.ignored = "true";
+            } else {
+                row.dataset.ignored = "false";
+            }
+        });
+
+        updateRowVisibility();
+        renderIgnoredList();
+    };
+
+    const applyManagerFilter = () => {
+        const selected = managerFilter ? managerFilter.value : "";
+        const selectedKey = normalizeManagerKey(selected);
+
+        document.querySelectorAll("tr[data-client-row]").forEach((row) => {
+            const managerName = row.dataset.staffingManager || "";
+            const managerKey = normalizeManagerKey(managerName);
+            row.dataset.managerMatch = selectedKey === "" || managerKey === selectedKey;
+        });
+
+        updateRowVisibility();
+    };
+
+    const closeAllMenus = () => {
+        document.querySelectorAll(".client-ignore-menu").forEach((menu) => {
+            menu.classList.add("hidden");
+        });
+    };
+
+    const closeAllNotes = () => {
+        document.querySelectorAll(".client-notes-panel").forEach((panel) => {
+            panel.classList.add("hidden");
+        });
+    };
+
+    const showMenuForClient = (clientName) => {
+        const menu = document.querySelector(
+            `.client-ignore-menu[data-client-menu="${CSS.escape(clientName)}"]`
+        );
+        if (!menu) {
+            return;
+        }
+        closeAllMenus();
+        menu.classList.remove("hidden");
+    };
+
+    const notesEndpoint = "{{ request.url_for('client_drop_off_v2_notes') }}";
+    const contactedEndpoint = "{{ request.url_for('client_drop_off_v2_contacted') }}";
+    const contactedSaveEndpoint = "{{ request.url_for('client_drop_off_v2_contacted_save') }}";
+    const contactedDeleteEndpoint = "{{ request.url_for('client_drop_off_v2_contacted_delete') }}";
+    let notesCache = {};
+    let contactedCache = {};
+
+    const loadNotesMap = async () => {
+        try {
+            const response = await fetch(notesEndpoint, { cache: "no-store" });
+            if (!response.ok) {
+                return {};
+            }
+            const payload = await response.json();
+            notesCache = payload.notes || {};
+            return notesCache;
+        } catch (error) {
+            return {};
+        }
+    };
+
+    const saveNoteForClient = async (clientName, noteText) => {
+        try {
+            const response = await fetch("{{ request.url_for('client_drop_off_v2_notes_save') }}", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ client: clientName, text: noteText }),
+            });
+            if (!response.ok) {
+                return null;
+            }
+            return response.json();
+        } catch (error) {
+            return null;
+        }
+    };
+
+    const loadContactedMap = async () => {
+        try {
+            const response = await fetch(contactedEndpoint, { cache: "no-store" });
+            if (!response.ok) {
+                return {};
+            }
+            const payload = await response.json();
+            contactedCache = payload.contacted || {};
+            return contactedCache;
+        } catch (error) {
+            return {};
+        }
+    };
+
+    const refreshContacted = async () => {
+        await loadContactedMap();
+        applyIgnoreMap();
+    };
+
+    const saveContactedClient = async (clientName, ignoreUntil) => {
+        try {
+            const response = await fetch(contactedSaveEndpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ client: clientName, ignore_until: ignoreUntil }),
+            });
+            if (!response.ok) {
+                return null;
+            }
+            return response.json();
+        } catch (error) {
+            return null;
+        }
+    };
+
+    const deleteContactedClient = async (clientName) => {
+        try {
+            const response = await fetch(contactedDeleteEndpoint, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ client: clientName }),
+            });
+            if (!response.ok) {
+                return null;
+            }
+            return response.json();
+        } catch (error) {
+            return null;
+        }
+    };
+
+    const renderIgnoredList = () => {
+        if (!ignoredSection || !ignoredBody) {
+            return;
+        }
+
+        const ignoreMap = contactedCache;
+        const notesMap = notesCache;
+        const ignoredEntries = Object.entries(ignoreMap);
+        const now = new Date();
+
+        ignoredBody.innerHTML = "";
+
+        const rows = document.querySelectorAll("tr[data-client-row]");
+        const rowMap = new Map();
+        rows.forEach((row) => {
+            rowMap.set(normalizeClientKey(row.dataset.clientRow || ""), row);
+        });
+
+        ignoredEntries.forEach(([clientKey, ignoreUntil]) => {
+            const ignoreDate = parseDate(ignoreUntil);
+            if (!ignoreDate || ignoreDate <= now) {
+                return;
+            }
+            const row = rowMap.get(clientKey);
+            if (!row) {
+                return;
+            }
+            const clientName = row.dataset.clientRow || "";
+            const managerName = row.dataset.staffingManager || "Unassigned";
+            const notes = notesMap[clientKey] || [];
+            const notesHtml =
+                notes.length === 0
+                    ? '<span class="text-gray-400">No notes yet.</span>'
+                    : `<ul class="space-y-1">${notes
+                        .map(
+                            (note) =>
+                                `<li><span class="font-semibold text-gray-500">${note.date}</span><br>${note.text}</li>`
+                        )
+                        .join("")}</ul>`;
+
+            const tableRow = document.createElement("tr");
+            tableRow.innerHTML = `
+        <td class="px-4 py-2 font-medium text-gray-900">${clientName}</td>
+        <td class="px-4 py-2 text-gray-600">${managerName}</td>
+        <td class="px-4 py-2 text-gray-600">${ignoreUntil}</td>
+        <td class="px-4 py-2 text-gray-600">${notesHtml}</td>
+        <td class="px-4 py-2 text-right">
+          <button
+            type="button"
+            class="client-restore-btn rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700 transition hover:border-gray-300 hover:text-gray-900"
+            data-client="${clientName}"
+          >
+            Restore
+          </button>
+        </td>
+      `;
+            ignoredBody.appendChild(tableRow);
+        });
+
+        const hasIgnored = ignoredBody.children.length > 0;
+        ignoredSection.classList.toggle("hidden", !hasIgnored);
+    };
+
+    const renderNotesIconState = (clientName, notes) => {
+        const button = document.querySelector(
+            `.client-notes-btn[data-client="${CSS.escape(clientName)}"]`
+        );
+        if (!button) {
+            return;
+        }
+        if (notes.length > 0) {
+            button.classList.add("border-emerald-500", "text-emerald-600");
+            button.classList.remove("border-gray-200", "text-gray-500", "text-gray-700");
+        } else {
+            button.classList.remove("border-emerald-500", "text-emerald-600");
+            button.classList.add("border-gray-200", "text-gray-500");
+        }
+    };
+
+    const renderNotesList = (clientName) => {
+        const map = notesCache;
+        const clientKey = normalizeClientKey(clientName);
+        const notes = map[clientKey] || [];
+        const list = document.querySelector(
+            `.client-notes-panel[data-client-notes="${CSS.escape(clientName)}"] .client-notes-list`
+        );
+        if (!list) {
+            return;
+        }
+        list.innerHTML = "";
+        if (notes.length === 0) {
+            const emptyItem = document.createElement("li");
+            emptyItem.className = "text-gray-400";
+            emptyItem.textContent = "No notes yet.";
+            list.appendChild(emptyItem);
+        } else {
+            notes.forEach((note) => {
+                const item = document.createElement("li");
+                item.innerHTML = `<span class="font-semibold text-gray-500">${note.date}</span><br>${note.text}`;
+                list.appendChild(item);
+            });
+        }
+        renderNotesIconState(clientName, notes);
+    };
+
+    const showNotesForClient = (clientName) => {
+        const panel = document.querySelector(
+            `.client-notes-panel[data-client-notes="${CSS.escape(clientName)}"]`
+        );
+        if (!panel) {
+            return;
+        }
+        closeAllMenus();
+        closeAllNotes();
+        renderNotesList(clientName);
+        panel.classList.remove("hidden");
+    };
+
+    const seedNotesIcons = () => {
+        const map = notesCache;
+        document.querySelectorAll("tr[data-client-row]").forEach((row) => {
+            const clientName = row.dataset.clientRow || "";
+            const notes = map[normalizeClientKey(clientName)] || [];
+            renderNotesIconState(clientName, notes);
+        });
+    };
+
+    document.addEventListener("click", async (event) => {
+        const contactButton = event.target.closest(".client-contacted-btn");
+        if (contactButton) {
+            const clientName = contactButton.dataset.client || "";
+            showMenuForClient(clientName);
+            return;
+        }
+
+        const notesButton = event.target.closest(".client-notes-btn");
+        if (notesButton) {
+            const clientName = notesButton.dataset.client || "";
+            showNotesForClient(clientName);
+            return;
+        }
+
+        const optionButton = event.target.closest(".client-ignore-option");
+        if (optionButton) {
+            const clientName = optionButton.dataset.client || "";
+            const weeks = Number(optionButton.dataset.weeks || 0);
+            if (!clientName || !weeks) {
+                return;
+            }
+            const ignoreUntil = addWeeks(weeks);
+            const payload = await saveContactedClient(clientName, formatDate(ignoreUntil));
+            if (payload && payload.contacted) {
+                contactedCache = payload.contacted;
+            }
+            closeAllMenus();
+            applyIgnoreMap();
+            return;
+        }
+
+        const saveNotesButton = event.target.closest(".client-notes-save");
+        if (saveNotesButton) {
+            const clientName = saveNotesButton.dataset.client || "";
+            const input = document.querySelector(
+                `.client-notes-input[data-client="${CSS.escape(clientName)}"]`
+            );
+            if (!input) {
+                return;
+            }
+            const noteText = input.value.trim();
+            if (!noteText) {
+                return;
+            }
+            const payload = await saveNoteForClient(clientName, noteText);
+            if (!payload || !payload.notes) {
+                return;
+            }
+            const clientKey = payload.client_key || normalizeClientKey(clientName);
+            notesCache[clientKey] = payload.notes;
+            input.value = "";
+            renderNotesList(clientName);
+            renderIgnoredList();
+            closeAllNotes();
+            return;
+        }
+
+        const closeNotesButton = event.target.closest(".client-notes-close");
+        if (closeNotesButton) {
+            closeAllNotes();
+            return;
+        }
+
+        const restoreButton = event.target.closest(".client-restore-btn");
+        if (restoreButton) {
+            const clientName = restoreButton.dataset.client || "";
+            if (!clientName) {
+                return;
+            }
+            const payload = await deleteContactedClient(clientName);
+            if (payload && payload.contacted) {
+                contactedCache = payload.contacted;
+            }
+            applyIgnoreMap();
+            return;
+        }
+
+        if (!event.target.closest(".client-ignore-menu")) {
+            closeAllMenus();
+        }
+
+        if (!event.target.closest(".client-notes-panel")) {
+            closeAllNotes();
+        }
+    });
+
+    const refreshNotes = async () => {
+        await loadNotesMap();
+        seedNotesIcons();
+        renderIgnoredList();
+
+        const openPanel = document.querySelector(".client-notes-panel:not(.hidden)");
+        if (openPanel) {
+            const openClient = openPanel.dataset.clientNotes || "";
+            if (openClient) {
+                renderNotesList(openClient);
+            }
+        }
+    };
+
+    const initializeNotes = async () => {
+        await refreshNotes();
+    };
+
+    const initializePage = async () => {
+        await refreshContacted();
+        await initializeNotes();
+        applyManagerFilter();
+
+        setInterval(refreshNotes, 30000);
+        setInterval(refreshContacted, 30000);
+
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") {
+                refreshNotes();
+                refreshContacted();
+            }
+        });
+
+        if (managerFilter) {
+            managerFilter.addEventListener("change", () => {
+                applyManagerFilter();
+            });
+        }
+    };
+
+    initializePage();
+</script>
+{% endblock %}
