@@ -23,6 +23,7 @@ from apps.reports import router as reports_router
 from apps.reportable import router as reportable_router
 from apps.unconfirmed_requests import router as unconfirmed_requests_router
 from apps.open_shifts_map import router as open_shifts_map_router
+from apps.client_drop_off_v2.views import router as client_drop_off_v2_router
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 
 app = FastAPI(title="GoLive Staffing — Tools")
@@ -154,6 +155,7 @@ app.include_router(
 )
 app.include_router(unconfirmed_requests_router, prefix="/unconfirmed-requests", tags=["Unconfirmed Requests"])
 app.include_router(open_shifts_map_router, prefix="/open-shifts-map", tags=["Open Shifts Map"])
+app.include_router(client_drop_off_v2_router, prefix="/client-drop-off-v2", tags=["Client Drop Off v2"])
 
 # Simple health check for Render
 @app.get("/healthz")
