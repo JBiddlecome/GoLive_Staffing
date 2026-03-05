@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 
 # Sub-routes
 from apps.clickboarding_check.views import router as clickboarding_router
@@ -23,9 +24,18 @@ from apps.reports import router as reports_router
 from apps.reportable import router as reportable_router
 from apps.unconfirmed_requests import router as unconfirmed_requests_router
 from apps.open_shifts_map import router as open_shifts_map_router
+from apps.sms_paraphraser.views import router as sms_paraphraser_router
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 
 app = FastAPI(title="GoLive Staffing — Tools")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Static + templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -154,6 +164,7 @@ app.include_router(
 )
 app.include_router(unconfirmed_requests_router, prefix="/unconfirmed-requests", tags=["Unconfirmed Requests"])
 app.include_router(open_shifts_map_router, prefix="/open-shifts-map", tags=["Open Shifts Map"])
+app.include_router(sms_paraphraser_router, prefix="/sms-paraphraser", tags=["SMS Paraphraser"])
 
 # Simple health check for Render
 @app.get("/healthz")

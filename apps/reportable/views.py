@@ -170,6 +170,51 @@ async def reportable_schema_columns(table: str = Query(..., min_length=1)) -> JS
     return JSONResponse({"table": table, "columns": _list_columns(table)})
 
 
+@router.get("/event/{event_id}")
+async def reportable_event_details(event_id: int) -> JSONResponse:
+    engine = _engine()
+    try:
+        sql = text(
+            """
+            SELECT
+                e.title,
+                e.date,
+                e.venue_details,
+                e.parking_note,
+                e.directions,
+                e.check_in,
+                v.name AS venue_name,
+                v.address1,
+                v.address2,
+                v.city,
+                v.state,
+                v.zip
+            FROM event e
+            JOIN venue v ON e.venue_id = v.venue_id
+            WHERE e.event_id = :event_id
+            """
+        )
+        with engine.begin() as connection:
+            result = connection.execute(sql, {"event_id": event_id}).mappings().first()
+            if not result:
+                raise HTTPException(status_code=404, detail=f"Event {event_id} not found.")
+            
+            # Format date and address
+            data = dict(result)
+            if data.get("date"):
+                data["date"] = data["date"].isoformat()
+                
+            addr = data.get("address1", "")
+            if data.get("address2"):
+                addr += f", {data['address2']}"
+            addr += f", {data.get('city', '')}, {data.get('state', '')} {data.get('zip', '')}"
+            data["location"] = addr.strip(", ")
+            
+            return JSONResponse(data)
+    finally:
+        engine.dispose()
+
+
 @router.post("/export")
 async def reportable_export(payload: ExportPayload) -> StreamingResponse:
     engine = _engine()
