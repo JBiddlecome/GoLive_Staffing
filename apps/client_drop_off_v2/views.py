@@ -16,7 +16,9 @@ from apps.client_drop_off_v2.app import get_drop_off_data
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 DATA_DIR = Path("data")
-DB_FILE = DATA_DIR / "client_drop_off_v2.db"
+DB_FILE = DATA_DIR / "client_drop_off.db"
+LEGACY_NOTES_FILE = DATA_DIR / "client_drop_off_notes.json"
+LEGACY_CONTACTED_FILE = DATA_DIR / "client_drop_off_contacted.json"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -91,6 +93,7 @@ async def client_drop_off_v2_notes_save(payload: ClientNotePayload) -> JSONRespo
     note_date = date.today().isoformat()
     _init_db()
     with _get_connection() as conn:
+        _maybe_migrate_legacy_data(conn)
         conn.execute(
             """
             INSERT INTO client_drop_off_notes
@@ -143,6 +146,7 @@ async def client_drop_off_v2_contacted_save(
     ignore_until = parsed_ignore_until.isoformat()
     _init_db()
     with _get_connection() as conn:
+        _maybe_migrate_legacy_data(conn)
         conn.execute(
             """
             INSERT INTO client_drop_off_contacted
@@ -172,6 +176,7 @@ async def client_drop_off_v2_contacted_delete(
     client_key = _normalize_client_key(client_name)
     _init_db()
     with _get_connection() as conn:
+        _maybe_migrate_legacy_data(conn)
         conn.execute(
             "DELETE FROM client_drop_off_contacted WHERE client_key = ?",
             (client_key,),
@@ -188,6 +193,7 @@ def _normalize_client_key(name: str) -> str:
 def _load_notes_map() -> Dict[str, List[Dict[str, str]]]:
     _init_db()
     with _get_connection() as conn:
+        _maybe_migrate_legacy_data(conn)
         rows = conn.execute(
             """
             SELECT client_key, note_text, created_date
@@ -208,6 +214,7 @@ def _load_notes_map() -> Dict[str, List[Dict[str, str]]]:
 def _load_notes_for_client(client_key: str) -> List[Dict[str, str]]:
     _init_db()
     with _get_connection() as conn:
+        _maybe_migrate_legacy_data(conn)
         rows = conn.execute(
             """
             SELECT note_text, created_date
@@ -224,6 +231,7 @@ def _load_contacted_map() -> Dict[str, str]:
     _init_db()
     today = date.today().isoformat()
     with _get_connection() as conn:
+        _maybe_migrate_legacy_data(conn)
         conn.execute(
             "DELETE FROM client_drop_off_contacted WHERE ignore_until <= ?",
             (today,),
@@ -273,3 +281,94 @@ def _init_db() -> None:
             """
         )
         conn.commit()
+
+
+def _maybe_migrate_legacy_data(conn: sqlite3.Connection) -> None:
+    notes_exists = conn.execute(
+        "SELECT 1 FROM client_drop_off_notes LIMIT 1"
+    ).fetchone()
+    contacted_exists = conn.execute(
+        "SELECT 1 FROM client_drop_off_contacted LIMIT 1"
+    ).fetchone()
+    if notes_exists or contacted_exists:
+        return
+
+    legacy_notes = _load_legacy_notes_map()
+    for client_key, notes in legacy_notes.items():
+        for note in notes:
+            conn.execute(
+                """
+                INSERT INTO client_drop_off_notes
+                    (client_key, client_name, note_text, created_date)
+                VALUES (?, ?, ?, ?)
+                """,
+                (client_key, client_key, note["text"], note["date"]),
+            )
+
+    legacy_contacted = _load_legacy_contacted_map()
+    for client_key, ignore_until in legacy_contacted.items():
+        conn.execute(
+            """
+            INSERT INTO client_drop_off_contacted
+                (client_key, client_name, ignore_until)
+            VALUES (?, ?, ?)
+            """,
+            (client_key, client_key, ignore_until),
+        )
+    conn.commit()
+
+
+def _load_legacy_notes_map() -> Dict[str, List[Dict[str, str]]]:
+    if not LEGACY_NOTES_FILE.exists():
+        return {}
+
+    try:
+        data = json.loads(LEGACY_NOTES_FILE.read_text())
+    except json.JSONDecodeError:
+        return {}
+
+    if not isinstance(data, dict):
+        return {}
+
+    normalized: Dict[str, List[Dict[str, str]]] = {}
+    for key, value in data.items():
+        if not isinstance(key, str) or not isinstance(value, list):
+            continue
+        cleaned_notes = []
+        for entry in value:
+            if not isinstance(entry, dict):
+                continue
+            text = str(entry.get("text", "")).strip()
+            entry_date = str(entry.get("date", "")).strip()
+            if text and entry_date:
+                cleaned_notes.append({"text": text, "date": entry_date})
+        if cleaned_notes:
+            normalized[key] = cleaned_notes
+    return normalized
+
+
+def _load_legacy_contacted_map() -> Dict[str, str]:
+    if not LEGACY_CONTACTED_FILE.exists():
+        return {}
+
+    try:
+        data = json.loads(LEGACY_CONTACTED_FILE.read_text())
+    except json.JSONDecodeError:
+        return {}
+
+    if not isinstance(data, dict):
+        return {}
+
+    cleaned: Dict[str, str] = {}
+    today = date.today()
+    for key, value in data.items():
+        if not isinstance(key, str) or not isinstance(value, str):
+            continue
+        try:
+            ignore_date = date.fromisoformat(value)
+        except ValueError:
+            continue
+        if ignore_date <= today:
+            continue
+        cleaned[key] = ignore_date.isoformat()
+    return cleaned
