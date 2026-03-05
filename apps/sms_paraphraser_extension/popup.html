@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>SMS Paraphraser</title>
+    <style>
+        body {
+            width: 350px;
+            padding: 15px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+        }
+
+        h2 {
+            color: #343a40;
+            font-size: 18px;
+            margin-top: 0;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 8px;
+        }
+
+        .section-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .section-item {
+            display: flex;
+            align-items: center;
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-item input {
+            margin-right: 12px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .section-item label {
+            cursor: pointer;
+            font-weight: 500;
+            color: #495057;
+            flex-grow: 1;
+        }
+
+        .status-badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 5px;
+        }
+
+        .status-found {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-missing {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+            margin-bottom: 10px;
+        }
+
+        #generate-btn {
+            background-color: #007bff;
+            color: white;
+        }
+
+        #generate-btn:hover {
+            background-color: #0056b3;
+        }
+
+        #generate-btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .result-container {
+            margin-top: 15px;
+            display: none;
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            padding: 10px;
+            font-family: inherit;
+            resize: vertical;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+
+        #copy-btn {
+            background-color: #28a745;
+            color: white;
+        }
+
+        #copy-btn:hover {
+            background-color: #218838;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 10px 0;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        #error-msg {
+            color: #dc3545;
+            font-size: 12px;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>SMS Paraphraser</h2>
+
+    <div id="loading" class="loading">Finding sections on page...</div>
+
+    <div id="error-msg" class="error-msg" style="display:none;"></div>
+    <div id="data-source-status" class="status-badge"
+        style="display:none; margin: 10px auto; width: fit-content; font-size: 11px;"></div>
+
+    <div class="section-list" id="sections">
+        <div style="font-weight: bold; margin-bottom: 5px; color: #007bff;">Event Details</div>
+        <div class="section-item">
+            <input type="checkbox" id="Event Name" value="Event Name">
+            <label for="Event Name">Event Name</label>
+        </div>
+        <div class="section-item">
+            <input type="checkbox" id="Date" value="Date">
+            <label for="Date">Date</label>
+        </div>
+        <div class="section-item">
+            <input type="checkbox" id="Time" value="Time">
+            <label for="Time">Time</label>
+        </div>
+        <div class="section-item">
+            <input type="checkbox" id="Location" value="Location">
+            <label for="Location">Venue Location</label>
+        </div>
+
+        <div style="font-weight: bold; margin-bottom: 5px; margin-top: 10px; color: #007bff;">Additional Notes</div>
+        <div class="section-item">
+            <input type="checkbox" id="Venue Details" value="Venue Details">
+            <label for="Venue Details">Venue Details</label>
+        </div>
+        <div class="section-item">
+            <input type="checkbox" id="Parking Note" value="Parking Note">
+            <label for="Parking Note">Parking Note</label>
+        </div>
+        <div class="section-item">
+            <input type="checkbox" id="Directions" value="Directions">
+            <label for="Directions">Directions</label>
+        </div>
+        <div class="section-item">
+            <input type="checkbox" id="Check-In" value="Check-In">
+            <label for="Check-In">Check-In</label>
+        </div>
+    </div>
+
+    <button id="generate-btn" disabled>Generate SMS</button>
+
+    <div id="error-msg"></div>
+
+    <div class="result-container" id="result-container">
+        <textarea id="output-text"></textarea>
+        <button id="copy-btn">Copy to Clipboard</button>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

@@ -7,3 +7,4 @@ venv/
 .DS_Store
 tmp/
 data/client_drop_off.db
+data/client_drop_off_v2.db

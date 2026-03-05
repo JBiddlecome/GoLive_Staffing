@@ -1,0 +1,32 @@
+{
+    "manifest_version": 3,
+    "name": "SMS Paraphraser",
+    "version": "1.0",
+    "description": "Extracts and paraphrases GoLive event details for SMS.",
+    "permissions": [
+        "activeTab",
+        "scripting",
+        "storage"
+    ],
+    "host_permissions": [
+        "https://golive.culinarystaffing.com/*",
+        "https://api.openai.com/*"
+    ],
+    "action": {
+        "default_popup": "popup.html"
+    },
+    "background": {
+        "service_worker": "background.js",
+        "type": "module"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "*://golive.culinarystaffing.com/*"
+            ],
+            "js": [
+                "content.js"
+            ]
+        }
+    ]
+}

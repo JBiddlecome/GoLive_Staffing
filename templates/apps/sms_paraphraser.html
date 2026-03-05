@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block title %}SMS Paraphraser — Staffing Tools{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+    <section class="bg-white rounded-3xl shadow-xl border border-emerald-100 overflow-hidden">
+        <div class="bg-gradient-to-r from-emerald-600 to-emerald-500 px-8 py-6 text-white text-center">
+            <h1 class="brand-serif text-3xl font-bold">SMS Paraphraser</h1>
+            <p class="text-emerald-50 text-sm mt-1">Convert event notes into concise staff notifications.</p>
+        </div>
+
+        <div class="p-8 space-y-6">
+            <!-- URL Input -->
+            <div class="space-y-2">
+                <label for="event-url" class="block text-sm font-semibold text-gray-700">GoLive Event URL</label>
+                <div class="relative">
+                    <input type="text" id="event-url"
+                        placeholder="https://golive.culinarystaffing.com/events/166589/view"
+                        class="w-full px-4 py-3 rounded-2xl border-2 border-emerald-100 focus:border-emerald-500 focus:ring-0 transition-all text-gray-800 placeholder-gray-400">
+                    <div id="url-status"
+                        class="hidden absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuration -->
+            <div id="config-section" class="hidden space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                <div class="flex items-center gap-3 border-b border-emerald-50 pb-4">
+                    <span
+                        class="h-8 w-8 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-bold text-xs">ID</span>
+                    <span id="display-event-id" class="text-sm font-mono text-gray-600"></span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <label
+                        class="flex items-center gap-3 p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 cursor-pointer hover:bg-emerald-50 transition">
+                        <input type="checkbox" name="section" value="Venue Details" checked
+                            class="w-5 h-5 rounded text-emerald-600 focus:ring-emerald-500 border-emerald-200">
+                        <span class="text-sm font-semibold text-gray-700">Venue Details</span>
+                    </label>
+                    <label
+                        class="flex items-center gap-3 p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 cursor-pointer hover:bg-emerald-50 transition">
+                        <input type="checkbox" name="section" value="Parking Note" checked
+                            class="w-5 h-5 rounded text-emerald-600 focus:ring-emerald-500 border-emerald-200">
+                        <span class="text-sm font-semibold text-gray-700">Parking Note</span>
+                    </label>
+                    <label
+                        class="flex items-center gap-3 p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 cursor-pointer hover:bg-emerald-50 transition">
+                        <input type="checkbox" name="section" value="Directions" checked
+                            class="w-5 h-5 rounded text-emerald-600 focus:ring-emerald-500 border-emerald-200">
+                        <span class="text-sm font-semibold text-gray-700">Directions</span>
+                    </label>
+                    <label
+                        class="flex items-center gap-3 p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 cursor-pointer hover:bg-emerald-50 transition">
+                        <input type="checkbox" name="section" value="Check-In" checked
+                            class="w-5 h-5 rounded text-emerald-600 focus:ring-emerald-500 border-emerald-200">
+                        <span class="text-sm font-semibold text-gray-700">Check-In</span>
+                    </label>
+                </div>
+
+                <button id="generate-btn"
+                    class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-lg shadow-emerald-900/10 transition-all flex items-center justify-center gap-2">
+                    <span>Generate Staff SMS</span>
+                    <svg id="loader" class="hidden animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg"
+                        fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Result -->
+            <div id="result-section" class="hidden space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div class="p-6 bg-gray-50 rounded-2xl border-2 border-emerald-50 relative group">
+                    <textarea id="output-text" rows="8" readonly
+                        class="w-full bg-transparent border-none focus:ring-0 text-gray-700 font-medium resize-none"></textarea>
+                    <button id="copy-btn"
+                        class="absolute top-4 right-4 bg-white px-3 py-1.5 rounded-lg border border-emerald-100 text-[10px] font-bold text-emerald-700 uppercase tracking-wider hover:bg-emerald-50 transition shadow-sm">
+                        Copy Result
+                    </button>
+                </div>
+            </div>
+
+            <div id="error-msg"
+                class="hidden p-4 rounded-xl bg-red-50 text-red-700 text-sm font-medium border border-red-100"></div>
+        </div>
+    </section>
+
+    <!-- Tips -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white p-6 rounded-3xl border border-emerald-50 shadow-sm">
+            <h3 class="font-bold text-emerald-800 text-sm mb-2">1. Paste URL</h3>
+            <p class="text-xs text-gray-600">Simply copy the URL from your browser's address bar while viewing an event.
+            </p>
+        </div>
+        <div class="bg-white p-6 rounded-3xl border border-emerald-50 shadow-sm">
+            <h3 class="font-bold text-emerald-800 text-sm mb-2">2. Adjust Sections</h3>
+            <p class="text-xs text-gray-600">Only the checked sections will be included in the AI paraphrase.</p>
+        </div>
+        <div class="bg-white p-6 rounded-3xl border border-emerald-50 shadow-sm">
+            <h3 class="font-bold text-emerald-800 text-sm mb-2">3. Direct DB Pull</h3>
+            <p class="text-xs text-gray-600">The tool pulls the latest data directly from the GoLive database, avoiding
+                page errors.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlInput = document.getElementById('event-url');
+        const configSection = document.getElementById('config-section');
+        const resultSection = document.getElementById('result-section');
+        const urlStatus = document.getElementById('url-status');
+        const displayId = document.getElementById('display-event-id');
+        const generateBtn = document.getElementById('generate-btn');
+        const outputText = document.getElementById('output-text');
+        const copyBtn = document.getElementById('copy-btn');
+        const errorMsg = document.getElementById('error-msg');
+        const loader = document.getElementById('loader');
+
+        let currentEventId = null;
+
+        urlInput.addEventListener('input', () => {
+            const url = urlInput.value.trim();
+            if (!url) {
+                resetUI();
+                return;
+            }
+
+            const eventId = extractEventId(url);
+            if (eventId) {
+                currentEventId = eventId;
+                urlStatus.textContent = 'Event Recognized';
+                urlStatus.className = 'absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700';
+                urlStatus.classList.remove('hidden');
+                displayId.textContent = 'Event ID: ' + eventId;
+                configSection.classList.remove('hidden');
+                errorMsg.classList.add('hidden');
+            } else {
+                urlStatus.textContent = 'Invalid URL';
+                urlStatus.className = 'absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700';
+                urlStatus.classList.remove('hidden');
+                configSection.classList.add('hidden');
+            }
+        });
+
+        function extractEventId(url) {
+            try {
+                const parsedUrl = new URL(url);
+
+                // Try query param 'id'
+                const idParam = parsedUrl.searchParams.get('id');
+                if (idParam && !isNaN(idParam)) return idParam;
+
+                // Try path segments
+                const segments = parsedUrl.pathname.split('/');
+                for (const seg of segments) {
+                    if (seg && !isNaN(seg) && seg.length >= 5) {
+                        return seg;
+                    }
+                }
+                return null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function resetUI() {
+            configSection.classList.add('hidden');
+            resultSection.classList.add('hidden');
+            urlStatus.classList.add('hidden');
+            errorMsg.classList.add('hidden');
+            currentEventId = null;
+        }
+
+        generateBtn.addEventListener('click', async () => {
+            const selected = Array.from(document.querySelectorAll('input[name="section"]:checked')).map(cb => cb.value);
+
+            generateBtn.disabled = true;
+            loader.classList.remove('hidden');
+            errorMsg.classList.add('hidden');
+            resultSection.classList.add('hidden');
+
+            try {
+                const response = await fetch('/sms-paraphraser/paraphrase', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        event_id: parseInt(currentEventId),
+                        sections: selected
+                    })
+                });
+
+                let data;
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    data = await response.json();
+                } else {
+                    const text = await response.text();
+                    throw new Error(text || 'Internal Server Error (No details)');
+                }
+
+                if (response.ok) {
+                    outputText.value = data.text;
+                    resultSection.classList.remove('hidden');
+                } else {
+                    throw new Error(data.detail || 'Failed to paraphrase.');
+                }
+            } catch (err) {
+                errorMsg.textContent = err.message;
+                errorMsg.classList.remove('hidden');
+            } finally {
+                generateBtn.disabled = false;
+                loader.classList.add('hidden');
+            }
+        });
+
+        copyBtn.addEventListener('click', () => {
+            outputText.select();
+            navigator.clipboard.writeText(outputText.value);
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = 'Copied!';
+            copyBtn.classList.replace('text-emerald-700', 'text-white');
+            copyBtn.classList.replace('bg-white', 'bg-emerald-600');
+            setTimeout(() => {
+                copyBtn.textContent = originalText;
+                copyBtn.classList.replace('text-white', 'text-emerald-700');
+                copyBtn.classList.replace('bg-emerald-600', 'bg-white');
+            }, 2000);
+        });
+    });
+</script>
+{% endblock %}
