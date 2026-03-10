@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Recruiting Metrics — GoLive Tools{% endblock %}
 {% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <section class="space-y-6">
   <header class="space-y-2">
     <h1 class="text-2xl font-semibold text-gray-900">Recruiting Metrics</h1>
@@ -260,16 +264,26 @@
   {% endif %}
 
   <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-    <h2 class="text-base font-semibold text-gray-900">Current Event Locations</h2>
-    <p class="mt-1 text-xs text-gray-500">Map view of active event locations.</p>
-    <div class="mt-4 overflow-hidden rounded-lg border border-gray-200">
-      <iframe
-        title="Current Event Locations"
-        src="https://www.google.com/maps/d/embed?mid=1A6HIIjP-VAsggoPj6Z0ZoqjA2ekN2zA&ehbc=2E312F&ll=40.92850019943037%2C-119.25009140000003&z=6"
-        class="h-[420px] w-full"
-        loading="lazy"
-        referrerpolicy="no-referrer-when-downgrade"
-      ></iframe>
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h2 class="text-base font-semibold text-gray-900">Current Event Locations</h2>
+        <p class="mt-1 text-xs text-gray-500">Map view of active event locations based on future shifts.</p>
+      </div>
+      <div class="sm:w-64">
+        <label class="block text-xs font-medium text-gray-700 mb-1" for="map-position-select">Filter by Position</label>
+        <select id="map-position-select" class="w-full rounded-lg border border-gray-300 bg-white p-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+          <option value="">All Positions</option>
+        </select>
+      </div>
+    </div>
+    <div class="mt-4 overflow-hidden rounded-lg border border-gray-200 relative h-[500px]">
+      <div id="map" class="h-full w-full z-0"></div>
+      <div id="map-loader" class="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-[1000] hidden">
+        <div class="flex flex-col items-center gap-3">
+          <div class="animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"></div>
+          <p class="text-sm font-semibold text-indigo-900">Updating map...</p>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -832,6 +846,113 @@
           weekForm.requestSubmit();
         });
       }
+
+      // --- Map Implementation ---
+      let map;
+      let mapMarkers = [];
+      const mapPositionSelect = document.getElementById('map-position-select');
+      const mapLoader = document.getElementById('map-loader');
+
+      function initLeafletMap() {
+        if (!document.getElementById('map')) return;
+        map = L.map('map').setView([34.0522, -118.2437], 9);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+      }
+
+      async function loadMapPositions() {
+        if (!mapPositionSelect) return;
+        try {
+          const resp = await fetch('/recruiting-metrics/map-positions');
+          const data = await resp.json();
+          data.positions.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.name;
+            mapPositionSelect.appendChild(opt);
+          });
+        } catch (err) {
+          console.error('Failed to load map positions:', err);
+        }
+      }
+
+      async function updateLeafletMap() {
+        if (!map) return;
+        const posId = mapPositionSelect.value;
+        mapLoader.classList.remove('hidden');
+
+        // Clear existing markers
+        mapMarkers.forEach(m => map.removeLayer(m));
+        mapMarkers = [];
+
+        let url = '/recruiting-metrics/shifts';
+        if (posId) url += `?position_id=${posId}`;
+
+        try {
+          const resp = await fetch(url);
+          const data = await resp.json();
+
+          if (data.shifts.length === 0) {
+            mapLoader.classList.add('hidden');
+            return;
+          }
+
+          const bounds = L.latLngBounds();
+          let hasPins = false;
+
+          data.shifts.forEach(s => {
+            const lat = parseFloat(s.latitude);
+            const lng = parseFloat(s.longitude);
+            if (isNaN(lat) || isNaN(lng)) return;
+
+            const marker = L.marker([lat, lng]).addTo(map);
+            const rateFormatted = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(s.rate);
+            
+            marker.bindPopup(`
+              <div class="p-1 space-y-1 text-sm">
+                <h3 class="font-bold text-indigo-800 border-b border-indigo-100 pb-1 mb-2">${s.event_title}</h3>
+                <p><strong>Client:</strong> ${s.client_name}</p>
+                <p><strong>Venue:</strong> ${s.venue_name}</p>
+                <p><strong>Position:</strong> ${s.position}</p>
+                <p><strong>Rate:</strong> ${rateFormatted}</p>
+                <p class="text-xs text-gray-500 mt-2">${s.event_date}</p>
+              </div>
+            `);
+            mapMarkers.push(marker);
+            bounds.extend([lat, lng]);
+            hasPins = true;
+          });
+
+          if (hasPins) {
+            map.fitBounds(bounds, { padding: [40, 40] });
+          }
+        } catch (err) {
+          console.error('Failed to update map:', err);
+        } finally {
+          mapLoader.classList.add('hidden');
+        }
+      }
+
+      if (mapPositionSelect) {
+        mapPositionSelect.addEventListener('change', updateLeafletMap);
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        initLeafletMap();
+        loadMapPositions();
+        updateLeafletMap();
+      });
     </script>
+    <style>
+      .leaflet-popup-content-wrapper {
+        border-radius: 0.75rem;
+        box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        border: 1px solid #e2e8f0;
+      }
+      .leaflet-popup-tip {
+        background: white;
+      }
+    </style>
   {% endif %}
 {% endblock %}
