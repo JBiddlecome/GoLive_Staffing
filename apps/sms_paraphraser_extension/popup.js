@@ -219,6 +219,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const response = await chrome.runtime.sendMessage({
                 action: "paraphrase",
+                eventId: extractedData.eventId,
                 sections: selectedSections
             });
 
