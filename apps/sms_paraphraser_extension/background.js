@@ -6,7 +6,7 @@
 // We will hardcode the API key for development as per user instruction
 // In a production environment, this should be handled more securely.
 // Use the RESUME_ANALYZER_OPENAI_API_KEY as requested by the user
-const OPENAI_API_KEY = "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".trim();
+const OPENAI_API_KEY = "BLOCK".trim();
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "paraphrase") {
