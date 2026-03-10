@@ -4,10 +4,8 @@
  * This ensures the OpenAI API key is never exposed in the extension code.
  */
 
-// We will hardcode the API key for development as per user instruction
-// In a production environment, this should be handled more securely.
-// Use the RESUME_ANALYZER_OPENAI_API_KEY as requested by the user
-const OPENAI_API_KEY = "BLOCk".trim();
+// In production, this extension communicates with our Render backend
+// which handles the OpenAI API securely using environment variables.
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "paraphrase") {
@@ -29,7 +27,7 @@ async function paraphraseViaBackend(eventId, sections) {
     const sectionTitles = sections.map(s => s.title);
 
     try {
-        const response = await fetch('http://localhost:8000/sms-paraphraser/paraphrase', {
+        const response = await fetch('https://tools.culinarystaffing.com/sms-paraphraser/paraphrase', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
