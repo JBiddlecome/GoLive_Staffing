@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}AI Analytics — GoLive Staffing{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-8">
+  <div class="rounded-3xl bg-white shadow-lg border border-emerald-100 overflow-hidden">
+    <div class="bg-gradient-to-r from-emerald-600 to-emerald-500 px-8 py-6 text-white">
+      <div class="flex items-center gap-4 mb-2">
+        <a href="/reports" class="text-emerald-100 hover:text-white transition">← Back to Hub</a>
+      </div>
+      <p class="uppercase text-sm font-semibold tracking-[0.2em] text-emerald-100">Analytics</p>
+      <h1 class="brand-serif text-4xl font-semibold leading-tight">AI-powered staffing analytics</h1>
+      <p class="mt-2 text-emerald-50/90 max-w-3xl">
+        Ask questions about employee hours, client revenue, pay rates, and more.
+      </p>
+    </div>
+
+    <div class="p-8 space-y-6">
+      <form id="ask-form" class="space-y-4">
+        <label class="block text-sm font-semibold text-gray-700" for="question">Question</label>
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
+          <input
+            id="question"
+            name="question"
+            type="text"
+            placeholder="e.g. Which clients generated the most revenue last month?"
+            class="flex-1 rounded-2xl border border-emerald-200 px-4 py-3 shadow-sm focus:border-emerald-500 focus:ring focus:ring-emerald-200"
+            required
+          />
+          <button
+            type="submit"
+            class="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 font-semibold text-white shadow-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+          >
+            <span id="submit-label">Ask</span>
+            <span id="loading-indicator" class="hidden animate-spin">⟳</span>
+          </button>
+        </div>
+      </form>
+
+      <div class="flex flex-wrap gap-3 text-sm">
+        <p class="font-semibold text-gray-700">Quick prompts:</p>
+        <button class="chip" data-question="Total billable revenue by client for the last 30 days">Revenue by client</button>
+        <button class="chip" data-question="Average pay rate and hours worked per employee">Average pay & hours</button>
+        <button class="chip" data-question="Top 10 employees by total hours worked year to date">Top employees by hours</button>
+        <button class="chip" data-question="Overtime hours and gross pay by county">OT and pay by county</button>
+      </div>
+
+      <div id="error" class="hidden rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-800"></div>
+
+      <div id="results" class="hidden space-y-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-4">
+        <div class="flex items-center gap-2 text-sm font-semibold text-emerald-800">
+          <span class="text-lg">✅</span>
+          <span>Answer</span>
+        </div>
+        <p id="answer" class="text-gray-800 whitespace-pre-line"></p>
+        <div class="rounded-xl border border-emerald-200 bg-white px-4 py-3 text-xs text-gray-700">
+          <p class="font-semibold text-emerald-700">SQL generated</p>
+          <pre id="sql" class="mt-1 whitespace-pre-wrap"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    border: 1px solid #a7f3d0;
+    background: #ecfdf3;
+    padding: 0.35rem 0.75rem;
+    font-weight: 600;
+    color: #047857;
+    transition: background 150ms ease, transform 150ms ease;
+  }
+  .chip:hover {
+    background: #d1fae5;
+    transform: translateY(-1px);
+  }
+</style>
+
+<script>
+  const form = document.getElementById('ask-form');
+  const questionInput = document.getElementById('question');
+  const errorBox = document.getElementById('error');
+  const resultsBox = document.getElementById('results');
+  const answerEl = document.getElementById('answer');
+  const sqlEl = document.getElementById('sql');
+  const loading = document.getElementById('loading-indicator');
+  const submitLabel = document.getElementById('submit-label');
+  const chips = document.querySelectorAll('.chip');
+
+  chips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      questionInput.value = chip.dataset.question;
+      questionInput.focus();
+    });
+  });
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const question = questionInput.value.trim();
+    if (!question) return;
+
+    resultsBox.classList.add('hidden');
+    errorBox.classList.add('hidden');
+    submitLabel.textContent = 'Thinking...';
+    loading.classList.remove('hidden');
+
+    try {
+      const response = await fetch('/reports/api/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question }),
+      });
+      if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || 'Unable to fetch results');
+      }
+      const data = await response.json();
+      answerEl.textContent = data.answer;
+      sqlEl.textContent = data.sql;
+      resultsBox.classList.remove('hidden');
+    } catch (err) {
+      errorBox.textContent = err.message;
+      errorBox.classList.remove('hidden');
+    } finally {
+      submitLabel.textContent = 'Ask';
+      loading.classList.add('hidden');
+    }
+  });
+</script>
+{% endblock %}

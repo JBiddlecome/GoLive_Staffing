@@ -1,146 +1,56 @@
 {% extends "base.html" %}
-{% block title %}Reports — GoLive Staffing{% endblock %}
+{% block title %}Reports Hub — GoLive Staffing{% endblock %}
 {% block content %}
-<div class="max-w-5xl mx-auto space-y-8">
-  <div class="rounded-3xl bg-white shadow-lg border border-emerald-100 overflow-hidden">
-    <div class="bg-gradient-to-r from-emerald-600 to-emerald-500 px-8 py-6 text-white">
-      <p class="uppercase text-sm font-semibold tracking-[0.2em] text-emerald-100">Reports</p>
-      <h1 class="brand-serif text-4xl font-semibold leading-tight">AI-powered staffing analytics</h1>
-      <p class="mt-2 text-emerald-50/90 max-w-3xl">
-        Ask questions about employee hours, client revenue, pay rates, and more. Data refreshes directly from the
-        AWS-hosted PostgreSQL database configured via
-        <code class="bg-white/15 px-2 py-1 rounded">REPORTS_DATABASE_URL</code>.
-      </p>
-    </div>
-
-    <div class="p-8 space-y-6">
-      <form id="ask-form" class="space-y-4">
-        <label class="block text-sm font-semibold text-gray-700" for="question">Question</label>
-        <div class="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
-          <input
-            id="question"
-            name="question"
-            type="text"
-            placeholder="e.g. Which clients generated the most revenue last month?"
-            class="flex-1 rounded-2xl border border-emerald-200 px-4 py-3 shadow-sm focus:border-emerald-500 focus:ring focus:ring-emerald-200"
-            required
-          />
-          <button
-            type="submit"
-            class="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 font-semibold text-white shadow-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-          >
-            <span id="submit-label">Ask</span>
-            <span id="loading-indicator" class="hidden animate-spin">⟳</span>
-          </button>
-        </div>
-      </form>
-
-      <div class="flex flex-wrap gap-3 text-sm">
-        <p class="font-semibold text-gray-700">Quick prompts:</p>
-        <button class="chip" data-question="Total billable revenue by client for the last 30 days">Revenue by client</button>
-        <button class="chip" data-question="Average pay rate and hours worked per employee">Average pay & hours</button>
-        <button class="chip" data-question="Top 10 employees by total hours worked year to date">Top employees by hours</button>
-        <button class="chip" data-question="Overtime hours and gross pay by county">OT and pay by county</button>
-      </div>
-
-      <div id="error" class="hidden rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-800"></div>
-
-      <div id="results" class="hidden space-y-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-4">
-        <div class="flex items-center gap-2 text-sm font-semibold text-emerald-800">
-          <span class="text-lg">✅</span>
-          <span>Answer</span>
-        </div>
-        <p id="answer" class="text-gray-800 whitespace-pre-line"></p>
-        <div class="rounded-xl border border-emerald-200 bg-white px-4 py-3 text-xs text-gray-700">
-          <p class="font-semibold text-emerald-700">SQL generated</p>
-          <pre id="sql" class="mt-1 whitespace-pre-wrap"></pre>
-        </div>
+<div class="max-w-6xl mx-auto space-y-12">
+  <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400 text-white shadow-2xl">
+    <div class="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_30%,white,transparent_30%)]"></div>
+    <div class="relative px-8 py-10 lg:px-12 lg:py-14">
+      <div class="space-y-4">
+        <p class="uppercase tracking-[0.25em] text-sm font-semibold text-emerald-100">Staffing Intelligence</p>
+        <h1 class="brand-serif text-4xl md:text-5xl font-semibold leading-tight">Reports Hub</h1>
+        <p class="text-emerald-50/90 text-lg max-w-2xl">
+          Access specialized employee reports and AI-powered staffing analytics.
+        </p>
       </div>
     </div>
+  </section>
+
+  <div class="grid gap-8 md:grid-cols-3">
+    <!-- Preferred List Card -->
+    <a href="/reports/preferred" class="group relative flex flex-col rounded-3xl border border-emerald-100 bg-white p-8 shadow-lg transition hover:shadow-xl hover:-translate-y-1">
+      <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 transition group-hover:bg-emerald-600 group-hover:text-white">
+        <span class="text-2xl font-bold">★</span>
+      </div>
+      <h3 class="brand-serif text-2xl font-semibold text-gray-900 mb-2">Preferred List</h3>
+      <p class="text-gray-600 flex-1">View all preferred employees for specific clients, including reasons and notes.</p>
+      <div class="mt-6 flex items-center text-emerald-600 font-semibold">
+        Open Report <span class="ml-2 transition-transform group-hover:translate-x-1">→</span>
+      </div>
+    </a>
+
+    <!-- DNR List Card -->
+    <a href="/reports/dnr" class="group relative flex flex-col rounded-3xl border border-emerald-100 bg-white p-8 shadow-lg transition hover:shadow-xl hover:-translate-y-1">
+      <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-red-600 transition group-hover:bg-red-600 group-hover:text-white">
+        <span class="text-2xl font-bold">⊘</span>
+      </div>
+      <h3 class="brand-serif text-2xl font-semibold text-gray-900 mb-2">DNR List</h3>
+      <p class="text-gray-600 flex-1">Access "Do Not Return" reports for clients to manage staff eligibility across venues.</p>
+      <div class="mt-6 flex items-center text-emerald-600 font-semibold">
+        Open Report <span class="ml-2 transition-transform group-hover:translate-x-1">→</span>
+      </div>
+    </a>
+
+    <!-- AI Analytics Card -->
+    <a href="/reports/ai-analytics" class="group relative flex flex-col rounded-3xl border border-emerald-100 bg-white p-8 shadow-lg transition hover:shadow-xl hover:-translate-y-1">
+      <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 transition group-hover:bg-blue-600 group-hover:text-white">
+        <span class="text-2xl font-bold">✧</span>
+      </div>
+      <h3 class="brand-serif text-2xl font-semibold text-gray-900 mb-2">AI Analytics</h3>
+      <p class="text-gray-600 flex-1">Ask natural language questions about payroll, hours, and revenue trends.</p>
+      <div class="mt-6 flex items-center text-emerald-600 font-semibold">
+        Launch AI <span class="ml-2 transition-transform group-hover:translate-x-1">→</span>
+      </div>
+    </a>
   </div>
 </div>
-
-<style>
-  .chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    border-radius: 9999px;
-    border: 1px solid #a7f3d0;
-    background: #ecfdf3;
-    padding: 0.35rem 0.75rem;
-    font-weight: 600;
-    color: #047857;
-    transition: background 150ms ease, transform 150ms ease;
-  }
-
-  .chip:hover {
-    background: #d1fae5;
-    transform: translateY(-1px);
-  }
-</style>
-
-<script>
-  const form = document.getElementById('ask-form');
-  const questionInput = document.getElementById('question');
-  const errorBox = document.getElementById('error');
-  const resultsBox = document.getElementById('results');
-  const answerEl = document.getElementById('answer');
-  const sqlEl = document.getElementById('sql');
-  const loading = document.getElementById('loading-indicator');
-  const submitLabel = document.getElementById('submit-label');
-  const chips = document.querySelectorAll('.chip');
-
-  chips.forEach((chip) => {
-    chip.addEventListener('click', () => {
-      questionInput.value = chip.dataset.question;
-      questionInput.focus();
-    });
-  });
-
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const question = questionInput.value.trim();
-    if (!question) return;
-
-    resultsBox.classList.add('hidden');
-    errorBox.classList.add('hidden');
-    submitLabel.textContent = 'Thinking...';
-    loading.classList.remove('hidden');
-
-    try {
-      const response = await fetch('/reports/api/ask', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question }),
-      });
-
-      const contentType = response.headers.get('content-type') || '';
-
-      if (!response.ok) {
-        if (contentType.includes('application/json')) {
-          const errorData = await response.json();
-          throw new Error(errorData.detail || errorData.error || 'Unable to fetch results');
-        }
-
-        const text = await response.text();
-        throw new Error(text || 'Unable to fetch results');
-      }
-
-      const data = contentType.includes('application/json')
-        ? await response.json()
-        : JSON.parse(await response.text());
-
-      answerEl.textContent = data.answer;
-      sqlEl.textContent = data.sql;
-      resultsBox.classList.remove('hidden');
-    } catch (err) {
-      errorBox.textContent = err.message;
-      errorBox.classList.remove('hidden');
-    } finally {
-      submitLabel.textContent = 'Ask';
-      loading.classList.add('hidden');
-    }
-  });
-</script>
 {% endblock %}
