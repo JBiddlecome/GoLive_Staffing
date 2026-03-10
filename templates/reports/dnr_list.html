@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}DNR List — GoLive Staffing{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8">
+  <div class="rounded-3xl bg-white shadow-lg border border-red-100 overflow-hidden">
+    <div class="bg-gradient-to-r from-red-600 to-red-500 px-8 py-6 text-white">
+      <div class="flex items-center gap-4 mb-2">
+        <a href="/reports" class="text-red-100 hover:text-white transition">← Back to Hub</a>
+      </div>
+      <p class="uppercase text-sm font-semibold tracking-[0.2em] text-red-100">Personnel Safety</p>
+      <h1 class="brand-serif text-4xl font-semibold leading-tight">DNR (Do Not Return) List</h1>
+      <p class="mt-2 text-red-50/90 max-w-3xl">Select a client to view staff members banned from their venues.</p>
+    </div>
+
+    <div class="p-8 space-y-8">
+      <div class="flex flex-col md:flex-row md:items-end gap-4">
+        <div class="flex-1 space-y-2">
+          <label for="client-select" class="block text-sm font-semibold text-gray-700">Client</label>
+          <select id="client-select" class="w-full rounded-2xl border border-red-200 px-4 py-3 shadow-sm focus:border-red-500 focus:ring focus:ring-red-200">
+            <option value="">Select a client...</option>
+          </select>
+        </div>
+        <div class="flex gap-3">
+          <button id="pull-report" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-8 py-3.5 font-semibold text-white shadow-lg hover:bg-red-700 transition">
+            Generate Report
+          </button>
+          <button id="export-report" disabled class="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-700 px-8 py-3.5 font-semibold text-white shadow-lg hover:bg-slate-800 transition disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            Download Excel
+          </button>
+        </div>
+      </div>
+
+      <div id="loading" class="hidden flex justify-center py-12">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+      </div>
+
+      <div id="report-container" class="hidden overflow-hidden rounded-2xl border border-red-100">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-red-50 text-red-800 font-semibold uppercase tracking-wider">
+            <tr>
+              <th class="px-6 py-4">Created On</th>
+              <th class="px-6 py-4">Venue</th>
+              <th class="px-6 py-4">Employee</th>
+              <th class="px-6 py-4">Reason</th>
+              <th class="px-6 py-4">Notes</th>
+              <th class="px-6 py-4">Created By</th>
+            </tr>
+          </thead>
+          <tbody id="report-body" class="divide-y divide-red-50 bg-white">
+          </tbody>
+        </table>
+      </div>
+      <div id="no-data" class="hidden text-center py-12 text-gray-500">
+        No DNR records found for this client.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const clientSelect = document.getElementById('client-select');
+    const pullBtn = document.getElementById('pull-report');
+    const exportBtn = document.getElementById('export-report');
+    const loading = document.getElementById('loading');
+    const container = document.getElementById('report-container');
+    const body = document.getElementById('report-body');
+    const noData = document.getElementById('no-data');
+
+    // Load clients
+    try {
+      const resp = await fetch('/reports/api/clients');
+      const clients = await resp.json();
+      clients.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.client_id;
+        opt.textContent = c.name;
+        clientSelect.appendChild(opt);
+      });
+    } catch (err) { console.error('Failed to load clients', err); }
+
+    pullBtn.addEventListener('click', async () => {
+      const clientId = clientSelect.value;
+      if (!clientId) return;
+
+      container.classList.add('hidden');
+      noData.classList.add('hidden');
+      loading.classList.remove('hidden');
+      body.innerHTML = '';
+
+      try {
+        const resp = await fetch(`/reports/api/dnr/${clientId}`);
+        const data = await resp.json();
+        
+        if (!data || data.length === 0) {
+          noData.classList.remove('hidden');
+        } else {
+          data.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-red-50/50 transition';
+            tr.innerHTML = `
+              <td class="px-6 py-4 whitespace-nowrap text-gray-600">${row.date_created || ''}</td>
+              <td class="px-6 py-4 text-red-700 font-medium">${row.venue_name || 'All Venues'}</td>
+              <td class="px-6 py-4 font-semibold text-gray-900">${row.employee_name}</td>
+              <td class="px-6 py-4 text-gray-700">${row.reason || ''}</td>
+              <td class="px-6 py-4 text-gray-600 max-w-xs truncate">${row.notes || ''}</td>
+              <td class="px-6 py-4 text-gray-500 italic">${row.created_by || ''}</td>
+            `;
+            body.appendChild(tr);
+          });
+          container.classList.remove('hidden');
+          exportBtn.disabled = false;
+        }
+      } catch (err) {
+        console.error('Failed to fetch data', err);
+      } finally {
+        loading.classList.add('hidden');
+      }
+    });
+
+    // Export functionality
+    exportBtn.addEventListener('click', () => {
+      const clientId = clientSelect.value;
+      if (!clientId) return;
+      window.location.href = `/reports/api/dnr/export/${clientId}`;
+    });
+  });
+</script>
+{% endblock %}
