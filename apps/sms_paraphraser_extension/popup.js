@@ -84,9 +84,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             generateBtn.textContent = "Loading DB...";
 
             try {
-                // Fetch from Localhost/Production API
-                // We use the full URL to ensure it hits the FastAPI backend
-                const apiResponse = await fetch(`http://localhost:8000/reportable/event/${eventId}`);
+                // Fetch from Production API
+                // We use the full URL to ensure it hits the FastAPI backend on Render
+                const apiResponse = await fetch(`https://tools.culinarystaffing.com/reportable/event/${eventId}`);
                 if (apiResponse.ok) {
                     const dbData = await apiResponse.json();
                     console.log("SMS Paraphraser: Success! DB Data Received:", dbData);
