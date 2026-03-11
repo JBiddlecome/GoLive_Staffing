@@ -404,6 +404,58 @@
           </section>
         </div>
 
+        <div class="mt-8">
+          <details class="group rounded-lg border border-gray-200">
+            <summary class="flex cursor-pointer items-center justify-between bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-900 transition hover:bg-gray-100">
+              <div class="flex items-center gap-2">
+                <span>Archived Entries</span>
+                <span class="text-xs font-normal text-gray-500">(Closed more than 60 days ago)</span>
+              </div>
+              <svg
+                class="h-5 w-5 text-gray-500 transition-transform group-open:rotate-180"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </summary>
+            <div class="p-4">
+              <div class="overflow-hidden rounded-lg border border-gray-200">
+                <table class="min-w-full divide-y divide-gray-200">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th scope="col" class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Client Name
+                      </th>
+                      <th scope="col" class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Location
+                      </th>
+                      <th scope="col" class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Date
+                      </th>
+                      <th scope="col" class="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody data-deal-table-body="archived" class="divide-y divide-gray-200 bg-white text-sm text-gray-700">
+                    <tr>
+                      <td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500">
+                        No archived entries.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+        </div>
+
         <p data-deal-feedback class="mt-4 text-sm text-gray-500"></p>
       </div>
     </div>
@@ -1308,6 +1360,7 @@
       const dealState = {
         closed: Array.isArray(dealTables.closed) ? dealTables.closed.map((entry) => normalizeDealEntry(entry)) : [],
         upcoming: Array.isArray(dealTables.upcoming) ? dealTables.upcoming.map((entry) => normalizeDealEntry(entry)) : [],
+        archived: Array.isArray(dealTables.archived) ? dealTables.archived.map((entry) => normalizeDealEntry(entry)) : [],
       };
 
       const dateFormatter = new Intl.DateTimeFormat("en-US", {
@@ -1387,7 +1440,7 @@
           const cell = document.createElement("td");
           cell.colSpan = 4;
           cell.className = "px-4 py-3 text-center text-sm text-gray-500";
-          cell.textContent = "No entries yet. Add new records using the form above.";
+          cell.textContent = section === "archived" ? "No archived entries." : "No entries yet. Add new records using the form above.";
           row.appendChild(cell);
           body.appendChild(row);
           return;
@@ -1461,8 +1514,10 @@
       function refreshDealTables() {
         sortDealEntries(dealState.closed);
         sortDealEntries(dealState.upcoming);
+        sortDealEntries(dealState.archived);
         renderDealTable("closed");
         renderDealTable("upcoming");
+        renderDealTable("archived");
       }
 
       function markDealsDirty() {
@@ -1545,6 +1600,7 @@
             body: JSON.stringify({
               closed: dealState.closed,
               upcoming: dealState.upcoming,
+              archived: dealState.archived,
             }),
           });
 
@@ -1568,8 +1624,12 @@
           const nextUpcoming = Array.isArray(payload.upcoming)
             ? payload.upcoming.map((entry) => normalizeDealEntry(entry))
             : [];
+          const nextArchived = Array.isArray(payload.archived)
+            ? payload.archived.map((entry) => normalizeDealEntry(entry))
+            : [];
           dealState.closed = nextClosed;
           dealState.upcoming = nextUpcoming;
+          dealState.archived = nextArchived;
           dealsDirty = false;
           refreshDealTables();
           showDealFeedback("Changes saved.", "success");

@@ -257,16 +257,18 @@ def _sort_deal_entries(entries: List[Dict[str, str]]) -> List[Dict[str, str]]:
 
 def _load_deal_tables(path: Path = DEALS_DATA_PATH) -> Dict[str, List[Dict[str, str]]]:
     if not path.exists():
-        return {"closed": [], "upcoming": []}
+        return {"closed": [], "upcoming": [], "archived": []}
 
     try:
         with path.open("r", encoding="utf-8") as fh:
             data = json.load(fh)
     except Exception:  # pragma: no cover - defensive
-        return {"closed": [], "upcoming": []}
+        return {"closed": [], "upcoming": [], "archived": []}
 
-    result: Dict[str, List[Dict[str, str]]] = {"closed": [], "upcoming": []}
-    for key in ("closed", "upcoming"):
+    result: Dict[str, List[Dict[str, str]]] = {"closed": [], "upcoming": [], "archived": []}
+    cutoff_date = date.today() - timedelta(days=60)
+
+    for key in ("closed", "upcoming", "archived"):
         entries = data.get(key, []) if isinstance(data, dict) else []
         normalized: List[Dict[str, str]] = []
         if isinstance(entries, list):
@@ -274,14 +276,35 @@ def _load_deal_tables(path: Path = DEALS_DATA_PATH) -> Dict[str, List[Dict[str, 
                 normalized_entry = _normalize_deal_entry(entry)
                 if normalized_entry is not None:
                     normalized.append(normalized_entry)
-        result[key] = _sort_deal_entries(normalized)
+        
+        if key in ("closed", "upcoming"):
+            # Filter entries into original list vs archived
+            final_entries = []
+            for entry in normalized:
+                entry_date = _parse_deal_date(entry.get("date"))
+                if entry_date and entry_date < cutoff_date:
+                    result["archived"].append(entry)
+                else:
+                    final_entries.append(entry)
+            result[key] = _sort_deal_entries(final_entries)
+        elif key == "archived":
+            # Add existing archived entries (avoid duplicates if they were already moved)
+            # We use a set of client+date to avoid duplicates if something goes weird
+            existing_archived = {(e["clientName"], e["date"]) for e in result["archived"]}
+            for entry in normalized:
+                if (entry["clientName"], entry["date"]) not in existing_archived:
+                    result["archived"].append(entry)
+            result["archived"] = _sort_deal_entries(result["archived"])
+        else:
+            result[key] = _sort_deal_entries(normalized)
+
     return result
 
 
 def _write_deal_tables(
     tables: Dict[str, List[Dict[str, Any]]], path: Path = DEALS_DATA_PATH
 ) -> Dict[str, List[Dict[str, str]]]:
-    cleaned: Dict[str, List[Dict[str, str]]] = {"closed": [], "upcoming": []}
+    cleaned: Dict[str, List[Dict[str, str]]] = {"closed": [], "upcoming": [], "archived": []}
 
     for key in cleaned:
         entries = tables.get(key, []) if isinstance(tables, dict) else []

@@ -1,4 +1,33 @@
 {
-  "closed": [],
-  "upcoming": []
+  "closed": [
+    {
+      "clientName": "ACME Catering",
+      "location": "Los Angeles, CA",
+      "date": "2026-03-10"
+    },
+    {
+      "clientName": "EVEN OLDER CLIENT",
+      "location": "Santa Monica, CA",
+      "date": "2026-01-02"
+    }
+  ],
+  "upcoming": [
+    {
+      "clientName": "ACME Cafe",
+      "location": "Los Angeles, CA",
+      "date": "2026-01-01"
+    },
+    {
+      "clientName": "OLD OLD Client",
+      "location": "Santa Monica, CA",
+      "date": "2025-12-15"
+    }
+  ],
+  "archived": [
+    {
+      "clientName": "ACME Cafe",
+      "location": "Los Angeles, CA",
+      "date": "2026-01-01"
+    }
+  ]
 }

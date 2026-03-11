@@ -8,3 +8,5 @@ venv/
 tmp/
 data/client_drop_off.db
 data/client_drop_off_v2.db
+data/sales_staffing_deals.json
+data/sales_staffing_deals.json
