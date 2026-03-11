@@ -103,6 +103,7 @@ async def paraphrase_event(payload: ParaphraseRequest) -> JSONResponse:
                 COALESCE(e.city, v.city) AS city,
                 COALESCE(e.state, v.state) AS state,
                 COALESCE(e.zip, v.zip) AS zip,
+                e.venue_id,
                 (SELECT MIN(start) FROM shift WHERE event_id = e.event_id AND deleted_at IS NULL) AS shift_start
             FROM event e
             JOIN venue v ON e.venue_id = v.venue_id
@@ -115,6 +116,24 @@ async def paraphrase_event(payload: ParaphraseRequest) -> JSONResponse:
                 raise HTTPException(status_code=404, detail=f"Event {event_id} not found.")
             
             event_data = dict(result)
+
+            # Fetch document descriptions from both event and venue
+            doc_sql = text(
+                """
+                SELECT description FROM event_document 
+                WHERE event_id = :event_id AND description IS NOT NULL AND description != ''
+                UNION
+                SELECT description FROM venue_document 
+                WHERE venue_id = :venue_id AND description IS NOT NULL AND description != ''
+                """
+            )
+            doc_results = connection.execute(doc_sql, {
+                "event_id": event_id,
+                "venue_id": event_data.get("venue_id")
+            }).mappings().all()
+            
+            # Use a list to preserve order but unique-ify if necessary (UNION already does for duplicates across rows)
+            event_data["document_descriptions"] = [row["description"] for row in doc_results]
 
     except Exception as exc:
         logger.exception("Database query failed")
@@ -209,9 +228,17 @@ async def paraphrase_event(payload: ParaphraseRequest) -> JSONResponse:
             temperature=0.7
         )
         sms_text = response.choices[0].message.content.strip()
+
+        # Append document reminders if any
+        doc_descriptions = event_data.get("document_descriptions", [])
+        if doc_descriptions:
+            doc_messages = [f"Review the document, {desc}, on the event." for desc in doc_descriptions]
+            sms_text += "\n\n" + "\n".join(doc_messages)
+
         # Append signature
+        signature = "\n\nAlways read through all shift details in GoLive before your shift.\n-Culinary Staffing"
         if not sms_text.endswith("-Culinary Staffing"):
-            sms_text += "\n\n-Culinary Staffing"
+            sms_text += signature
             
         return JSONResponse({"text": sms_text})
 

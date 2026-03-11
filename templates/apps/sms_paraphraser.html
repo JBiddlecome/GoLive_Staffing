@@ -31,6 +31,33 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Event Details (Unchecked by default) -->
+                    <label
+                        class="flex items-center gap-3 p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 cursor-pointer hover:bg-emerald-50 transition">
+                        <input type="checkbox" name="section" value="Event Name"
+                            class="w-5 h-5 rounded text-emerald-600 focus:ring-emerald-500 border-emerald-200">
+                        <span class="text-sm font-semibold text-gray-700">Event Name</span>
+                    </label>
+                    <label
+                        class="flex items-center gap-3 p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 cursor-pointer hover:bg-emerald-50 transition">
+                        <input type="checkbox" name="section" value="Date"
+                            class="w-5 h-5 rounded text-emerald-600 focus:ring-emerald-500 border-emerald-200">
+                        <span class="text-sm font-semibold text-gray-700">Date</span>
+                    </label>
+                    <label
+                        class="flex items-center gap-3 p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 cursor-pointer hover:bg-emerald-50 transition">
+                        <input type="checkbox" name="section" value="Time"
+                            class="w-5 h-5 rounded text-emerald-600 focus:ring-emerald-500 border-emerald-200">
+                        <span class="text-sm font-semibold text-gray-700">Time</span>
+                    </label>
+                    <label
+                        class="flex items-center gap-3 p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 cursor-pointer hover:bg-emerald-50 transition">
+                        <input type="checkbox" name="section" value="Location"
+                            class="w-5 h-5 rounded text-emerald-600 focus:ring-emerald-500 border-emerald-200">
+                        <span class="text-sm font-semibold text-gray-700">Venue Location</span>
+                    </label>
+
+                    <!-- Additional Notes (Checked by default) -->
                     <label
                         class="flex items-center gap-3 p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 cursor-pointer hover:bg-emerald-50 transition">
                         <input type="checkbox" name="section" value="Venue Details" checked
