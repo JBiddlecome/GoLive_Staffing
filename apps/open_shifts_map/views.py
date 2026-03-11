@@ -89,21 +89,58 @@ async def get_available_positions(start_date: str, end_date: str):
         engine.dispose()
 
 
+@router.get("/staffing-managers")
+async def get_staffing_managers(start_date: str, end_date: str):
+    engine = _engine()
+    try:
+        sql = text(
+            """
+            SELECT DISTINCT u.id, CONCAT(u.first_name, ' ', u.last_name) as name
+            FROM venue v
+            JOIN user u ON v.staffing_manager_id = u.id
+            JOIN event e ON v.venue_id = e.venue_id
+            JOIN shift s ON e.event_id = s.event_id
+            JOIN shift_position sp ON s.shift_id = sp.shift_id
+            LEFT JOIN shift_employee se ON sp.shift_position_id = se.shift_position_id AND se.cancel_reason = 0
+            WHERE v.deleted_at IS NULL AND u.status = 10
+              AND e.date >= :start_date AND e.date <= :end_date
+              AND e.deleted_at IS NULL AND s.deleted_at IS NULL
+              AND se.shift_employee_id IS NULL
+            ORDER BY name
+            """
+        )
+        with engine.connect() as connection:
+            result = connection.execute(sql, {"start_date": start_date, "end_date": end_date})
+            managers = [{"id": row[0], "name": row[1]} for row in result]
+            return JSONResponse(content={"managers": managers})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        engine.dispose()
+
+
 @router.get("/shifts")
-async def get_open_shifts(start_date: str, end_date: str, position_id: int | None = None):
+async def get_open_shifts(
+    start_date: str, 
+    end_date: str, 
+    position_id: int | None = None,
+    staffing_manager_id: int | None = None
+):
     engine = _engine()
     try:
         sql_text = """
             SELECT
                 e.latitude, e.longitude, c.name AS client_name, v.name AS venue_name,
                 p.description AS position, sp.rate, e.title as event_title,
-                DATE_FORMAT(e.date, '%Y-%m-%d') as event_date
+                DATE_FORMAT(e.date, '%Y-%m-%d') as event_date,
+                CONCAT(u.first_name, ' ', u.last_name) as staffing_manager_name
             FROM event e
             JOIN shift s ON e.event_id = s.event_id
             JOIN shift_position sp ON s.shift_id = sp.shift_id
             JOIN position p ON sp.position_id = p.position_id
             JOIN client c ON e.client_id = c.client_id
             JOIN venue v ON e.venue_id = v.venue_id
+            LEFT JOIN user u ON v.staffing_manager_id = u.id
             LEFT JOIN shift_employee se ON sp.shift_position_id = se.shift_position_id AND se.cancel_reason = 0
             WHERE e.date >= :start_date AND e.date <= :end_date
               AND e.deleted_at IS NULL AND s.deleted_at IS NULL
@@ -114,6 +151,10 @@ async def get_open_shifts(start_date: str, end_date: str, position_id: int | Non
         if position_id:
             sql_text += " AND p.position_id = :position_id"
             params["position_id"] = position_id
+            
+        if staffing_manager_id:
+            sql_text += " AND v.staffing_manager_id = :staffing_manager_id"
+            params["staffing_manager_id"] = staffing_manager_id
             
         sql = text(sql_text)
         
