@@ -232,8 +232,8 @@ async def paraphrase_event(payload: ParaphraseRequest) -> JSONResponse:
         # Append document reminders if any
         doc_descriptions = event_data.get("document_descriptions", [])
         if doc_descriptions:
-            doc_messages = [f"Review the document, {desc}, on the event." for desc in doc_descriptions]
-            sms_text += "\n\n" + "\n".join(doc_messages)
+            docs_list = ", ".join(doc_descriptions)
+            sms_text += f"\n\nReview the document, {docs_list}, on the event."
 
         # Append signature
         signature = "\n\nAlways read through all shift details in GoLive before your shift.\n-Culinary Staffing"
