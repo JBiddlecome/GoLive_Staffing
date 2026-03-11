@@ -52,8 +52,10 @@ async def get_coverage_data():
                 co.id AS county_id,
                 p.description AS position_name,
                 p.position_id,
+                cl.name AS client_name,
                 COUNT(sp.shift_position_id) - COUNT(se.shift_employee_id) AS open_spots
             FROM event e
+            JOIN client cl ON e.client_id = cl.client_id
             JOIN venue v ON e.venue_id = v.venue_id
             JOIN county co ON v.county_id = co.id
             JOIN shift s ON e.event_id = s.event_id
@@ -63,7 +65,7 @@ async def get_coverage_data():
             WHERE e.date >= :current_date
               AND e.deleted_at IS NULL 
               AND s.deleted_at IS NULL
-            GROUP BY co.id, p.position_id
+            GROUP BY co.id, p.position_id, cl.client_id
             HAVING open_spots > 0
             ORDER BY co.name, p.description
         """)
@@ -74,10 +76,16 @@ async def get_coverage_data():
             if shifts_df.empty:
                 return JSONResponse(content={"counties": []})
 
+            # Calculate total open spots and collect unique clients per (county, position)
+            # Before merging with employee data, we need to collapse the client-level rows
+            summary_shifts = shifts_df.groupby(['county_id', 'county_name', 'position_id', 'position_name']).agg({
+                'open_spots': 'sum',
+                'client_name': lambda x: sorted(list(set(x)))
+            }).reset_index()
+
             # 2. For the positions and counties found, fetch active/eligible employee counts
-            # We filter by the counties and positions that actually have open shifts to be efficient
-            county_ids = shifts_df['county_id'].unique().tolist()
-            position_ids = shifts_df['position_id'].unique().tolist()
+            county_ids = summary_shifts['county_id'].unique().tolist()
+            position_ids = summary_shifts['position_id'].unique().tolist()
             
             emp_sql = text("""
                 SELECT 
@@ -99,7 +107,7 @@ async def get_coverage_data():
             })
 
             # Merge the data
-            merged = pd.merge(shifts_df, emp_df, on=['county_id', 'position_id'], how='left')
+            merged = pd.merge(summary_shifts, emp_df, on=['county_id', 'position_id'], how='left')
             merged['eligible_count'] = merged['eligible_count'].fillna(0).astype(int)
 
             # Group by county for display
@@ -110,7 +118,8 @@ async def get_coverage_data():
                     positions.append({
                         "name": row['position_name'],
                         "open_spots": int(row['open_spots']),
-                        "eligible_employees": int(row['eligible_count'])
+                        "eligible_employees": int(row['eligible_count']),
+                        "clients": row['client_name']
                     })
                 result.append({
                     "county": county_name,
