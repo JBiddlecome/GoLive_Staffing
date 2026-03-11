@@ -101,6 +101,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         "Check-In": stripHtml(dbData.check_in),
                         "Venue Name": dbData.venue_name || dbData.title || "[Venue]",
                         "Date": dbData.date || extractedData["Date"],
+                        "Time": dbData.shift_start || extractedData["Time"],
                         "Location": dbData.location || extractedData["Location"]
                     });
 
@@ -112,7 +113,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } else {
                     console.warn("SMS Paraphraser: Event not found in DB via API. Status:", apiResponse.status);
                     sourceStatus.textContent = "Source: Page Only (DB ID Not Found)";
-                    sourceStatus.className = "status-badge status-missing";
+                    sourceStatus.className = "status-badge status-found"; // Still 'found' because we have page data
                     sourceStatus.style.display = "block";
                 }
             } catch (err) {
@@ -157,19 +158,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function updateUI(data) {
+        console.log("SMS Paraphraser: Updating UI with data:", data);
         let hasAny = false;
-        const dbFields = ["Event Name", "Venue Details", "Parking Note", "Directions", "Check-In"];
-        const scrapedFields = ["Date", "Time", "Location"];
-        const allFields = [...dbFields, ...scrapedFields];
-
-        for (const key of allFields) {
+        const dbFields = ["Venue Details", "Parking Note", "Directions", "Check-In"];
+        const eventFields = ["Event Name", "Date", "Time", "Location"];
+        
+        // 1. Process Event Details (The ones to be unchecked by default)
+        for (const key of eventFields) {
             const value = data[key];
             const checkbox = document.getElementById(key);
+            if (!checkbox) continue;
 
-            // Always allow selection as requested
             checkbox.disabled = false;
+            checkbox.checked = false; // Always unchecked by default as requested
+            
+            // Still check for presence to log or handle visibility if needed
+            if (value && value.toString().trim().length > 0) {
+                console.log(`SMS Paraphraser: Found data for ${key}:`, value);
+            }
+        }
 
-            // Auto-check only if there is actually data
+        // 2. Process Additional Notes (The ones follows 'auto-check if exists' logic)
+        for (const key of dbFields) {
+            const value = data[key];
+            const checkbox = document.getElementById(key);
+            if (!checkbox) continue;
+
+            checkbox.disabled = false;
             if (value && value.toString().trim().length > 0) {
                 checkbox.checked = true;
                 hasAny = true;

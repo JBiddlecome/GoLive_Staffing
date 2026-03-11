@@ -184,11 +184,12 @@ async def reportable_event_details(event_id: int) -> JSONResponse:
                 e.directions,
                 e.check_in,
                 v.name AS venue_name,
-                v.address1,
-                v.address2,
-                v.city,
-                v.state,
-                v.zip
+                COALESCE(e.address1, v.address1) AS address1,
+                COALESCE(e.address2, v.address2) AS address2,
+                COALESCE(e.city, v.city) AS city,
+                COALESCE(e.state, v.state) AS state,
+                COALESCE(e.zip, v.zip) AS zip,
+                (SELECT MIN(start) FROM shift WHERE event_id = e.event_id AND deleted_at IS NULL) AS shift_start
             FROM event e
             JOIN venue v ON e.venue_id = v.venue_id
             WHERE e.event_id = :event_id
@@ -199,10 +200,14 @@ async def reportable_event_details(event_id: int) -> JSONResponse:
             if not result:
                 raise HTTPException(status_code=404, detail=f"Event {event_id} not found.")
             
-            # Format date and address
+            # Format results
             data = dict(result)
             if data.get("date"):
                 data["date"] = data["date"].isoformat()
+            
+            if data.get("shift_start"):
+                # Return time in HH:MM format
+                data["shift_start"] = data["shift_start"].strftime("%I:%M %p").lstrip("0")
                 
             addr = data.get("address1", "")
             if data.get("address2"):

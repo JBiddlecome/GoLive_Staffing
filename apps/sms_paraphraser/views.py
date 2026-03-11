@@ -92,11 +92,18 @@ async def paraphrase_event(payload: ParaphraseRequest) -> JSONResponse:
             """
             SELECT
                 e.title,
+                e.date,
                 e.venue_details,
                 e.parking_note,
                 e.directions,
                 e.check_in,
-                v.name AS venue_name
+                v.name AS venue_name,
+                COALESCE(e.address1, v.address1) AS address1,
+                COALESCE(e.address2, v.address2) AS address2,
+                COALESCE(e.city, v.city) AS city,
+                COALESCE(e.state, v.state) AS state,
+                COALESCE(e.zip, v.zip) AS zip,
+                (SELECT MIN(start) FROM shift WHERE event_id = e.event_id AND deleted_at IS NULL) AS shift_start
             FROM event e
             JOIN venue v ON e.venue_id = v.venue_id
             WHERE e.event_id = :event_id
@@ -116,34 +123,79 @@ async def paraphrase_event(payload: ParaphraseRequest) -> JSONResponse:
     # Prepare data for AI
     venue_name = event_data.get("venue_name") or event_data.get("title") or "[Venue]"
     
+    # Format Location
+    addr = event_data.get("address1", "")
+    if event_data.get("address2"):
+        addr += f", {event_data['address2']}"
+    addr += f", {event_data.get('city', '')}, {event_data.get('state', '')} {event_data.get('zip', '')}"
+    formatted_location = addr.strip(", ")
+
+    # Format Time
+    formatted_time = ""
+    if event_data.get("shift_start"):
+        formatted_time = event_data["shift_start"].strftime("%I:%M %p").lstrip("0")
+
+    # Format Date
+    formatted_date = ""
+    if event_data.get("date"):
+        formatted_date = event_data["date"].strftime("%A, %B %d, %Y")
+
     db_mapping = {
+        "Event Name": "title",
+        "Date": "formatted_date",
+        "Time": "formatted_time",
+        "Location": "formatted_location",
         "Venue Details": "venue_details",
         "Parking Note": "parking_note",
         "Directions": "directions",
         "Check-In": "check_in"
     }
 
+    # Add formatted values to event_data for mapping
+    event_data["formatted_date"] = formatted_date
+    event_data["formatted_time"] = formatted_time
+    event_data["formatted_location"] = formatted_location
+
     ai_info = f"Venue Name: {venue_name}\n"
+    bullet_points = []
+    
+    # Map selection labels to their display names in the final SMS template
+    prompt_display_names = {
+        "Event Name": "Event",
+        "Date": "Date",
+        "Time": "Time",
+        "Location": "Location",
+        "Venue Details": "Venue",
+        "Parking Note": "Parking",
+        "Directions": "Directions",
+        "Check-In": "Check-In"
+    }
+
     for label in selected_fields:
         db_field = db_mapping.get(label)
         if db_field:
             raw_text = event_data.get(db_field, "")
-            clean_text = strip_html(raw_text)
+            clean_text = strip_html(str(raw_text))
             ai_info += f"{label}: {clean_text}\n"
+            
+            # Build dynamic template line
+            display_name = prompt_display_names.get(label, label)
+            bullet_points.append(f"- {display_name}: [Paraphrase from '{label}']")
 
-    # AI Prompt (Matching extension exactly)
+    template_structure = "\n".join(bullet_points)
+
+    # AI Prompt (Matching extension logic but expanded)
     system_prompt = "You are an expert at writing concise SMS notifications for staffing events."
     user_prompt = (
         "You are a helpful assistant that paraphrases event details into a concise SMS message. "
         "EXTREMELY IMPORTANT: You must format the SMS EXACTLY like this template, replacing the bracketed items with paraphrased information from the provided data: "
-        "\"This is your first shift at [Venue]. Please note the event details: "
-        "- Venue: [Paraphrase from 'Venue Details'] "
-        "- Parking: [Paraphrase from 'Parking Note'] "
-        "- Directions: [Paraphrase from 'Directions'] "
-        "- Check-In: [Paraphrase from 'Check-In']\" "
-        "If a section is missing from the information below, omit that bullet point entirely from the SMS. "
-        f"Information to paraphrase:\n{ai_info}\n"
-        "Output ONLY the final SMS message. No intro, no outro, no markdown formatting (like backticks or bolding)."
+        f"\"This is your first shift at {venue_name}. Please note the event details:\n{template_structure}\"\n"
+        "Rules: "
+        "1. Include ONLY the bullet points shown in the template above. "
+        "2. Do NOT add any sections that are not explicitly in the template. "
+        "3. Ensure the output is concise and suitable for SMS. "
+        f"\nInformation to paraphrase:\n{ai_info}\n"
+        "Output ONLY the final SMS message. No intro, no outro, no markdown formatting."
     )
 
     try:
@@ -157,6 +209,10 @@ async def paraphrase_event(payload: ParaphraseRequest) -> JSONResponse:
             temperature=0.7
         )
         sms_text = response.choices[0].message.content.strip()
+        # Append signature
+        if not sms_text.endswith("-Culinary Staffing"):
+            sms_text += "\n\n-Culinary Staffing"
+            
         return JSONResponse({"text": sms_text})
 
     except OpenAIError as exc:
