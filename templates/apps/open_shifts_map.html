@@ -18,7 +18,7 @@
 
     <!-- Filters -->
     <section class="rounded-2xl border border-emerald-100 bg-white p-6 shadow-sm">
-        <form id="mapFilters" class="grid gap-4 md:grid-cols-4 items-end">
+        <form id="mapFilters" class="grid gap-4 md:grid-cols-5 items-end">
             <div>
                 <label class="block text-sm font-medium mb-1 text-gray-700">Start date</label>
                 <input id="startDate" type="date"
@@ -33,6 +33,12 @@
                 <label class="block text-sm font-medium mb-1 text-gray-700">Position</label>
                 <select id="positionSelect" class="w-full rounded-lg border border-gray-300 bg-white p-2 text-gray-700">
                     <option value="">All Positions</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700">Staffing Manager</label>
+                <select id="managerSelect" class="w-full rounded-lg border border-gray-300 bg-white p-2 text-gray-700">
+                    <option value="">All Managers</option>
                 </select>
             </div>
             <button type="submit"
@@ -53,6 +59,33 @@
             </div>
         </div>
     </section>
+
+    <!-- Shifts List -->
+    <section class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="brand-serif text-2xl font-semibold text-gray-900">Available Shifts List</h2>
+        <p id="shiftCount" class="text-sm font-medium text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full"></p>
+      </div>
+      <div class="rounded-2xl border border-emerald-100 bg-white shadow-lg overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead class="bg-emerald-50/50">
+              <tr>
+                <th class="px-6 py-4 text-sm font-semibold text-emerald-900 border-b border-emerald-100">Event Date</th>
+                <th class="px-6 py-4 text-sm font-semibold text-emerald-900 border-b border-emerald-100">Client</th>
+                <th class="px-6 py-4 text-sm font-semibold text-emerald-900 border-b border-emerald-100">Venue</th>
+                <th class="px-6 py-4 text-sm font-semibold text-emerald-900 border-b border-emerald-100">Position</th>
+                <th class="px-6 py-4 text-sm font-semibold text-emerald-900 border-b border-emerald-100">Pay Rate</th>
+                <th class="px-6 py-4 text-sm font-semibold text-emerald-900 border-b border-emerald-100">Staffing Manager</th>
+              </tr>
+            </thead>
+            <tbody id="shiftsTableBody" class="divide-y divide-emerald-50">
+              <!-- Rows added via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
 </section>
 
 <script>
@@ -62,8 +95,11 @@
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
     const positionSelect = document.getElementById('positionSelect');
+    const managerSelect = document.getElementById('managerSelect');
     const filtersForm = document.getElementById('mapFilters');
     const loader = document.getElementById('mapLoader');
+    const tableBody = document.getElementById('shiftsTableBody');
+    const shiftCountLabel = document.getElementById('shiftCount');
 
     // Initialize dates to today and +7 days
     const today = new Date().toISOString().split('T')[0];
@@ -80,6 +116,29 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
+    }
+
+    async function loadManagers() {
+        const start = startDateInput.value;
+        const end = endDateInput.value;
+        if (!start || !end) return;
+
+        try {
+            const resp = await fetch(`/open-shifts-map/staffing-managers?start_date=${start}&end_date=${end}`);
+            const data = await resp.json();
+            
+            const currentVal = managerSelect.value;
+            managerSelect.innerHTML = '<option value="">All Managers</option>';
+            data.managers.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = m.name;
+                managerSelect.appendChild(opt);
+            });
+            if (currentVal) managerSelect.value = currentVal;
+        } catch (err) {
+            console.error('Failed to load managers:', err);
+        }
     }
 
     async function loadPositions() {
@@ -111,6 +170,7 @@
         const start = startDateInput.value;
         const end = endDateInput.value;
         const posId = positionSelect.value;
+        const managerId = managerSelect.value;
 
         if (!start || !end) return;
 
@@ -122,15 +182,16 @@
 
         let url = `/open-shifts-map/shifts?start_date=${start}&end_date=${end}`;
         if (posId) url += `&position_id=${posId}`;
+        if (managerId) url += `&staffing_manager_id=${managerId}`;
 
         try {
             const resp = await fetch(url);
             const data = await resp.json();
 
-            console.log(`Shifts API returned ${data.shifts.length} shifts.`);
+            renderTable(data.shifts);
+            shiftCountLabel.textContent = `${data.shifts.length} shifts found`;
 
             if (data.shifts.length === 0) {
-                alert('No open shifts found for the selected date range and position.');
                 loader.classList.add('hidden');
                 return;
             }
@@ -141,10 +202,7 @@
             data.shifts.forEach(s => {
                 const lat = parseFloat(s.latitude);
                 const lng = parseFloat(s.longitude);
-                if (isNaN(lat) || isNaN(lng)) {
-                    console.warn(`Invalid coordinates for shift: ${s.event_title}`, s);
-                    return;
-                }
+                if (isNaN(lat) || isNaN(lng)) return;
 
                 const marker = L.marker([lat, lng]).addTo(map);
                 marker.bindPopup(`
@@ -163,11 +221,7 @@
             });
 
             if (hasPins) {
-                console.log(`Rendered ${markers.length} pins.`);
                 map.fitBounds(bounds, { padding: [50, 50] });
-            } else {
-                console.warn('No valid coordinates found among the shifts returned.');
-                alert('Items were found but they lack valid latitude/longitude coordinates to display on the map.');
             }
         } catch (err) {
             console.error('Failed to update map:', err);
@@ -176,16 +230,54 @@
         }
     }
 
+    function renderTable(shifts) {
+        tableBody.innerHTML = '';
+        if (shifts.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="6" class="px-6 py-12 text-center text-gray-500 font-medium">No open shifts found for these filters.</td></tr>';
+            return;
+        }
+
+        const dateOptions = { month: 'short', day: 'numeric' };
+
+        shifts.forEach(s => {
+            const dateObj = new Date(s.event_date + 'T00:00:00');
+            const formattedDate = dateObj.toLocaleDateString('en-US', dateOptions);
+
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-emerald-50/30 transition';
+            row.innerHTML = `
+                <td class="px-6 py-4 text-sm border-b border-emerald-50/50 whitespace-nowrap font-medium text-emerald-900">${formattedDate}</td>
+                <td class="px-6 py-4 text-sm font-medium text-gray-900 border-b border-emerald-50/50">${s.client_name}</td>
+                <td class="px-6 py-4 text-sm text-gray-600 border-b border-emerald-50/50">${s.venue_name}</td>
+                <td class="px-6 py-4 text-sm border-b border-emerald-50/50">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800">
+                    ${s.position}
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-sm font-semibold text-emerald-700 border-b border-emerald-50/50">$${parseFloat(s.rate).toFixed(2)}</td>
+                <td class="px-6 py-4 text-sm text-gray-600 border-b border-emerald-50/50">${s.staffing_manager_name || 'N/A'}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
+
     filtersForm.addEventListener('submit', (e) => {
         e.preventDefault();
         updateMap();
     });
 
-    startDateInput.addEventListener('change', loadPositions);
-    endDateInput.addEventListener('change', loadPositions);
+    startDateInput.addEventListener('change', () => {
+        loadPositions();
+        loadManagers();
+    });
+    endDateInput.addEventListener('change', () => {
+        loadPositions();
+        loadManagers();
+    });
 
     document.addEventListener('DOMContentLoaded', async () => {
         initMap();
+        await loadManagers();
         await loadPositions();
         await updateMap();
     });
