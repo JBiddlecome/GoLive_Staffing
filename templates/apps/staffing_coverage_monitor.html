@@ -37,9 +37,30 @@
 
   <main class="max-w-7xl mx-auto px-6 py-12">
     <!-- Intro Section -->
-    <div class="mb-12">
-      <h2 class="text-3xl font-bold text-slate-900 mb-2">Coverage Overview</h2>
-      <p class="text-slate-600 max-w-2xl">Analyze open shifts across all counties and see which ones are adequately covered by eligible active employees.</p>
+    <div class="mb-10 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+      <div>
+        <h2 class="text-3xl font-bold text-slate-900 mb-2">Coverage Overview</h2>
+        <p class="text-slate-600 max-w-2xl">Analyze open shifts across all counties and see which ones are adequately covered by eligible active employees.</p>
+      </div>
+      
+      <!-- Legend -->
+      <div class="glass rounded-2xl p-5 shadow-sm">
+        <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">Coverage Legend</span>
+        <div class="space-y-3">
+          <div class="flex items-center space-x-3">
+            <div class="h-3 w-3 rounded-full bg-emerald-500 shadow-sm shadow-emerald-200"></div>
+            <span class="text-sm font-medium text-slate-700"><strong class="text-slate-900">Healthy:</strong> &gt; 10 eligible employees per open spot</span>
+          </div>
+          <div class="flex items-center space-x-3">
+            <div class="h-3 w-3 rounded-full bg-amber-500 shadow-sm shadow-amber-200"></div>
+            <span class="text-sm font-medium text-slate-700"><strong class="text-slate-900">Tight:</strong> 5 - 10 eligible employees per open spot</span>
+          </div>
+          <div class="flex items-center space-x-3">
+            <div class="h-3 w-3 rounded-full bg-rose-500 shadow-sm shadow-rose-200"></div>
+            <span class="text-sm font-medium text-slate-700"><strong class="text-slate-900">Shortage:</strong> &lt; 5 per spot or fewer employees than spots</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- loading Skeleton -->
@@ -84,37 +105,62 @@
         }
 
         container.style.opacity = '1';
-        container.innerHTML = data.counties.map((county, index) => {
-          const positionsHtml = county.positions.map(pos => {
+        container.innerHTML = data.counties.map((county, countyIndex) => {
+          const positionsHtml = county.positions.map((pos, posIndex) => {
             const ratio = pos.eligible_employees / pos.open_spots;
+            const uniqueId = `clients-${countyIndex}-${posIndex}`;
             let statusColor = 'text-emerald-600';
             let bgColor = 'bg-emerald-50';
+            let borderHover = 'hover:border-emerald-200';
             let label = 'Healthy';
 
-            if (ratio < 1) {
+            if (ratio < 5 || pos.eligible_employees < pos.open_spots) {
               statusColor = 'text-rose-600';
               bgColor = 'bg-rose-50';
+              borderHover = 'hover:border-rose-200';
               label = 'Shortage';
-            } else if (ratio < 2) {
+            } else if (ratio <= 10) {
               statusColor = 'text-amber-600';
               bgColor = 'bg-amber-50';
+              borderHover = 'hover:border-amber-200';
               label = 'Tight';
             }
 
+            const clientsList = pos.clients.map(client => `
+              <li class="flex items-center space-x-2 py-1">
+                <div class="h-1 w-1 rounded-full bg-slate-300"></div>
+                <span class="text-[12px] text-slate-600 font-medium">${client}</span>
+              </li>
+            `).join('');
+
             return `
-              <div class="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
-                <div class="flex-1 min-w-0 pr-4">
-                  <div class="text-sm font-semibold text-slate-900 truncate">${pos.name}</div>
-                  <div class="text-[11px] text-slate-500 font-medium uppercase tracking-wider mt-0.5">${pos.open_spots} Open Spots</div>
-                </div>
-                <div class="flex items-center space-x-4">
-                  <div class="text-right">
-                    <div class="text-sm font-bold text-slate-900">${pos.eligible_employees}</div>
-                    <div class="text-[10px] text-slate-400 font-medium">Eligible</div>
+              <div class="border-b border-slate-100 last:border-0 group/pos">
+                <button onclick="toggleClients('${uniqueId}')" 
+                        class="w-full text-left flex items-center justify-between py-4 px-1 rounded-lg transition-all ${borderHover} hover:bg-slate-50 relative">
+                  <div class="flex-1 min-w-0 pr-4">
+                    <div class="text-sm font-semibold text-slate-900 truncate flex items-center">
+                      ${pos.name}
+                      <svg class="h-3 w-3 ml-2 text-slate-300 group-hover/pos:text-slate-400 transition-transform duration-200" id="icon-${uniqueId}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                    <div class="text-[11px] text-slate-500 font-medium uppercase tracking-wider mt-0.5">${pos.open_spots} Open Spots</div>
                   </div>
-                  <div class="px-2.5 py-1 rounded-full text-[10px] font-bold ${bgColor} ${statusColor} border border-current opacity-70">
-                    ${label}
+                  <div class="flex items-center space-x-4">
+                    <div class="text-right">
+                      <div class="text-sm font-bold text-slate-900">${pos.eligible_employees}</div>
+                      <div class="text-[10px] text-slate-400 font-medium">Eligible</div>
+                    </div>
+                    <div class="px-2.5 py-1 rounded-full text-[10px] font-bold ${bgColor} ${statusColor} border border-current opacity-70">
+                      ${label}
+                    </div>
                   </div>
+                </button>
+                <div id="${uniqueId}" class="hidden px-6 pb-4 animate-fadeIn">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Open Records For:</div>
+                  <ul class="divide-y divide-slate-50">
+                    ${clientsList}
+                  </ul>
                 </div>
               </div>
             `;
@@ -124,7 +170,7 @@
 
           return `
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden card-hover animate-fadeIn" 
-                 style="animation-delay: ${index * 100}ms">
+                 style="animation-delay: ${countyIndex * 100}ms">
               <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                 <h3 class="text-lg font-bold text-slate-900">${county.county}</h3>
                 <span class="bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-md mb-0.5">${totalOpen} Open</span>
@@ -139,6 +185,18 @@
       } catch (error) {
         console.error('Error fetching data:', error);
         loader.innerHTML = '<div class="col-span-full text-center text-rose-600 p-8">Failed to load coverage data. Please refresh or try again later.</div>';
+      }
+    }
+
+    function toggleClients(id) {
+      const el = document.getElementById(id);
+      const icon = document.getElementById(`icon-${id}`);
+      if (el.classList.contains('hidden')) {
+        el.classList.remove('hidden');
+        icon.style.transform = 'rotate(180deg)';
+      } else {
+        el.classList.add('hidden');
+        icon.style.transform = 'rotate(0deg)';
       }
     }
 
