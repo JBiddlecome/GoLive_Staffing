@@ -168,6 +168,11 @@ app.include_router(open_shifts_map_router, prefix="/open-shifts-map", tags=["Ope
 app.include_router(sms_paraphraser_router, prefix="/sms-paraphraser", tags=["SMS Paraphraser"])
 app.include_router(client_drop_off_v2_router, prefix="/client-drop-off-v2", tags=["Client Drop Off v2"])
 
+# Redirect /sms_paraphraser to /sms-paraphraser for backward compatibility
+@app.get("/sms_paraphraser", include_in_schema=False)
+async def sms_paraphraser_redirect():
+    return RedirectResponse(url="/sms-paraphraser", status_code=308)
+
 # Simple health check for Render
 @app.get("/healthz")
 async def healthz():
