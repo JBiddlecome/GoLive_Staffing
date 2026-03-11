@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staffing Coverage Monitor | GoLive Tools</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Outfit', sans-serif; background-color: #f8fafc; }
+    .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+    .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .card-hover:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.1); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fadeIn { animation: fadeIn 0.5s ease-out forwards; }
+  </style>
+</head>
+<body class="text-slate-900 leading-relaxed min-h-screen">
+
+  <!-- Header -->
+  <header class="glass sticky top-0 z-50 px-6 py-4 shadow-sm">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="h-10 w-10 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200">
+          <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">Staffing Coverage Monitor</h1>
+          <p class="text-xs text-slate-500 font-medium tracking-wide uppercase">Real-time Coverage Analytics</p>
+        </div>
+      </div>
+      <a href="/work-in-progress" class="text-sm font-semibold text-slate-600 hover:text-emerald-600 transition-colors">Back to Dashboard</a>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-6 py-12">
+    <!-- Intro Section -->
+    <div class="mb-12">
+      <h2 class="text-3xl font-bold text-slate-900 mb-2">Coverage Overview</h2>
+      <p class="text-slate-600 max-w-2xl">Analyze open shifts across all counties and see which ones are adequately covered by eligible active employees.</p>
+    </div>
+
+    <!-- loading Skeleton -->
+    <div id="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div class="h-64 bg-slate-200 animate-pulse rounded-2xl"></div>
+      <div class="h-64 bg-slate-200 animate-pulse rounded-2xl"></div>
+      <div class="h-64 bg-slate-200 animate-pulse rounded-2xl"></div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div id="coverage-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 opacity-0 transition-opacity duration-500">
+      <!-- Data will be injected here -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="hidden text-center py-24">
+      <div class="bg-slate-100 h-20 w-20 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
+          <svg class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+          </svg>
+      </div>
+      <h3 class="text-lg font-semibold text-slate-900">No open shifts found</h3>
+      <p class="text-slate-500 mt-2">All future shifts are currently filled or none are listed.</p>
+    </div>
+  </main>
+
+  <script>
+    async function loadData() {
+      const container = document.getElementById('coverage-container');
+      const loader = document.getElementById('loading');
+      const emptyState = document.getElementById('empty-state');
+
+      try {
+        const response = await fetch('/staffing-coverage-monitor/data');
+        const data = await response.json();
+
+        loader.classList.add('hidden');
+
+        if (!data.counties || data.counties.length === 0) {
+          emptyState.classList.remove('hidden');
+          return;
+        }
+
+        container.style.opacity = '1';
+        container.innerHTML = data.counties.map((county, index) => {
+          const positionsHtml = county.positions.map(pos => {
+            const ratio = pos.eligible_employees / pos.open_spots;
+            let statusColor = 'text-emerald-600';
+            let bgColor = 'bg-emerald-50';
+            let label = 'Healthy';
+
+            if (ratio < 1) {
+              statusColor = 'text-rose-600';
+              bgColor = 'bg-rose-50';
+              label = 'Shortage';
+            } else if (ratio < 2) {
+              statusColor = 'text-amber-600';
+              bgColor = 'bg-amber-50';
+              label = 'Tight';
+            }
+
+            return `
+              <div class="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
+                <div class="flex-1 min-w-0 pr-4">
+                  <div class="text-sm font-semibold text-slate-900 truncate">${pos.name}</div>
+                  <div class="text-[11px] text-slate-500 font-medium uppercase tracking-wider mt-0.5">${pos.open_spots} Open Spots</div>
+                </div>
+                <div class="flex items-center space-x-4">
+                  <div class="text-right">
+                    <div class="text-sm font-bold text-slate-900">${pos.eligible_employees}</div>
+                    <div class="text-[10px] text-slate-400 font-medium">Eligible</div>
+                  </div>
+                  <div class="px-2.5 py-1 rounded-full text-[10px] font-bold ${bgColor} ${statusColor} border border-current opacity-70">
+                    ${label}
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+
+          const totalOpen = county.positions.reduce((acc, p) => acc + p.open_spots, 0);
+
+          return `
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden card-hover animate-fadeIn" 
+                 style="animation-delay: ${index * 100}ms">
+              <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-slate-900">${county.county}</h3>
+                <span class="bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-md mb-0.5">${totalOpen} Open</span>
+              </div>
+              <div class="px-6 py-2">
+                ${positionsHtml}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        loader.innerHTML = '<div class="col-span-full text-center text-rose-600 p-8">Failed to load coverage data. Please refresh or try again later.</div>';
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', loadData);
+  </script>
+</body>
+</html>
