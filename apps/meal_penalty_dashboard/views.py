@@ -62,20 +62,16 @@ async def get_meal_penalty_data(
     try:
         sql = text("""
             SELECT 
+                e.event_id,
                 e.date,
                 c.name AS client_name,
                 v.name AS venue_name,
                 emp.first_name,
                 emp.last_name,
-                t.employee_start,
-                t.employee_end,
-                t.employee_break_start,
-                t.employee_break_end,
-                t.employee_sec_break_start,
-                t.employee_sec_break_end,
-                t.employee_no_sec_break_reason,
+                TIMESTAMPDIFF(MINUTE, t.employee_start, t.employee_end) AS duration_minutes,
                 TIMESTAMPDIFF(MINUTE, t.employee_break_start, t.employee_break_end) AS break_minutes,
                 TIMESTAMPDIFF(MINUTE, t.employee_sec_break_start, t.employee_sec_break_end) AS sec_break_minutes,
+                t.employee_no_sec_break_reason,
                 t.employee_no_break_penalty,
                 t.client_no_break_penalty
             FROM timesheet t
@@ -99,13 +95,9 @@ async def get_meal_penalty_data(
             for row in result:
                 item = dict(row)
                 
-                # Calculate Worked Hours
+                # Calculate Worked Hours using strictly minutes
                 # Formula: (End - Start) - (1st Break) - (2nd Break)
-                total_duration_minutes = 0
-                if item["employee_start"] and item["employee_end"]:
-                    duration = item["employee_end"] - item["employee_start"]
-                    total_duration_minutes = duration.total_seconds() / 60
-                
+                total_duration_minutes = item["duration_minutes"] or 0
                 break1_mins = item["break_minutes"] or 0
                 break2_mins = item["sec_break_minutes"] or 0
                 
@@ -114,10 +106,10 @@ async def get_meal_penalty_data(
                 
                 # Exclusion Logic:
                 # remove from consideration shifts where an employee worked greater than 10 hours 
-                # and employee_sec_break_end and employee_sec_break_start are blank or less than 30 minutes 
-                # and employee_no_sec_break_reason is 3. 
+                # (strictly > 600 minutes) and employee_sec_break_end and employee_sec_break_start 
+                # are blank or less than 30 minutes and employee_no_sec_break_reason is 3. 
                 
-                is_over_10_hours = worked_hours > 10
+                is_over_10_hours = (worked_minutes > 600)
                 is_sec_break_short_or_missing = (break2_mins < 30)
                 is_reason_3 = (item["employee_no_sec_break_reason"] == 3)
                 
@@ -132,7 +124,7 @@ async def get_meal_penalty_data(
                 
                 # Clean up items not needed for frontend
                 for key in list(item.keys()):
-                    if key not in ["date", "client_name", "venue_name", "employee_name", 
+                    if key not in ["event_id", "date", "client_name", "venue_name", "employee_name", 
                                   "break_minutes", "employee_penalty", "client_penalty", "worked_hours"]:
                         item.pop(key)
                 
