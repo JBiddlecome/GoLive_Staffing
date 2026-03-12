@@ -165,10 +165,11 @@
             dataBody.innerHTML = '';
             data.forEach(row => {
                 const tr = document.createElement('tr');
-                tr.className = 'hover:bg-emerald-50/30 transition-colors';
+                tr.className = 'hover:bg-emerald-50/50 transition-colors cursor-pointer group';
+                tr.onclick = () => window.open(`https://golive.culinarystaffing.com/events/${row.event_id}/timesheets`, '_blank');
                 
                 tr.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-gray-700 font-medium">${row.date}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-gray-700 font-medium group-hover:text-emerald-700 transition-colors">${row.date}</td>
                     <td class="px-6 py-4 text-gray-900 font-semibold">${row.client_name}</td>
                     <td class="px-6 py-4 text-gray-600">${row.venue_name}</td>
                     <td class="px-6 py-4 text-gray-900">${row.employee_name}</td>
