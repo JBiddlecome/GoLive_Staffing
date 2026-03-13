@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 class ParaphraseRequest(BaseModel):
     event_id: int
     sections: List[str]
+    shift_time: str | None = None
 
 # --- Database Helper ---
 
@@ -151,7 +152,9 @@ async def paraphrase_event(payload: ParaphraseRequest) -> JSONResponse:
 
     # Format Time
     formatted_time = ""
-    if event_data.get("shift_start"):
+    if getattr(payload, "shift_time", None):
+        formatted_time = payload.shift_time
+    elif event_data.get("shift_start"):
         formatted_time = event_data["shift_start"].strftime("%I:%M %p").lstrip("0")
 
     # Format Date

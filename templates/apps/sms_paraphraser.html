@@ -44,12 +44,15 @@
                             class="w-5 h-5 rounded text-emerald-600 focus:ring-emerald-500 border-emerald-200">
                         <span class="text-sm font-semibold text-gray-700">Date</span>
                     </label>
-                    <label
-                        class="flex items-center gap-3 p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 cursor-pointer hover:bg-emerald-50 transition">
-                        <input type="checkbox" name="section" value="Time"
-                            class="w-5 h-5 rounded text-emerald-600 focus:ring-emerald-500 border-emerald-200">
-                        <span class="text-sm font-semibold text-gray-700">Time</span>
-                    </label>
+                    <div class="flex flex-col gap-2 p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 hover:bg-emerald-50 transition">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" name="section" value="Time" id="time-checkbox"
+                                class="w-5 h-5 rounded text-emerald-600 focus:ring-emerald-500 border-emerald-200">
+                            <span class="text-sm font-semibold text-gray-700">Time</span>
+                        </label>
+                        <select id="shift-selector" class="hidden w-full px-3 py-2 rounded-xl border border-emerald-200 focus:border-emerald-500 focus:ring-0 text-gray-700 text-sm mt-1">
+                        </select>
+                    </div>
                     <label
                         class="flex items-center gap-3 p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 cursor-pointer hover:bg-emerald-50 transition">
                         <input type="checkbox" name="section" value="Location"
@@ -149,7 +152,18 @@
 
         let currentEventId = null;
 
-        urlInput.addEventListener('input', () => {
+        const shiftSelector = document.getElementById('shift-selector');
+        const timeCheckbox = document.getElementById('time-checkbox');
+
+        timeCheckbox.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                shiftSelector.classList.remove('hidden');
+            } else {
+                shiftSelector.classList.add('hidden');
+            }
+        });
+
+        urlInput.addEventListener('input', async () => {
             const url = urlInput.value.trim();
             if (!url) {
                 resetUI();
@@ -159,12 +173,42 @@
             const eventId = extractEventId(url);
             if (eventId) {
                 currentEventId = eventId;
-                urlStatus.textContent = 'Event Recognized';
-                urlStatus.className = 'absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700';
+                urlStatus.textContent = 'Loading...';
+                urlStatus.className = 'absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-yellow-100 text-yellow-700';
                 urlStatus.classList.remove('hidden');
-                displayId.textContent = 'Event ID: ' + eventId;
-                configSection.classList.remove('hidden');
-                errorMsg.classList.add('hidden');
+
+                try {
+                    const response = await fetch(`/reportable/event/${eventId}`);
+                    if (!response.ok) throw new Error("Event not found");
+                    const data = await response.json();
+
+                    shiftSelector.innerHTML = '';
+                    if (data.shifts && data.shifts.length > 0) {
+                        data.shifts.forEach(shift => {
+                            const option = document.createElement('option');
+                            option.value = shift.time;
+                            option.textContent = shift.label;
+                            shiftSelector.appendChild(option);
+                        });
+                    } else {
+                        const option = document.createElement('option');
+                        option.value = "";
+                        option.textContent = "No shifts available";
+                        shiftSelector.appendChild(option);
+                    }
+
+                    urlStatus.textContent = 'Event Recognized';
+                    urlStatus.className = 'absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700';
+                    displayId.textContent = 'Event ID: ' + eventId;
+                    configSection.classList.remove('hidden');
+                    errorMsg.classList.add('hidden');
+                } catch (err) {
+                    urlStatus.textContent = 'Invalid Event';
+                    urlStatus.className = 'absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700';
+                    configSection.classList.add('hidden');
+                    errorMsg.textContent = 'Failed to load event from database.';
+                    errorMsg.classList.remove('hidden');
+                }
             } else {
                 urlStatus.textContent = 'Invalid URL';
                 urlStatus.className = 'absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700';
@@ -211,13 +255,18 @@
             resultSection.classList.add('hidden');
 
             try {
+                let payloadData = {
+                    event_id: parseInt(currentEventId),
+                    sections: selected
+                };
+                if (selected.includes('Time') && shiftSelector.value) {
+                    payloadData.shift_time = shiftSelector.value;
+                }
+
                 const response = await fetch('/sms-paraphraser/paraphrase', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        event_id: parseInt(currentEventId),
-                        sections: selected
-                    })
+                    body: JSON.stringify(payloadData)
                 });
 
                 let data;

@@ -13,6 +13,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const loading = document.getElementById('loading');
     const errorMsg = document.getElementById('error-msg');
     const sourceStatus = document.getElementById('data-source-status');
+    const timeCheckbox = document.getElementById('Time');
+    const shiftSelector = document.getElementById('shift-selector');
+
+    timeCheckbox.addEventListener('change', (e) => {
+        if (e.target.checked) {
+            shiftSelector.style.display = 'block';
+        } else {
+            shiftSelector.style.display = 'none';
+        }
+    });
 
     // Request extraction from content script
     async function requestExtraction(tabId) {
@@ -90,6 +100,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (apiResponse.ok) {
                     const dbData = await apiResponse.json();
                     console.log("SMS Paraphraser: Success! DB Data Received:", dbData);
+
+                    shiftSelector.innerHTML = '';
+                    if (dbData.shifts && dbData.shifts.length > 0) {
+                        dbData.shifts.forEach(shift => {
+                            const option = document.createElement('option');
+                            option.value = shift.time;
+                            option.textContent = shift.label;
+                            shiftSelector.appendChild(option);
+                        });
+                    } else {
+                        const option = document.createElement('option');
+                        option.value = "";
+                        option.textContent = "No shifts available";
+                        shiftSelector.appendChild(option);
+                    }
 
                     // PURE DB OVERRIDE for requested fields
                     // Use a slightly more defensive update pattern
@@ -231,12 +256,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         generateBtn.textContent = "Paraphrasing...";
         errorMsg.style.display = 'none';
 
+        let payloadData = {
+            action: "paraphrase",
+            eventId: extractedData.eventId,
+            sections: selectedSections
+        };
+        const timeChecked = document.getElementById('Time').checked;
+        if (timeChecked && shiftSelector.value) {
+            payloadData.shift_time = shiftSelector.value;
+        }
+
         try {
-            const response = await chrome.runtime.sendMessage({
-                action: "paraphrase",
-                eventId: extractedData.eventId,
-                sections: selectedSections
-            });
+            const response = await chrome.runtime.sendMessage(payloadData);
 
             if (response.error) {
                 throw new Error(response.error);
