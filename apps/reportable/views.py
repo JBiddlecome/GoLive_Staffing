@@ -208,6 +208,31 @@ async def reportable_event_details(event_id: int) -> JSONResponse:
             if data.get("shift_start"):
                 # Return time in HH:MM format
                 data["shift_start"] = data["shift_start"].strftime("%I:%M %p").lstrip("0")
+
+            # Fetch shifts for the event
+            shifts_sql = text(
+                """
+                SELECT s.start, p.description as position
+                FROM shift s
+                JOIN shift_position sp ON s.shift_id = sp.shift_id
+                JOIN position p ON sp.position_id = p.position_id
+                WHERE s.event_id = :event_id AND s.deleted_at IS NULL
+                ORDER BY s.start
+                """
+            )
+            shift_results = connection.execute(shifts_sql, {"event_id": event_id}).mappings().all()
+            
+            shifts = []
+            for row in shift_results:
+                if row["start"]:
+                    # Format time as requested: e.g., "7:00 AM"
+                    time_str = row["start"].strftime("%I:%M %p").lstrip("0")
+                    shifts.append({
+                        "time": time_str,
+                        "position": row["position"],
+                        "label": f"{time_str} {row['position']}"
+                    })
+            data["shifts"] = shifts
                 
             addr = data.get("address1", "")
             if data.get("address2"):
