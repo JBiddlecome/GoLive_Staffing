@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from datetime import datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 from fastapi import APIRouter, HTTPException, Query, Request
@@ -59,7 +60,7 @@ def _engine():
 @router.get("", response_class=HTMLResponse)
 async def unconfirmed_requests_page(request: Request):
     # Default date range: today to 2 weeks from now
-    today = datetime.now().date()
+    today = datetime.now(ZoneInfo("America/Los_Angeles")).date()
     two_weeks_later = today + timedelta(days=14)
     
     return templates.TemplateResponse(
@@ -144,7 +145,7 @@ async def unconfirmed_requests_data(
                 pass
 
         # Calculate hours passed
-        now = datetime.now()
+        now = datetime.now(ZoneInfo("America/Los_Angeles")).replace(tzinfo=None)
         df['hours_passed'] = df['created_at'].apply(
             lambda x: round((now - x).total_seconds() / 3600, 1) if pd.notnull(x) else 0
         )
