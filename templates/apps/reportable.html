@@ -146,6 +146,32 @@
   </section>
 
 
+  <section class="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm space-y-4">
+    <h2 class="text-xl font-semibold text-gray-900">Default report: Global Shift Report</h2>
+    <p class="text-sm text-gray-700">Detailed line item for every shift slot to compare client cancellations vs filled shifts by event date range.</p>
+
+    <form id="globalShiftReportForm" class="space-y-4">
+      <div class="grid gap-4 md:grid-cols-2">
+        <div>
+          <label class="block text-sm font-medium mb-1 text-gray-700">Start date</label>
+          <input id="gsrStartDate" type="date"
+            class="w-full rounded-lg border border-gray-300 bg-white p-2 text-gray-700" required />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1 text-gray-700">End date</label>
+          <input id="gsrEndDate" type="date" class="w-full rounded-lg border border-gray-300 bg-white p-2 text-gray-700"
+            required />
+        </div>
+      </div>
+
+      <button id="globalShiftReportButton" type="submit"
+        class="inline-flex items-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">
+        Export Global Shift Report (.xlsx)
+      </button>
+    </form>
+  </section>
+
+
   <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-5">
     <h2 class="text-xl font-semibold text-gray-900">Build a report</h2>
     <p id="statusMessage" class="text-sm text-gray-600">Loading tables…</p>
@@ -545,6 +571,50 @@
       anchor.click();
       URL.revokeObjectURL(downloadUrl);
       setStatus('Maps Report ready. Download started.');
+    } catch (error) {
+      setStatus(error.message, true);
+    }
+  });
+
+  const globalShiftReportForm = document.getElementById('globalShiftReportForm');
+  globalShiftReportForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const startDate = document.getElementById('gsrStartDate').value;
+    const endDate = document.getElementById('gsrEndDate').value;
+
+    if (!startDate || !endDate) {
+      setStatus('Select a start and end date for the Global Shift Report.', true);
+      return;
+    }
+
+    const payload = {
+      start_date: startDate,
+      end_date: endDate,
+      limit: 50000,
+    };
+
+    try {
+      setStatus('Generating Global Shift Report…');
+      const response = await fetch('/reportable/export/global-shift-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.detail || `Export failed (${response.status})`);
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = downloadUrl;
+      anchor.download = 'global_shift_report.xlsx';
+      anchor.click();
+      URL.revokeObjectURL(downloadUrl);
+      setStatus('Global Shift Report ready. Download started.');
     } catch (error) {
       setStatus(error.message, true);
     }

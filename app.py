@@ -28,6 +28,7 @@ from apps.sms_paraphraser.views import router as sms_paraphraser_router
 from apps.client_drop_off_v2.views import router as client_drop_off_v2_router
 from apps.staffing_coverage_monitor.views import router as staffing_coverage_monitor_router
 from apps.meal_penalty_dashboard.views import router as meal_penalty_router
+from apps.client_cancellation_rates.views import router as client_cancellation_rates_router
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 
 app = FastAPI(title="GoLive Staffing — Tools")
@@ -178,6 +179,11 @@ app.include_router(
     meal_penalty_router,
     prefix="/meal-penalty-dashboard",
     tags=["Meal Penalty Dashboard"],
+)
+app.include_router(
+    client_cancellation_rates_router,
+    prefix="/client-cancellation-rates",
+    tags=["Client Cancellation Rates"],
 )
 
 # Redirect /sms_paraphraser to /sms-paraphraser for backward compatibility

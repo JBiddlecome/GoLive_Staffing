@@ -49,6 +49,12 @@ class MapsReportPayload(BaseModel):
     limit: int = Field(default=50000, ge=1, le=100000)
 
 
+class GlobalShiftReportPayload(BaseModel):
+    start_date: str = Field(..., min_length=1)
+    end_date: str = Field(..., min_length=1)
+    limit: int = Field(default=50000, ge=1, le=100000)
+
+
 TIMESHEET_VERIFICATION_EXCLUDED_COLUMNS = {
     "Day",
     "WC",
@@ -68,6 +74,14 @@ TIMESHEET_VERIFICATION_EXCLUDED_COLUMNS = {
     "verification_end",
     "verification_start_at",
     "verification_end_at",
+}
+
+CANCEL_REASON_MAP = {
+    1: "Shift Cancelled",
+    2: "Employee Cancelled < 24 Hours Notice",
+    3: "Employee Cancelled > 24 Hours Notice",
+    4: "Client Cancelled Shift",
+    5: "Client Decreased Staff Needed",
 }
 
 
@@ -1330,6 +1344,124 @@ async def reportable_maps_report_export(
     output.seek(0)
 
     filename = "maps_report.xlsx"
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers,
+    )
+
+
+@router.post("/export/global-shift-report")
+async def reportable_global_shift_report_export(
+    payload: GlobalShiftReportPayload,
+) -> StreamingResponse:
+    engine = _engine()
+    try:
+        sql = text(
+            """
+            SELECT
+                e.date                       AS date,
+                c.name                       AS client_name,
+                v.name                       AS venue_name,
+                s.shift_id                   AS shift_id,
+                sp.shift_position_id         AS shift_position_id,
+                sp.created_at                AS pos_created_at,
+                sp.deleted_at                AS pos_deleted_at,
+                s.deleted_at                 AS shift_deleted_at,
+                se.cancel_reason             AS cancel_reason_id,
+                se.employee_cancel_reason    AS employee_cancel_reason,
+                se.employee_id               AS employee_id,
+                emp.first_name               AS emp_first,
+                emp.last_name                AS emp_last
+            FROM shift_position sp
+            JOIN shift s ON sp.shift_id = s.shift_id
+            JOIN event e ON s.event_id = e.event_id
+            JOIN client c ON e.client_id = c.client_id
+            JOIN venue v ON e.venue_id = v.venue_id
+            LEFT JOIN shift_employee se ON sp.shift_position_id = se.shift_position_id
+            LEFT JOIN employee emp ON se.employee_id = emp.employee_id
+            WHERE e.date >= :start_date
+              AND e.date <= :end_date
+            ORDER BY e.date DESC, c.name, s.shift_id
+            LIMIT :limit
+            """
+        )
+
+        params = {
+            "start_date": payload.start_date,
+            "end_date": payload.end_date,
+            "limit": payload.limit,
+        }
+
+        with engine.begin() as connection:
+            df = pd.read_sql(sql, connection, params=params)
+
+    finally:
+        engine.dispose()
+
+    if df.empty:
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            pd.DataFrame(columns=[
+                "Date", "Client Name", "Venue Name", "Shift ID", "Status",
+                "Position Created At", "Position Deleted At", "Shift Deleted At",
+                "Cancel Reason", "Employee Cancel Reason"
+            ]).to_excel(writer, index=False, sheet_name="global_shift_report")
+        output.seek(0)
+        filename = "global_shift_report.xlsx"
+        headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers=headers,
+        )
+
+    # Process status and text reasons
+    def determine_status(row):
+        if pd.notnull(row["shift_deleted_at"]):
+            return "Shift Deleted"
+        if pd.notnull(row["pos_deleted_at"]):
+            return "Position Deleted"
+        
+        reason_id = row["cancel_reason_id"]
+        if reason_id == 4:
+            return "Client Cancelled Shift"
+        if reason_id == 5:
+            return "Client Decreased Staff"
+        if reason_id == 1:
+            return "Shift Cancelled"
+            
+        if pd.notnull(row["employee_id"]):
+            if reason_id in (2, 3):
+                return "Employee Cancelled"
+            return "Filled/Worked"
+            
+        return "Unfilled/Open"
+
+    df["Status"] = df.apply(determine_status, axis=1)
+    df["Cancel Reason"] = df["cancel_reason_id"].map(CANCEL_REASON_MAP).fillna("")
+    
+    # Final column selection and renaming
+    final_df = pd.DataFrame({
+        "Date": pd.to_datetime(df["date"]).dt.date,
+        "Client Name": df["client_name"],
+        "Venue Name": df["venue_name"],
+        "Shift ID": df["shift_id"],
+        "Status": df["Status"],
+        "Position Created At": df["pos_created_at"],
+        "Position Deleted At": df["pos_deleted_at"],
+        "Shift Deleted At": df["shift_deleted_at"],
+        "Cancel Reason": df["Cancel Reason"],
+        "Employee Cancel Reason": df["employee_cancel_reason"].fillna(""),
+    })
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        final_df.to_excel(writer, index=False, sheet_name="global_shift_report")
+    output.seek(0)
+
+    filename = "global_shift_report.xlsx"
     headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
     return StreamingResponse(
         output,
