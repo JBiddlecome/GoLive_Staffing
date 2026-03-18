@@ -110,7 +110,7 @@ def _maybe_sync_from_db(start_date: str, end_date: str):
                 first_name AS `First Name`,
                 last_name AS `Last Name`,
                 start_date AS `Start Date`,
-                rehire_date AS `Rehire Date`
+                start_date2 AS `Rehire Date`
             FROM employee
         """)
         with engine.connect() as conn:
