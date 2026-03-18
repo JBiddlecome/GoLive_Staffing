@@ -1,0 +1,431 @@
+{% extends "base.html" %}
+{% block title %}Concierge Tracker 2 — GoLive Staffing{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Concierge Tracker 2</h1>
+<p class="text-gray-700 mb-6">
+  This list automatically pulls active employees hired from January 1, 2023 forward from the database every 15 minutes.
+  Use the table to record concierge calls, assign recruiters, and track which hires have been concierged.
+</p>
+
+{% if notice %}
+  <div class="mb-4 rounded border border-green-200 bg-green-50 px-4 py-3 text-green-800">{{ notice }}</div>
+{% endif %}
+{% if error %}
+  <div class="mb-4 rounded border border-red-200 bg-red-50 px-4 py-3 text-red-800">{{ error }}</div>
+{% endif %}
+
+
+<section class="bg-white shadow-sm border rounded-2xl p-5 mb-6">
+  <div class="flex flex-wrap items-center gap-4 justify-between">
+    <div>
+      <h2 class="text-lg font-semibold">Concierge list</h2>
+      <p class="text-sm text-gray-600">Total employees: {{ summary.total }} · Concierged: {{ summary.concierged }}</p>
+    </div>
+    <form action="/concierge-tracker-2" method="get" class="flex flex-wrap items-center gap-2 text-sm">
+      <input type="hidden" name="sort" value="{{ sort }}" />
+      <label for="search" class="text-gray-700">Search name:</label>
+      <input type="search" id="search" name="search" value="{{ search }}" placeholder="Employee name" class="border rounded-md px-2 py-1" />
+      <label for="concierged" class="text-gray-700">Filter:</label>
+      <select id="concierged" name="concierged" class="border rounded-md px-2 py-1">
+        <option value="all" {% if concierged_filter == 'all' %}selected{% endif %}>All</option>
+        <option value="yes" {% if concierged_filter == 'yes' %}selected{% endif %}>Concierged</option>
+        <option value="no" {% if concierged_filter == 'no' %}selected{% endif %}>Not concierged</option>
+      </select>
+      <label for="start_date" class="text-gray-700">Start date:</label>
+      <input type="date" id="start_date" name="start_date" value="{{ start_date }}" class="border rounded-md px-2 py-1" />
+      <label for="end_date" class="text-gray-700">End date:</label>
+      <input type="date" id="end_date" name="end_date" value="{{ end_date }}" class="border rounded-md px-2 py-1" />
+      <button type="submit" class="px-3 py-1 rounded-md bg-gray-800 text-white">Apply</button>
+    </form>
+  </div>
+</section>
+
+<section class="bg-white shadow-sm border rounded-2xl p-5">
+  {% if records %}
+  <div class="overflow-x-auto">
+    <table class="min-w-[1200px] text-sm">
+      <thead>
+        <tr class="border-b text-left text-xs uppercase text-gray-600">
+          <th class="py-2 pr-3 w-52">
+            {% set follow_up_next_sort = 'follow_up_status_desc' if sort == 'follow_up_status_asc' else 'follow_up_status_asc' %}
+            <a class="inline-flex items-center gap-1 hover:underline" href="{{ request.url_for('concierge_tracker_2_page') }}?concierged={{ concierged_filter }}&sort={{ follow_up_next_sort }}&start_date={{ start_date }}&end_date={{ end_date }}&search={{ search }}">
+              <span>Follow-up status</span>
+              {% if sort.startswith('follow_up_status') %}
+                <span aria-hidden="true">{{ '↑' if sort == 'follow_up_status_asc' else '↓' }}</span>
+              {% endif %}
+            </a>
+          </th>
+          <th class="py-2 pr-3">
+            {% set next_sort = 'employee_id_desc' if sort == 'employee_id_asc' else 'employee_id_asc' %}
+            <a class="inline-flex items-center gap-1 hover:underline" href="{{ request.url_for('concierge_tracker_2_page') }}?concierged={{ concierged_filter }}&sort={{ next_sort }}&start_date={{ start_date }}&end_date={{ end_date }}&search={{ search }}">
+              <span>Employee ID</span>
+              {% if sort.startswith('employee_id') %}
+                <span aria-hidden="true">{{ '↑' if sort == 'employee_id_asc' else '↓' }}</span>
+              {% endif %}
+            </a>
+          </th>
+          <th class="py-2 pr-3">Name</th>
+          <th class="py-2 pr-3">Start Date</th>
+          <th class="py-2 pr-3">Rehire Date</th>
+          <th class="py-2 pr-3">Called Date</th>
+          <th class="py-2 pr-3"># Calls</th>
+          <th class="py-2 pr-3">
+            {% set recruiter_next_sort = 'recruiter_desc' if sort == 'recruiter_asc' else 'recruiter_asc' %}
+            <a class="inline-flex items-center gap-1 hover:underline" href="{{ request.url_for('concierge_tracker_2_page') }}?concierged={{ concierged_filter }}&sort={{ recruiter_next_sort }}&start_date={{ start_date }}&end_date={{ end_date }}&search={{ search }}">
+              <span>Recruiter</span>
+              {% if sort.startswith('recruiter') %}
+                <span aria-hidden="true">{{ '↑' if sort == 'recruiter_asc' else '↓' }}</span>
+              {% endif %}
+            </a>
+          </th>
+          <th class="py-2 pr-3">Phone</th>
+          <th class="py-2 pr-3">Language</th>
+          <th class="py-2 pr-3">Concierged</th>
+          <th class="py-2 pr-3"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        {% for record in records %}
+        {% set form_id = 'update-' ~ record.employee_id|replace(' ', '-') %}
+        {% set row_class = follow_up_options.get(record.follow_up_status, {}).get('row_class', '') %}
+        <tr class="align-top transition-colors {{ row_class }}" data-row-id="{{ form_id }}">
+          <td class="py-3 pr-3 font-medium text-gray-900">
+            <select name="follow_up_status" form="{{ form_id }}" class="border rounded-md px-2 py-1 w-full follow-up-select" data-row-id="{{ form_id }}">
+              <option value="">Select</option>
+              {% for key, option in follow_up_options.items() %}
+                <option value="{{ key }}" {% if record.follow_up_status == key %}selected{% endif %}>{{ option.label }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td class="py-3 pr-3 font-medium text-gray-900">
+            {{ record.employee_id }}
+            <form id="{{ form_id }}" action="/concierge-tracker-2/update" method="post">
+              <input type="hidden" name="employee_id" value="{{ record.employee_id }}" />
+              <input type="hidden" name="concierged_filter" value="{{ concierged_filter }}" />
+              <input type="hidden" name="sort" value="{{ sort }}" />
+              <input type="hidden" name="start_date" value="{{ start_date }}" />
+              <input type="hidden" name="end_date" value="{{ end_date }}" />
+              <input type="hidden" name="search" value="{{ search }}" />
+            </form>
+          </td>
+          <td class="py-3 pr-3">
+            <div class="font-semibold">{{ record.first_name }} {{ record.last_name }}</div>
+            <div class="text-xs text-gray-500">Concierge Date: {{ record.concierge_date or '—' }}</div>
+          </td>
+          <td class="py-3 pr-3">{{ record.start_date or '—' }}</td>
+          <td class="py-3 pr-3">{{ record.rehire_date or '—' }}</td>
+          <td class="py-3 pr-3">
+              <input type="date" name="called_date" form="{{ form_id }}" value="{{ record.called_date }}" class="border rounded-md px-2 py-1 w-40" />
+          </td>
+          <td class="py-3 pr-3">
+              <input type="number" name="call_count" form="{{ form_id }}" min="0" value="{{ record.call_count }}" class="border rounded-md px-2 py-1 w-24" />
+          </td>
+          <td class="py-3 pr-3">
+              <select name="recruiter" form="{{ form_id }}" class="border rounded-md px-2 py-1 w-36">
+                <option value="" {% if not record.recruiter %}selected{% endif %}>Select</option>
+                {% for recruiter in recruiters %}
+                  <option value="{{ recruiter }}" {% if record.recruiter == recruiter %}selected{% endif %}>{{ recruiter }}</option>
+                {% endfor %}
+              </select>
+          </td>
+          <td class="py-3 pr-3">{{ record.mobile or '-' }}</td>
+          <td class="py-3 pr-3">{{ record.language or '-' }}</td>
+          <td class="py-3 pr-3">
+              <div class="flex items-center gap-2">
+                <input type="hidden" name="flag" form="{{ form_id }}" value="{{ record.flag }}" data-flag-input="{{ form_id }}" />
+                <input type="checkbox" name="concierged" form="{{ form_id }}" {% if record.concierged %}checked{% endif %} class="h-4 w-4" />
+                <div class="relative">
+                  <button
+                    type="button"
+                    data-flag-toggle="{{ form_id }}"
+                    class="p-1 rounded-full border text-gray-300 border-gray-200 hover:text-gray-500 hover:border-gray-300 transition-colors"
+                    aria-label="Set flag"
+                    aria-expanded="false"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
+                      <path d="M3.5 3.75a.75.75 0 0 1 1.5 0v1.163c.43-.24.915-.363 1.409-.363.696 0 1.378.218 1.976.593.68.427 1.317.657 1.815.657.408 0 .79-.14 1.212-.36l.075-.04c.46-.243.992-.52 1.597-.52.48 0 .921.139 1.266.41.384.304.6.77.6 1.268v4.483a.75.75 0 0 1-1.5 0V8.554c-.268.104-.553.166-.85.166-.696 0-1.378-.218-1.976-.593-.68-.427-1.317-.657-1.815-.657-.408 0-.79.14-1.212.36l-.075.04c-.46.243-.992.52-1.597.52-.304 0-.59-.06-.85-.166v6.922a.75.75 0 0 1-1.5 0Z" />
+                    </svg>
+                  </button>
+                  <div
+                    class="absolute right-0 mt-1 w-32 rounded-md border bg-white shadow-lg hidden"
+                    data-flag-menu="{{ form_id }}"
+                  >
+                    <ul class="py-1 text-sm text-gray-700">
+                      <li><button type="button" class="flex w-full items-center gap-2 px-3 py-2 hover:bg-gray-50" data-flag-option="">No flag</button></li>
+                      <li><button type="button" class="flex w-full items-center gap-2 px-3 py-2 hover:bg-gray-50" data-flag-option="green">Green flag</button></li>
+                      <li><button type="button" class="flex w-full items-center gap-2 px-3 py-2 hover:bg-gray-50" data-flag-option="orange">Orange flag</button></li>
+                      <li><button type="button" class="flex w-full items-center gap-2 px-3 py-2 hover:bg-gray-50" data-flag-option="red">Red flag</button></li>
+                    </ul>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  data-notes-toggle="{{ form_id }}"
+                  class="p-1 rounded-full border border-gray-200 text-gray-400 hover:text-gray-700 hover:border-gray-300 transition-colors"
+                  aria-label="Add concierge notes"
+                  data-has-notes="{{ 'true' if record.notes else 'false' }}"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
+                    <path d="M4.5 3A1.5 1.5 0 0 0 3 4.5v11A1.5 1.5 0 0 0 4.5 17h7.879a1.5 1.5 0 0 0 1.06-.44l2.121-2.121a1.5 1.5 0 0 0 .44-1.06V4.5A1.5 1.5 0 0 0 14.5 3h-10Zm1 3.25c0-.138.112-.25.25-.25h8.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-8.5a.25.25 0 0 1-.25-.25v-.5Zm0 3c0-.138.112-.25.25-.25h6.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-6.5a.25.25 0 0 1-.25-.25v-.5Zm0 3c0-.138.112-.25.25-.25h4.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-4.5a.25.25 0 0 1-.25-.25v-.5Z" />
+                  </svg>
+                </button>
+              </div>
+          </td>
+          <td class="py-3 pr-3 text-right">
+              <div class="flex items-center justify-end gap-2">
+                <span data-save-status="{{ form_id }}" class="text-xs text-gray-500" aria-live="polite"></span>
+                <button type="button" data-save-button="{{ form_id }}" class="px-3 py-1 rounded-md bg-blue-600 text-white">Save</button>
+              </div>
+              <div class="mt-2 hidden" data-notes-container="{{ form_id }}">
+                <label for="notes-{{ form_id }}" class="sr-only">Notes for {{ record.first_name }} {{ record.last_name }}</label>
+                <textarea
+                  id="notes-{{ form_id }}"
+                  name="notes"
+                  form="{{ form_id }}"
+                  rows="3"
+                  class="w-full border rounded-md px-2 py-2 text-sm"
+                  placeholder="Add a note">{{ record.notes | e }}</textarea>
+              </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p class="text-sm text-gray-600">No concierge records yet. Upload a roster to get started.</p>
+  {% endif %}
+</section>
+{% endblock %}
+{% block scripts %}
+<script id="follow-up-map" type="application/json">{{ follow_up_options | tojson }}</script>
+<script>
+  (() => {
+    const mapElement = document.getElementById('follow-up-map');
+    if (!mapElement) return;
+
+    const statusMap = JSON.parse(mapElement.textContent || '{}');
+    const allClasses = Object.values(statusMap).map(option => option.row_class).filter(Boolean);
+
+    const applyRowClass = (row, value) => {
+      row.classList.remove(...allClasses);
+      if (value && statusMap[value] && statusMap[value].row_class) {
+        row.classList.add(statusMap[value].row_class);
+      }
+    };
+
+    document.querySelectorAll('.follow-up-select').forEach(select => {
+      const rowId = select.dataset.rowId;
+      const row = document.querySelector(`tr[data-row-id="${rowId}"]`);
+      if (!row) return;
+
+      applyRowClass(row, select.value);
+      select.addEventListener('change', () => applyRowClass(row, select.value));
+    });
+  })();
+
+  (() => {
+    const rows = Array.from(document.querySelectorAll('tr[data-row-id]'));
+    if (!rows.length) return;
+
+    const FLAG_CLASSES = [
+      'text-gray-300',
+      'text-green-500',
+      'text-orange-500',
+      'text-red-500',
+      'border-gray-200',
+      'border-green-200',
+      'border-orange-200',
+      'border-red-200',
+    ];
+
+    const closeAllFlagMenus = (exceptId = null) => {
+      document.querySelectorAll('[data-flag-menu]').forEach((menu) => {
+        if (menu.dataset.flagMenu === exceptId) return;
+        menu.classList.add('hidden');
+        const toggle = document.querySelector(`[data-flag-toggle="${menu.dataset.flagMenu}"]`);
+        if (toggle) toggle.setAttribute('aria-expanded', 'false');
+      });
+    };
+
+    const updateFlagButton = (formId, value) => {
+      const button = document.querySelector(`[data-flag-toggle="${formId}"]`);
+      if (!button) return;
+
+      button.classList.remove(...FLAG_CLASSES);
+      button.classList.add('border');
+
+      const colorMap = {
+        '': { label: 'No flag', classes: ['text-gray-300', 'border-gray-200'] },
+        green: { label: 'Green flag', classes: ['text-green-500', 'border-green-200'] },
+        orange: { label: 'Orange flag', classes: ['text-orange-500', 'border-orange-200'] },
+        red: { label: 'Red flag', classes: ['text-red-500', 'border-red-200'] },
+      };
+
+      const config = colorMap[value] || colorMap[''];
+      button.classList.add(...config.classes);
+      button.setAttribute('aria-label', config.label);
+      button.dataset.activeFlag = value || '';
+    };
+
+    const setFlag = (formId, value) => {
+      const input = document.querySelector(`[data-flag-input="${formId}"]`);
+      if (!input) return;
+
+      input.value = value;
+      updateFlagButton(formId, value);
+      closeAllFlagMenus();
+      saveRow(formId);
+    };
+
+    document.addEventListener('click', (event) => {
+      if (!(event.target instanceof Element)) return;
+      if (event.target.closest('[data-flag-menu]') || event.target.closest('[data-flag-toggle]')) return;
+      closeAllFlagMenus();
+    });
+
+    const setNotesButtonState = (formId, value) => {
+      const button = document.querySelector(`[data-notes-toggle="${formId}"]`);
+      if (!button) return;
+
+      const hasNotes = !!(value && value.trim());
+      button.dataset.hasNotes = hasNotes ? 'true' : 'false';
+      button.classList.toggle('text-amber-600', hasNotes);
+      button.classList.toggle('bg-amber-50', hasNotes);
+      button.classList.toggle('text-gray-400', !hasNotes);
+    };
+
+    const toggleNotesContainer = (formId) => {
+      const container = document.querySelector(`[data-notes-container="${formId}"]`);
+      const button = document.querySelector(`[data-notes-toggle="${formId}"]`);
+      if (!container || !button) return;
+
+      const isHidden = container.classList.contains('hidden');
+      container.classList.toggle('hidden');
+      button.setAttribute('aria-expanded', String(isHidden));
+
+      if (!isHidden) return;
+      const textarea = container.querySelector('textarea');
+      if (textarea) textarea.focus();
+    };
+
+    const buildFormData = (formId) => {
+      const form = document.getElementById(formId);
+      const data = new FormData(form);
+
+      document.querySelectorAll(`[name][form="${formId}"]`).forEach((field) => {
+        const name = field.getAttribute('name');
+        if (!name) return;
+
+        if (field.type === 'checkbox') {
+          if (field.checked) {
+            data.set(name, field.value || 'on');
+          } else {
+            data.delete(name);
+          }
+          return;
+        }
+
+        data.set(name, field.value ?? '');
+      });
+
+      return data;
+    };
+
+    const saveRow = async (formId) => {
+      const form = document.getElementById(formId);
+      const status = document.querySelector(`[data-save-status="${formId}"]`);
+      const notesContainer = document.querySelector(`[data-notes-container="${formId}"]`);
+      const notesField = notesContainer ? notesContainer.querySelector('textarea[name="notes"]') : null;
+      if (!form || !status) return;
+
+      status.classList.remove('text-red-600', 'text-green-700');
+      status.textContent = 'Saving…';
+
+      try {
+        const response = await fetch(form.action, {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' },
+          body: buildFormData(formId),
+        });
+
+        const payload = await response.json();
+        if (!response.ok || payload.error) {
+          throw new Error(payload.error || 'Unable to save.');
+        }
+
+        status.textContent = payload.notice || 'Saved';
+        status.classList.add('text-green-700');
+
+        const nextNotes = payload.record?.notes ?? notesField?.value ?? '';
+        if (notesField) {
+          notesField.value = nextNotes;
+        }
+        setNotesButtonState(formId, nextNotes);
+        if (notesContainer) {
+          notesContainer.classList.add('hidden');
+          const toggleBtn = document.querySelector(`[data-notes-toggle="${formId}"]`);
+          if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
+        }
+      } catch (error) {
+        status.textContent = error.message;
+        status.classList.add('text-red-600');
+      }
+    };
+
+    const registerRow = (row) => {
+      const formId = row.dataset.rowId;
+      if (!formId) return;
+
+      row.querySelectorAll(`[form="${formId}"]`).forEach((field) => {
+        const eventName = field.type === 'checkbox' ? 'change' : 'change';
+        field.addEventListener(eventName, () => saveRow(formId));
+      });
+
+      const saveButton = row.querySelector(`[data-save-button="${formId}"]`);
+      if (saveButton) {
+        saveButton.addEventListener('click', (event) => {
+          event.preventDefault();
+          saveRow(formId);
+        });
+      }
+
+      const notesButton = row.querySelector(`[data-notes-toggle="${formId}"]`);
+      const notesContainer = row.querySelector(`[data-notes-container="${formId}"]`);
+      const notesField = notesContainer ? notesContainer.querySelector('textarea[name="notes"]') : null;
+      if (notesButton && notesField) {
+        notesButton.addEventListener('click', () => toggleNotesContainer(formId));
+        setNotesButtonState(formId, notesField.value);
+      }
+
+      const flagButton = row.querySelector(`[data-flag-toggle="${formId}"]`);
+      const flagMenu = row.querySelector(`[data-flag-menu="${formId}"]`);
+      const flagInput = row.querySelector(`[data-flag-input="${formId}"]`);
+
+      if (flagButton && flagMenu && flagInput) {
+        updateFlagButton(formId, flagInput.value);
+
+        flagButton.addEventListener('click', (event) => {
+          event.stopPropagation();
+          const isHidden = flagMenu.classList.contains('hidden');
+          closeAllFlagMenus(formId);
+          flagMenu.classList.toggle('hidden', !isHidden);
+          flagButton.setAttribute('aria-expanded', String(isHidden));
+        });
+
+        flagMenu.querySelectorAll('[data-flag-option]').forEach((option) => {
+          option.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const value = option.dataset.flagOption || '';
+            flagMenu.classList.add('hidden');
+            flagButton.setAttribute('aria-expanded', 'false');
+            setFlag(formId, value);
+          });
+        });
+      }
+    };
+
+    rows.forEach(registerRow);
+  })();
+</script>
+{% endblock %}

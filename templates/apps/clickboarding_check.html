@@ -3,23 +3,18 @@
 {% block content %}
 <h1 class="text-xl font-semibold mb-6">Clickboarding ↔ Employee List Check</h1>
 <p class="text-sm text-gray-600 mb-6">
-  Upload the Clickboarding List (.csv) and Employee List (.xlsx) to compare employee names for recent hires.
+  Upload the Clickboarding List (.csv) to compare employee names against the employee database for recent hires.
   Names with a similarity score below your confidence threshold are flagged for review.
 </p>
 
 <section class="p-6 bg-white border border-gray-200 rounded-xl shadow-sm mb-8">
   <h2 class="text-lg font-semibold mb-4">Upload &amp; Match</h2>
   <form class="space-y-4" method="post" enctype="multipart/form-data" action="/clickboarding-check/process">
-    <div class="grid md:grid-cols-2 gap-4">
+    <div class="grid md:grid-cols-1 gap-4">
       <div>
         <label class="block text-sm font-medium mb-1" for="clickboarding_file">Clickboarding List (CSV)</label>
         <input class="border rounded-lg p-2 w-full bg-white" type="file" id="clickboarding_file" name="clickboarding_file" accept=".csv" required />
         <p class="text-xs text-gray-500 mt-1">Expecting a column named <span class="font-medium">Name</span> formatted like “Lastname, Firstname”.</p>
-      </div>
-      <div>
-        <label class="block text-sm font-medium mb-1" for="employee_file">Employee List (Excel)</label>
-        <input class="border rounded-lg p-2 w-full bg-white" type="file" id="employee_file" name="employee_file" accept=".xlsx,.xls" required />
-        <p class="text-xs text-gray-500 mt-1">Requires columns <span class="font-medium">First Name</span>, <span class="font-medium">Last Name</span>, and start/rehire dates.</p>
       </div>
     </div>
     <div class="grid md:grid-cols-2 gap-4">
@@ -38,13 +33,11 @@
     </button>
   </form>
 
-  {% if clickboarding_uploaded.clickboarding_filename or clickboarding_uploaded.employee_filename %}
+  {% if clickboarding_uploaded.clickboarding_filename %}
   <div class="mt-4 text-sm text-gray-600">
-    {% if clickboarding_uploaded.clickboarding_filename %}
     <p>Clickboarding file: <span class="font-medium">{{ clickboarding_uploaded.clickboarding_filename }}</span></p>
-    {% endif %}
     {% if clickboarding_uploaded.employee_filename %}
-    <p>Employee file: <span class="font-medium">{{ clickboarding_uploaded.employee_filename }}</span></p>
+    <p>Employee list: <span class="font-medium">{{ clickboarding_uploaded.employee_filename }}</span></p>
     {% endif %}
   </div>
   {% endif %}
