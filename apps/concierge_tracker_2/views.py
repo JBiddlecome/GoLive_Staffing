@@ -17,7 +17,7 @@ from sqlalchemy.engine import URL
 DATA_FILE = Path("data/concierge_records.json")
 DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
 
-LAST_SYNC_TIME = 0
+LAST_SYNC_TIMES: dict[tuple[pd.Timestamp | None, pd.Timestamp | None], float] = {}
 SYNC_INTERVAL = 15 * 60  # 15 minutes
 
 REQUIRED_COLUMNS = [
@@ -84,13 +84,22 @@ def _db_url_from_env() -> URL:
     return URL.create(drivername="mysql+pymysql", username=user, password=password, host=host, port=port, database=name)
 
 
-def _maybe_sync_from_db():
-    global LAST_SYNC_TIME
+def _maybe_sync_from_db(start_date: str, end_date: str):
+    effective_start, effective_end = start_date, end_date
+    if not start_date and not end_date:
+        effective_start, effective_end = _current_week_range()
+
+    parsed_start, parsed_end, date_error = _normalize_filter_dates(effective_start, effective_end)
+    if date_error:
+        return
+
+    global LAST_SYNC_TIMES
     now = time.time()
-    if now - LAST_SYNC_TIME < SYNC_INTERVAL:
+    key = (parsed_start, parsed_end)
+    if now - LAST_SYNC_TIMES.get(key, 0) < SYNC_INTERVAL:
         return
     
-    LAST_SYNC_TIME = now
+    LAST_SYNC_TIMES[key] = now
     
     engine = create_engine(_db_url_from_env(), pool_pre_ping=True)
     try:
@@ -106,7 +115,7 @@ def _maybe_sync_from_db():
         """)
         with engine.connect() as conn:
             df = pd.read_sql(sql, conn)
-            _merge_new_employees(df)
+            _merge_new_employees(df, parsed_start, parsed_end)
     except Exception as e:
         print(f"Error syncing concierge db: {e}")
     finally:
@@ -123,7 +132,7 @@ async def concierge_tracker_2_page(
     end_date: str = Query(""),
     search: str = Query(""),
 ) -> HTMLResponse:
-    _maybe_sync_from_db()
+    _maybe_sync_from_db(start_date, end_date)
     return _render_page(
         request,
         concierged_filter=concierged,
@@ -457,7 +466,7 @@ def _load_dataframe(file_bytes: bytes, filename: str) -> pd.DataFrame:
     return dataframe
 
 
-def _merge_new_employees(dataframe: pd.DataFrame) -> int:
+def _merge_new_employees(dataframe: pd.DataFrame, filter_start: pd.Timestamp | None = None, filter_end: pd.Timestamp | None = None) -> int:
     records = _load_records()
     existing_by_id = {record.get("employee_id"): record for record in records}
     added = 0
@@ -485,6 +494,15 @@ def _merge_new_employees(dataframe: pd.DataFrame) -> int:
         formatted_rehire = _format_date(rehire_date)
         formatted_concierge = _format_date(concierge_date)
 
+        in_range = False
+        if filter_start is None and filter_end is None:
+            in_range = True
+        else:
+            in_range = (
+                _date_in_range(formatted_start, filter_start, filter_end) or
+                _date_in_range(formatted_rehire, filter_start, filter_end)
+            )
+
         if employee_id in existing_by_id:
             record = existing_by_id[employee_id]
             record["first_name"] = str(row.get("First Name", "")).strip() or record.get("first_name", "")
@@ -500,6 +518,9 @@ def _merge_new_employees(dataframe: pd.DataFrame) -> int:
                 record["mobile"] = mobile
             if language:
                 record["language"] = language
+            continue
+
+        if not in_range:
             continue
 
         record = {
