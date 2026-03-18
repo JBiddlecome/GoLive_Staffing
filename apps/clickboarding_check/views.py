@@ -69,13 +69,13 @@ def _load_employee_data_from_db() -> pd.DataFrame:
     engine = create_engine(_db_url_from_env(), pool_pre_ping=True)
     try:
         sql = text("""
-            SELECT 
+            SELECT
                 employee_id AS `Employee ID`,
                 IF(status = 1, 'active', 'inactive') AS `Status`,
                 first_name AS `First Name`,
                 last_name AS `Last Name`,
                 start_date AS `Start Date`,
-                rehire_date AS `Rehire Date`,
+                start_date2 AS `Rehire Date`,
                 email AS `Email`
             FROM employee
         """)
