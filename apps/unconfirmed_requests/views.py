@@ -88,6 +88,7 @@ async def unconfirmed_requests_data(
                 emp.last_name,
                 e.date as event_date,
                 c.name as client_name,
+                c.bundle,
                 v.name as venue_name,
                 CONCAT(u_mgr.first_name, ' ', u_mgr.last_name) as staffing_manager_name,
                 v.staffing_manager_id,
