@@ -105,13 +105,15 @@ def _maybe_sync_from_db(start_date: str, end_date: str):
     try:
         sql = text("""
             SELECT 
-                employee_id AS `Employee ID`,
+                employee_id AS `DB Employee ID`,
+                payroll_id AS `Employee ID`,
                 IF(status = 1, 'active', 'inactive') AS `Status`,
                 first_name AS `First Name`,
                 last_name AS `Last Name`,
                 start_date AS `Start Date`,
                 start_date2 AS `Rehire Date`
             FROM employee
+            WHERE payroll_id IS NOT NULL AND payroll_id != ''
         """)
         with engine.connect() as conn:
             df = pd.read_sql(sql, conn)
@@ -468,6 +470,11 @@ def _load_dataframe(file_bytes: bytes, filename: str) -> pd.DataFrame:
 
 def _merge_new_employees(dataframe: pd.DataFrame, filter_start: pd.Timestamp | None = None, filter_end: pd.Timestamp | None = None) -> int:
     records = _load_records()
+    
+    if "DB Employee ID" in dataframe.columns:
+        db_eids = {str(eid).strip() for eid in dataframe["DB Employee ID"] if str(eid).strip()}
+        records = [r for r in records if str(r.get("employee_id")).strip() not in db_eids]
+        
     existing_by_id = {record.get("employee_id"): record for record in records}
     added = 0
 
