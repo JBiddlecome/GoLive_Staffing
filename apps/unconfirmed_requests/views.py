@@ -82,10 +82,11 @@ async def unconfirmed_requests_data(
     try:
         # Fetch data for unconfirmed requests
         sql = text("""
-            SELECT 
+            SELECT
                 se.created_at,
                 emp.first_name,
                 emp.last_name,
+                e.event_id,
                 e.date as event_date,
                 c.name as client_name,
                 c.bundle,
