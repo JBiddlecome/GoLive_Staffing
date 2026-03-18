@@ -25,7 +25,7 @@ REQUIRED_COLUMNS = [
     "Language",
 ]
 
-ALLOWED_RECRUITERS = ["Piyush", "Prafull", "Anmol", "Christina"]
+ALLOWED_RECRUITERS = ["Piyush", "Anmol", "Rohit"]
 FOLLOW_UP_OPTIONS = {
     "reached_out_lvm": {"label": "Reached Out - LVM", "row_class": "bg-yellow-100"},
     "need_to_reach_out": {"label": "Need to reach out", "row_class": "bg-orange-100"},
@@ -158,7 +158,7 @@ async def update_employee(
 
     record["called_date"] = normalized_called
     record["call_count"] = parsed_calls
-    record["recruiter"] = recruiter if recruiter in ALLOWED_RECRUITERS else ""
+    record["recruiter"] = recruiter if recruiter in ALLOWED_RECRUITERS or recruiter == record.get("recruiter") else ""
     record["concierged"] = concierged is not None
     record["follow_up_status"] = normalized_status
     record["notes"] = notes.strip()
