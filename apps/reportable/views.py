@@ -55,6 +55,12 @@ class GlobalShiftReportPayload(BaseModel):
     limit: int = Field(default=50000, ge=1, le=100000)
 
 
+class NowstaReportPayload(BaseModel):
+    start_date: str = Field(..., min_length=1)
+    end_date: str = Field(..., min_length=1)
+    limit: int = Field(default=50000, ge=1, le=100000)
+
+
 TIMESHEET_VERIFICATION_EXCLUDED_COLUMNS = {
     "Day",
     "WC",
@@ -1462,6 +1468,79 @@ async def reportable_global_shift_report_export(
     output.seek(0)
 
     filename = "global_shift_report.xlsx"
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers,
+    )
+
+
+@router.post("/export/nowsta-report")
+async def reportable_nowsta_report_export(
+    payload: NowstaReportPayload,
+) -> StreamingResponse:
+    engine = _engine()
+    try:
+        sql = text(
+            """
+            SELECT
+                emp.payroll_id AS `Employee ID`,
+                emp.first_name AS `First Name`,
+                emp.last_name AS `Last Name`,
+                p.description AS `Position`,
+                CASE 
+                    WHEN se.confirmed = 1 THEN 'Confirmed'
+                    WHEN se.confirmed = 0 AND se.shift_employee_id IS NOT NULL THEN 'Request'
+                    ELSE 'Open'
+                END AS `Status`
+            FROM shift_employee se
+            JOIN event e ON se.event_id = e.event_id
+            JOIN employee emp ON se.employee_id = emp.employee_id
+            JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
+            JOIN position p ON sp.position_id = p.position_id
+            WHERE e.client_id = 1079
+              AND e.date >= :start_date
+              AND e.date <= :end_date
+              AND se.cancel_reason = 0
+            ORDER BY e.date, emp.last_name, emp.first_name
+            LIMIT :limit
+            """
+        )
+
+        params = {
+            "start_date": payload.start_date,
+            "end_date": payload.end_date,
+            "limit": payload.limit,
+        }
+
+        with engine.begin() as connection:
+            df = pd.read_sql(sql, connection, params=params)
+
+    finally:
+        engine.dispose()
+
+    if df.empty:
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            pd.DataFrame(columns=[
+                "Employee ID", "First Name", "Last Name", "Position", "Status"
+            ]).to_excel(writer, index=False, sheet_name="nowsta_report")
+        output.seek(0)
+        filename = "nowsta_report.xlsx"
+        headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers=headers,
+        )
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="nowsta_report")
+    output.seek(0)
+
+    filename = "nowsta_report.xlsx"
     headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
     return StreamingResponse(
         output,

@@ -105,15 +105,27 @@ def _maybe_sync_from_db(start_date: str, end_date: str):
     try:
         sql = text("""
             SELECT 
-                employee_id AS `DB Employee ID`,
-                payroll_id AS `Employee ID`,
-                IF(status = 1, 'active', 'inactive') AS `Status`,
-                first_name AS `First Name`,
-                last_name AS `Last Name`,
-                start_date AS `Start Date`,
-                start_date2 AS `Rehire Date`
-            FROM employee
-            WHERE payroll_id IS NOT NULL AND payroll_id != ''
+                e.employee_id AS `DB Employee ID`,
+                e.payroll_id AS `Employee ID`,
+                IF(e.status = 1, 'active', 'inactive') AS `Status`,
+                e.first_name AS `First Name`,
+                e.last_name AS `Last Name`,
+                e.start_date AS `Start Date`,
+                e.start_date2 AS `Rehire Date`,
+                e.mobile AS `Mobile`,
+                GROUP_CONCAT(
+                    CASE 
+                        WHEN el.language_id = 10 THEN 'Spanish'
+                        WHEN el.language_id = 23 THEN 'English'
+                        WHEN el.language_id = 24 THEN 'French'
+                        ELSE NULL
+                    END
+                    SEPARATOR ', '
+                ) AS `Language`
+            FROM employee e
+            LEFT JOIN employee_language el ON e.employee_id = el.employee_id
+            WHERE e.payroll_id IS NOT NULL AND e.payroll_id != ''
+            GROUP BY e.employee_id
         """)
         with engine.connect() as conn:
             df = pd.read_sql(sql, conn)
@@ -525,6 +537,8 @@ def _merge_new_employees(dataframe: pd.DataFrame, filter_start: pd.Timestamp | N
                 record["mobile"] = mobile
             if language:
                 record["language"] = language
+            if "DB Employee ID" in row:
+                record["db_employee_id"] = str(row["DB Employee ID"]).strip()
             continue
 
         if not in_range:
@@ -543,6 +557,7 @@ def _merge_new_employees(dataframe: pd.DataFrame, filter_start: pd.Timestamp | N
             "concierged": concierge_date is not None,
             "mobile": mobile,
             "language": language,
+            "db_employee_id": str(row.get("DB Employee ID", "")).strip(),
             "follow_up_status": "",
             "notes": "",
             "flag": "",
@@ -639,6 +654,7 @@ def _ensure_record_defaults(record: Dict[str, object]) -> Dict[str, object]:
         "follow_up_status": "",
         "mobile": "",
         "language": "",
+        "db_employee_id": "",
         "notes": "",
         "flag": "",
     }
