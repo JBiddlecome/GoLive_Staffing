@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Concierge Tracker 2 — GoLive Staffing{% endblock %}
 {% block content %}
+<style>
+  main { max-width: 80% !important; width: 80% !important; margin: 0 auto !important; }
+</style>
 <h1 class="text-2xl font-bold mb-4">Concierge Tracker 2</h1>
 <p class="text-gray-700 mb-6">
   This list automatically pulls active employees hired from January 1, 2023 forward from the database every 15 minutes.
@@ -43,10 +46,10 @@
 <section class="bg-white shadow-sm border rounded-2xl p-5">
   {% if records %}
   <div class="overflow-x-auto">
-    <table class="min-w-[1200px] text-sm">
+    <table class="w-full text-sm">
       <thead>
         <tr class="border-b text-left text-xs uppercase text-gray-600">
-          <th class="py-2 pr-3 w-52">
+          <th class="py-2 pr-3 w-40">
             {% set follow_up_next_sort = 'follow_up_status_desc' if sort == 'follow_up_status_asc' else 'follow_up_status_asc' %}
             <a class="inline-flex items-center gap-1 hover:underline" href="{{ request.url_for('concierge_tracker_2_page') }}?concierged={{ concierged_filter }}&sort={{ follow_up_next_sort }}&start_date={{ start_date }}&end_date={{ end_date }}&search={{ search }}">
               <span>Follow-up status</span>
@@ -97,7 +100,7 @@
               {% endfor %}
             </select>
           </td>
-          <td class="py-3 pr-3 font-medium text-gray-900">
+          <td class="py-3 pr-3 font-medium text-gray-900 whitespace-nowrap">
             {{ record.employee_id }}
             <form id="{{ form_id }}" action="/concierge-tracker-2/update" method="post">
               <input type="hidden" name="employee_id" value="{{ record.employee_id }}" />
@@ -109,11 +112,19 @@
             </form>
           </td>
           <td class="py-3 pr-3">
-            <div class="font-semibold">{{ record.first_name }} {{ record.last_name }}</div>
+            <div class="font-semibold">
+              {% if record.db_employee_id %}
+                <a href="https://golive.culinarystaffing.com/employees/{{ record.db_employee_id }}" target="_blank" class="text-blue-600 hover:underline">
+                  {{ record.first_name }} {{ record.last_name }}
+                </a>
+              {% else %}
+                {{ record.first_name }} {{ record.last_name }}
+              {% endif %}
+            </div>
             <div class="text-xs text-gray-500">Concierge Date: {{ record.concierge_date or '—' }}</div>
           </td>
-          <td class="py-3 pr-3">{{ record.start_date or '—' }}</td>
-          <td class="py-3 pr-3">{{ record.rehire_date or '—' }}</td>
+          <td class="py-3 pr-3 whitespace-nowrap" data-date-format>{{ record.start_date or '—' }}</td>
+          <td class="py-3 pr-3 whitespace-nowrap" data-date-format>{{ record.rehire_date or '—' }}</td>
           <td class="py-3 pr-3">
               <input type="date" name="called_date" form="{{ form_id }}" value="{{ record.called_date }}" class="border rounded-md px-2 py-1 w-40" />
           </td>
@@ -132,8 +143,8 @@
                 {% endfor %}
               </select>
           </td>
-          <td class="py-3 pr-3">{{ record.mobile or '-' }}</td>
-          <td class="py-3 pr-3">{{ record.language or '-' }}</td>
+          <td class="py-3 pr-3 whitespace-nowrap">{{ record.mobile or '—' }}</td>
+          <td class="py-3 pr-3 whitespace-nowrap">{{ record.language or '—' }}</td>
           <td class="py-3 pr-3">
               <div class="flex items-center gap-2">
                 <input type="hidden" name="flag" form="{{ form_id }}" value="{{ record.flag }}" data-flag-input="{{ form_id }}" />
