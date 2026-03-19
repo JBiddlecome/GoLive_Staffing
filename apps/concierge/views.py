@@ -675,6 +675,7 @@ def _ensure_record_defaults(record: Dict[str, object]) -> Dict[str, object]:
         "follow_up_status": "",
         "mobile": "",
         "language": "",
+        "db_employee_id": "",
         "notes": "",
         "flag": "",
     }

@@ -42,14 +42,9 @@ async def client_drop_off_v2(request: Request) -> HTMLResponse:
         # Get live data from MariaDB
         raw_records = get_drop_off_data()
         
-        # Load contacted/archived clients from SQLite
-        contacted = _load_contacted_map()
-        
-        # Filter out archived clients
-        records = [
-            r for r in raw_records 
-            if _normalize_client_key(r["Client"]) not in contacted
-        ]
+        # We don't filter them out here, the frontend handles hiding them
+        # from the main table and moving them to the 'Contacted clients' section.
+        records = raw_records
         
     except Exception as exc:
         return templates.TemplateResponse(

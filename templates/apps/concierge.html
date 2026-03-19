@@ -227,6 +227,28 @@
 <script id="follow-up-map" type="application/json">{{ follow_up_options | tojson }}</script>
 <script>
   (() => {
+    // Date formatting helper: yyyy-mm-dd -> Mon DD (e.g. Mar 19)
+    const formatDate = (dateStr) => {
+      if (!dateStr || dateStr === '—' || dateStr === '-') return dateStr;
+      const [year, month, day] = dateStr.split('-');
+      if (!year || !month || !day) return dateStr;
+      // Use UTC to avoid timezone issues when parsing simple date strings
+      const date = new Date(Date.UTC(year, month - 1, day));
+      if (isNaN(date.getTime())) return dateStr;
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    };
+
+    document.querySelectorAll('[data-date-format]').forEach(el => {
+      const original = el.textContent.trim();
+      const formatted = formatDate(original);
+      if (formatted !== original) {
+        el.textContent = formatted;
+        el.title = original; // Keep original as tooltip
+      }
+    });
+  })();
+
+  (() => {
     const mapElement = document.getElementById('follow-up-map');
     if (!mapElement) return;
 
