@@ -3,7 +3,8 @@ import os
 from typing import Any
 import pandas as pd
 from fastapi import APIRouter, HTTPException, Request, Query
-from fastapi.responses import HTMLResponse, JSONResponse
+import io
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
@@ -217,6 +218,96 @@ async def get_graph_data(
 
     except Exception as e:
         print(f"ERROR in get_graph_data: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        engine.dispose()
+
+@router.get("/download-csv")
+async def download_all_clients_cancellations_csv():
+    engine = _engine()
+    start_date = "2025-01-01"
+    end_date = "2100-01-01" 
+    try:
+        placed_sql = text("""
+            SELECT 
+                DATE(e.date) AS event_date,
+                e.client_id,
+                c.name AS client_name,
+                SUM(sp.count) AS total_shifts_placed
+            FROM event e
+            JOIN client c ON e.client_id = c.client_id
+            JOIN shift s ON e.event_id = s.event_id
+            JOIN shift_position sp ON s.shift_id = sp.shift_id
+            WHERE e.date >= :start_date AND e.date <= :end_date
+              AND e.deleted_at IS NULL
+              AND s.deleted_at IS NULL
+              AND sp.deleted_at IS NULL
+            GROUP BY DATE(e.date), e.client_id, c.name
+        """)
+
+        cancelled_sql = text("""
+            SELECT 
+                DATE(e.date) AS event_date,
+                e.client_id,
+                COUNT(se.shift_employee_id) AS total_client_cancellations
+            FROM event e
+            JOIN shift_employee se ON e.event_id = se.event_id
+            WHERE e.date >= :start_date AND e.date <= :end_date
+              AND e.deleted_at IS NULL
+              AND se.cancel_reason IN (4, 5, 41, 51)
+            GROUP BY DATE(e.date), e.client_id
+        """)
+
+        with engine.connect() as connection:
+            placed_df = pd.read_sql(placed_sql, connection, params={"start_date": start_date, "end_date": end_date})
+            cancelled_df = pd.read_sql(cancelled_sql, connection, params={"start_date": start_date, "end_date": end_date})
+
+        if placed_df.empty:
+            return JSONResponse(content={"error": "No data available."})
+
+        placed_df['event_date'] = pd.to_datetime(placed_df['event_date'])
+        if not cancelled_df.empty:
+            cancelled_df['event_date'] = pd.to_datetime(cancelled_df['event_date'])
+            merged_df = pd.merge(placed_df, cancelled_df, on=["event_date", "client_id"], how="left")
+            merged_df["total_client_cancellations"] = merged_df["total_client_cancellations"].fillna(0).astype(int)
+        else:
+            merged_df = placed_df.copy()
+            merged_df["total_client_cancellations"] = 0
+
+        merged_df["total_shifts_placed"] = merged_df["total_shifts_placed"].fillna(0).astype(int)
+        
+        merged_df = merged_df.set_index('event_date')
+        
+        weekly_df = merged_df.groupby([
+            'client_id',
+            'client_name',
+            pd.Grouper(freq='W-MON', closed='left', label='left')
+        ]).agg({
+            'total_shifts_placed': 'sum',
+            'total_client_cancellations': 'sum'
+        }).reset_index()
+
+        weekly_df['week_of'] = weekly_df['event_date'].dt.strftime('%Y-%m-%d')
+        
+        def calc_percentage_dl(row):
+            if row["total_shifts_placed"] > 0:
+                return round((row["total_client_cancellations"] / row["total_shifts_placed"]) * 100, 2)
+            else:
+                return 0.0
+
+        weekly_df["cancellation_percentage"] = weekly_df.apply(calc_percentage_dl, axis=1)
+
+        final_df = weekly_df[["client_name", "week_of", "total_shifts_placed", "total_client_cancellations", "cancellation_percentage"]]
+        final_df = final_df.sort_values(by=["client_name", "week_of"])
+
+        stream = io.StringIO()
+        final_df.to_csv(stream, index=False)
+        response = Response(content=stream.getvalue(), media_type="text/csv")
+        response.headers["Content-Disposition"] = "attachment; filename=client_cancellations_since_2025.csv"
+        return response
+
+    except Exception as e:
+        print(f"ERROR in download_all_clients_cancellations_csv: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         engine.dispose()
