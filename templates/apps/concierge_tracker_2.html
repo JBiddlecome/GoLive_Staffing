@@ -43,7 +43,7 @@
 <section class="bg-white shadow-sm border rounded-2xl p-5">
   {% if records %}
   <div class="overflow-x-auto">
-    <table class="min-w-[1200px] text-sm">
+    <table class="min-w-[1500px] text-sm">
       <thead>
         <tr class="border-b text-left text-xs uppercase text-gray-600">
           <th class="py-2 pr-3 w-52">
@@ -97,7 +97,7 @@
               {% endfor %}
             </select>
           </td>
-          <td class="py-3 pr-3 font-medium text-gray-900">
+          <td class="py-3 pr-3 font-medium text-gray-900 whitespace-nowrap">
             {{ record.employee_id }}
             <form id="{{ form_id }}" action="/concierge-tracker-2/update" method="post">
               <input type="hidden" name="employee_id" value="{{ record.employee_id }}" />
@@ -109,11 +109,19 @@
             </form>
           </td>
           <td class="py-3 pr-3">
-            <div class="font-semibold">{{ record.first_name }} {{ record.last_name }}</div>
+            <div class="font-semibold">
+              {% if record.db_employee_id %}
+                <a href="https://golive.culinarystaffing.com/employees/{{ record.db_employee_id }}" target="_blank" class="text-blue-600 hover:underline">
+                  {{ record.first_name }} {{ record.last_name }}
+                </a>
+              {% else %}
+                {{ record.first_name }} {{ record.last_name }}
+              {% endif %}
+            </div>
             <div class="text-xs text-gray-500">Concierge Date: {{ record.concierge_date or '—' }}</div>
           </td>
-          <td class="py-3 pr-3">{{ record.start_date or '—' }}</td>
-          <td class="py-3 pr-3">{{ record.rehire_date or '—' }}</td>
+          <td class="py-3 pr-3 whitespace-nowrap" data-date-format>{{ record.start_date or '—' }}</td>
+          <td class="py-3 pr-3 whitespace-nowrap" data-date-format>{{ record.rehire_date or '—' }}</td>
           <td class="py-3 pr-3">
               <input type="date" name="called_date" form="{{ form_id }}" value="{{ record.called_date }}" class="border rounded-md px-2 py-1 w-40" />
           </td>
@@ -132,8 +140,8 @@
                 {% endfor %}
               </select>
           </td>
-          <td class="py-3 pr-3">{{ record.mobile or '-' }}</td>
-          <td class="py-3 pr-3">{{ record.language or '-' }}</td>
+          <td class="py-3 pr-3 whitespace-nowrap">{{ record.mobile or '-' }}</td>
+          <td class="py-3 pr-3 whitespace-nowrap">{{ record.language or '-' }}</td>
           <td class="py-3 pr-3">
               <div class="flex items-center gap-2">
                 <input type="hidden" name="flag" form="{{ form_id }}" value="{{ record.flag }}" data-flag-input="{{ form_id }}" />
@@ -204,6 +212,28 @@
 {% block scripts %}
 <script id="follow-up-map" type="application/json">{{ follow_up_options | tojson }}</script>
 <script>
+  (() => {
+    // Date formatting helper: yyyy-mm-dd -> Mon DD (e.g. Mar 19)
+    const formatDate = (dateStr) => {
+      if (!dateStr || dateStr === '—' || dateStr === '-') return dateStr;
+      const [year, month, day] = dateStr.split('-');
+      if (!year || !month || !day) return dateStr;
+      // Use UTC to avoid timezone issues when parsing simple date strings
+      const date = new Date(Date.UTC(year, month - 1, day));
+      if (isNaN(date.getTime())) return dateStr;
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    };
+
+    document.querySelectorAll('[data-date-format]').forEach(el => {
+      const original = el.textContent.trim();
+      const formatted = formatDate(original);
+      if (formatted !== original) {
+        el.textContent = formatted;
+        el.title = original; // Keep original as tooltip
+      }
+    });
+  })();
+
   (() => {
     const mapElement = document.getElementById('follow-up-map');
     if (!mapElement) return;
