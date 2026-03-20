@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+{% block title %}Database Update — GoLive Staffing{% endblock %}
+
+{% block content %}
+<section class="max-w-6xl mx-auto space-y-8">
+    <div class="relative space-y-4">
+        <nav class="flex text-sm text-emerald-600 font-medium">
+            <a href="/work-in-progress" class="hover:underline">Work in Progress</a>
+            <span class="mx-2">/</span>
+            <span class="text-gray-400">Database Update</span>
+        </nav>
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+                <h1 class="brand-serif text-4xl md:text-5xl font-bold text-gray-900">Database Update</h1>
+                <p class="mt-2 text-gray-600 max-w-2xl text-lg">
+                    A suite of tools for safely performing targeted updates across GoLive database tables.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Blocks Grid -->
+    <div class="grid gap-8 sm:grid-cols-1 lg:grid-cols-2">
+        
+        <!-- BLOCK: Venue Attestation Question -->
+        <div id="block-venue-attestation" class="group bg-white rounded-3xl p-8 shadow-xl border border-emerald-100 hover:border-emerald-200 transition-all flex flex-col justify-between relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-10 transition-opacity">
+                <svg class="w-32 h-32 text-emerald-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2L2 7v10l10 5 10-5V7l-10-5zm0 2.18L19.5 7.5 12 10.82 4.5 7.5 12 4.18zM4 9.3l7 3.11v6.41l-7-3.11V9.3zm9 9.52v-6.41l7-3.11v6.41l-7 3.11z"/>
+                </svg>
+            </div>
+
+            <div class="relative z-10 space-y-6">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-2xl font-bold text-gray-900">Venue Attestation Question</h2>
+                    <span class="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold uppercase tracking-wider rounded-full border border-emerald-100">Live</span>
+                </div>
+
+                <div class="p-5 bg-emerald-50/50 rounded-2xl border border-emerald-100/50">
+                    <ul class="space-y-2 text-sm text-emerald-900/80">
+                        <li class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            Table: <span class="font-mono font-bold">venue_attestation_question</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            Target: <span class="font-mono font-bold text-red-600">ID 89</span> &rarr; <span class="font-mono font-bold text-emerald-600">88</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="flex items-center gap-6 py-4 border-y border-gray-50">
+                    <div class="flex-1">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Matching Records</p>
+                        <div id="count-venue-attestation" class="text-4xl font-extrabold text-gray-900 animate-pulse">
+                            Checking...
+                        </div>
+                    </div>
+                </div>
+
+                <div id="action-venue-attestation" class="hidden space-y-4">
+                    <div class="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex gap-3">
+                        <svg class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                        </svg>
+                        <p class="text-xs text-amber-800 leading-relaxed font-medium">
+                            Confirming will update only the <code class="bg-amber-100/50 px-1 rounded">attestation_question_id</code> field for these records.
+                        </p>
+                    </div>
+                    <button id="update-btn-venue-attestation" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-emerald-200/50 flex items-center justify-center gap-3 active:scale-[0.98]">
+                        Update to 88
+                    </button>
+                </div>
+
+                <div id="success-venue-attestation" class="hidden bg-emerald-100 border border-emerald-200 rounded-2xl p-4 text-center">
+                    <p id="msg-venue-attestation" class="text-emerald-800 text-sm font-bold"></p>
+                </div>
+
+                <div id="none-venue-attestation" class="hidden text-center py-4">
+                    <p class="text-gray-400 text-sm italic">No records found matching ID 89.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- BLOCK: Client - Net Terms -->
+        <div id="block-client-net-terms" class="group bg-white rounded-3xl p-8 shadow-xl border border-emerald-100 hover:border-emerald-200 transition-all flex flex-col justify-between relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-10 transition-opacity">
+                <svg class="w-32 h-32 text-emerald-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+                </svg>
+            </div>
+
+            <div class="relative z-10 space-y-6">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-2xl font-bold text-gray-900">Client - Net Terms</h2>
+                    <span class="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold uppercase tracking-wider rounded-full border border-emerald-100">Live</span>
+                </div>
+
+                <div class="p-5 bg-emerald-50/50 rounded-2xl border border-emerald-100/50">
+                    <ul class="space-y-2 text-sm text-emerald-900/80">
+                        <li class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            Table: <span class="font-mono font-bold">client</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            Target: <span class="font-mono font-bold text-red-600">ID 10</span> &rarr; <span class="font-mono font-bold text-emerald-600">14</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="flex items-center gap-6 py-4 border-y border-gray-50">
+                    <div class="flex-1">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Matching Records</p>
+                        <div id="count-client-net-terms" class="text-4xl font-extrabold text-gray-900 animate-pulse">
+                            Checking...
+                        </div>
+                    </div>
+                </div>
+
+                <div id="action-client-net-terms" class="hidden space-y-4">
+                    <div class="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex gap-3">
+                        <svg class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                        </svg>
+                        <p class="text-xs text-amber-800 leading-relaxed font-medium">
+                            Confirming will update only the <code class="bg-amber-100/50 px-1 rounded">net_terms_entry_id</code> field for these clients.
+                        </p>
+                    </div>
+                    <button id="update-btn-client-net-terms" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-emerald-200/50 flex items-center justify-center gap-3 active:scale-[0.98]">
+                        Update to 14
+                    </button>
+                </div>
+
+                <div id="success-client-net-terms" class="hidden bg-emerald-100 border border-emerald-200 rounded-2xl p-4 text-center">
+                    <p id="msg-client-net-terms" class="text-emerald-800 text-sm font-bold"></p>
+                </div>
+
+                <div id="none-client-net-terms" class="hidden text-center py-4">
+                    <p class="text-gray-400 text-sm italic">No clients found matching ID 10.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="group border-2 border-dashed border-gray-200 rounded-3xl p-8 flex flex-col items-center justify-center text-center space-y-4 opacity-50">
+            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+            </div>
+            <div>
+                <h3 class="font-bold text-gray-500">Future Update Block</h3>
+                <p class="text-sm text-gray-400 max-w-[200px] mt-1">Additional table update tools will be added here as needed.</p>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Venue Attestation Block Logic
+        const venueBlock = {
+            countEl: document.getElementById('count-venue-attestation'),
+            actionEl: document.getElementById('action-venue-attestation'),
+            btnEl: document.getElementById('update-btn-venue-attestation'),
+            successEl: document.getElementById('success-venue-attestation'),
+            msgEl: document.getElementById('msg-venue-attestation'),
+            noneEl: document.getElementById('none-venue-attestation'),
+            
+            async fetch() {
+                try {
+                    const response = await fetch('/database-update/count');
+                    const data = await response.json();
+                    this.countEl.classList.remove('animate-pulse');
+                    
+                    if (data.error) {
+                        this.countEl.innerText = 'Error';
+                        this.countEl.classList.add('text-red-600');
+                        return;
+                    }
+
+                    const count = data.count;
+                    this.countEl.innerText = count;
+
+                    if (count > 0) {
+                        this.actionEl.classList.remove('hidden');
+                    } else {
+                        this.noneEl.classList.remove('hidden');
+                    }
+                } catch (err) {
+                    this.countEl.innerText = 'Error';
+                }
+            },
+
+            async update() {
+                this.btnEl.disabled = true;
+                this.btnEl.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+                
+                try {
+                    const response = await fetch('/database-update/update', { method: 'POST' });
+                    const data = await response.json();
+
+                    if (data.error) {
+                        alert('Update failed: ' + data.error);
+                        return;
+                    }
+
+                    this.actionEl.classList.add('hidden');
+                    this.successEl.classList.remove('hidden');
+                    this.msgEl.innerText = data.message;
+                    this.countEl.innerText = '0';
+                } catch (err) {
+                    alert('An error occurred.');
+                } finally {
+                    this.btnEl.disabled = false;
+                    this.btnEl.innerText = 'Update to 88';
+                }
+            }
+        };
+
+        // Initialize Venue Block
+        venueBlock.fetch();
+        venueBlock.btnEl.addEventListener('click', () => venueBlock.update());
+
+        // Client - Net Terms Block Logic
+        const netTermsBlock = {
+            countEl: document.getElementById('count-client-net-terms'),
+            actionEl: document.getElementById('action-client-net-terms'),
+            btnEl: document.getElementById('update-btn-client-net-terms'),
+            successEl: document.getElementById('success-client-net-terms'),
+            msgEl: document.getElementById('msg-client-net-terms'),
+            noneEl: document.getElementById('none-client-net-terms'),
+            
+            async fetch() {
+                try {
+                    const response = await fetch('/database-update/count-net-terms');
+                    const data = await response.json();
+                    this.countEl.classList.remove('animate-pulse');
+                    
+                    if (data.error) {
+                        this.countEl.innerText = 'Error';
+                        this.countEl.classList.add('text-red-600');
+                        return;
+                    }
+
+                    const count = data.count;
+                    this.countEl.innerText = count;
+
+                    if (count > 0) {
+                        this.actionEl.classList.remove('hidden');
+                    } else {
+                        this.noneEl.classList.remove('hidden');
+                    }
+                } catch (err) {
+                    this.countEl.innerText = 'Error';
+                }
+            },
+
+            async update() {
+                this.btnEl.disabled = true;
+                this.btnEl.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+                
+                try {
+                    const response = await fetch('/database-update/update-net-terms', { method: 'POST' });
+                    const data = await response.json();
+
+                    if (data.error) {
+                        alert('Update failed: ' + data.error);
+                        return;
+                    }
+
+                    this.actionEl.classList.add('hidden');
+                    this.successEl.classList.remove('hidden');
+                    this.msgEl.innerText = data.message;
+                    this.countEl.innerText = '0';
+                } catch (err) {
+                    alert('An error occurred.');
+                } finally {
+                    this.btnEl.disabled = false;
+                    this.btnEl.innerText = 'Update to 14';
+                }
+            }
+        };
+
+        // Initialize Net Terms Block
+        netTermsBlock.fetch();
+        netTermsBlock.btnEl.addEventListener('click', () => netTermsBlock.update());
+        
+        // As more blocks are added, they will follow a similar pattern here
+    });
+</script>
+{% endblock %}
