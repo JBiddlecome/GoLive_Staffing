@@ -89,7 +89,6 @@
                             <tr class="bg-emerald-50/50 text-emerald-900 font-semibold text-sm uppercase tracking-wider">
                                 <th class="px-6 py-4">Date</th>
                                 <th class="px-6 py-4">Employee</th>
-                                <th class="px-6 py-4">Note</th>
                                 <th class="px-6 py-4">User</th>
                                 <th class="px-6 py-4">Shift</th>
                             </tr>
@@ -171,7 +170,6 @@
                             ${row.employee_name}
                         </a>
                     </td>
-                    <td class="px-6 py-4 text-gray-600 max-w-xs break-words">${row.note}</td>
                     <td class="px-6 py-4 text-gray-900">${row.user_name}</td>
                     <td class="px-6 py-4">
                         ${row.event_id ? `
@@ -184,6 +182,16 @@
                     </td>
                 `;
                 dataBody.appendChild(tr);
+
+                const noteTr = document.createElement('tr');
+                noteTr.className = 'bg-emerald-50/20';
+                noteTr.innerHTML = `
+                    <td colspan="4" class="px-6 pb-5 pt-1 text-gray-700">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-emerald-800">Notes</p>
+                        <p class="mt-1 whitespace-pre-wrap break-words">${row.note || '<span class="text-gray-400 italic">No note provided.</span>'}</p>
+                    </td>
+                `;
+                dataBody.appendChild(noteTr);
             });
         }
 
