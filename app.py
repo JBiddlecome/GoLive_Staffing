@@ -32,6 +32,7 @@ from apps.meal_penalty_dashboard.views import router as meal_penalty_router
 from apps.client_cancellation_rates.views import router as client_cancellation_rates_router
 from apps.database_update.views import router as database_update_router
 from apps.payroll_notes.views import router as payroll_notes_router
+from apps.scheduled_vs_worked.views import router as scheduled_vs_worked_router
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 
 app = FastAPI(title="GoLive Staffing — Tools")
@@ -198,6 +199,11 @@ app.include_router(
     payroll_notes_router,
     prefix="/payroll-notes",
     tags=["Payroll Notes"],
+)
+app.include_router(
+    scheduled_vs_worked_router,
+    prefix="/scheduled-vs-worked-hours",
+    tags=["Scheduled vs Worked Hours"],
 )
 
 # Redirect /sms_paraphraser to /sms-paraphraser for backward compatibility
