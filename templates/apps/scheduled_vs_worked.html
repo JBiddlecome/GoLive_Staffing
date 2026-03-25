@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block title %}Scheduled vs Worked Hours — GoLive Staffing{% endblock %}
+{% block content %}
+<div class="space-y-8">
+    <!-- Header Section -->
+    <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400 text-white shadow-2xl">
+        <div class="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_30%,white,transparent_30%)]"></div>
+        <div class="relative px-8 py-10 lg:px-12 lg:py-12">
+            <div class="space-y-4">
+                <nav class="flex" aria-label="Breadcrumb">
+                    <ol class="flex items-center space-x-2 text-sm font-medium text-emerald-50/80">
+                        <li><a href="/" class="hover:text-white transition-colors">Home</a></li>
+                        <li><span class="px-1">/</span></li>
+                        <li class="text-white">Scheduled vs Worked Hours</li>
+                    </ol>
+                </nav>
+                <h1 class="brand-serif text-4xl md:text-5xl font-semibold leading-tight">Scheduled vs Worked Hours</h1>
+                <p class="text-emerald-50/90 text-lg max-w-2xl">
+                    Identify shifts where there is a difference between scheduled hours and worked hours.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Filters and Summary -->
+    <div class="grid gap-6 lg:grid-cols-4 items-start">
+        <div class="lg:col-span-1 space-y-6">
+            <div class="rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm">
+                <h3 class="text-lg font-semibold text-emerald-900 mb-4">Date Range</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label for="start_date" class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                        <input type="date" id="start_date" value="{{ start_date }}" 
+                            class="w-full rounded-xl border-emerald-100 bg-emerald-50/30 px-4 py-2 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label for="end_date" class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                        <input type="date" id="end_date" value="{{ end_date }}"
+                            class="w-full rounded-xl border-emerald-100 bg-emerald-50/30 px-4 py-2 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500">
+                    </div>
+                    <button id="apply_filters" 
+                        class="w-full mt-2 rounded-xl bg-emerald-600 px-4 py-3 font-semibold text-white shadow-lg shadow-emerald-900/10 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">
+                        <span>Refresh Data</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Summary Card -->
+            <div id="summary_card" class="hidden rounded-3xl bg-emerald-900 text-white p-6 shadow-xl relative overflow-hidden">
+                <div class="relative z-10">
+                    <p class="text-emerald-100/80 text-sm font-medium uppercase tracking-wider mb-1">Discrepancies</p>
+                    <div class="text-4xl font-bold" id="total_count">0</div>
+                    <p class="text-emerald-100/60 text-xs mt-2">Shifts with differing hours</p>
+                </div>
+                <div class="absolute -right-4 -bottom-4 opacity-10">
+                    <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Data Table -->
+        <div class="lg:col-span-3">
+            <div class="rounded-3xl border border-emerald-100 bg-white shadow-lg overflow-hidden min-h-[400px]">
+                <div id="loading_state" class="flex flex-col items-center justify-center h-full py-20">
+                    <div class="animate-spin rounded-full h-12 w-12 border-4 border-emerald-500 border-t-transparent"></div>
+                    <p class="text-gray-500 mt-4 font-medium">Analyzing shift hours...</p>
+                </div>
+
+                <div id="empty_state" class="hidden flex flex-col items-center justify-center h-full py-20 px-8 text-center">
+                    <div class="bg-emerald-50 p-6 rounded-full mb-6">
+                        <svg class="w-12 h-12 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900">All matching!</h3>
+                    <p class="text-gray-500 mt-2 max-w-sm">No shifts found where worked hours differ from scheduled hours for the selected range.</p>
+                </div>
+
+                <div id="error_state" class="hidden flex flex-col items-center justify-center h-full py-20 px-8 text-center">
+                    <div class="bg-red-50 p-6 rounded-full mb-6">
+                        <svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900">Connection Error</h3>
+                    <p id="error_message" class="text-gray-500 mt-2 max-w-sm"></p>
+                </div>
+
+                <div id="table_container" class="hidden overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="bg-emerald-50/50 text-emerald-900 font-semibold text-sm uppercase tracking-wider">
+                                <th class="px-6 py-4">Shift Date</th>
+                                <th class="px-6 py-4">Event Name</th>
+                                <th class="px-6 py-4">Employee Name</th>
+                                <th class="px-6 py-4 text-center">Worked Hours</th>
+                                <th class="px-6 py-4 text-center">Scheduled Hours</th>
+                                <th class="px-6 py-4 text-center">Difference</th>
+                                <th class="px-6 py-4 text-right pr-12">Timesheet</th>
+                            </tr>
+                        </thead>
+                        <tbody id="data_body" class="divide-y divide-emerald-50">
+                            <!-- Rows will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const startDateInput = document.getElementById('start_date');
+        const endDateInput = document.getElementById('end_date');
+        const applyBtn = document.getElementById('apply_filters');
+        
+        const loadingState = document.getElementById('loading_state');
+        const emptyState = document.getElementById('empty_state');
+        const errorState = document.getElementById('error_state');
+        const errorMessage = document.getElementById('error_message');
+        const tableContainer = document.getElementById('table_container');
+        const dataBody = document.getElementById('data_body');
+        const summaryCard = document.getElementById('summary_card');
+        const totalCount = document.getElementById('total_count');
+
+        async function fetchData() {
+            // Show loading
+            loadingState.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            errorState.classList.add('hidden');
+            tableContainer.classList.add('hidden');
+            summaryCard.classList.add('hidden');
+
+            const start = startDateInput.value;
+            const end = endDateInput.value;
+
+            try {
+                const response = await fetch(`/scheduled-vs-worked-hours/data?start_date=${start}&end_date=${end}`);
+                const result = await response.json();
+
+                if (response.ok) {
+                    const data = result.data;
+                    if (data && data.length > 0) {
+                        renderTable(data);
+                        totalCount.textContent = data.length;
+                        summaryCard.classList.remove('hidden');
+                        tableContainer.classList.remove('hidden');
+                        loadingState.classList.add('hidden');
+                    } else {
+                        emptyState.classList.remove('hidden');
+                        loadingState.classList.add('hidden');
+                    }
+                } else {
+                    throw new Error(result.error || 'Failed to fetch data');
+                }
+            } catch (err) {
+                errorMessage.textContent = err.message;
+                errorState.classList.remove('hidden');
+                loadingState.classList.add('hidden');
+            }
+        }
+
+        function renderTable(data) {
+            dataBody.innerHTML = '';
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-emerald-50/50 transition-colors group';
+                
+                const diffColor = row.difference > 0 ? 'text-emerald-700 bg-emerald-100' : 'text-red-700 bg-red-100';
+                
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-gray-700 font-medium">${row.date}</td>
+                    <td class="px-6 py-4 text-gray-900 font-medium">${row.event_name}</td>
+                    <td class="px-6 py-4 text-gray-900 font-semibold">${row.employee_name}</td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-800">
+                            ${row.worked_hours.toFixed(2)}h
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
+                            ${row.scheduled_hours.toFixed(2)}h
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${diffColor}">
+                            ${row.difference > 0 ? '+' : ''}${row.difference.toFixed(2)}h
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-right pr-12">
+                        <a href="${row.event_link}" target="_blank" class="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-semibold group-hover:translate-x-1 transition-transform">
+                            View Event
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                        </a>
+                    </td>
+                `;
+                dataBody.appendChild(tr);
+            });
+        }
+
+        applyBtn.addEventListener('click', fetchData);
+        
+        // Initial fetch
+        fetchData();
+    });
+</script>
+{% endblock %}
