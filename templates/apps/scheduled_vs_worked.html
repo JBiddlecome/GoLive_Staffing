@@ -92,7 +92,12 @@
                                 <th class="px-6 py-4">Employee Name</th>
                                 <th class="px-6 py-4 text-center">Worked Hours</th>
                                 <th class="px-6 py-4 text-center">Scheduled Hours</th>
-                                <th class="px-6 py-4 text-center">Difference</th>
+                                <th class="px-6 py-4 text-center">
+                                    <button id="difference_sort_btn" type="button" class="inline-flex items-center justify-center gap-1 font-semibold hover:text-emerald-700 transition-colors">
+                                        <span>Difference</span>
+                                        <span id="difference_sort_indicator" aria-hidden="true">↓</span>
+                                    </button>
+                                </th>
                                 <th class="px-6 py-4 text-right pr-12">Timesheet</th>
                             </tr>
                         </thead>
@@ -122,6 +127,10 @@
         const dataBody = document.getElementById('data_body');
         const summaryCard = document.getElementById('summary_card');
         const totalCount = document.getElementById('total_count');
+        const differenceSortBtn = document.getElementById('difference_sort_btn');
+        const differenceSortIndicator = document.getElementById('difference_sort_indicator');
+        let currentData = [];
+        let differenceSortOrder = 'desc';
 
         async function fetchData() {
             // Show loading
@@ -141,7 +150,9 @@
                 if (response.ok) {
                     const data = result.data;
                     if (data && data.length > 0) {
-                        renderTable(data);
+                        currentData = [...data];
+                        differenceSortOrder = 'desc';
+                        sortByDifference();
                         totalCount.textContent = data.length;
                         summaryCard.classList.remove('hidden');
                         tableContainer.classList.remove('hidden');
@@ -198,7 +209,18 @@
             });
         }
 
+        function sortByDifference() {
+            const sortMultiplier = differenceSortOrder === 'desc' ? -1 : 1;
+            currentData.sort((a, b) => (a.difference - b.difference) * sortMultiplier);
+            differenceSortIndicator.textContent = differenceSortOrder === 'desc' ? '↓' : '↑';
+            renderTable(currentData);
+        }
+
         applyBtn.addEventListener('click', fetchData);
+        differenceSortBtn.addEventListener('click', () => {
+            differenceSortOrder = differenceSortOrder === 'desc' ? 'asc' : 'desc';
+            sortByDifference();
+        });
         
         // Initial fetch
         fetchData();
