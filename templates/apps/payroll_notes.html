@@ -83,20 +83,8 @@
                     <p id="error_message" class="text-gray-500 mt-2 max-w-sm"></p>
                 </div>
 
-                <div id="table_container" class="hidden overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-emerald-50/50 text-emerald-900 font-semibold text-sm uppercase tracking-wider">
-                                <th class="px-6 py-4">Date</th>
-                                <th class="px-6 py-4">Employee</th>
-                                <th class="px-6 py-4">User</th>
-                                <th class="px-6 py-4">Shift</th>
-                            </tr>
-                        </thead>
-                        <tbody id="data_body" class="divide-y divide-emerald-50">
-                            <!-- Rows will be injected here -->
-                        </tbody>
-                    </table>
+                <div id="notes_container" class="hidden space-y-6 p-6">
+                    <!-- Cards will be injected here -->
                 </div>
             </div>
         </div>
@@ -115,8 +103,7 @@
         const emptyState = document.getElementById('empty_state');
         const errorState = document.getElementById('error_state');
         const errorMessage = document.getElementById('error_message');
-        const tableContainer = document.getElementById('table_container');
-        const dataBody = document.getElementById('data_body');
+        const notesContainer = document.getElementById('notes_container');
         const summaryCard = document.getElementById('summary_card');
         const totalCount = document.getElementById('total_count');
 
@@ -125,7 +112,7 @@
             loadingState.classList.remove('hidden');
             emptyState.classList.add('hidden');
             errorState.classList.add('hidden');
-            tableContainer.classList.add('hidden');
+            notesContainer.classList.add('hidden');
             summaryCard.classList.add('hidden');
 
             const start = startDateInput.value;
@@ -138,10 +125,10 @@
                 if (response.ok) {
                     const data = result.data;
                     if (data && data.length > 0) {
-                        renderTable(data);
+                        renderNotes(data);
                         totalCount.textContent = data.length;
                         summaryCard.classList.remove('hidden');
-                        tableContainer.classList.remove('hidden');
+                        notesContainer.classList.remove('hidden');
                         loadingState.classList.add('hidden');
                     } else {
                         emptyState.classList.remove('hidden');
@@ -157,41 +144,54 @@
             }
         }
 
-        function renderTable(data) {
-            dataBody.innerHTML = '';
+        function renderNotes(data) {
+            notesContainer.innerHTML = '';
             data.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-emerald-50/50 transition-colors';
+                const card = document.createElement('div');
+                card.className = 'rounded-2xl border border-emerald-100 bg-white p-6 shadow-sm hover:border-emerald-300 transition-all space-y-4';
                 
-                tr.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-gray-700 font-medium">${row.date}</td>
-                    <td class="px-6 py-4">
-                        <a href="https://golive.culinarystaffing.com/employees/${row.employee_id}" target="_blank" class="text-emerald-700 font-semibold hover:underline">
-                            ${row.employee_name}
-                        </a>
-                    </td>
-                    <td class="px-6 py-4 text-gray-900">${row.user_name}</td>
-                    <td class="px-6 py-4">
-                        ${row.event_id ? `
-                            <a href="https://golive.culinarystaffing.com/events/${row.event_id}/view" target="_blank" class="text-emerald-600 hover:text-emerald-800 hover:underline">
-                                ${row.shift_display}
+                card.innerHTML = `
+                    <div class="flex flex-wrap justify-between items-start gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-emerald-50 p-2 rounded-lg">
+                                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-emerald-900">${row.date}</p>
+                                <p class="text-xs text-gray-500 font-medium">Added by ${row.user_name}</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 uppercase tracking-wider">
+                                Payroll Note
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="text-gray-700 text-lg leading-relaxed whitespace-pre-wrap font-medium">${row.note}</div>
+                    
+                    <div class="pt-4 border-t border-emerald-50 flex flex-wrap items-center gap-x-8 gap-y-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Employee</span>
+                            <a href="https://golive.culinarystaffing.com/employees/${row.employee_id}" target="_blank" class="text-emerald-700 font-bold hover:text-emerald-900 hover:underline transition-colors">
+                                ${row.employee_name}
                             </a>
-                        ` : `
-                            <span class="text-gray-400 italic">${row.shift_display}</span>
-                        `}
-                    </td>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Shift</span>
+                            ${row.event_id ? `
+                                <a href="https://golive.culinarystaffing.com/events/${row.event_id}/view" target="_blank" class="text-emerald-600 font-semibold hover:text-emerald-800 hover:underline transition-colors">
+                                    ${row.shift_display}
+                                </a>
+                            ` : `
+                                <span class="text-gray-400 font-medium italic">${row.shift_display}</span>
+                            `}
+                        </div>
+                    </div>
                 `;
-                dataBody.appendChild(tr);
-
-                const noteTr = document.createElement('tr');
-                noteTr.className = 'bg-emerald-50/20';
-                noteTr.innerHTML = `
-                    <td colspan="4" class="px-6 pb-5 pt-1 text-gray-700">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-emerald-800">Notes</p>
-                        <p class="mt-1 whitespace-pre-wrap break-words">${row.note || '<span class="text-gray-400 italic">No note provided.</span>'}</p>
-                    </td>
-                `;
-                dataBody.appendChild(noteTr);
+                notesContainer.appendChild(card);
             });
         }
 
