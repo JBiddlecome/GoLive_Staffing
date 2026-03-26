@@ -68,7 +68,8 @@ async def get_payroll_notes_data(
                 ev.title AS event_name,
                 ev.date AS event_date,
                 ev.event_id,
-                en.employee_id
+                en.employee_id,
+                'Payroll Note' AS type
             FROM employee_note en
             LEFT JOIN employee e ON en.employee_id = e.employee_id
             LEFT JOIN user u ON en.user_id = u.id
@@ -77,7 +78,46 @@ async def get_payroll_notes_data(
             WHERE UPPER(TRIM(en.type)) LIKE '%PAYROLL%'
               AND DATE(en.datetime) >= :start_date 
               AND DATE(en.datetime) <= :end_date
-            ORDER BY en.datetime DESC
+
+            UNION ALL
+
+            SELECT 
+                COALESCE(t.employee_submit_date, ev.date) AS date,
+                CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+                t.employee_notes AS note,
+                'Employee' AS user_name,
+                ev.title AS event_name,
+                ev.date AS event_date,
+                ev.event_id,
+                t.employee_id,
+                'Timesheet Note' AS type
+            FROM timesheet t
+            JOIN employee e ON t.employee_id = e.employee_id
+            JOIN event ev ON t.event_id = ev.event_id
+            WHERE t.employee_notes IS NOT NULL AND t.employee_notes != ''
+              AND DATE(COALESCE(t.employee_submit_date, ev.date)) >= :start_date 
+              AND DATE(COALESCE(t.employee_submit_date, ev.date)) <= :end_date
+
+            UNION ALL
+
+            SELECT 
+                COALESCE(t.client_submit_date, ev.date) AS date,
+                CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+                t.client_notes AS note,
+                'Client' AS user_name,
+                ev.title AS event_name,
+                ev.date AS event_date,
+                ev.event_id,
+                t.employee_id,
+                'Timesheet Note' AS type
+            FROM timesheet t
+            JOIN employee e ON t.employee_id = e.employee_id
+            JOIN event ev ON t.event_id = ev.event_id
+            WHERE t.client_notes IS NOT NULL AND t.client_notes != ''
+              AND DATE(COALESCE(t.client_submit_date, ev.date)) >= :start_date 
+              AND DATE(COALESCE(t.client_submit_date, ev.date)) <= :end_date
+
+            ORDER BY date DESC
         """)
         
         with engine.begin() as connection:
@@ -86,7 +126,16 @@ async def get_payroll_notes_data(
             data = []
             for row in result:
                 item = dict(row)
-                item["date"] = item["date"].strftime("%Y-%m-%d %H:%M") if item["date"] else ""
+                if isinstance(item["date"], datetime):
+                    item["date"] = item["date"].strftime("%Y-%m-%d %H:%M")
+                elif item["date"]:
+                    # Fallback for date objects (like ev.date)
+                    try:
+                        item["date"] = item["date"].strftime("%Y-%m-%d")
+                    except AttributeError:
+                        item["date"] = str(item["date"])
+                else:
+                    item["date"] = ""
                 item["employee_name"] = item["employee_name"] if item["employee_name"] else "Unknown Employee"
                 item["user_name"] = item["user_name"] if item["user_name"] else "Unknown User"
                 
