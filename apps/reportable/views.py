@@ -61,6 +61,12 @@ class NowstaReportPayload(BaseModel):
     limit: int = Field(default=50000, ge=1, le=100000)
 
 
+class VenueShiftsPayload(BaseModel):
+    start_date: str = Field(default="2025-01-01")
+    end_date: str = Field(default="2025-12-31")
+    limit: int = Field(default=50000, ge=1, le=100000)
+
+
 TIMESHEET_VERIFICATION_EXCLUDED_COLUMNS = {
     "Day",
     "WC",
@@ -1541,6 +1547,75 @@ async def reportable_nowsta_report_export(
     output.seek(0)
 
     filename = "nowsta_report.xlsx"
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers,
+    )
+
+
+@router.post("/export/venue-shifts")
+async def reportable_venue_shifts_export(
+    payload: VenueShiftsPayload,
+) -> StreamingResponse:
+    engine = _engine()
+    try:
+        # SQL Query to pull venues that had shifts in the specified range (default 2025)
+        # Includes Client Name, Venue Name, Venue Address, and Event Address
+        sql = text(
+            """
+            SELECT DISTINCT
+                c.name AS `Client Name`,
+                v.name AS `Venue Name`,
+                TRIM(CONCAT_WS(', ', v.address1, NULLIF(v.address2, ''), v.city, v.state, v.zip)) AS `Venue Address`,
+                TRIM(CONCAT_WS(', ', e.address1, NULLIF(e.address2, ''), e.city, e.state, e.zip)) AS `Event Address`
+            FROM venue v
+            JOIN client c ON v.client_id = c.client_id
+            JOIN event e ON e.venue_id = v.venue_id
+            JOIN shift s ON s.event_id = e.event_id
+            WHERE s.start >= :start_date
+              AND s.start <= :end_date
+              AND s.deleted_at IS NULL
+            ORDER BY c.name, v.name
+            LIMIT :limit
+            """
+        )
+
+        params = {
+            "start_date": payload.start_date,
+            "end_date": payload.end_date,
+            "limit": payload.limit,
+        }
+
+        with engine.begin() as connection:
+            df = pd.read_sql(sql, connection, params=params)
+
+    finally:
+        engine.dispose()
+
+    if df.empty:
+        # Return empty excel with headers if no data
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            pd.DataFrame(columns=[
+                'Client Name', 'Venue Name', 'Venue Address', 'Event Address'
+            ]).to_excel(writer, index=False, sheet_name="venue_shifts")
+        output.seek(0)
+        filename = "venue_shifts_report.xlsx"
+        headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers=headers,
+        )
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="venue_shifts")
+    output.seek(0)
+
+    filename = "venue_shifts_report.xlsx"
     headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
     return StreamingResponse(
         output,
