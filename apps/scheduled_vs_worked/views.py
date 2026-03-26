@@ -54,10 +54,17 @@ async def scheduled_vs_worked_page(request: Request):
         }
     )
 
+def _normalize_status(s: str | None) -> str:
+    if not s:
+        return ""
+    # Normalize: uppercase, strip, and remove all spaces (handles NOSHOW vs NO SHOW)
+    return s.strip().upper().replace(" ", "")
+
 @router.get("/data")
 async def get_scheduled_vs_worked_data(
     start_date: str = Query(...),
-    end_date: str = Query(...)
+    end_date: str = Query(...),
+    statuses: list[str] = Query([])
 ):
     engine = _engine()
     try:
@@ -70,6 +77,8 @@ async def get_scheduled_vs_worked_data(
                 s.start AS shift_start,
                 s.end AS shift_end,
                 t.employee_seconds,
+                t.employee_worked,
+                t.client_worked,
                 e.event_id
             FROM shift_employee se
             JOIN event e ON se.event_id = e.event_id
@@ -79,8 +88,14 @@ async def get_scheduled_vs_worked_data(
             LEFT JOIN timesheet t ON se.shift_employee_id = t.shift_employee_id
             WHERE e.date >= :start_date
               AND e.date <= :end_date
-              AND se.confirmed = 1
-              AND se.cancel_reason = 0
+              AND se.deleted_at IS NULL
+              # We only show shifts that are either active confirmed assignments
+              # OR explicitly marked in the timesheet with one of our statuses.
+              AND (
+                  (se.confirmed = 1 AND se.cancel_reason = 0)
+                  OR t.employee_worked IS NOT NULL
+                  OR t.client_worked IS NOT NULL
+              )
             ORDER BY e.date DESC, emp.last_name, emp.first_name
         """)
         
@@ -89,6 +104,23 @@ async def get_scheduled_vs_worked_data(
             
             data = []
             for row in result:
+                # --- Status Filtering ---
+                emp_status = _normalize_status(row["employee_worked"])
+                cli_status = _normalize_status(row["client_worked"])
+                
+                if statuses is not None:
+                    # Normalize selected filters for comparison
+                    upper_filters = [_normalize_status(s) for s in statuses]
+                    
+                    # If the shift has a marked status (employee or client), 
+                    # it must match one of the selected filter options to be shown.
+                    # If it has no status marks at all, we show it (discrepancy).
+                    if emp_status or cli_status:
+                        matches_emp = emp_status in upper_filters
+                        matches_cli = cli_status in upper_filters
+                        if not (matches_emp or matches_cli):
+                            continue
+
                 # --- Scheduled Hours Calculation ---
                 sched_hours = 0.0
                 start_ts = row["shift_start"]
@@ -110,6 +142,9 @@ async def get_scheduled_vs_worked_data(
                 # Filter: only if there is a difference
                 # Using a small epsilon for float comparison
                 if abs(round(sched_hours, 2) - round(worked_hours, 2)) > 0.01:
+                    # Display the status that was found (prefers employee status if both exist)
+                    display_status = row["employee_worked"] or row["client_worked"] or ""
+                    
                     data.append({
                         "date": row["date"].strftime("%Y-%m-%d"),
                         "event_name": row["event_name"],
@@ -117,6 +152,7 @@ async def get_scheduled_vs_worked_data(
                         "worked_hours": round(worked_hours, 2),
                         "scheduled_hours": round(sched_hours, 2),
                         "difference": round(worked_hours - sched_hours, 2),
+                        "status": display_status,
                         "event_link": f"https://golive.culinarystaffing.com/events/{row['event_id']}/timesheets"
                     })
                 
