@@ -29,6 +29,7 @@ from apps.sms_paraphraser.views import router as sms_paraphraser_router
 from apps.client_drop_off_v2.views import router as client_drop_off_v2_router
 from apps.staffing_coverage_monitor.views import router as staffing_coverage_monitor_router
 from apps.meal_penalty_dashboard.views import router as meal_penalty_router
+from apps.staffing_dashboard.views import router as staffing_dashboard_router
 from apps.client_cancellation_rates.views import router as client_cancellation_rates_router
 from apps.database_update.views import router as database_update_router
 from apps.payroll_notes.views import router as payroll_notes_router
@@ -186,6 +187,9 @@ app.include_router(
     tags=["Meal Penalty Dashboard"],
 )
 app.include_router(
+    staffing_dashboard_router,
+    prefix="/staffing-dashboard",
+    tags=["Staffing Manager Dashboard"],
     client_cancellation_rates_router,
     prefix="/client-cancellation-rates",
     tags=["Client Cancellation Rates"],
