@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import os
 from io import BytesIO
+import pandas as pd
 from pathlib import Path
 from typing import Dict, Iterable, List, Tuple
 from uuid import uuid4
@@ -15,6 +17,9 @@ import re
 from datetime import datetime
 from difflib import SequenceMatcher
 
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import URL
+
 
 templates = Jinja2Templates(directory="templates")
 router = APIRouter()
@@ -23,7 +28,7 @@ UPLOAD_DIR = Path("tmp/clickboarding_check")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 DEFAULT_CONFIDENCE = 90
-DEFAULT_DAYS_BACK = 60
+DEFAULT_DAYS_BACK = 2000
 
 
 class ClickboardingProcessingError(HTTPException):
@@ -42,16 +47,50 @@ def _load_clickboarding(data: bytes) -> pd.DataFrame:
     return df
 
 
-def _load_employee_list(data: bytes) -> pd.DataFrame:
+def _db_url_from_env() -> URL:
+    reportable_host = os.getenv("REPORTABLE_DB_HOST")
+    host = reportable_host or os.getenv("DB_HOST", "localhost")
+    name = os.getenv("REPORTABLE_DB_NAME") or os.getenv("DB_NAME", "cstaffing_live")
+    user = os.getenv("DB_USER")
+    password = os.getenv("DB_PASSWORD")
+    reportable_port = os.getenv("REPORTABLE_DB_PORT")
+    port = int(reportable_port or os.getenv("DB_PORT", "3306"))
+
+    if host in {"127.0.0.1", "localhost"} and not reportable_host:
+        tunnel_port = os.getenv("LOCAL_TUNNEL_PORT")
+        rds_host = os.getenv("RDS_HOST")
+        if rds_host and (not tunnel_port or str(port) != tunnel_port):
+            host = rds_host
+
+    return URL.create(drivername="mysql+pymysql", username=user, password=password, host=host, port=port, database=name)
+
+
+def _load_employee_data_from_db() -> pd.DataFrame:
+    engine = create_engine(_db_url_from_env(), pool_pre_ping=True)
     try:
-        df = pd.read_excel(BytesIO(data))
-    except Exception as exc:  # pragma: no cover - pandas specific error
-        raise ClickboardingProcessingError(status_code=400, detail="Employee List must be a valid Excel workbook.") from exc
-
-    if df.empty:
-        raise ClickboardingProcessingError(status_code=400, detail="Employee List does not contain any data.")
-
-    return df
+        sql = text("""
+            SELECT
+                employee_id AS `Employee ID`,
+                IF(status = 1, 'active', 'inactive') AS `Status`,
+                first_name AS `First Name`,
+                last_name AS `Last Name`,
+                start_date AS `Start Date`,
+                start_date2 AS `Rehire Date`,
+                email AS `Email`
+            FROM employee
+        """)
+        with engine.connect() as conn:
+            df = pd.read_sql(sql, conn)
+            
+        if df.empty:
+            raise ClickboardingProcessingError(status_code=400, detail="Employee database query returned empty data.")
+        return df
+    except ClickboardingProcessingError:
+        raise
+    except Exception as exc:
+        raise ClickboardingProcessingError(status_code=500, detail=f"Database connection or query failed: {exc}") from exc
+    finally:
+        engine.dispose()
 
 
 def _normalize_clickboarding_name(value: object) -> Tuple[str | None, str | None, str | None]:
@@ -358,7 +397,6 @@ async def page(request: Request):
 async def process(
     request: Request,
     clickboarding_file: UploadFile = File(...),
-    employee_file: UploadFile = File(...),
     confidence: int = Form(DEFAULT_CONFIDENCE),
     days_back: int = Form(DEFAULT_DAYS_BACK),
 ):
@@ -367,23 +405,22 @@ async def process(
     context["clickboarding_settings"]["confidence"] = confidence
     context["clickboarding_settings"]["days_back"] = days_back
 
-    if not clickboarding_file or not employee_file:
-        context["clickboarding_error"] = "Please upload both the Clickboarding List CSV and Employee List Excel files."
+    if not clickboarding_file:
+        context["clickboarding_error"] = "Please upload the Clickboarding List CSV file."
         return templates.TemplateResponse("apps/clickboarding_check.html", context, status_code=400)
 
     cb_bytes = await clickboarding_file.read()
-    emp_bytes = await employee_file.read()
 
-    if not cb_bytes or not emp_bytes:
-        context["clickboarding_error"] = "One or both uploaded files were empty."
+    if not cb_bytes:
+        context["clickboarding_error"] = "The uploaded Clickboarding file was empty."
         return templates.TemplateResponse("apps/clickboarding_check.html", context, status_code=400)
 
     context["clickboarding_uploaded"]["clickboarding_filename"] = clickboarding_file.filename
-    context["clickboarding_uploaded"]["employee_filename"] = employee_file.filename
+    context["clickboarding_uploaded"]["employee_filename"] = "Fetched from database"
 
     try:
         cb_df = _load_clickboarding(cb_bytes)
-        emp_df = _load_employee_list(emp_bytes)
+        emp_df = _load_employee_data_from_db()
         review_df, match_df = _process(cb_df, emp_df, int(confidence), int(days_back))
     except ClickboardingProcessingError as exc:
         context["clickboarding_error"] = exc.detail

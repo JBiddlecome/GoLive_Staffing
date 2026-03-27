@@ -9,7 +9,7 @@
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "paraphrase") {
-        paraphraseViaBackend(request.eventId, request.sections)
+        paraphraseViaBackend(request.eventId, request.sections, request.shift_time)
             .then(data => sendResponse({ text: data.text }))
             .catch(error => sendResponse({ error: error.message }));
         return true; // Keep the message channel open for async response
@@ -21,10 +21,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
  * @param {string|number} eventId - The GoLive Event ID.
  * @param {Array} sections - The selected sections (title and text).
  */
-async function paraphraseViaBackend(eventId, sections) {
+async function paraphraseViaBackend(eventId, sections, shiftTime) {
     // We only need the titles for the backend to know which DB fields to use,
     // but the backend expects a list of strings (titles).
     const sectionTitles = sections.map(s => s.title);
+
+    let payload = {
+        event_id: parseInt(eventId),
+        sections: sectionTitles
+    };
+
+    if (shiftTime) {
+        payload.shift_time = shiftTime;
+    }
 
     try {
         const response = await fetch('https://tools.culinarystaffing.com/sms-paraphraser/paraphrase', {
@@ -32,10 +41,7 @@ async function paraphraseViaBackend(eventId, sections) {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                event_id: parseInt(eventId),
-                sections: sectionTitles
-            })
+            body: JSON.stringify(payload)
         });
 
         if (!response.ok) {

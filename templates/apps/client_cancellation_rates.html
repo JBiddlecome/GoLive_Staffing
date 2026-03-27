@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+{% block title %}Client Cancellation Rates — GoLive Staffing{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+  <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-gray-900 mb-1">Client Cancellation Rates</h1>
+      <p class="text-sm text-gray-500">Analyze the number of assigned shifts clients cancel versus their total requested shifts.</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-3">
+      <!-- Client Select (Only visible in Graph view) -->
+      <div id="clientSelectContainer" class="hidden">
+        <label for="clientSelect" class="block text-xs font-medium text-gray-500 mb-1">Select Client</label>
+        <select id="clientSelect" class="rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm max-w-[200px] md:max-w-xs">
+            <option value="">Loading clients...</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="startDate" class="block text-xs font-medium text-gray-500 mb-1">Start Date</label>
+        <input type="date" id="startDate" class="rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+      </div>
+      <div>
+        <label for="endDate" class="block text-xs font-medium text-gray-500 mb-1">End Date</label>
+        <input type="date" id="endDate" class="rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+      </div>
+      <div class="pt-5 flex gap-2">
+        <button id="fetchData" class="px-5 py-2 inline-flex items-center justify-center bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition text-sm font-medium shadow-sm">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          Fetch Data
+        </button>
+        <a href="/client-cancellation-rates/download-csv" class="px-5 py-2 inline-flex items-center justify-center bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition text-sm font-medium shadow-sm">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          Download CSV (all clients weekly, 2025+)
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Note box -->
+  <div class="bg-blue-50/80 border border-blue-100 p-4 rounded-xl flex items-start gap-3">
+    <svg class="h-5 w-5 text-blue-500 shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+    </svg>
+    <p class="text-sm text-blue-800 leading-relaxed">
+      <span class="font-semibold">Note:</span> "Assigned Shifts Cancelled by Client" only includes shifts where an employee was already assigned before the client cancelled. Unfilled shifts that a client cancels are hard-deleted from the database and cannot be accurately counted.
+    </p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="border-b border-gray-200">
+    <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+      <button id="tabTable" class="border-emerald-500 text-emerald-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+        Aggregated Table
+      </button>
+      <button id="tabGraph" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+        Timeline Graph
+      </button>
+    </nav>
+  </div>
+
+  <!-- Table View -->
+  <div id="viewTable" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50/50">
+          <tr>
+            <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Client Name</th>
+            <th scope="col" class="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Shifts Ordered</th>
+            <th scope="col" class="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Assigned Shifts Cancelled by Client</th>
+            <th scope="col" class="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Cancellation %</th>
+          </tr>
+        </thead>
+        <tbody id="resultsBody" class="bg-white divide-y divide-gray-100 text-sm">
+          <tr>
+            <td colspan="4" class="px-6 py-12 text-center">
+              <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-50 mb-3">
+                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+              </div>
+              <p class="text-gray-500 font-medium">Select a date range and click Fetch Data to view.</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Graph View -->
+  <div id="viewGraph" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hidden p-6">
+    <div class="relative w-full" style="height: 400px; min-height: 400px;">
+        <canvas id="cancellationChart"></canvas>
+        <div id="graphEmptyState" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-10 backdrop-blur-sm bg-white/90">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-50 mb-3">
+                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+            </div>
+            <p class="text-gray-500 font-medium" id="graphEmptyText">Select a client and date range, then click Fetch Data to view chart.</p>
+        </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    let currentMode = 'table'; 
+    let chartInstance = null;
+
+    // Elements
+    const tabTable = document.getElementById('tabTable');
+    const tabGraph = document.getElementById('tabGraph');
+    const viewTable = document.getElementById('viewTable');
+    const viewGraph = document.getElementById('viewGraph');
+    const clientSelectContainer = document.getElementById('clientSelectContainer');
+    const clientSelect = document.getElementById('clientSelect');
+    const fetchBtn = document.getElementById('fetchData');
+    const tbody = document.getElementById('resultsBody');
+    const graphEmptyState = document.getElementById('graphEmptyState');
+    const graphEmptyText = document.getElementById('graphEmptyText');
+
+    // Default dates
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - 30);
+    
+    const formatYMD = (date) => {
+        const d = new Date(date);
+        let month = '' + (d.getMonth() + 1);
+        let day = '' + d.getDate();
+        const year = d.getFullYear();
+
+        if (month.length < 2) month = '0' + month;
+        if (day.length < 2) day = '0' + day;
+
+        return [year, month, day].join('-');
+    };
+
+    document.getElementById('endDate').value = formatYMD(end);
+    document.getElementById('startDate').value = formatYMD(start);
+
+    // Load clients
+    const loadClients = async () => {
+        try {
+            const resp = await fetch('/client-cancellation-rates/clients');
+            const data = await resp.json();
+            clientSelect.innerHTML = '<option value="">-- Choose a client --</option>';
+            data.clients.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.client_id;
+                opt.textContent = c.name;
+                clientSelect.appendChild(opt);
+            });
+        } catch (e) {
+            clientSelect.innerHTML = '<option value="">Failed to load clients</option>';
+        }
+    };
+    loadClients();
+
+    // Tab Switching Logic
+    const switchTab = (mode) => {
+        currentMode = mode;
+        if (mode === 'table') {
+            tabTable.classList.add('border-emerald-500', 'text-emerald-600');
+            tabTable.classList.remove('border-transparent', 'text-gray-500');
+            tabGraph.classList.add('border-transparent', 'text-gray-500');
+            tabGraph.classList.remove('border-emerald-500', 'text-emerald-600');
+            
+            viewTable.classList.remove('hidden');
+            viewGraph.classList.add('hidden');
+            clientSelectContainer.classList.add('hidden');
+        } else {
+            tabGraph.classList.add('border-emerald-500', 'text-emerald-600');
+            tabGraph.classList.remove('border-transparent', 'text-gray-500');
+            tabTable.classList.add('border-transparent', 'text-gray-500');
+            tabTable.classList.remove('border-emerald-500', 'text-emerald-600');
+            
+            viewGraph.classList.remove('hidden');
+            viewTable.classList.add('hidden');
+            clientSelectContainer.classList.remove('hidden');
+        }
+    };
+
+    tabTable.addEventListener('click', () => switchTab('table'));
+    tabGraph.addEventListener('click', () => switchTab('graph'));
+
+    // Fetch Data Logic
+    fetchBtn.addEventListener('click', async () => {
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+
+      if (!startDate || !endDate) {
+        alert("Please select both start and end dates.");
+        return;
+      }
+
+      fetchBtn.disabled = true;
+      const originalText = fetchBtn.innerHTML;
+      fetchBtn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Loading...`;
+
+      try {
+          if (currentMode === 'table') {
+              await fetchTableData(startDate, endDate);
+          } else {
+              await fetchGraphData(startDate, endDate);
+          }
+      } catch (err) {
+          if (currentMode === 'table') {
+              tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-red-500 font-medium">Error: ${err.message}</td></tr>`;
+          } else {
+              graphEmptyState.classList.remove('hidden');
+              graphEmptyText.innerHTML = `<span class="text-red-500">Error: ${err.message}</span>`;
+          }
+      } finally {
+        fetchBtn.disabled = false;
+        fetchBtn.innerHTML = originalText;
+      }
+    });
+
+    const fetchTableData = async (startDate, endDate) => {
+        tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-12 text-center text-gray-500">
+            <div class="flex flex-col items-center justify-center">
+                <svg class="animate-spin h-8 w-8 text-emerald-500 mb-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <span class="font-medium">Analyzing data, please wait...</span>
+            </div>
+        </td></tr>`;
+
+        const response = await fetch(`/client-cancellation-rates/data?start_date=${startDate}&end_date=${endDate}`);
+        if (!response.ok) throw new Error("Failed to fetch data.");
+        
+        const dataPayload = await response.json();
+        const dataList = dataPayload.data;
+        
+        tbody.innerHTML = "";
+        
+        if (dataList.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-gray-500 font-medium">No shifts found for this date range.</td></tr>`;
+            return;
+        }
+
+        dataList.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-gray-50/50 transition-colors duration-150 group";
+            
+            let pctClass = "text-gray-900 bg-gray-100";
+            if (row.cancellation_percentage > 20) {
+                pctClass = "text-red-700 bg-red-100 border border-red-200";
+            } else if (row.cancellation_percentage > 10) {
+                pctClass = "text-orange-700 bg-orange-100 border border-orange-200";
+            } else if (row.cancellation_percentage === 0 && row.total_shifts_placed > 0) {
+                pctClass = "text-emerald-700 bg-emerald-100 border border-emerald-200";
+            }
+
+            tr.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">${row.client_name || 'Unknown Client'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-600 text-right font-mono">${row.total_shifts_placed}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-600 text-right font-mono">${row.total_client_cancellations}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${pctClass}">
+                    ${row.cancellation_percentage}%
+                    </span>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    };
+
+    const fetchGraphData = async (startDate, endDate) => {
+        const clientId = clientSelect.value;
+        if (!clientId) {
+            alert('Please select a client from the dropdown first.');
+            throw new Error("No client selected.");
+        }
+
+        graphEmptyState.classList.remove('hidden');
+        graphEmptyText.innerHTML = `
+            <div class="flex flex-col items-center justify-center">
+                <svg class="animate-spin h-8 w-8 text-emerald-500 mb-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <span class="font-medium text-gray-500">Analyzing client timeline...</span>
+            </div>
+        `;
+
+        const response = await fetch(`/client-cancellation-rates/graph-data?start_date=${startDate}&end_date=${endDate}&client_id=${clientId}`);
+        if (!response.ok) throw new Error("Failed to fetch graph data.");
+        
+        const dataPayload = await response.json();
+        const dataList = dataPayload.data;
+
+        if (dataList.length === 0) {
+            graphEmptyText.innerHTML = "No shift data found for this client in the selected date range.";
+            if (chartInstance) chartInstance.destroy();
+            return;
+        }
+
+        graphEmptyState.classList.add('hidden');
+
+        // Render Chart
+        renderChart(dataList);
+    };
+
+    const renderChart = (data) => {
+        const ctx = document.getElementById('cancellationChart').getContext('2d');
+        
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+
+        const labels = data.map(d => d.week_of);
+        const orderedData = data.map(d => d.total_shifts_placed);
+        const cancelledData = data.map(d => d.total_client_cancellations);
+        const percentages = data.map(d => d.cancellation_percentage);
+
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Shifts Placed',
+                        data: orderedData,
+                        backgroundColor: 'rgba(16, 185, 129, 0.2)', // Emerald-500
+                        borderColor: 'rgb(16, 185, 129)',
+                        borderWidth: 1,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Shifts Cancelled',
+                        data: cancelledData,
+                        backgroundColor: 'rgba(239, 68, 68, 0.2)', // Red-500
+                        borderColor: 'rgb(239, 68, 68)',
+                        borderWidth: 1,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Cancellation %',
+                        data: percentages,
+                        type: 'line',
+                        borderColor: 'rgb(245, 158, 11)', // Amber-500
+                        backgroundColor: 'rgb(245, 158, 11)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Week Of (Monday)'
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Count'
+                        },
+                        beginAtZero: true
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Percentage (%)'
+                        },
+                        beginAtZero: true,
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    },
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.datasetIndex === 2) {
+                                    label += context.parsed.y + '%';
+                                } else {
+                                    label += context.parsed.y;
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    };
+  });
+</script>
+{% endblock %}
