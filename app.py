@@ -190,6 +190,8 @@ app.include_router(
     staffing_dashboard_router,
     prefix="/staffing-dashboard",
     tags=["Staffing Manager Dashboard"],
+)
+app.include_router(
     client_cancellation_rates_router,
     prefix="/client-cancellation-rates",
     tags=["Client Cancellation Rates"],
