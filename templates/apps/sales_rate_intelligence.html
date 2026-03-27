@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}Sales Rate Intelligence — GoLive Staffing{% endblock %}
+
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/sales_rate_intelligence.css">
+<div class="sri-dashboard">
+  <!-- Header -->
+  <header class="sri-header">
+    <h1>Sales Rate Intelligence</h1>
+    <p>Market benchmarks based on configured rates for comparable clients.</p>
+  </header>
+
+  <!-- Warning Alert -->
+  <div id="sri-warning" class="sri-alert sri-hidden">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+      <line x1="12" y1="9" x2="12" y2="13"></line>
+      <line x1="12" y1="17" x2="12.01" y2="17"></line>
+    </svg>
+    <div id="sri-warning-msg"></div>
+  </div>
+
+  <div class="sri-grid">
+    <!-- Filter Panel -->
+    <aside class="sri-panel">
+      <h2 class="sri-panel-title">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+        </svg>
+        Segment Filters
+      </h2>
+
+      <div class="sri-form-group">
+        <label for="sri-pos">Position</label>
+        <select id="sri-pos" class="sri-select">
+          <option value="">All</option>
+        </select>
+      </div>
+
+      <div class="sri-form-group">
+        <label for="sri-county">County</label>
+        <select id="sri-county" class="sri-select">
+          <option value="">All</option>
+        </select>
+      </div>
+
+      <div class="sri-form-group">
+        <label for="sri-industry">Industry</label>
+        <select id="sri-industry" class="sri-select">
+          <option value="">All</option>
+        </select>
+      </div>
+
+      <div class="sri-form-group">
+        <label for="sri-date-start">Active From</label>
+        <input type="date" id="sri-date-start" class="sri-input">
+      </div>
+
+      <div class="sri-form-group">
+        <label for="sri-date-end">Active Until</label>
+        <input type="date" id="sri-date-end" class="sri-input">
+      </div>
+
+      <button id="sri-btn-apply" class="sri-btn">Refresh Benchmark</button>
+      <button id="sri-btn-export" class="sri-btn sri-btn-secondary" style="margin-top: 12px;">Export CSV</button>
+    </aside>
+
+    <!-- Main Content Panel -->
+    <main>
+      <!-- KPIs -->
+      <div class="sri-kpi-grid">
+        <div class="sri-kpi-card">
+          <div class="sri-kpi-label">Average Bill</div>
+          <div class="sri-kpi-value" id="sri-kpi-bill">-</div>
+        </div>
+        <div class="sri-kpi-card">
+          <div class="sri-kpi-label">Average Pay</div>
+          <div class="sri-kpi-value" id="sri-kpi-pay">-</div>
+        </div>
+        <div class="sri-kpi-card">
+          <div class="sri-kpi-label">Average Spread</div>
+          <div class="sri-kpi-value" id="sri-kpi-spread">-</div>
+        </div>
+        <div class="sri-kpi-card">
+          <div class="sri-kpi-label">Markup %</div>
+          <div class="sri-kpi-value" id="sri-kpi-markup">-</div>
+        </div>
+        <div class="sri-kpi-card">
+          <div class="sri-kpi-label">Clients</div>
+          <div class="sri-kpi-value" id="sri-kpi-clients">-</div>
+        </div>
+        <div class="sri-kpi-card">
+          <div class="sri-kpi-label">Rate Records</div>
+          <div class="sri-kpi-value" id="sri-kpi-records">-</div>
+        </div>
+      </div>
+
+      <!-- Benchmarks -->
+      <section class="sri-panel" style="margin-bottom: 24px;">
+        <h2 class="sri-panel-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+          Quote Recommendation Band
+        </h2>
+        <p style="color:var(--sri-text-muted); font-size:0.9rem; margin-bottom: 24px;">This distribution shows the 25th (Conservative), Median (Market), and 75th (Premium) percentiles for the segment.</p>
+        
+        <div class="sri-benchmark">
+          <div class="sri-benchmark-row">
+            <div class="sri-benchmark-label" style="color:var(--sri-success)">Bill Rate</div>
+            <div class="sri-benchmark-bar-container">
+              <div id="sri-bill-bar" class="sri-benchmark-bar" style="left: 25%; right: 25%;"></div>
+            </div>
+          </div>
+          <div class="sri-benchmark-markers" style="margin-bottom: 24px; text-align: center;">
+            <span id="sri-bill-min">-</span>
+            <span id="sri-bill-25">-</span>
+            <span id="sri-bill-median">-</span>
+            <span id="sri-bill-75">-</span>
+            <span id="sri-bill-max">-</span>
+          </div>
+
+          <div class="sri-benchmark-row">
+            <div class="sri-benchmark-label" style="color:var(--sri-accent)">Pay Rate</div>
+            <div class="sri-benchmark-bar-container">
+              <div id="sri-pay-bar" class="sri-benchmark-bar" style="left: 25%; right: 25%; background: linear-gradient(90deg, #3b82f6, #8b5cf6);"></div>
+            </div>
+          </div>
+          <div class="sri-benchmark-markers" style="text-align: center;">
+            <span id="sri-pay-min">-</span>
+            <span id="sri-pay-25">-</span>
+            <span id="sri-pay-median">-</span>
+            <span id="sri-pay-75">-</span>
+            <span id="sri-pay-max">-</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Table -->
+      <section class="sri-panel">
+        <h2 class="sri-panel-title">Comparable Accounts</h2>
+        <div class="sri-table-wrapper">
+          <table class="sri-table">
+            <thead>
+              <tr>
+                <th>Account</th>
+                <th>Industry</th>
+                <th>County</th>
+                <th>Position</th>
+                <th>Bill Rate</th>
+                <th>Pay Rate</th>
+                <th>Surcharge</th>
+                <th>Dates</th>
+              </tr>
+            </thead>
+            <tbody id="sri-table-body">
+              <tr>
+                <td colspan="8" style="text-align:center;">Please select your filters and click Refresh Benchmark to compile the data.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/sales_rate_intelligence.js"></script>
+{% endblock %}
