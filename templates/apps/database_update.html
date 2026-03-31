@@ -142,6 +142,114 @@
             </div>
         </div>
 
+        <!-- BLOCK: Employee Phone Numbers -->
+        <div id="block-employee-phones" class="group bg-white rounded-3xl p-8 shadow-xl border border-blue-100 hover:border-blue-200 transition-all flex flex-col justify-between relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-10 transition-opacity">
+                <!-- Phone Icon -->
+                <svg class="w-32 h-32 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+                </svg>
+            </div>
+
+            <div class="relative z-10 space-y-6">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-2xl font-bold text-gray-900">Update Phone Numbers</h2>
+                    <span class="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold uppercase tracking-wider rounded-full border border-blue-100">Live</span>
+                </div>
+
+                <div class="p-5 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+                    <ul class="space-y-2 text-sm text-blue-900/80">
+                        <li class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                            Table: <span class="font-mono font-bold">employee</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                            Target: <span class="font-mono font-bold">employee_id</span>, <span class="font-mono font-bold">mobile</span> via spreadsheet
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="py-4 border-y border-gray-50 space-y-3">
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Upload Spreadsheet</p>
+                    <input type="file" id="file-employee-phones" accept=".csv, .xlsx" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
+                    <p class="text-xs text-gray-500 mt-1">Requires <code class="bg-gray-100 px-1 rounded">employee_id</code> and <code class="bg-gray-100 px-1 rounded">mobile</code> columns.</p>
+                </div>
+
+                <div id="action-employee-phones" class="space-y-4">
+                    <div class="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex gap-3">
+                        <svg class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                        </svg>
+                        <p class="text-xs text-amber-800 leading-relaxed font-medium">
+                            Confirming will update the <code class="bg-amber-100/50 px-1 rounded">mobile</code> field for all matched employees in the spreadsheet.
+                        </p>
+                    </div>
+                    <button id="btn-employee-phones" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-200/50 flex items-center justify-center gap-3 active:scale-[0.98]">
+                        Upload & Update
+                    </button>
+                </div>
+
+                <div id="success-employee-phones" class="hidden bg-emerald-100 border border-emerald-200 rounded-2xl p-4 text-center">
+                    <p id="msg-employee-phones" class="text-emerald-800 text-sm font-bold"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- BLOCK: Venue Sales Rep -->
+        <div id="block-venue-sales-rep" class="group bg-white rounded-3xl p-8 shadow-xl border border-indigo-100 hover:border-indigo-200 transition-all flex flex-col justify-between relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-10 transition-opacity">
+                <!-- User Tie Icon -->
+                <svg class="w-32 h-32 text-indigo-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+            </div>
+
+            <div class="relative z-10 space-y-6">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-2xl font-bold text-gray-900">Update Venue Sales Rep</h2>
+                    <span class="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-wider rounded-full border border-indigo-100">Live</span>
+                </div>
+
+                <div class="p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">
+                    <ul class="space-y-2 text-sm text-indigo-900/80">
+                        <li class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                            Table: <span class="font-mono font-bold">venue</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                            Target: <span class="font-mono font-bold">venue_id</span>, <span class="font-mono font-bold">sales_rep_id</span> via spreadsheet
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="py-4 border-y border-gray-50 space-y-3">
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Upload Spreadsheet</p>
+                    <input type="file" id="file-venue-sales-rep" accept=".csv, .xlsx" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer" />
+                    <p class="text-xs text-gray-500 mt-1">Requires <code class="bg-gray-100 px-1 rounded">venue_id</code> and <code class="bg-gray-100 px-1 rounded">sales_rep_id</code> columns.</p>
+                </div>
+
+                <div id="action-venue-sales-rep" class="space-y-4">
+                    <div class="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex gap-3">
+                        <svg class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                        </svg>
+                        <p class="text-xs text-amber-800 leading-relaxed font-medium">
+                            Confirming will update the <code class="bg-amber-100/50 px-1 rounded">sales_rep_id</code> field for all matched venues in the spreadsheet.
+                        </p>
+                    </div>
+                    <button id="btn-venue-sales-rep" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-200/50 flex items-center justify-center gap-3 active:scale-[0.98]">
+                        Upload & Update
+                    </button>
+                </div>
+
+                <div id="success-venue-sales-rep" class="hidden bg-emerald-100 border border-emerald-200 rounded-2xl p-4 text-center">
+                    <p id="msg-venue-sales-rep" class="text-emerald-800 text-sm font-bold"></p>
+                </div>
+            </div>
+        </div>
+
         <div class="group border-2 border-dashed border-gray-200 rounded-3xl p-8 flex flex-col items-center justify-center text-center space-y-4 opacity-50">
             <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -290,6 +398,104 @@
         netTermsBlock.fetch();
         netTermsBlock.btnEl.addEventListener('click', () => netTermsBlock.update());
         
+        // Employee Phone Numbers Block Logic
+        const phoneBlock = {
+            fileInput: document.getElementById('file-employee-phones'),
+            btnEl: document.getElementById('btn-employee-phones'),
+            actionEl: document.getElementById('action-employee-phones'),
+            successEl: document.getElementById('success-employee-phones'),
+            msgEl: document.getElementById('msg-employee-phones'),
+            
+            async update() {
+                const file = this.fileInput.files[0];
+                if (!file) {
+                    alert('Please select a .csv or .xlsx file first.');
+                    return;
+                }
+
+                this.btnEl.disabled = true;
+                this.btnEl.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+                
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    const response = await fetch('/database-update/update-phones', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+
+                    if (!response.ok || data.error) {
+                        alert('Update failed: ' + (data.error || 'Unknown error'));
+                        return;
+                    }
+
+                    this.actionEl.classList.add('hidden');
+                    this.fileInput.closest('.py-4').classList.add('hidden');
+                    this.successEl.classList.remove('hidden');
+                    this.msgEl.innerText = data.message;
+                } catch (err) {
+                    alert('An error occurred during upload.');
+                } finally {
+                    this.btnEl.disabled = false;
+                    this.btnEl.innerText = 'Upload & Update';
+                    this.fileInput.value = ''; // Reset input
+                }
+            }
+        };
+
+        phoneBlock.btnEl.addEventListener('click', () => phoneBlock.update());
+
+        // Venue Sales Rep Block Logic
+        const salesRepBlock = {
+            fileInput: document.getElementById('file-venue-sales-rep'),
+            btnEl: document.getElementById('btn-venue-sales-rep'),
+            actionEl: document.getElementById('action-venue-sales-rep'),
+            successEl: document.getElementById('success-venue-sales-rep'),
+            msgEl: document.getElementById('msg-venue-sales-rep'),
+            
+            async update() {
+                const file = this.fileInput.files[0];
+                if (!file) {
+                    alert('Please select a .csv or .xlsx file first.');
+                    return;
+                }
+
+                this.btnEl.disabled = true;
+                this.btnEl.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+                
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    const response = await fetch('/database-update/update-sales-reps', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+
+                    if (!response.ok || data.error) {
+                        alert('Update failed: ' + (data.error || 'Unknown error'));
+                        return;
+                    }
+
+                    this.actionEl.classList.add('hidden');
+                    this.fileInput.closest('.py-4').classList.add('hidden');
+                    this.successEl.classList.remove('hidden');
+                    this.msgEl.innerText = data.message;
+                } catch (err) {
+                    alert('An error occurred during upload.');
+                } finally {
+                    this.btnEl.disabled = false;
+                    this.btnEl.innerText = 'Upload & Update';
+                    this.fileInput.value = ''; // Reset input
+                }
+            }
+        };
+
+        salesRepBlock.btnEl.addEventListener('click', () => salesRepBlock.update());
+
         // As more blocks are added, they will follow a similar pattern here
     });
 </script>

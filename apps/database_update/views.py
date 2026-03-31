@@ -3,7 +3,9 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from fastapi import APIRouter, Request, Form
+from fastapi import APIRouter, Request, Form, UploadFile, File
+import pandas as pd
+import io
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import create_engine, text
@@ -110,6 +112,97 @@ async def update_net_terms():
                 "message": f"Successfully updated {result.rowcount} clients to Net Terms 14.",
                 "updated": result.rowcount
             })
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+    finally:
+        engine.dispose()
+
+@router.post("/update-phones")
+async def update_phone_numbers(file: UploadFile = File(...)):
+    engine = _engine()
+    try:
+        content = await file.read()
+        if file.filename.endswith('.csv'):
+            df = pd.read_csv(io.BytesIO(content))
+        elif file.filename.endswith('.xlsx'):
+            df = pd.read_excel(io.BytesIO(content))
+        else:
+            return JSONResponse({"error": "Unsupported file format. Please upload .csv or .xlsx"}, status_code=400)
+            
+        df.columns = df.columns.astype(str).str.lower().str.strip()
+        if 'employee_id' not in df.columns or 'mobile' not in df.columns:
+            return JSONResponse({"error": "Spreadsheet must contain 'employee_id' and 'mobile' columns."}, status_code=400)
+            
+        df = df.dropna(subset=['employee_id', 'mobile'])
+        
+        updated_count = 0
+        update_sql = text("UPDATE employee SET mobile = :mobile WHERE employee_id = :employee_id")
+        
+        with engine.begin() as connection:
+            for _, row in df.iterrows():
+                try:
+                    emp_id = int(float(row['employee_id']))
+                    mobile_val = str(row['mobile']).strip()
+                    if mobile_val.endswith('.0'):
+                        mobile_val = mobile_val[:-2]
+                        
+                    res = connection.execute(update_sql, {"mobile": mobile_val, "employee_id": emp_id})
+                    updated_count += res.rowcount
+                except (ValueError, TypeError):
+                    continue
+                    
+        return JSONResponse({
+            "message": f"Successfully updated {updated_count} employee phone numbers.",
+            "updated": updated_count
+        })
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+    finally:
+        engine.dispose()
+
+@router.post("/update-sales-reps")
+async def update_sales_reps(file: UploadFile = File(...)):
+    engine = _engine()
+    try:
+        content = await file.read()
+        if file.filename.endswith('.csv'):
+            df = pd.read_csv(io.BytesIO(content))
+        elif file.filename.endswith('.xlsx'):
+            df = pd.read_excel(io.BytesIO(content))
+        else:
+            return JSONResponse({"error": "Unsupported file format. Please upload .csv or .xlsx"}, status_code=400)
+            
+        df.columns = df.columns.astype(str).str.lower().str.strip()
+        if 'venue_id' not in df.columns or 'sales_rep_id' not in df.columns:
+            return JSONResponse({"error": "Spreadsheet must contain 'venue_id' and 'sales_rep_id' columns."}, status_code=400)
+            
+        df = df.dropna(subset=['venue_id', 'sales_rep_id'])
+        
+        updated_count = 0
+        update_sql = text("UPDATE venue SET sales_rep_id = :sales_rep_id WHERE venue_id = :venue_id")
+        
+        with engine.begin() as connection:
+            for _, row in df.iterrows():
+                try:
+                    v_id = int(float(row['venue_id']))
+                    # allow for Null / None / NaN handling if needed? The user said "update the sales_rep_id field".
+                    # Let's assume sales_rep_id is an integer foreign key or similar. 
+                    sr_val = row['sales_rep_id']
+                    
+                    if pd.isna(sr_val):
+                        # skip if sales_rep_id is nan since we dropna above
+                        continue
+                        
+                    sr_id = int(float(sr_val)) 
+                    res = connection.execute(update_sql, {"sales_rep_id": sr_id, "venue_id": v_id})
+                    updated_count += res.rowcount
+                except (ValueError, TypeError):
+                    continue
+                    
+        return JSONResponse({
+            "message": f"Successfully updated {updated_count} venue sales reps.",
+            "updated": updated_count
+        })
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
     finally:

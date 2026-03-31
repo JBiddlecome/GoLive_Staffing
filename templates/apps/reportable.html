@@ -197,6 +197,59 @@
   </section>
 
 
+<<<<<<< Updated upstream
+=======
+  <section class="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm space-y-4">
+    <h2 class="text-xl font-semibold text-gray-900">Venue Shifts Report</h2>
+    <p class="text-sm text-gray-700">Pulls any venue that had shifts in 2025 (or custom range). Includes client name, venue name, venue address, and event address.</p>
+
+    <form id="venueShiftsForm" class="space-y-4">
+      <div class="grid gap-4 md:grid-cols-2">
+        <div>
+          <label class="block text-sm font-medium mb-1 text-gray-700">Start date</label>
+          <input id="vsStartDate" type="date" value="2025-01-01"
+            class="w-full rounded-lg border border-gray-300 bg-white p-2 text-gray-700" required />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1 text-gray-700">End date</label>
+          <input id="vsEndDate" type="date" value="2025-12-31" class="w-full rounded-lg border border-gray-300 bg-white p-2 text-gray-700"
+            required />
+        </div>
+      </div>
+
+      <button id="venueShiftsButton" type="submit"
+        class="inline-flex items-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">
+        Export Venue Shifts (.xlsx)
+      </button>
+    </form>
+  </section>
+
+  <section class="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm space-y-4">
+    <h2 class="text-xl font-semibold text-gray-900">Dash Sync Report</h2>
+    <p class="text-sm text-gray-700">Pulls Dash Sync history entries by creation date.</p>
+
+    <form id="dashSyncForm" class="space-y-4">
+      <div class="grid gap-4 md:grid-cols-2">
+        <div>
+          <label class="block text-sm font-medium mb-1 text-gray-700">Start date</label>
+          <input id="dsStartDate" type="date"
+            class="w-full rounded-lg border border-gray-300 bg-white p-2 text-gray-700" required />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1 text-gray-700">End date</label>
+          <input id="dsEndDate" type="date" class="w-full rounded-lg border border-gray-300 bg-white p-2 text-gray-700"
+            required />
+        </div>
+      </div>
+
+      <button id="dashSyncButton" type="submit"
+        class="inline-flex items-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">
+        Export Dash Sync (.xlsx)
+      </button>
+    </form>
+  </section>
+
+>>>>>>> Stashed changes
   <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-5">
     <h2 class="text-xl font-semibold text-gray-900">Build a report</h2>
     <p id="statusMessage" class="text-sm text-gray-600">Loading tables…</p>
@@ -689,6 +742,97 @@
     }
   });
 
+<<<<<<< Updated upstream
+=======
+  const venueShiftsForm = document.getElementById('venueShiftsForm');
+  venueShiftsForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const startDate = document.getElementById('vsStartDate').value;
+    const endDate = document.getElementById('vsEndDate').value;
+
+    if (!startDate || !endDate) {
+      setStatus('Select a start and end date for the Venue Shifts report.', true);
+      return;
+    }
+
+    const payload = {
+      start_date: startDate,
+      end_date: endDate,
+      limit: 100000,
+    };
+
+    try {
+      setStatus('Generating Venue Shifts report…');
+      const response = await fetch('/reportable/export/venue-shifts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.detail || `Export failed (${response.status})`);
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = downloadUrl;
+      anchor.download = 'venue_shifts_report.xlsx';
+      anchor.click();
+      URL.revokeObjectURL(downloadUrl);
+      setStatus('Venue Shifts report ready. Download started.');
+    } catch (error) {
+      setStatus(error.message, true);
+    }
+  });
+
+  const dashSyncForm = document.getElementById('dashSyncForm');
+  dashSyncForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const startDate = document.getElementById('dsStartDate').value;
+    const endDate = document.getElementById('dsEndDate').value;
+
+    if (!startDate || !endDate) {
+      setStatus('Select a start and end date for the Dash Sync report.', true);
+      return;
+    }
+
+    const payload = {
+      start_date: startDate,
+      end_date: endDate,
+      limit: 100000,
+    };
+
+    try {
+      setStatus('Generating Dash Sync report…');
+      const response = await fetch('/reportable/export/dash-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.detail || `Export failed (${response.status})`);
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = downloadUrl;
+      anchor.download = 'dash_sync_report.xlsx';
+      anchor.click();
+      URL.revokeObjectURL(downloadUrl);
+      setStatus('Dash Sync report ready. Download started.');
+    } catch (error) {
+      setStatus(error.message, true);
+    }
+  });
+
+>>>>>>> Stashed changes
   (async function init() {
     if (!requireAuthorizedEmail()) {
       return;
