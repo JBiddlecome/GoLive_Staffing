@@ -38,6 +38,14 @@
                         <input type="date" id="end_date" value="{{ end_date }}"
                             class="w-full rounded-xl border-emerald-100 bg-emerald-50/30 px-4 py-2 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500">
                     </div>
+                    <div>
+                        <label for="link_filter" class="block text-sm font-medium text-gray-700 mb-1">Filter Notes</label>
+                        <select id="link_filter" class="w-full rounded-xl border-emerald-100 bg-emerald-50/30 px-4 py-2 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500 cursor-pointer">
+                            <option value="all">View All</option>
+                            <option value="shifts">View Notes Linked to Shifts</option>
+                            <option value="profiles">View Notes Linked to Profiles</option>
+                        </select>
+                    </div>
                     <button id="apply_filters" 
                         class="w-full mt-2 rounded-xl bg-emerald-600 px-4 py-3 font-semibold text-white shadow-lg shadow-emerald-900/10 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">
                         <span>Refresh Data</span>
@@ -106,6 +114,9 @@
         const notesContainer = document.getElementById('notes_container');
         const summaryCard = document.getElementById('summary_card');
         const totalCount = document.getElementById('total_count');
+        const linkFilter = document.getElementById('link_filter');
+
+        let allData = [];
 
         async function fetchData() {
             // Show loading
@@ -123,17 +134,8 @@
                 const result = await response.json();
 
                 if (response.ok) {
-                    const data = result.data;
-                    if (data && data.length > 0) {
-                        renderNotes(data);
-                        totalCount.textContent = data.length;
-                        summaryCard.classList.remove('hidden');
-                        notesContainer.classList.remove('hidden');
-                        loadingState.classList.add('hidden');
-                    } else {
-                        emptyState.classList.remove('hidden');
-                        loadingState.classList.add('hidden');
-                    }
+                    allData = result.data || [];
+                    applyLocalFilter();
                 } else {
                     throw new Error(result.error || 'Failed to fetch data');
                 }
@@ -141,6 +143,35 @@
                 errorMessage.textContent = err.message;
                 errorState.classList.remove('hidden');
                 loadingState.classList.add('hidden');
+                notesContainer.classList.add('hidden');
+                summaryCard.classList.add('hidden');
+            }
+        }
+
+        function applyLocalFilter() {
+            const filterValue = linkFilter.value;
+            let filteredData = allData;
+
+            if (filterValue === 'shifts') {
+                filteredData = allData.filter(row => row.event_id);
+            } else if (filterValue === 'profiles') {
+                filteredData = allData.filter(row => !row.event_id);
+            }
+
+            if (filteredData.length > 0) {
+                renderNotes(filteredData);
+                totalCount.textContent = filteredData.length;
+                summaryCard.classList.remove('hidden');
+                notesContainer.classList.remove('hidden');
+                loadingState.classList.add('hidden');
+                emptyState.classList.add('hidden');
+                errorState.classList.add('hidden');
+            } else {
+                emptyState.classList.remove('hidden');
+                loadingState.classList.add('hidden');
+                notesContainer.classList.add('hidden');
+                summaryCard.classList.add('hidden');
+                errorState.classList.add('hidden');
             }
         }
 
@@ -201,6 +232,7 @@
         }
 
         applyBtn.addEventListener('click', fetchData);
+        linkFilter.addEventListener('change', applyLocalFilter);
         
         // Initial fetch
         fetchData();
