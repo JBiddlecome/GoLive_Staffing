@@ -6,8 +6,13 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
 
+import json
+import logging
+from openai import OpenAI, OpenAIError
+
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+logger = logging.getLogger(__name__)
 
 def _db_url_from_env() -> URL:
     reportable_host = os.getenv("REPORTABLE_DB_HOST")
@@ -87,6 +92,113 @@ async def search_employees(q: str = Query(..., min_length=2)):
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
     finally:
         engine.dispose()
+
+@router.get("/api/dashboard/{employee_id}/reliability", response_class=JSONResponse)
+async def get_dashboard_reliability(employee_id: int):
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return JSONResponse({"status": "error", "message": "OPENAI_API_KEY is not configured."}, status_code=500)
+    
+    engine = _engine()
+    notes = []
+    try:
+        sql = text("""
+            SELECT type, datetime, note
+            FROM employee_note
+            WHERE employee_id = :emp_id AND type IN ('PERSONNEL', 'DAILY')
+            ORDER BY datetime DESC
+        """)
+        with engine.connect() as conn:
+            result = conn.execute(sql, {"emp_id": employee_id}).fetchall()
+            for row in result:
+                n_type = row[0]
+                n_dt = row[1]
+                n_note = row[2]
+                if n_note and n_note.strip():
+                    dt_str = n_dt.strftime("%Y-%m-%d") if pd.notnull(n_dt) else ""
+                    notes.append(f"[{dt_str}] ({n_type}) {n_note.strip()}")
+                    
+    except Exception as e:
+        logger.exception("Failed to query employee notes")
+        return JSONResponse({"status": "error", "message": "Database query failed"}, status_code=500)
+    finally:
+        engine.dispose()
+        
+    if not notes:
+        return JSONResponse({
+            "status": "success",
+            "data": {
+                "summary": "No personnel or daily notes on file.",
+                "reliability_score": 100,
+                "risk_factors": [],
+                "positive_indicators": [],
+                "notable_incidents": [],
+                "caution": "No notes available to evaluate."
+            }
+        })
+        
+    notes_text = "\n".join(notes)
+    
+    prompt = f"""You are analyzing internal employee notes for a staffing manager.
+
+Your task is to review the notes and produce a concise reliability assessment based only on the provided text.
+
+Focus especially on:
+- WW or written warning references
+- lateness, tardiness, late arrivals, no-call/no-show, attendance issues
+- behavior concerns such as rude, argumentative, disrespectful, unprofessional, conflict, attitude problems, complaints, harassment, aggression, refusal of assignment, or walking off a job
+- repeated patterns across multiple notes
+- positive indicators such as dependable, on time, professional, flexible, well-liked, praised by client, rehired, requested back, etc.
+
+Scoring guidance:
+- 90-100: highly reliable, no meaningful concerns, strong positive pattern
+- 70-89: mostly reliable, minor concerns only
+- 40-69: moderate concern, repeated lateness, warnings, or behavior issues
+- 0-39: serious concern, repeated warnings, repeated attendance failures, or major behavior problems
+
+Rules:
+- Use only the notes provided.
+- Do not invent details.
+- Do not make legal, medical, or psychological conclusions.
+- If notes are sparse, vague, or contradictory, state that in the caution field.
+- Repeated and recent issues should weigh more heavily than isolated or older minor issues.
+- Positive evidence should increase the score when clearly supported.
+
+Return valid JSON only.
+Use this exact schema:
+
+{{
+  "summary": "string",
+  "reliability_score": 0,
+  "risk_factors": ["string"],
+  "positive_indicators": ["string"],
+  "notable_incidents": ["string"],
+  "caution": "string"
+}}
+
+Employee notes:
+{notes_text}"""
+
+    try:
+        client = OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.2
+        )
+        content = response.choices[0].message.content
+        data = json.loads(content)
+        return JSONResponse({"status": "success", "data": data})
+    except OpenAIError as e:
+        logger.exception("OpenAI API call failed")
+        return JSONResponse({"status": "error", "message": "Failed to generation AI summary: " + str(e)}, status_code=500)
+    except json.JSONDecodeError:
+        logger.exception("Failed to parse OpenAI JSON response")
+        return JSONResponse({"status": "error", "message": "Invalid response format from AI"}, status_code=500)
+
 
 @router.get("/api/dashboard/{employee_id}", response_class=JSONResponse)
 async def get_dashboard_data(employee_id: int):
