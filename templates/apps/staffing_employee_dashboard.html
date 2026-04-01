@@ -231,8 +231,9 @@
                 <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-900/5 hover:shadow-md transition col-span-2 md:col-span-1 lg:col-span-2">
                     <p class="text-sm font-medium text-gray-500">Avg Confirmation Speed</p>
                     <p class="mt-2 flex items-baseline gap-2">
-                        <span class="text-3xl font-bold tracking-tight text-gray-900" x-text="kpis.avg_confirmation_minutes !== null ? kpis.avg_confirmation_minutes : '-'"></span>
-                        <span class="text-sm text-gray-500 px-1">minutes following request</span>
+                        <span class="text-3xl font-bold tracking-tight text-gray-900" 
+                              x-text="kpis.avg_confirmation_minutes !== null ? formatDuration(kpis.avg_confirmation_minutes) : '-'"></span>
+                        <span class="text-sm text-gray-500 px-1" x-show="kpis.avg_confirmation_minutes !== null">following request</span>
                     </p>
                 </div>
 
@@ -529,6 +530,21 @@
                 const s = new Date(scheduled).getTime();
                 const a = new Date(actual).getTime();
                 return (a - s) > (5 * 60 * 1000); // More than 5 minutes later than scheduled
+            },
+
+            formatDuration(totalMinutes) {
+                if (totalMinutes === null || totalMinutes === undefined) return '-';
+                let m = Math.round(totalMinutes);
+                if (m === 0) return '0m';
+                let d = Math.floor(m / (24 * 60));
+                m %= 24 * 60;
+                let h = Math.floor(m / 60);
+                m %= 60;
+                let parts = [];
+                if (d > 0) parts.push(d + 'd');
+                if (h > 0) parts.push(h + 'h');
+                if (m > 0) parts.push(m + 'm');
+                return parts.join(' ');
             }
         }));
     });

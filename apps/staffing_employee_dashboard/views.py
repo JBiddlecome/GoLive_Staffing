@@ -78,7 +78,7 @@ async def search_employees(q: str = Query(..., min_length=2)):
               AND first_name NOT LIKE '%[DELETED]%'
               AND last_name NOT LIKE '%[DELETED]%'
               AND email NOT LIKE '%[DELETED]%'
-              AND (first_name LIKE :q OR last_name LIKE :q OR email LIKE :q OR mobile LIKE :q)
+              AND (first_name LIKE :q OR last_name LIKE :q OR CONCAT(first_name, ' ', last_name) LIKE :q OR email LIKE :q OR mobile LIKE :q)
             LIMIT 20
         """)
         with engine.connect() as conn:
@@ -105,7 +105,7 @@ async def get_dashboard_reliability(employee_id: int):
         sql = text("""
             SELECT type, datetime, note
             FROM employee_note
-            WHERE employee_id = :emp_id AND (type LIKE '%PERSONNEL%' OR type LIKE '%DAILY%')
+            WHERE employee_id = :emp_id AND (type LIKE '%PERSONNEL%' OR type LIKE '%DAILY%') AND datetime >= DATE_SUB(NOW(), INTERVAL 3 YEAR)
             ORDER BY datetime DESC
         """)
         with engine.connect() as conn:
