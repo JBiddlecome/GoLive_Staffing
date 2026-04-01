@@ -105,7 +105,7 @@ async def get_dashboard_reliability(employee_id: int):
         sql = text("""
             SELECT type, datetime, note
             FROM employee_note
-            WHERE employee_id = :emp_id AND type IN ('PERSONNEL', 'DAILY')
+            WHERE employee_id = :emp_id AND (type LIKE '%PERSONNEL%' OR type LIKE '%DAILY%')
             ORDER BY datetime DESC
         """)
         with engine.connect() as conn:
