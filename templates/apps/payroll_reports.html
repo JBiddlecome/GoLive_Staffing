@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Payroll Reports — GoLive Staffing{% endblock %}
+{% block content %}
+<div class="space-y-8">
+    <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400 text-white shadow-2xl">
+        <div class="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_30%,white,transparent_30%)]"></div>
+        <div class="relative px-8 py-10 lg:px-12 lg:py-12">
+            <div class="space-y-4">
+                <nav class="flex" aria-label="Breadcrumb">
+                    <ol class="flex items-center space-x-2 text-sm font-medium text-emerald-50/80">
+                        <li><a href="/" class="hover:text-white transition-colors">Home</a></li>
+                        <li><span class="px-1">/</span></li>
+                        <li class="text-white">Payroll Reports</li>
+                    </ol>
+                </nav>
+                <h1 class="brand-serif text-4xl md:text-5xl font-semibold leading-tight">Reports</h1>
+                <p class="text-emerald-50/90 text-lg max-w-3xl">
+                    Client Payment Terms report sourced from the client table.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm space-y-6">
+        <h2 class="text-2xl font-semibold text-emerald-900">Client Payment Terms</h2>
+
+        <form method="get" class="flex flex-wrap gap-3 items-end">
+            <div>
+                <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Filter by Status</label>
+                <select id="status" name="status" class="rounded-xl border-emerald-100 bg-emerald-50/30 px-4 py-2 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500">
+                    <option value="">All Statuses</option>
+                    {% for option in status_options %}
+                    <option value="{{ option.value }}" {% if selected_status == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="rounded-xl bg-emerald-600 px-4 py-2 font-semibold text-white shadow hover:bg-emerald-700 transition-colors">Apply</button>
+            <a href="/payroll-reports" class="rounded-xl border border-emerald-200 px-4 py-2 font-semibold text-emerald-700 hover:bg-emerald-50 transition-colors">Reset</a>
+        </form>
+
+        <div class="overflow-x-auto rounded-2xl border border-emerald-100">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-emerald-50 text-emerald-900 uppercase tracking-wide text-xs">
+                    <tr>
+                        <th class="px-4 py-3">Name</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">Payment Type</th>
+                        <th class="px-4 py-3">Pay Notes</th>
+                        <th class="px-4 py-3">Net Terms Entry</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-emerald-50">
+                    {% for row in reports %}
+                    <tr class="hover:bg-emerald-50/40 transition-colors">
+                        <td class="px-4 py-3 font-medium text-gray-900">{{ row.name }}</td>
+                        <td class="px-4 py-3 text-gray-700">{{ row.status_text }}</td>
+                        <td class="px-4 py-3 text-gray-700">{{ row.payment_type_text }}</td>
+                        <td class="px-4 py-3 text-gray-700 whitespace-pre-wrap">{{ row.pay_notes or '' }}</td>
+                        <td class="px-4 py-3 text-gray-700">{{ row.net_terms_entry_text }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-4 py-8 text-center text-gray-500">No clients found for the selected status.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}
