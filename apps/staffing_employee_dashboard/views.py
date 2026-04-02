@@ -210,6 +210,7 @@ async def get_dashboard_data(employee_id: int):
                 SELECT 
                     e.employee_id, e.first_name, e.last_name, e.email, e.mobile, e.status, 
                     e.region, c.name as county_name, e.start_date,
+                    e.work_area_latitude, e.work_area_longitude, e.work_area_distance,
                     (SELECT start FROM shift JOIN shift_position USING(shift_id) JOIN shift_employee USING(shift_position_id) JOIN timesheet t USING(shift_employee_id) WHERE t.employee_id = e.employee_id AND t.employee_worked = 'WORKED' ORDER BY start DESC LIMIT 1) as last_worked_date
                 FROM employee e
                 LEFT JOIN county c ON e.county_id = c.id
