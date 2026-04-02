@@ -1,6 +1,11 @@
 {% extends "base.html" %}
 {% block title %}GoLive Staffing — Employee Dashboard{% endblock %}
 {% block content %}
+<!-- Leaflet.js CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #workAreaMap { height: 350px; width: 100%; z-index: 10; }
+</style>
 <div class="space-y-8" x-data="employeeDashboard()">
 
     <!-- Hero / Header -->
@@ -322,6 +327,24 @@
                 </div>
             </div>
 
+            <!-- Work Area Map Section -->
+            <div x-show="selectedEmployee.work_area_latitude && selectedEmployee.work_area_longitude" 
+                 class="mt-8 rounded-3xl bg-white shadow-sm ring-1 ring-gray-900/5 overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <svg class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <h3 class="text-lg font-semibold text-gray-900">Work Area & Mobility</h3>
+                    </div>
+                    <div class="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full" x-text="selectedEmployee.work_area_distance + ' mile range'"></div>
+                </div>
+                <div class="relative">
+                    <div id="workAreaMap" class="w-full"></div>
+                </div>
+            </div>
+
             <!-- Shift History Table -->
             <div class="mt-8 rounded-3xl bg-white shadow-sm ring-1 ring-gray-900/5 overflow-hidden">
                 <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
@@ -400,6 +423,8 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- Leaflet.js for Maps -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <!-- Alpine.js for lightweight reactivity -->
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
@@ -414,6 +439,9 @@
             selectedEmployee: null,
             kpis: {},
             shiftHistory: [],
+            
+            map: null,
+            mapLayers: null,
             
             aiData: null,
             isAiLoading: false,
@@ -468,6 +496,11 @@
                         this.shiftHistory = data.shift_history;
                         
                         this.fetchAiReliability(employeeId);
+                        
+                        // Render map on next tick to ensure DOM is ready
+                        this.$nextTick(() => {
+                            this.renderWorkAreaMap();
+                        });
                     } else {
                         throw new Error(data.message);
                     }
@@ -497,6 +530,51 @@
                 } finally {
                     this.isAiLoading = false;
                 }
+            },
+
+            renderWorkAreaMap() {
+                const lat = this.selectedEmployee.work_area_latitude;
+                const lng = this.selectedEmployee.work_area_longitude;
+                const dist = this.selectedEmployee.work_area_distance;
+
+                if (!lat || !lng) return;
+
+                // Always teardown existing map to avoid stale DOM references from x-if recreation
+                if (this.map) {
+                    try {
+                        this.map.remove();
+                    } catch (e) {
+                        console.error('Map removal failed:', e);
+                    }
+                    this.map = null;
+                }
+
+                // Initialize new map instance
+                this.map = L.map('workAreaMap').setView([lat, lng], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(this.map);
+                this.mapLayers = L.layerGroup().addTo(this.map);
+
+                // Add Marker
+                L.marker([lat, lng]).addTo(this.mapLayers)
+                    .bindPopup(`${this.selectedEmployee.first_name}'s Work Area Center`)
+                    .openPopup();
+
+                // Add Circle (distance is in miles, Leaflet needs meters)
+                const radiusInMeters = dist * 1609.34;
+                const circle = L.circle([lat, lng], {
+                    color: '#4f46e5',
+                    fillColor: '#4f46e5',
+                    fillOpacity: 0.15,
+                    radius: radiusInMeters
+                }).addTo(this.mapLayers);
+
+                // Fit bounds to the circle
+                this.map.fitBounds(circle.getBounds(), { padding: [20, 20] });
+                
+                // Force a resize check in case container was hidden/shown
+                setTimeout(() => { this.map.invalidateSize(); }, 100);
             },
             
             initials(first, last) {
