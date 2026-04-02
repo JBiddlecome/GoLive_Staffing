@@ -119,8 +119,8 @@ async def add_recruiting_ad(
     region: str = Form(...),
     notes: str = Form(""),
 ):
-    add_ad(position, region, notes)
-    return RedirectResponse(url="/recruiting-metrics", status_code=303)
+    new_ad = add_ad(position, region, notes)
+    return JSONResponse(content={"status": "success", "ad": new_ad})
 
 
 @router.post("/ads/update")
@@ -131,14 +131,18 @@ async def update_recruiting_ad(
     region: str = Form(...),
     notes: str = Form(""),
 ):
-    update_ad(ad_id, position, region, notes)
-    return RedirectResponse(url="/recruiting-metrics", status_code=303)
+    success = update_ad(ad_id, position, region, notes)
+    if not success:
+        raise HTTPException(status_code=404, detail="Ad not found")
+    return JSONResponse(content={"status": "success", "ad": {"id": ad_id, "position": position, "region": region, "notes": notes}})
 
 
 @router.post("/ads/delete")
 async def delete_recruiting_ad(ad_id: str = Form(...)):
-    delete_ad(ad_id)
-    return RedirectResponse(url="/recruiting-metrics", status_code=303)
+    success = delete_ad(ad_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Ad not found")
+    return JSONResponse(content={"status": "success"})
 
 
 @router.get("/map-positions")
