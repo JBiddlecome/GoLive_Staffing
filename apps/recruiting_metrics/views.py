@@ -11,12 +11,15 @@ from typing import Dict, List, Tuple
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from openai import OpenAI, OpenAIError
 from pypdf import PdfReader
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
+
+from .ads_data import load_ads, add_ad, update_ad, delete_ad
+
 
 DATE_COL_CANDIDATES = {
     "start_date": ["Start Date", "StartDate", "Start_Date", "start_date", "startdate"],
@@ -104,8 +107,38 @@ async def _render_page(request: Request, week_ending: str | None) -> HTMLRespons
         details=details,
         active_staff_source=active_staff_source,
         active_staff_error=active_staff_error,
+        ads=load_ads(),
     )
     return templates.TemplateResponse("apps/recruiting_metrics.html", context)
+
+
+@router.post("/ads/add")
+async def add_recruiting_ad(
+    request: Request,
+    position: str = Form(...),
+    region: str = Form(...),
+    notes: str = Form(""),
+):
+    add_ad(position, region, notes)
+    return RedirectResponse(url="/recruiting-metrics", status_code=303)
+
+
+@router.post("/ads/update")
+async def update_recruiting_ad(
+    request: Request,
+    ad_id: str = Form(...),
+    position: str = Form(...),
+    region: str = Form(...),
+    notes: str = Form(""),
+):
+    update_ad(ad_id, position, region, notes)
+    return RedirectResponse(url="/recruiting-metrics", status_code=303)
+
+
+@router.post("/ads/delete")
+async def delete_recruiting_ad(ad_id: str = Form(...)):
+    delete_ad(ad_id)
+    return RedirectResponse(url="/recruiting-metrics", status_code=303)
 
 
 @router.get("/map-positions")
@@ -704,6 +737,7 @@ def _build_context(
     details: Dict[str, object],
     active_staff_source: str,
     active_staff_error: str | None,
+    ads: List[Dict] = None,
 ) -> Dict[str, object]:
     weeks = [
         {
@@ -737,6 +771,7 @@ def _build_context(
         "rm_has_clickboarding_applicants": bool(
             metrics.get("activeStaff", {}).get("clickboardingApplicants")
         ),
+        "rm_ads": ads or [],
     }
 
     return context
