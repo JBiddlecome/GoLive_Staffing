@@ -38,9 +38,20 @@ from apps.scheduled_vs_worked.views import router as scheduled_vs_worked_router
 from apps.sales_rate_intelligence.views import router as sales_rate_intelligence_router
 from apps.staffing_employee_dashboard.views import router as staffing_employee_dashboard_router
 from apps.daily_report_assessment.views import router as daily_report_assessment_router
+from apps.msp_dashboard.views import router as msp_dashboard_router
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 
-app = FastAPI(title="GoLive Staffing — Tools")
+from contextlib import asynccontextmanager
+import asyncio
+from apps.msp_dashboard.scheduler import msp_monitoring_loop
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    monitor_task = asyncio.create_task(msp_monitoring_loop())
+    yield
+    monitor_task.cancel()
+
+app = FastAPI(title="GoLive Staffing — Tools", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -234,6 +245,11 @@ app.include_router(
     daily_report_assessment_router,
     prefix="/daily-report-assessment",
     tags=["Daily Report Assessment"],
+)
+app.include_router(
+    msp_dashboard_router,
+    prefix="/msp-dashboard",
+    tags=["MSP Dashboard"],
 )
 
 # Redirect /sms_paraphraser to /sms-paraphraser for backward compatibility
