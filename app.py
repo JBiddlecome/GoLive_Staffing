@@ -37,6 +37,7 @@ from apps.payroll_reports.views import router as payroll_reports_router
 from apps.scheduled_vs_worked.views import router as scheduled_vs_worked_router
 from apps.sales_rate_intelligence.views import router as sales_rate_intelligence_router
 from apps.staffing_employee_dashboard.views import router as staffing_employee_dashboard_router
+from apps.daily_report_assessment.views import router as daily_report_assessment_router
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 
 app = FastAPI(title="GoLive Staffing — Tools")
@@ -228,6 +229,11 @@ app.include_router(
     staffing_employee_dashboard_router,
     prefix="/staffing-employee-dashboard",
     tags=["Staffing Employee Dashboard"],
+)
+app.include_router(
+    daily_report_assessment_router,
+    prefix="/daily-report-assessment",
+    tags=["Daily Report Assessment"],
 )
 
 # Redirect /sms_paraphraser to /sms-paraphraser for backward compatibility
