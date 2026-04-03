@@ -67,6 +67,12 @@ class VenueShiftsPayload(BaseModel):
     limit: int = Field(default=50000, ge=1, le=100000)
 
 
+class EmployeeNotePayload(BaseModel):
+    employee_id: int | None = None
+    note_type: str | None = None
+    limit: int = Field(default=50000, ge=1, le=100000)
+
+
 TIMESHEET_VERIFICATION_EXCLUDED_COLUMNS = {
     "Day",
     "WC",
@@ -1616,6 +1622,77 @@ async def reportable_venue_shifts_export(
     output.seek(0)
 
     filename = "venue_shifts_report.xlsx"
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers,
+    )
+
+
+@router.post("/export/employee-notes")
+async def reportable_employee_notes_export(
+    payload: EmployeeNotePayload,
+) -> StreamingResponse:
+    engine = _engine()
+    try:
+        sql = """
+            SELECT
+                en.employee_note_id AS `Note ID`,
+                en.employee_id AS `Employee ID`,
+                CONCAT(e.first_name, ' ', e.last_name) AS `Employee Name`,
+                en.type AS `Type`,
+                en.note AS `Note`,
+                en.datetime AS `Date Time`,
+                en.user_id AS `User ID`,
+                CONCAT(u.first_name, ' ', u.last_name) AS `Author Name`,
+                en.shift_employee_id AS `Shift Employee ID`
+            FROM employee_note en
+            JOIN employee e ON en.employee_id = e.employee_id
+            LEFT JOIN user u ON en.user_id = u.id
+            WHERE 1=1
+        """
+        params: dict[str, Any] = {"limit": payload.limit}
+
+        if payload.employee_id:
+            sql += " AND en.employee_id = :employee_id"
+            params["employee_id"] = payload.employee_id
+        
+        if payload.note_type:
+            # Using LIKE to support partial matches or if multiple types are comma separated as seen in other conversations
+            sql += " AND en.type LIKE :note_type"
+            params["note_type"] = f"%{payload.note_type}%"
+
+        sql += " ORDER BY en.datetime DESC LIMIT :limit"
+
+        with engine.begin() as connection:
+            df = pd.read_sql(text(sql), connection, params=params)
+
+    finally:
+        engine.dispose()
+
+    if df.empty:
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            pd.DataFrame(columns=[
+                "Note ID", "Employee ID", "Employee Name", "Type", "Note", 
+                "Date Time", "User ID", "Author Name", "Shift Employee ID"
+            ]).to_excel(writer, index=False, sheet_name="employee_notes")
+        output.seek(0)
+        filename = "employee_notes_report.xlsx"
+        headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers=headers,
+        )
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="employee_notes")
+    output.seek(0)
+
+    filename = "employee_notes_report.xlsx"
     headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
     return StreamingResponse(
         output,
