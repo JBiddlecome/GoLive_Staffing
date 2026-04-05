@@ -6,6 +6,13 @@
     <p class="text-sm uppercase tracking-[0.3em] text-emerald-600 font-semibold">Work in Progress</p>
     <h1 class="brand-serif text-3xl md:text-4xl font-semibold">In-development tools</h1>
     <p class="text-gray-600">These apps are parked here while we continue building.</p>
+    {% if user %}
+    <div class="pt-2">
+        <span class="text-sm text-gray-500">Logged in as {{ user.first_name }} {{ user.last_name }}</span>
+        <span class="mx-2 text-gray-300">|</span>
+        <a href="/auth/logout" class="text-sm font-semibold text-emerald-600 hover:text-emerald-700 hover:underline">Log out</a>
+    </div>
+    {% endif %}
   </div>
 
   <div class="grid gap-4 sm:grid-cols-2">
