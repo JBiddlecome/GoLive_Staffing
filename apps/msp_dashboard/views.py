@@ -45,12 +45,15 @@ async def get_msp_dashboard_data():
     try:
         sql = text("""
             SELECT 
+                se.employee_id,
+                ev.event_id,
                 e.first_name, 
                 e.last_name, 
                 IFNULL(NULLIF(ev.title, ''), v.name) AS event_name, 
                 c.msp_id,
                 m.name AS msp_name, 
-                s.start AS shift_date
+                s.start AS shift_date,
+                se.confirmed_at
             FROM shift_employee se
             JOIN employee e ON se.employee_id = e.employee_id AND e.deleted_at IS NULL
             JOIN event ev ON se.event_id = ev.event_id AND ev.deleted_at IS NULL
@@ -63,14 +66,14 @@ async def get_msp_dashboard_data():
                 se.confirmed = 1 
                 AND c.msp_id IN (3, 5, 20)
                 AND se.deleted_at IS NULL
-                AND se.confirmed_at >= :fifteen_mins_ago
+                AND se.confirmed_at >= :start_of_day
             ORDER BY se.confirmed_at DESC;
         """)
         
-        fifteen_mins_ago = (datetime.now() - timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S")
+        start_of_day = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
         
         with engine.begin() as connection:
-            result = connection.execute(sql, {"fifteen_mins_ago": fifteen_mins_ago}).mappings().all()
+            result = connection.execute(sql, {"start_of_day": start_of_day}).mappings().all()
             
             data = []
             for row in result:
@@ -78,13 +81,18 @@ async def get_msp_dashboard_data():
                 item["employee_name"] = f"{item['first_name']} {item['last_name']}"
                 if item["shift_date"]:
                     item["shift_date"] = item["shift_date"].strftime("%Y-%m-%d %H:%M")
+                if item["confirmed_at"]:
+                    item["confirmed_at"] = item["confirmed_at"].strftime("%Y-%m-%d %H:%M:%S")
                 
                 data.append({
+                    "employee_id": item["employee_id"],
+                    "event_id": item["event_id"],
                     "employee_name": item["employee_name"],
                     "event_name": item["event_name"],
                     "msp_id": item["msp_id"],
                     "msp_name": item["msp_name"],
-                    "shift_date": item["shift_date"]
+                    "shift_date": item["shift_date"],
+                    "confirmed_at": item["confirmed_at"]
                 })
                 
             return JSONResponse({"data": data})

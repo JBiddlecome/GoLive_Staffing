@@ -1,3 +1,10 @@
+import os
+from dotenv import load_dotenv
+
+env_path = r"C:\Users\jakeb\OneDrive\Documents\GitHub\golive-staffing-tools.env"
+if os.path.exists(env_path):
+    load_dotenv(env_path)
+
 from fastapi import FastAPI, Request, UploadFile, File, Form, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
