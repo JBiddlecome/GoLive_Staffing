@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
+from zoneinfo import ZoneInfo
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -66,12 +67,15 @@ async def get_msp_dashboard_data():
                 se.confirmed = 1 
                 AND c.msp_id IN (3, 5, 20)
                 AND se.deleted_at IS NULL
-                AND DATE(se.confirmed_at) = CURDATE()
+                AND se.confirmed_at >= :start_of_day
             ORDER BY se.confirmed_at DESC;
         """)
         
+        la_time = datetime.now(ZoneInfo("America/Los_Angeles"))
+        start_of_day = la_time.replace(hour=0, minute=0, second=0, microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
+        
         with engine.begin() as connection:
-            result = connection.execute(sql).mappings().all()
+            result = connection.execute(sql, {"start_of_day": start_of_day}).mappings().all()
             
             data = []
             for row in result:
