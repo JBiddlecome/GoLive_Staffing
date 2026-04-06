@@ -49,7 +49,7 @@ def fetch_latest_15m_confirmations():
 
 def send_msp_alert_email(confirmations: list[dict]):
     sender_email = "golive@culinarystaffing.com"
-    receiver_email = "jake@culinarystaffing.com"
+    receiver_emails = ["jake@culinarystaffing.com", "suraj@culinarystaffing.com", "sankalp@culinarystaffing.com"]
     
     import requests
     tenant_id = os.getenv("O365_TENANT_ID")
@@ -124,9 +124,7 @@ def send_msp_alert_email(confirmations: list[dict]):
                 "content": html_body
             },
             "toRecipients": [
-                {
-                    "emailAddress": {"address": receiver_email}
-                }
+                {"emailAddress": {"address": email}} for email in receiver_emails
             ]
         },
         "saveToSentItems": "false"
