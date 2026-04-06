@@ -3,159 +3,253 @@
 {% block content %}
 <h1 class="text-xl font-semibold mb-6">Text Blast Filter</h1>
 
-<div class="grid gap-8">
-  <section class="p-6 bg-white border border-gray-200 rounded-xl shadow-sm">
-    <h2 class="text-lg font-semibold mb-4">Available Employees From Event</h2>
-    <p class="text-sm text-gray-600 mb-4">Upload the Available Employees file, filter, and export as CSV file.</p>
-    <form class="space-y-4" method="post" enctype="multipart/form-data" action="/text-blast-filter/upload">
-      <div>
-        <label class="block text-sm font-medium mb-1" for="file">Available Employees File (.xlsx)</label>
-        <input class="border rounded-lg p-2 w-full bg-white" type="file" id="file" name="file" accept=".xlsx" required />
-      </div>
-      <button class="px-4 py-2 rounded-lg border border-slate-300 shadow-sm bg-slate-50 hover:bg-slate-100" type="submit">Upload Roster</button>
-    </form>
-    {% if text_uploaded_filename %}
-    <p class="mt-4 text-sm text-green-700">Loaded file: <span class="font-medium">{{ text_uploaded_filename }}</span></p>
-    {% endif %}
-    {% if text_error %}
-    <p class="mt-4 text-sm text-red-600">{{ text_error }}</p>
-    {% endif %}
-  </section>
+<div class="grid gap-6">
 
-  <section class="p-6 bg-white border border-gray-200 rounded-xl shadow-sm">
-    <h2 class="text-lg font-semibold mb-4">Generate SMS List</h2>
-    {% if text_options %}
-    <form class="space-y-4" method="post" action="/text-blast-filter/process">
-      <input type="hidden" name="file_token" value="{{ text_file_token }}" />
-      <div>
-        <label class="block text-sm font-medium mb-1" for="shift_position_title">Shift Position Title</label>
-        <select class="border rounded-lg p-2 w-full bg-white" id="shift_position_title" name="shift_position_title">
-          <option value="">All positions</option>
-          {% for value in text_options.shift_positions %}
-          <option value="{{ value }}" {% if text_selected.shift_position_title == value %}selected{% endif %}>{{ value }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
-        <label class="block text-sm font-medium mb-1" for="employee_status">Employee Status</label>
-        <select class="border rounded-lg p-2 w-full bg-white" id="employee_status" name="employee_status">
-          <option value="">All statuses</option>
-          {% for value in text_options.employee_statuses %}
-          <option value="{{ value }}" {% if text_selected.employee_status == value %}selected{% endif %}>{{ value }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
-        <label class="block text-sm font-medium mb-1" for="miles_from_location">Miles from Location</label>
-        <input class="border rounded-lg p-2 w-full bg-white" type="number" id="miles_from_location" name="miles_from_location" value="{{ text_selected.miles_from_location }}" min="0" step="1" />
-        <p class="text-xs text-gray-500 mt-1">Only employees within this many miles of the event are included. Default is 50 miles.</p>
-      </div>
-      <button class="px-4 py-2 rounded-lg border border-slate-300 shadow-sm bg-indigo-600 text-white hover:bg-indigo-500" type="submit">Generate SMS List</button>
-    </form>
-    {% else %}
-    <p class="text-sm text-gray-600">Upload an Available Employees file to enable filtering and download the SMS list.</p>
-    {% endif %}
-  </section>
-
-  <section class="p-6 bg-white border border-gray-200 rounded-xl shadow-sm">
-    <h2 class="text-lg font-semibold mb-4">Employee List Filter</h2>
-    <p class="text-sm text-gray-600 mb-4">Upload the employee roster Excel file, choose filters, then export an updated workbook.</p>
-    <form class="space-y-4" method="post" enctype="multipart/form-data" action="/employee-list-filter/upload">
-      <div>
-        <label class="block text-sm font-medium mb-1" for="employee_file">Employee List (.xlsx)</label>
-        <input class="border rounded-lg p-2 w-full bg-white" type="file" id="employee_file" name="file" accept=".xlsx" required />
-      </div>
-      <button class="px-4 py-2 rounded-lg border border-slate-300 shadow-sm bg-slate-50 hover:bg-slate-100" type="submit">Upload Workbook</button>
-    </form>
-    {% if employee_uploaded_filename %}
-    <p class="mt-4 text-sm text-green-700">Loaded file: <span class="font-medium">{{ employee_uploaded_filename }}</span></p>
-    {% endif %}
-    {% if employee_error %}
-    <p class="mt-4 text-sm text-red-600">{{ employee_error }}</p>
-    {% endif %}
-  </section>
-
-  <section class="p-6 bg-white border border-gray-200 rounded-xl shadow-sm">
-    <h2 class="text-lg font-semibold mb-4">Filter &amp; Export Employee Workbook</h2>
-    {% if employee_options %}
-    <form class="space-y-4" method="post" action="/employee-list-filter/process">
-      <input type="hidden" name="file_token" value="{{ employee_file_token }}" />
-      <div class="grid md:grid-cols-2 gap-4">
-        <fieldset>
-          <legend class="block text-sm font-medium mb-2">Status</legend>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 border rounded-lg p-3 bg-white">
-            {% for value in employee_options.statuses %}
-            {% set status_id = 'status_' ~ loop.index %}
-            <label class="inline-flex items-center gap-2" for="{{ status_id }}">
-              <input
-                class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                type="checkbox"
-                id="{{ status_id }}"
-                name="statuses"
-                value="{{ value }}"
-                {% if value in employee_selected.statuses %}checked{% endif %}
-              />
-              <span class="text-sm text-gray-700">{{ value }}</span>
-            </label>
-            {% endfor %}
+  <!-- Module 1: Available Employees From Event -->
+  <details class="bg-white border border-gray-200 rounded-xl shadow-sm group">
+    <summary class="p-6 font-semibold cursor-pointer list-none flex items-center justify-between">
+      <h2 class="text-lg">Available Employees From Event</h2>
+      <span class="transition group-open:rotate-180">
+        <svg fill="none" height="24" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+      </span>
+    </summary>
+    <div class="p-6 border-t border-gray-200 grid gap-8">
+      <section>
+        <p class="text-sm text-gray-600 mb-4">Upload the Available Employees file, filter, and export as CSV file.</p>
+        <form class="space-y-4" method="post" enctype="multipart/form-data" action="/text-blast-filter/upload">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="file">Available Employees File (.xlsx)</label>
+            <input class="border rounded-lg p-2 w-full bg-white" type="file" id="file" name="file" accept=".xlsx" required />
           </div>
-          <p class="text-xs text-gray-500 mt-1">Select one or more statuses to include. Leave all unchecked to include every status.</p>
-        </fieldset>
-        <div>
-          <label class="block text-sm font-medium mb-1" for="cities">City</label>
-          <select class="border rounded-lg p-2 w-full bg-white" id="cities" name="cities" multiple size="6">
-            {% for value in employee_options.cities %}
-            <option value="{{ value }}" {% if value in employee_selected.cities %}selected{% endif %}>{{ value }}</option>
-            {% endfor %}
-          </select>
-          <p class="text-xs text-gray-500 mt-1">Leave unselected to include all cities.</p>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1" for="state">State</label>
-          <select class="border rounded-lg p-2 w-full bg-white" id="state" name="state">
-            <option value="All" {% if employee_selected.state == 'All' %}selected{% endif %}>All</option>
-            {% for value in employee_options.states %}
-            <option value="{{ value }}" {% if employee_selected.state == value %}selected{% endif %}>{{ value }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1" for="start_date_start">Start Date Range</label>
-          <div class="grid gap-2">
-            <input class="border rounded-lg p-2 w-full bg-white" type="date" id="start_date_start" name="start_date_start" value="{{ employee_selected.start_date_start }}" />
-            <input class="border rounded-lg p-2 w-full bg-white" type="date" id="start_date_end" name="start_date_end" value="{{ employee_selected.start_date_end }}" />
+          <button class="px-4 py-2 rounded-lg border border-slate-300 shadow-sm bg-slate-50 hover:bg-slate-100" type="submit">Upload Roster</button>
+        </form>
+        {% if text_uploaded_filename %}
+        <p class="mt-4 text-sm text-green-700">Loaded file: <span class="font-medium">{{ text_uploaded_filename }}</span></p>
+        {% endif %}
+        {% if text_error %}
+        <p class="mt-4 text-sm text-red-600">{{ text_error }}</p>
+        {% endif %}
+      </section>
+
+      <section class="border-t border-gray-100 pt-6">
+        <h3 class="text-md font-semibold mb-4">Generate SMS List</h3>
+        {% if text_options %}
+        <form class="space-y-4" method="post" action="/text-blast-filter/process">
+          <input type="hidden" name="file_token" value="{{ text_file_token }}" />
+          <div>
+            <label class="block text-sm font-medium mb-1" for="shift_position_title">Shift Position Title</label>
+            <select class="border rounded-lg p-2 w-full bg-white" id="shift_position_title" name="shift_position_title">
+              <option value="">All positions</option>
+              {% for value in text_options.shift_positions %}
+              <option value="{{ value }}" {% if text_selected.shift_position_title == value %}selected{% endif %}>{{ value }}</option>
+              {% endfor %}
+            </select>
           </div>
-          <p class="text-xs text-gray-500 mt-1">
-            Leave blank to include all dates. Rehire Date overrides Start Date when available.
-            {% if employee_options.start_date_min and employee_options.start_date_max %}
-            Available roster dates: {{ employee_options.start_date_min }} to {{ employee_options.start_date_max }}.
-            {% endif %}
-          </p>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="employee_status">Employee Status</label>
+            <select class="border rounded-lg p-2 w-full bg-white" id="employee_status" name="employee_status">
+              <option value="">All statuses</option>
+              {% for value in text_options.employee_statuses %}
+              <option value="{{ value }}" {% if text_selected.employee_status == value %}selected{% endif %}>{{ value }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="miles_from_location">Miles from Location</label>
+            <input class="border rounded-lg p-2 w-full bg-white" type="number" id="miles_from_location" name="miles_from_location" value="{{ text_selected.miles_from_location }}" min="0" step="1" />
+            <p class="text-xs text-gray-500 mt-1">Only employees within this many miles of the event are included. Default is 50 miles.</p>
+          </div>
+          <button class="px-4 py-2 rounded-lg border border-slate-300 shadow-sm bg-indigo-600 text-white hover:bg-indigo-500" type="submit">Generate SMS List</button>
+        </form>
+        {% else %}
+        <p class="text-sm text-gray-600">Upload an Available Employees file to enable filtering and download the SMS list.</p>
+        {% endif %}
+      </section>
+    </div>
+  </details>
+
+  <!-- Module 2: Employee List Filter -->
+  <details class="bg-white border border-gray-200 rounded-xl shadow-sm group">
+    <summary class="p-6 font-semibold cursor-pointer list-none flex items-center justify-between">
+      <h2 class="text-lg">Employee List Filter</h2>
+      <span class="transition group-open:rotate-180">
+        <svg fill="none" height="24" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+      </span>
+    </summary>
+    <div class="p-6 border-t border-gray-200 grid gap-8">
+      <section>
+        <p class="text-sm text-gray-600 mb-4">Upload the employee roster Excel file, choose filters, then export an updated workbook.</p>
+        <form class="space-y-4" method="post" enctype="multipart/form-data" action="/employee-list-filter/upload">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="employee_file">Employee List (.xlsx)</label>
+            <input class="border rounded-lg p-2 w-full bg-white" type="file" id="employee_file" name="file" accept=".xlsx" required />
+          </div>
+          <button class="px-4 py-2 rounded-lg border border-slate-300 shadow-sm bg-slate-50 hover:bg-slate-100" type="submit">Upload Workbook</button>
+        </form>
+        {% if employee_uploaded_filename %}
+        <p class="mt-4 text-sm text-green-700">Loaded file: <span class="font-medium">{{ employee_uploaded_filename }}</span></p>
+        {% endif %}
+        {% if employee_error %}
+        <p class="mt-4 text-sm text-red-600">{{ employee_error }}</p>
+        {% endif %}
+      </section>
+
+      <section class="border-t border-gray-100 pt-6">
+        <h3 class="text-md font-semibold mb-4">Filter &amp; Export Employee Workbook</h3>
+        {% if employee_options %}
+        <form class="space-y-4" method="post" action="/employee-list-filter/process">
+          <input type="hidden" name="file_token" value="{{ employee_file_token }}" />
+          <div class="grid md:grid-cols-2 gap-4">
+            <fieldset>
+              <legend class="block text-sm font-medium mb-2">Status</legend>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 border rounded-lg p-3 bg-white">
+                {% for value in employee_options.statuses %}
+                {% set status_id = 'status_' ~ loop.index %}
+                <label class="inline-flex items-center gap-2" for="{{ status_id }}">
+                  <input
+                    class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    type="checkbox"
+                    id="{{ status_id }}"
+                    name="statuses"
+                    value="{{ value }}"
+                    {% if value in employee_selected.statuses %}checked{% endif %}
+                  />
+                  <span class="text-sm text-gray-700">{{ value }}</span>
+                </label>
+                {% endfor %}
+              </div>
+              <p class="text-xs text-gray-500 mt-1">Select one or more statuses to include. Leave all unchecked to include every status.</p>
+            </fieldset>
+            <div>
+              <label class="block text-sm font-medium mb-1" for="cities">City</label>
+              <select class="border rounded-lg p-2 w-full bg-white" id="cities" name="cities" multiple size="6">
+                {% for value in employee_options.cities %}
+                <option value="{{ value }}" {% if value in employee_selected.cities %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+              </select>
+              <p class="text-xs text-gray-500 mt-1">Leave unselected to include all cities.</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1" for="state">State</label>
+              <select class="border rounded-lg p-2 w-full bg-white" id="state" name="state">
+                <option value="All" {% if employee_selected.state == 'All' %}selected{% endif %}>All</option>
+                {% for value in employee_options.states %}
+                <option value="{{ value }}" {% if employee_selected.state == value %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1" for="start_date_start">Start Date Range</label>
+              <div class="grid gap-2">
+                <input class="border rounded-lg p-2 w-full bg-white" type="date" id="start_date_start" name="start_date_start" value="{{ employee_selected.start_date_start }}" />
+                <input class="border rounded-lg p-2 w-full bg-white" type="date" id="start_date_end" name="start_date_end" value="{{ employee_selected.start_date_end }}" />
+              </div>
+              <p class="text-xs text-gray-500 mt-1">
+                Leave blank to include all dates. Rehire Date overrides Start Date when available.
+                {% if employee_options.start_date_min and employee_options.start_date_max %}
+                Available roster dates: {{ employee_options.start_date_min }} to {{ employee_options.start_date_max }}.
+                {% endif %}
+              </p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1" for="positions">Positions</label>
+              <select class="border rounded-lg p-2 w-full bg-white" id="positions" name="positions" multiple size="6">
+                {% for value in employee_options.positions %}
+                <option value="{{ value }}" {% if value in employee_selected.positions %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+              </select>
+              <p class="text-xs text-gray-500 mt-1">Leave unselected to include all positions.</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1" for="counties">County of Residence</label>
+              <select class="border rounded-lg p-2 w-full bg-white" id="counties" name="counties" multiple size="6">
+                {% for value in employee_options.counties %}
+                <option value="{{ value }}" {% if value in employee_selected.counties %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+              </select>
+              <p class="text-xs text-gray-500 mt-1">Leave unselected to include all counties.</p>
+            </div>
+          </div>
+          <button class="px-4 py-2 rounded-lg border border-slate-300 shadow-sm bg-indigo-600 text-white hover:bg-indigo-500" type="submit">Export Filtered Workbook</button>
+        </form>
+        {% else %}
+        <p class="text-sm text-gray-600">Upload an employee workbook to enable filtering and export.</p>
+        {% endif %}
+      </section>
+    </div>
+  </details>
+
+  <!-- Module 3: Candidate Contact Report -->
+  <details class="bg-white border border-gray-200 rounded-xl shadow-sm group">
+    <summary class="p-6 font-semibold cursor-pointer list-none flex items-center justify-between">
+      <h2 class="text-lg">Candidate Contact Report</h2>
+      <span class="transition group-open:rotate-180">
+        <svg fill="none" height="24" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+      </span>
+    </summary>
+    <div class="p-6 border-t border-gray-200">
+      <p class="text-sm text-gray-600 mb-4">Export Candidate Contact details from the database based on the selected filters.</p>
+      <form class="space-y-4" method="post" action="/text-blast-filter/candidate-report">
+        <div class="grid md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="candidate_status">Candidate Status</label>
+            <select class="border rounded-lg p-2 w-full bg-white" id="candidate_status" name="candidate_status">
+              <option value="">All statuses</option>
+              {% for id, desc in candidate_statuses.items() %}
+              <option value="{{ id }}" {% if id == 2 %}selected{% endif %}>{{ desc }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="countySearch">County</label>
+            <div class="border rounded-lg overflow-hidden bg-white flex flex-col">
+              <div class="p-2 border-b">
+                <input type="text" id="countySearch" placeholder="Search counties..." class="w-full text-sm outline-none px-1" onkeyup="filterCounties()" />
+              </div>
+              <div class="max-h-48 overflow-y-auto p-2 space-y-1" id="countyList">
+                {% for cid, cname in county_choices %}
+                <label class="flex items-center gap-2 px-1 py-1 hover:bg-gray-50 rounded county-item cursor-pointer">
+                  <input type="checkbox" name="counties" value="{{ cid }}" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                  <span class="text-sm text-gray-700 county-name">{{ cname }}</span>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">Leave unselected to include all counties. Multi-select allowed.</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="created_start">Created On Range</label>
+            <div class="grid gap-2">
+              <input class="border rounded-lg p-2 w-full bg-white" type="date" id="created_start" name="created_start" />
+              <input class="border rounded-lg p-2 w-full bg-white" type="date" id="created_end" name="created_end" />
+            </div>
+            <p class="text-xs text-gray-500 mt-1">Leave blank to include all dates.</p>
+          </div>
         </div>
-        <div>
-          <label class="block text-sm font-medium mb-1" for="positions">Positions</label>
-          <select class="border rounded-lg p-2 w-full bg-white" id="positions" name="positions" multiple size="6">
-            {% for value in employee_options.positions %}
-            <option value="{{ value }}" {% if value in employee_selected.positions %}selected{% endif %}>{{ value }}</option>
-            {% endfor %}
-          </select>
-          <p class="text-xs text-gray-500 mt-1">Leave unselected to include all positions.</p>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1" for="counties">County of Residence</label>
-          <select class="border rounded-lg p-2 w-full bg-white" id="counties" name="counties" multiple size="6">
-            {% for value in employee_options.counties %}
-            <option value="{{ value }}" {% if value in employee_selected.counties %}selected{% endif %}>{{ value }}</option>
-            {% endfor %}
-          </select>
-          <p class="text-xs text-gray-500 mt-1">Leave unselected to include all counties.</p>
-        </div>
-      </div>
-      <button class="px-4 py-2 rounded-lg border border-slate-300 shadow-sm bg-indigo-600 text-white hover:bg-indigo-500" type="submit">Export Filtered Workbook</button>
-    </form>
-    {% else %}
-    <p class="text-sm text-gray-600">Upload an employee workbook to enable filtering and export.</p>
-    {% endif %}
-  </section>
+        <button class="px-4 py-2 rounded-lg border border-slate-300 shadow-sm bg-indigo-600 text-white hover:bg-indigo-500" type="submit">Download Contact Report</button>
+      </form>
+    </div>
+  </details>
+
 </div>
+
+<script>
+  function filterCounties() {
+    const input = document.getElementById('countySearch');
+    const filter = input.value.toLowerCase();
+    const list = document.getElementById('countyList');
+    const items = list.getElementsByClassName('county-item');
+
+    for (let i = 0; i < items.length; i++) {
+        const span = items[i].getElementsByClassName('county-name')[0];
+        const txtValue = span.textContent || span.innerText;
+        if (txtValue.toLowerCase().indexOf(filter) > -1) {
+            items[i].style.display = "";
+        } else {
+            items[i].style.display = "none";
+        }
+    }
+  }
+</script>
+
 {% endblock %}

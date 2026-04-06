@@ -168,6 +168,10 @@ async def msp_monitoring_loop():
     # Random offset to avoid running right as server starts heavily
     await asyncio.sleep(30) 
     
+    if os.getenv("RENDER", "").lower() != "true":
+        print("[MSP Monitor] Local environment detected (RENDER=true is missing). Stopping background monitor to prevent duplicate emails.")
+        return
+        
     while True:
         try:
             data = fetch_latest_15m_confirmations()
