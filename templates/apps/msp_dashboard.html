@@ -117,16 +117,24 @@
         return `${startStr} - ${endStr}`;
     }
 
-    function toggleComplete(empId, evtId) {
-        let completed = JSON.parse(localStorage.getItem('msp_completed_shifts') || '{}');
-        const key = `${empId}-${evtId}`;
-        if (completed[key]) {
-            delete completed[key];
-        } else {
-            completed[key] = true;
+    async function toggleComplete(empId, evtId, currentCheckboxState) {
+        try {
+            await fetch('/msp-dashboard/complete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    employee_id: empId,
+                    event_id: evtId,
+                    completed: currentCheckboxState
+                })
+            });
+            loadData(); // re-render table to show updated state and green checkmarks
+        } catch (error) {
+            console.error('Failed to toggle completion status:', error);
+            // Optionally revert the checkbox state
         }
-        localStorage.setItem('msp_completed_shifts', JSON.stringify(completed));
-        loadData(); // re-render table to show updated state
     }
 
     async function loadData() {
@@ -155,7 +163,7 @@
                 return;
             }
             
-            const completedShifts = JSON.parse(localStorage.getItem('msp_completed_shifts') || '{}');
+
             
             // Group data by 15-minute intervals
             const groupedData = {};
@@ -186,7 +194,7 @@
                 `;
                 
                 html += groupedData[bucket].map(item => {
-                    const isCompleted = completedShifts[`${item.employee_id}-${item.event_id}`];
+                    const isCompleted = item.is_completed;
                     return `
                     <tr class="hover:bg-gray-50 transition-colors ${isCompleted ? 'opacity-60 bg-emerald-50' : ''}">
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.employee_name}</td>
@@ -201,7 +209,7 @@
                             <label class="inline-flex items-center cursor-pointer">
                                 <input type="checkbox" class="form-checkbox h-5 w-5 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer" 
                                     ${isCompleted ? 'checked' : ''} 
-                                    onchange="toggleComplete(${item.employee_id}, ${item.event_id})">
+                                    onchange="toggleComplete(${item.employee_id}, ${item.event_id}, this.checked)">
                                 ${isCompleted ? '<span class="ml-2 text-emerald-600 font-medium">✓ Done</span>' : ''}
                             </label>
                         </td>
