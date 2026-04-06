@@ -10,9 +10,44 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
 from zoneinfo import ZoneInfo
+from pydantic import BaseModel
+import json
+from pathlib import Path
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+
+_completed_shifts_file = Path("apps/msp_dashboard/msp_completed_shifts.json")
+
+def _load_completed_shifts():
+    if _completed_shifts_file.exists():
+        try:
+            with open(_completed_shifts_file, "r") as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+def _save_completed_shifts(data):
+    with open(_completed_shifts_file, "w") as f:
+        json.dump(data, f)
+
+class CompleteShiftRequest(BaseModel):
+    employee_id: int
+    event_id: int
+    completed: bool
+
+@router.post("/complete")
+async def toggle_complete_shift(req: CompleteShiftRequest):
+    data = _load_completed_shifts()
+    key = f"{req.employee_id}-{req.event_id}"
+    if req.completed:
+        data[key] = True
+    else:
+        if key in data:
+            del data[key]
+    _save_completed_shifts(data)
+    return JSONResponse({"status": "ok", "completed": req.completed})
 
 def _db_url_from_env() -> URL:
     host = os.getenv("DB_HOST")
@@ -77,6 +112,7 @@ async def get_msp_dashboard_data():
         with engine.begin() as connection:
             result = connection.execute(sql, {"start_of_day": start_of_day}).mappings().all()
             
+            completed_shifts = _load_completed_shifts()
             data = []
             for row in result:
                 item = dict(row)
@@ -86,6 +122,8 @@ async def get_msp_dashboard_data():
                 if item["confirmed_at"]:
                     item["confirmed_at"] = item["confirmed_at"].strftime("%Y-%m-%d %H:%M:%S")
                 
+                key = f"{item['employee_id']}-{item['event_id']}"
+                
                 data.append({
                     "employee_id": item["employee_id"],
                     "event_id": item["event_id"],
@@ -94,7 +132,8 @@ async def get_msp_dashboard_data():
                     "msp_id": item["msp_id"],
                     "msp_name": item["msp_name"],
                     "shift_date": item["shift_date"],
-                    "confirmed_at": item["confirmed_at"]
+                    "confirmed_at": item["confirmed_at"],
+                    "is_completed": completed_shifts.get(key, False)
                 })
                 
             return JSONResponse({"data": data})
