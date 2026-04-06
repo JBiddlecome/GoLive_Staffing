@@ -5,6 +5,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
 from sqlalchemy import text
+from zoneinfo import ZoneInfo
 from apps.msp_dashboard.views import _engine
 
 _sent_shift_records = set()
@@ -33,12 +34,15 @@ def fetch_latest_15m_confirmations():
                 se.confirmed = 1 
                 AND c.msp_id IN (3, 5, 20)
                 AND se.deleted_at IS NULL
-                AND se.confirmed_at >= NOW() - INTERVAL 15 MINUTE
+                AND se.confirmed_at >= :fifteen_mins_ago
             ORDER BY se.confirmed_at DESC;
         """)
         
+        la_time = datetime.now(ZoneInfo("America/Los_Angeles"))
+        fifteen_mins_ago = (la_time - timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S")
+        
         with engine.begin() as connection:
-            result = connection.execute(sql).mappings().all()
+            result = connection.execute(sql, {"fifteen_mins_ago": fifteen_mins_ago}).mappings().all()
             return [dict(r) for r in result]
     except Exception as e:
         print(f"Error fetching scheduler data: {e}")
