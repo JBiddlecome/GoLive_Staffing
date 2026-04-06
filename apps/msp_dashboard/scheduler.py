@@ -33,13 +33,12 @@ def fetch_latest_15m_confirmations():
                 se.confirmed = 1 
                 AND c.msp_id IN (3, 5, 20)
                 AND se.deleted_at IS NULL
-                AND se.confirmed_at >= :fifteen_mins_ago
+                AND se.confirmed_at >= NOW() - INTERVAL 15 MINUTE
             ORDER BY se.confirmed_at DESC;
         """)
         
-        fifteen_mins_ago = (datetime.now() - timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S")
         with engine.begin() as connection:
-            result = connection.execute(sql, {"fifteen_mins_ago": fifteen_mins_ago}).mappings().all()
+            result = connection.execute(sql).mappings().all()
             return [dict(r) for r in result]
     except Exception as e:
         print(f"Error fetching scheduler data: {e}")
