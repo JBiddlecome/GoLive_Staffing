@@ -67,6 +67,17 @@ class VenueShiftsPayload(BaseModel):
     limit: int = Field(default=50000, ge=1, le=100000)
 
 
+class EmployeeNotePayload(BaseModel):
+    employee_id: int | None = None
+    note_type: str | None = None
+    limit: int = Field(default=50000, ge=1, le=100000)
+
+
+class MinimumWageCheckPayload(BaseModel):
+    client_status: int | None = None
+    limit: int = Field(default=50000, ge=1, le=100000)
+
+
 TIMESHEET_VERIFICATION_EXCLUDED_COLUMNS = {
     "Day",
     "WC",
@@ -1616,6 +1627,180 @@ async def reportable_venue_shifts_export(
     output.seek(0)
 
     filename = "venue_shifts_report.xlsx"
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers,
+    )
+
+
+@router.post("/export/employee-notes")
+async def reportable_employee_notes_export(
+    payload: EmployeeNotePayload,
+) -> StreamingResponse:
+    engine = _engine()
+    try:
+        sql = """
+            SELECT
+                en.employee_note_id AS `Note ID`,
+                en.employee_id AS `Employee ID`,
+                CONCAT(e.first_name, ' ', e.last_name) AS `Employee Name`,
+                en.type AS `Type`,
+                en.note AS `Note`,
+                en.datetime AS `Date Time`,
+                en.user_id AS `User ID`,
+                CONCAT(u.first_name, ' ', u.last_name) AS `Author Name`,
+                en.shift_employee_id AS `Shift Employee ID`
+            FROM employee_note en
+            JOIN employee e ON en.employee_id = e.employee_id
+            LEFT JOIN user u ON en.user_id = u.id
+            WHERE 1=1
+        """
+        params: dict[str, Any] = {"limit": payload.limit}
+
+        if payload.employee_id:
+            sql += " AND en.employee_id = :employee_id"
+            params["employee_id"] = payload.employee_id
+        
+        if payload.note_type:
+            # Using LIKE to support partial matches or if multiple types are comma separated as seen in other conversations
+            sql += " AND en.type LIKE :note_type"
+            params["note_type"] = f"%{payload.note_type}%"
+
+        sql += " ORDER BY en.datetime DESC LIMIT :limit"
+
+        with engine.begin() as connection:
+            df = pd.read_sql(text(sql), connection, params=params)
+
+    finally:
+        engine.dispose()
+
+    if df.empty:
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            pd.DataFrame(columns=[
+                "Note ID", "Employee ID", "Employee Name", "Type", "Note", 
+                "Date Time", "User ID", "Author Name", "Shift Employee ID"
+            ]).to_excel(writer, index=False, sheet_name="employee_notes")
+        output.seek(0)
+        filename = "employee_notes_report.xlsx"
+        headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers=headers,
+        )
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="employee_notes")
+    output.seek(0)
+
+    filename = "employee_notes_report.xlsx"
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers,
+    )
+
+
+@router.post("/export/minimum-wage-check")
+async def reportable_minimum_wage_check_export(
+    payload: MinimumWageCheckPayload,
+) -> StreamingResponse:
+    engine = _engine()
+    try:
+        sql = """
+            SELECT 
+                c.status AS `Client Status Code`,
+                c.name AS `Client Name`,
+                v.name AS `Venue Name`,
+                p.description AS `Position Name`,
+                vpa.pay_rate AS `Current Pay Rate`,
+                vpa.bill_rate AS `Current Bill Rate`,
+                mwra.rate AS `Current Minimum Wage Rate`,
+                mwr.description AS `Minimum Wage Name`
+            FROM venue_position vp
+            JOIN venue v ON vp.venue_id = v.venue_id
+            JOIN client c ON v.client_id = c.client_id
+            JOIN position p ON vp.position_id = p.position_id
+            LEFT JOIN venue_position_amount vpa ON vp.venue_position_id = vpa.venue_position_id 
+                AND vpa.end_date IS NULL 
+                AND (vpa.start_date IS NULL OR vpa.start_date <= CURDATE())
+            LEFT JOIN min_wage_rate mwr ON v.min_wage_id = mwr.min_wage_id
+            LEFT JOIN min_wage_rate_amount mwra ON v.min_wage_id = mwra.min_wage_id
+                AND mwra.end_date IS NULL 
+                AND (mwra.start_date IS NULL OR mwra.start_date <= CURDATE())
+            WHERE 1=1
+        """
+        params = {"limit": payload.limit}
+
+        if payload.client_status is not None:
+            sql += " AND c.status = :client_status"
+            params["client_status"] = payload.client_status
+
+        sql += " LIMIT :limit"
+
+        with engine.begin() as connection:
+            df = pd.read_sql(text(sql), connection, params=params)
+
+    finally:
+        engine.dispose()
+
+    if df.empty:
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            pd.DataFrame(columns=[
+                'Client Status', 'Raw Client Status Code', 'Client Name', 'Venue Name', 'Position Name', 
+                'Current Pay Rate', 'Current Bill Rate', 'Current Minimum Wage Rate', 'Minimum Wage Name'
+            ]).to_excel(writer, index=False, sheet_name="minimum_wage_check")
+        output.seek(0)
+        filename = "minimum_wage_check_report.xlsx"
+        headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers=headers,
+        )
+
+    def get_client_status_label(row):
+        code = row.get('Client Status Code')
+        if pd.isna(code): return 'Unknown'
+        try:
+            val = int(code)
+            if val == 1: return 'Terminated'
+            if val == 2: return 'Active'
+            if val == 3: return 'Prospect'
+            if val == 4: return 'Candidate Partner'
+            if val == 10: return 'Inactive 60'
+            if val == 11: return 'Inactive 180'
+            if val == 12: return 'Inactive 365'
+            return str(val)
+        except:
+            return str(code)
+
+    df['Client Status'] = df.apply(get_client_status_label, axis=1)
+
+    final_df = pd.DataFrame({
+        "Client Status": df["Client Status"],
+        "Raw Client Status Code": df["Client Status Code"],
+        "Client Name": df["Client Name"],
+        "Venue Name": df["Venue Name"],
+        "Position Name": df["Position Name"],
+        "Current Pay Rate": df["Current Pay Rate"],
+        "Current Bill Rate": df["Current Bill Rate"],
+        "Current Minimum Wage Rate": df["Current Minimum Wage Rate"],
+        "Minimum Wage Name": df["Minimum Wage Name"]
+    })
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        final_df.to_excel(writer, index=False, sheet_name="minimum_wage_check")
+    output.seek(0)
+    
+    filename = "minimum_wage_check_report.xlsx"
     headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
     return StreamingResponse(
         output,

@@ -1,9 +1,16 @@
-from fastapi import FastAPI, Request, UploadFile, File, Form
+import os
+from dotenv import load_dotenv
+
+env_path = r"C:\Users\jakeb\OneDrive\Documents\GitHub\golive-staffing-tools.env"
+if os.path.exists(env_path):
+    load_dotenv(env_path)
+
+from fastapi import FastAPI, Request, UploadFile, File, Form, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
-
+from starlette.middleware.sessions import SessionMiddleware
 # Sub-routes
 from apps.clickboarding_check.views import router as clickboarding_router
 from apps.client_drop_off.views import router as client_drop_off_router
@@ -37,9 +44,26 @@ from apps.payroll_reports.views import router as payroll_reports_router
 from apps.scheduled_vs_worked.views import router as scheduled_vs_worked_router
 from apps.sales_rate_intelligence.views import router as sales_rate_intelligence_router
 from apps.staffing_employee_dashboard.views import router as staffing_employee_dashboard_router
+from apps.daily_report_assessment.views import router as daily_report_assessment_router
+from apps.msp_dashboard.views import router as msp_dashboard_router
+from apps.admin_dashboard.views import router as admin_dashboard_router
+from apps.auth.views import router as auth_router, get_current_user
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 
-app = FastAPI(title="GoLive Staffing — Tools")
+from contextlib import asynccontextmanager
+import asyncio
+from apps.msp_dashboard.scheduler import msp_monitoring_loop
+from apps.admin_dashboard.tracker import admin_tracking_loop
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    monitor_task = asyncio.create_task(msp_monitoring_loop())
+    admin_task = asyncio.create_task(admin_tracking_loop())
+    yield
+    monitor_task.cancel()
+    admin_task.cancel()
+
+app = FastAPI(title="GoLive Staffing — Tools", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -48,6 +72,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(SessionMiddleware, secret_key="golive-super-secret-key")
 
 # Static + templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -66,7 +91,10 @@ async def external_ai_tools(request: Request):
 
 @app.get("/work-in-progress", response_class=HTMLResponse)
 async def work_in_progress(request: Request):
-    return templates.TemplateResponse("work_in_progress.html", {"request": request})
+    user = request.session.get("user")
+    if not user:
+        return RedirectResponse(url="/auth/login?next=/work-in-progress", status_code=303)
+    return templates.TemplateResponse("work_in_progress.html", {"request": request, "user": user})
 
 
 @app.get("/contacts", response_class=HTMLResponse)
@@ -143,6 +171,7 @@ async def index_head() -> Response:
     return Response(status_code=200)
 
 # Mount tool routers
+app.include_router(auth_router, prefix="/auth", tags=["Auth"])
 app.include_router(clickboarding_router, prefix="/clickboarding-check", tags=["Clickboarding Check"])
 app.include_router(employee_access_router, prefix="/employee-access", tags=["Employee Access"])
 app.include_router(health_benefits_router, prefix="/health-benefits", tags=["Health Benefits"])
@@ -228,6 +257,21 @@ app.include_router(
     staffing_employee_dashboard_router,
     prefix="/staffing-employee-dashboard",
     tags=["Staffing Employee Dashboard"],
+)
+app.include_router(
+    daily_report_assessment_router,
+    prefix="/daily-report-assessment",
+    tags=["Daily Report Assessment"],
+)
+app.include_router(
+    msp_dashboard_router,
+    prefix="/msp-dashboard",
+    tags=["MSP Dashboard"],
+)
+app.include_router(
+    admin_dashboard_router,
+    prefix="/admin-dashboard",
+    tags=["Admin Dashboard"],
 )
 
 # Redirect /sms_paraphraser to /sms-paraphraser for backward compatibility

@@ -117,67 +117,120 @@ async def get_dashboard_reliability(employee_id: int):
                 if n_note and n_note.strip():
                     dt_str = n_dt.strftime("%Y-%m-%d") if pd.notnull(n_dt) else ""
                     notes.append(f"[{dt_str}] ({n_type}) {n_note.strip()}")
-                    
+            
+            worked_sql = text("SELECT COUNT(DISTINCT t.timesheet_id) FROM timesheet t JOIN shift_employee se ON t.shift_employee_id = se.shift_employee_id JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id JOIN shift s ON sp.shift_id = s.shift_id WHERE t.employee_id = :emp_id AND t.employee_worked = 'WORKED' AND s.start <= NOW()")
+            total_shifts_worked = conn.execute(worked_sql, {"emp_id": employee_id}).scalar() or 0
+
+            noshow_sql = text("SELECT COUNT(DISTINCT t.timesheet_id) FROM timesheet t JOIN shift_employee se ON t.shift_employee_id = se.shift_employee_id JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id JOIN shift s ON sp.shift_id = s.shift_id WHERE t.employee_id = :emp_id AND t.employee_worked = 'NOSHOW' AND s.start <= NOW()")
+            confirmed_no_shows = conn.execute(noshow_sql, {"emp_id": employee_id}).scalar() or 0
+
+            dnr_sql = text("SELECT COUNT(*) as cnt, GROUP_CONCAT(COALESCE(sr.reason, d.other_reason) SEPARATOR '; ') as details FROM dnr d LEFT JOIN status_reason sr ON d.reason_id = sr.id WHERE d.employee_id = :emp_id")
+            dnr_row = conn.execute(dnr_sql, {"emp_id": employee_id}).fetchone()
+            dnr_count = dnr_row[0] if dnr_row else 0
+            dnr_details = dnr_row[1] if dnr_row and dnr_row[1] else "None"
+
+            pref_sql = text("SELECT COUNT(*) as cnt, GROUP_CONCAT(reason SEPARATOR '; ') as details FROM exclusive WHERE employee_id = :emp_id")
+            pref_row = conn.execute(pref_sql, {"emp_id": employee_id}).fetchone()
+            preferred_count = pref_row[0] if pref_row else 0
+            preferred_details = pref_row[1] if pref_row and pref_row[1] else "None"
+
+            variance_sql = text("SELECT AVG(TIMESTAMPDIFF(MINUTE, s.start, t.employee_start)) FROM timesheet t JOIN shift_employee se ON se.shift_employee_id = t.shift_employee_id JOIN shift_position sp ON sp.shift_position_id = se.shift_position_id JOIN shift s ON s.shift_id = sp.shift_id WHERE t.employee_id = :emp_id AND t.employee_start IS NOT NULL AND t.employee_worked = 'WORKED' AND s.start <= NOW()")
+            variance_val = conn.execute(variance_sql, {"emp_id": employee_id}).scalar()
+            clock_in_variance = round(float(variance_val), 1) if variance_val is not None else 0
+
     except Exception as e:
-        logger.exception("Failed to query employee notes")
+        logger.exception("Failed to query employee data")
         return JSONResponse({"status": "error", "message": "Database query failed"}, status_code=500)
     finally:
         engine.dispose()
         
-    if not notes:
-        return JSONResponse({
-            "status": "success",
-            "data": {
-                "summary": "No personnel or daily notes on file.",
-                "reliability_score": 100,
-                "risk_factors": [],
-                "positive_indicators": [],
-                "notable_incidents": [],
-                "caution": "No notes available to evaluate."
-            }
-        })
-        
-    notes_text = "\n".join(notes)
+    notes_text = "\n".join(notes) if notes else "No notes on file."
     
-    prompt = f"""You are analyzing internal employee notes for a staffing manager.
-
-Your task is to review the notes and produce a concise reliability assessment based only on the provided text.
-
-Focus especially on:
-- WW or written warning references
-- lateness, tardiness, late arrivals, no-call/no-show, attendance issues
-- behavior concerns such as rude, argumentative, disrespectful, unprofessional, conflict, attitude problems, complaints, harassment, aggression, refusal of assignment, or walking off a job
-- repeated patterns across multiple notes
-- positive indicators such as dependable, on time, professional, flexible, well-liked, praised by client, rehired, requested back, etc.
-
-Scoring guidance:
-- 90-100: highly reliable, no meaningful concerns, strong positive pattern
-- 70-89: mostly reliable, minor concerns only
-- 40-69: moderate concern, repeated lateness, warnings, or behavior issues
-- 0-39: serious concern, repeated warnings, repeated attendance failures, or major behavior problems
-
-Rules:
-- Use only the notes provided.
-- Do not invent details.
-- Do not make legal, medical, or psychological conclusions.
-- If notes are sparse, vague, or contradictory, state that in the caution field.
-- Repeated and recent issues should weigh more heavily than isolated or older minor issues.
-- Positive evidence should increase the score when clearly supported.
-
-Return valid JSON only.
-Use this exact schema:
-
+    prompt = f"""You are analyzing internal employee notes and structured metrics for a staffing manager.
+Your task is to produce a balanced and context-aware reliability assessment.
+IMPORTANT CONTEXT:
+•	Notes are biased toward negative events (issues are logged more often than positive performance).
+•	Some notes may include automated text such as: "Worked auto updated to 'No Show'" which does NOT necessarily indicate a true no-show.
+•	You will also be given structured metrics (shift counts, confirmed no-shows, DNR counts, etc.) which MUST be used to contextualize the notes.
+INPUT DATA:
+•	notes_text: freeform notes
+•	total_shifts_worked: integer
+•	confirmed_no_shows: integer (actual verified no-shows)
+•	dnr_count: integer
+•	dnr_details: optional text describing reasons for DNR
+•	preferred_count: integer
+•	preferred_details: optional text describing reasons for Preferred
+•	clock_in_variance: integer
+ANALYSIS INSTRUCTIONS:
+1.	Normalize note bias:
+o	Do NOT assume lack of positive notes means poor performance.
+o	Absence of praise is neutral, not negative.
+2.	Handle "auto updated to No Show" and Cancellations carefully:
+o	Treat "auto updated to No Show" as LOW CONFIDENCE signals unless supported by confirmed_no_shows or other notes.
+o	If a note says "Employee Cancelled > 24 Hours Notice", it means they met the company requirement. Do NOT lower the reliability score for these notes, unless the quantity of these specific cancellations exceeds 20% of their total_shifts_worked.
+3.	Use ratio-based reasoning:
+o	Evaluate issues relative to total_shifts_worked.
+o	Example: 3 issues over 150 shifts = low concern.
+o	Example: 3 issues over 10 shifts = high concern.
+4.	Weight categories differently:
+o	HIGH severity: confirmed no-call/no-show, walking off job, harassment, aggression, DNR with serious cause, WW or written warning references.
+o	MEDIUM severity: repeated lateness, tardiness, warnings, attitude complaints, WW or written warning references.
+o	LOW severity: isolated minor issues, vague complaints, auto-generated notes
+5.	DNR handling:
+o	DNR_count > 1 is a strong negative signal
+o	Use dnr_details to determine severity (e.g., misconduct vs minor preference)
+6.	Pattern detection:
+o	Repeated issues across time are more important than isolated events
+o	Recent issues weigh more heavily than older ones
+7.	Positive indicators:
+o	Only include if explicitly present in notes
+o	Do NOT infer positives from absence of negatives
+8.	
+SCORING METHODOLOGY:
+Start from a neutral baseline of 75 and adjust:
+Decrease score for:
+•	High severity incidents (−15 to −40 each depending on severity, unless isolated and total shifts is very large)
+•	Medium severity repeated issues (−5 to −15)
+•	DNR events (−15 to −50 depending on reason)
+•	High issue-to-shift ratio
+Increase score for:
+•	Large number of shifts worked with few issues (+5 to +15)
+•	Explicit positive feedback (+5 to +15)
+•	Long history with minimal escalation
+Ratio adjustment (CRITICAL STEP):
+•	If total_shifts_worked is extremely high (e.g., > 100) and an issue (even a Written Warning or late cancellation) occurs less than 1-2% of the time, DO NOT heavily penalize the score. The volume of reliable shifts overwhelmingly outweighs an isolated incident. An employee with hundreds of shifts and only a few minor or isolated incidents MUST score 85+.
+•	If total_shifts_worked is high (50+), substantially reduce impact of isolated incidents.
+•	If total_shifts_worked is low (<20), increase impact of each issue.
+Clamp final score between 0 and 100.
+SCORE INTERPRETATION:
+•	90-100: highly reliable, strong track record relative to volume
+•	85-89: highly reliable overall, but has minimal/isolated incidents that are dwarfed by their massive work volume
+•	70-84: generally reliable, minor or low-frequency issues
+•	40-69: moderate concern, noticeable patterns or ratio concerns
+•	0-39: high risk, serious or frequent issues relative to shifts
+OUTPUT REQUIREMENTS:
+•	Be concise but specific
+•	Reference patterns, ratios, and severity (not just raw counts)
+•	Clearly distinguish confirmed issues vs ambiguous notes
+Return valid JSON only using this schema:
 {{
-  "summary": "string",
-  "reliability_score": 0,
-  "risk_factors": ["string"],
-  "positive_indicators": ["string"],
-  "notable_incidents": ["string"],
-  "caution": "string"
+"summary": "string",
+"reliability_score": 0,
+"risk_factors": ["string"],
+"positive_indicators": ["string"],
+"notable_incidents": ["string"],
+"caution": "string"
 }}
-
 Employee notes:
-{notes_text}"""
+{notes_text}
+Structured data:
+•	total_shifts_worked: {total_shifts_worked}
+•	confirmed_no_shows: {confirmed_no_shows}
+•	dnr_count: {dnr_count}
+•	dnr_details: {dnr_details}
+•	preferred_count: {preferred_count}
+•	preferred_details: {preferred_details}
+•	clock_in_variance: {clock_in_variance}"""
 
     try:
         client = OpenAI(api_key=api_key)
