@@ -6,9 +6,11 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 import pandas as pd
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request, Body
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
+
+from .notes_data import load_notes, update_note
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
 
@@ -149,6 +151,10 @@ async def staffing_dashboard_data():
         df = df.fillna(0)
         records = df.to_dict(orient='records')
 
+        notes = load_notes()
+        for record in records:
+            record['client_note'] = notes.get(str(record['client_id']), "")
+
         return JSONResponse({
             "status": "success",
             "data": records
@@ -158,3 +164,12 @@ async def staffing_dashboard_data():
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
     finally:
         engine.dispose()
+
+@router.post("/notes/{client_id}", response_class=JSONResponse)
+async def update_staffing_dashboard_note(client_id: int, payload: dict = Body(...)):
+    note = payload.get('note', "")
+    try:
+        update_note(str(client_id), note)
+        return JSONResponse({"status": "success"})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
