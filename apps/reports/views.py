@@ -303,6 +303,97 @@ async def api_ask(payload: AskRequest):
     answer = await run_in_threadpool(explain_result, question, sql, result)
     return JSONResponse({"answer": answer, "sql": sql})
 
+# --- Client Fill Rates Routes ---
+@router.get("/client-fill-rates", response_class=HTMLResponse)
+async def client_fill_rates_page(request: Request):
+    return templates.TemplateResponse("reports/client_fill_rates.html", {"request": request})
+
+@router.get("/api/client-fill-rates")
+async def get_client_fill_rates(start_date: str, end_date: str):
+    engine = _get_staffing_engine()
+    try:
+        sql = text("""
+            WITH valid_placements AS (
+                SELECT 
+                    se.shift_position_id,
+                    se.shift_employee_id,
+                    se.created_at AS placement_created_at,
+                    se.confirmed_at AS placement_confirmed_at
+                FROM shift_employee se
+                INNER JOIN timesheet t ON se.shift_employee_id = t.shift_employee_id
+                WHERE se.deleted_at IS NULL 
+                  AND (se.cancel_reason IS NULL OR se.cancel_reason IN ('0',''))
+            ),
+            position_stats AS (
+                SELECT 
+                    sp.shift_position_id,
+                    sp.shift_id,
+                    sp.count AS required_count,
+                    COUNT(vp.shift_employee_id) AS validated_employee_count,
+                    SUM(
+                        GREATEST(
+                            TIMESTAMPDIFF(
+                                SECOND, 
+                                COALESCE(sp.created_at, vp.placement_created_at), 
+                                COALESCE(vp.placement_confirmed_at, vp.placement_created_at)
+                            ), 
+                            0
+                        )
+                    ) AS total_fill_seconds
+                FROM shift_position sp
+                LEFT JOIN valid_placements vp ON sp.shift_position_id = vp.shift_position_id
+                WHERE sp.deleted_at IS NULL AND sp.count > 0
+                GROUP BY sp.shift_position_id
+            )
+            SELECT
+                c.client_id,
+                c.name AS client_name,
+                COUNT(DISTINCT e.event_id) AS total_events,
+                SUM(ps.required_count) AS total_shifts_created,
+                SUM(ps.validated_employee_count) AS total_shifts_filled,
+                SUM(ps.total_fill_seconds) / NULLIF(SUM(ps.validated_employee_count), 0) AS avg_fill_time_seconds
+            FROM client c
+            JOIN event e ON c.client_id = e.client_id
+            JOIN shift s ON e.event_id = s.event_id
+            JOIN position_stats ps ON s.shift_id = ps.shift_id
+            WHERE c.deleted_at IS NULL
+              AND e.deleted_at IS NULL
+              AND s.deleted_at IS NULL
+              AND e.date >= :start_date 
+              AND e.date <= :end_date
+            GROUP BY c.client_id, c.name
+            ORDER BY c.name
+        """)
+        with engine.begin() as conn:
+            df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date})
+            
+            if df.empty:
+                return []
+            
+            df['fill_rate'] = ((df['total_shifts_filled'] / df['total_shifts_created']) * 100).fillna(0).round(1)
+            
+            def format_duration(seconds):
+                if pd.isna(seconds):
+                    return None
+                
+                seconds = max(0, seconds)
+                days = int(seconds // 86400)
+                hours = int((seconds % 86400) // 3600)
+                minutes = int((seconds % 3600) // 60)
+                
+                if days > 0:
+                    return f"{days}d {hours}h {minutes}m"
+                elif hours > 0:
+                    return f"{hours}h {minutes}m"
+                else:
+                    return f"{minutes}m"
+            
+            df['avg_fill_time'] = df['avg_fill_time_seconds'].apply(format_duration)
+            
+            return df.astype(object).where(pd.notnull(df), None).to_dict(orient="records")
+    finally:
+        engine.dispose()
+
 # --- Hub Route ---
 @router.get("/", response_class=HTMLResponse)
 async def reports_home(request: Request):
