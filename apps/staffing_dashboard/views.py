@@ -146,8 +146,7 @@ async def staffing_dashboard_data():
 
         df['avg_time_to_fill'] = df['avg_fill_seconds'].apply(format_duration)
         
-        # Cleanup
-        df = df.drop(columns=['avg_fill_seconds'])
+        df = df.fillna(0)
         records = df.to_dict(orient='records')
 
         return JSONResponse({
