@@ -46,18 +46,22 @@ from apps.sales_rate_intelligence.views import router as sales_rate_intelligence
 from apps.staffing_employee_dashboard.views import router as staffing_employee_dashboard_router
 from apps.daily_report_assessment.views import router as daily_report_assessment_router
 from apps.msp_dashboard.views import router as msp_dashboard_router
+from apps.admin_dashboard.views import router as admin_dashboard_router
 from apps.auth.views import router as auth_router, get_current_user
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 
 from contextlib import asynccontextmanager
 import asyncio
 from apps.msp_dashboard.scheduler import msp_monitoring_loop
+from apps.admin_dashboard.tracker import admin_tracking_loop
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     monitor_task = asyncio.create_task(msp_monitoring_loop())
+    admin_task = asyncio.create_task(admin_tracking_loop())
     yield
     monitor_task.cancel()
+    admin_task.cancel()
 
 app = FastAPI(title="GoLive Staffing — Tools", lifespan=lifespan)
 
@@ -263,6 +267,11 @@ app.include_router(
     msp_dashboard_router,
     prefix="/msp-dashboard",
     tags=["MSP Dashboard"],
+)
+app.include_router(
+    admin_dashboard_router,
+    prefix="/admin-dashboard",
+    tags=["Admin Dashboard"],
 )
 
 # Redirect /sms_paraphraser to /sms-paraphraser for backward compatibility

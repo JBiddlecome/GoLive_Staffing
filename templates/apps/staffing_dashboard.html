@@ -51,11 +51,11 @@
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="bg-gray-50/80 backdrop-blur-sm">
-                        <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100">Client Info</th>
+                        <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 cursor-pointer sortable hover:text-emerald-600 transition-colors" data-sort="client_name">Client Info <span class="sort-icon ml-1">↕</span></th>
                         <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-center">Events</th>
                         <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-center">Coverage (Slots)</th>
-                        <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-center">Fill Rate</th>
-                        <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-right">Avg Fill Time</th>
+                        <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-center cursor-pointer sortable hover:text-emerald-600 transition-colors" data-sort="fill_rate">Fill Rate <span class="sort-icon ml-1">↕</span></th>
+                        <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-right cursor-pointer sortable hover:text-emerald-600 transition-colors" data-sort="avg_fill_seconds">Avg Fill Time <span class="sort-icon ml-1">↕</span></th>
                     </tr>
                 </thead>
                 <tbody id="dashboardBody" class="divide-y divide-gray-50">
@@ -96,8 +96,8 @@
                 const result = await response.json();
                 if (result.status === 'success') {
                     dashboardData = result.data;
-                    renderDashboard(dashboardData);
-                    updateCounters(dashboardData);
+                    updateSortIcons();
+                    applyFilterAndSort();
                 } else {
                     showError(result.message);
                 }
@@ -189,15 +189,67 @@
             }).join('');
         }
 
-        searchInput.addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
+        let currentSort = { column: 'client_name', direction: 'asc' };
+
+        function updateSortIcons() {
+            document.querySelectorAll('th.sortable').forEach(th => {
+                const icon = th.querySelector('.sort-icon');
+                if (th.dataset.sort === currentSort.column) {
+                    icon.innerHTML = currentSort.direction === 'asc' ? '↑' : '↓';
+                } else {
+                    icon.innerHTML = '↕';
+                }
+            });
+        }
+
+        document.querySelectorAll('th.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                const col = th.dataset.sort;
+                if (currentSort.column === col) {
+                    currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentSort.column = col;
+                    currentSort.direction = 'asc';
+                }
+                updateSortIcons();
+                applyFilterAndSort();
+            });
+        });
+
+        function sortData(data) {
+            return [...data].sort((a, b) => {
+                let valA = a[currentSort.column];
+                let valB = b[currentSort.column];
+
+                if (valA === undefined || valA === null) valA = '';
+                if (valB === undefined || valB === null) valB = '';
+
+                if (['fill_rate', 'avg_fill_seconds'].includes(currentSort.column)) {
+                    valA = parseFloat(valA) || 0;
+                    valB = parseFloat(valB) || 0;
+                } else {
+                    if (typeof valA === 'string') valA = valA.toLowerCase();
+                    if (typeof valB === 'string') valB = valB.toLowerCase();
+                }
+
+                if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+                if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        function applyFilterAndSort() {
+            const term = searchInput.value.toLowerCase();
             const filtered = dashboardData.filter(item => 
                 item.client_name.toLowerCase().includes(term) || 
                 (item.staffing_manager_name && item.staffing_manager_name.toLowerCase().includes(term))
             );
-            renderDashboard(filtered);
-            updateCounters(filtered);
-        });
+            const sorted = sortData(filtered);
+            renderDashboard(sorted);
+            updateCounters(sorted);
+        }
+
+        searchInput.addEventListener('input', applyFilterAndSort);
 
         refreshBtn.addEventListener('click', fetchData);
 
