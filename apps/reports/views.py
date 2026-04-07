@@ -140,6 +140,26 @@ async def get_clients():
     finally:
         engine.dispose()
 
+@router.get("/api/clients/12-months")
+async def get_active_clients_12m():
+    engine = _get_staffing_engine()
+    try:
+        with engine.begin() as conn:
+            sql = text("""
+                SELECT c.client_id, c.name 
+                FROM client c
+                WHERE c.client_id IN (
+                    SELECT DISTINCT e.client_id 
+                    FROM event e 
+                    WHERE e.date >= DATE_SUB(LAST_DAY(NOW()), INTERVAL 12 MONTH)
+                ) AND c.deleted_at IS NULL
+                ORDER BY c.name
+            """)
+            df = pd.read_sql(sql, conn)
+            return df.to_dict(orient="records")
+    finally:
+        engine.dispose()
+
 # --- Preferred List Routes ---
 @router.get("/preferred", response_class=HTMLResponse)
 async def preferred_list_page(request: Request):
@@ -548,6 +568,123 @@ async def get_less_24_cancellations(start_date: str, end_date: str):
             df['avg_time_to_refill'] = df['avg_refill_seconds'].apply(format_duration)
             
             return df.astype(object).where(pd.notnull(df), None).to_dict(orient="records")
+    finally:
+        engine.dispose()
+
+@router.get("/api/less-24-cancellations/chart/{client_id}")
+async def get_less_24_cancellations_chart(client_id: int):
+    engine = _get_staffing_engine()
+    try:
+        sql = text("""
+            WITH target_cancellations AS (
+                SELECT 
+                    se.shift_position_id,
+                    se.shift_employee_id,
+                    se.cancelled_at,
+                    s.start as shift_start,
+                    e.client_id,
+                    DATE_FORMAT(e.date, '%Y-%m') as month_str,
+                    TIMESTAMPDIFF(SECOND, se.cancelled_at, s.start) as seconds_before_start
+                FROM shift_employee se
+                JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
+                JOIN shift s ON sp.shift_id = s.shift_id
+                JOIN event e ON s.event_id = e.event_id
+                WHERE se.cancel_reason = '2'
+                  AND e.deleted_at IS NULL
+                  AND s.deleted_at IS NULL
+                  AND e.client_id = :client_id
+                  AND e.date >= DATE_SUB(LAST_DAY(NOW()), INTERVAL 12 MONTH)
+            ),
+            refills AS (
+                SELECT 
+                    tc.shift_employee_id as cancelled_employee_id,
+                    MIN(se_new.confirmed_at) as refill_confirmed_at
+                FROM target_cancellations tc
+                JOIN shift_employee se_new ON tc.shift_position_id = se_new.shift_position_id
+                WHERE se_new.confirmed = 1
+                  AND (se_new.cancel_reason = '0' OR se_new.cancel_reason IS NULL OR se_new.cancel_reason = '')
+                  AND se_new.confirmed_at > tc.cancelled_at
+                GROUP BY tc.shift_employee_id
+            ),
+            cancellation_stats AS (
+                SELECT 
+                    tc.month_str,
+                    tc.shift_employee_id,
+                    tc.seconds_before_start,
+                    r.refill_confirmed_at,
+                    TIMESTAMPDIFF(SECOND, tc.cancelled_at, r.refill_confirmed_at) as refill_seconds
+                FROM target_cancellations tc
+                LEFT JOIN refills r ON tc.shift_employee_id = r.cancelled_employee_id
+            ),
+            monthly_stats AS (
+                SELECT 
+                    cs.month_str as month,
+                    COUNT(cs.shift_employee_id) AS total_cancellations,
+                    AVG(cs.seconds_before_start) AS avg_seconds_before_start,
+                    AVG(cs.refill_seconds) AS avg_refill_seconds,
+                    SUM(CASE WHEN cs.refill_confirmed_at IS NULL THEN 1 ELSE 0 END) AS never_refilled_count
+                FROM cancellation_stats cs
+                GROUP BY cs.month_str
+            ),
+            monthly_totals AS (
+                SELECT 
+                    DATE_FORMAT(e.date, '%Y-%m') as month_str,
+                    SUM(sp.count) as total_shifts_created
+                FROM event e
+                JOIN shift s ON e.event_id = s.event_id
+                JOIN shift_position sp ON s.shift_id = sp.shift_id
+                WHERE e.deleted_at IS NULL
+                  AND s.deleted_at IS NULL
+                  AND sp.deleted_at IS NULL
+                  AND sp.count > 0
+                  AND e.client_id = :client_id
+                  AND e.date >= DATE_SUB(LAST_DAY(NOW()), INTERVAL 12 MONTH)
+                GROUP BY month_str
+            )
+            SELECT 
+                mt.month_str as month,
+                COALESCE(ms.total_cancellations, 0) AS total_cancellations,
+                ms.avg_seconds_before_start,
+                ms.avg_refill_seconds,
+                COALESCE(ms.never_refilled_count, 0) AS never_refilled_count,
+                mt.total_shifts_created,
+                (COALESCE(ms.total_cancellations, 0) / mt.total_shifts_created) * 100 AS cancellation_rate,
+                (COALESCE(ms.never_refilled_count, 0) / mt.total_shifts_created) * 100 AS never_refilled_rate
+            FROM monthly_totals mt
+            LEFT JOIN monthly_stats ms ON mt.month_str = ms.month
+            ORDER BY mt.month_str ASC
+        """)
+        with engine.begin() as conn:
+            df = pd.read_sql(sql, conn, params={"client_id": client_id})
+            
+            # Backfill missing months for the last 12 months
+            import datetime
+            from dateutil.relativedelta import relativedelta
+            
+            end_date = datetime.date.today().replace(day=1)
+            start_date = end_date - relativedelta(months=11)
+            all_months = [(start_date + relativedelta(months=i)).strftime('%Y-%m') for i in range(12)]
+            
+            if df.empty:
+                full_df = pd.DataFrame({'month': all_months})
+                full_df['total_cancellations'] = 0
+                full_df['avg_seconds_before_start'] = 0
+                full_df['avg_refill_seconds'] = 0
+                full_df['never_refilled_count'] = 0
+                full_df['cancellation_rate'] = 0.0
+                full_df['never_refilled_rate'] = 0.0
+                return full_df.to_dict(orient="records")
+            
+            # Set index & reindex to include all months
+            df.set_index('month', inplace=True)
+            df = df.reindex(all_months).fillna(0).reset_index()
+            df.rename(columns={'index': 'month'}, inplace=True)
+            
+            # Convert seconds to hours for charting (since averages in seconds are huge numbers)
+            df['avg_hours_before_start'] = (df['avg_seconds_before_start'] / 3600.0).round(2)
+            df['avg_refill_hours'] = (df['avg_refill_seconds'] / 3600.0).round(2)
+            
+            return df.to_dict(orient="records")
     finally:
         engine.dispose()
 
