@@ -457,6 +457,100 @@ async def get_client_fill_rates(start_date: str, end_date: str):
     finally:
         engine.dispose()
 
+# --- Less Than 24 Hr Cancellations Routes ---
+@router.get("/less-24-cancellations", response_class=HTMLResponse)
+async def less_24_cancellations_page(request: Request):
+    return templates.TemplateResponse("reports/less_24_cancellations.html", {"request": request})
+
+@router.get("/api/less-24-cancellations")
+async def get_less_24_cancellations(start_date: str, end_date: str):
+    engine = _get_staffing_engine()
+    try:
+        sql = text("""
+            WITH target_cancellations AS (
+                SELECT 
+                    se.shift_position_id,
+                    se.shift_employee_id,
+                    se.cancelled_at,
+                    s.start as shift_start,
+                    e.client_id,
+                    TIMESTAMPDIFF(SECOND, se.cancelled_at, s.start) as seconds_before_start
+                FROM shift_employee se
+                JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
+                JOIN shift s ON sp.shift_id = s.shift_id
+                JOIN event e ON s.event_id = e.event_id
+                WHERE se.cancel_reason = '2'
+                  AND e.deleted_at IS NULL
+                  AND s.deleted_at IS NULL
+                  AND e.date >= :start_date 
+                  AND e.date <= :end_date
+            ),
+            refills AS (
+                SELECT 
+                    tc.shift_employee_id as cancelled_employee_id,
+                    MIN(se_new.confirmed_at) as refill_confirmed_at
+                FROM target_cancellations tc
+                JOIN shift_employee se_new ON tc.shift_position_id = se_new.shift_position_id
+                WHERE se_new.confirmed = 1
+                  AND (se_new.cancel_reason = '0' OR se_new.cancel_reason IS NULL OR se_new.cancel_reason = '')
+                  AND se_new.confirmed_at > tc.cancelled_at
+                GROUP BY tc.shift_employee_id
+            ),
+            cancellation_stats AS (
+                SELECT 
+                    tc.client_id,
+                    tc.shift_employee_id,
+                    tc.seconds_before_start,
+                    r.refill_confirmed_at,
+                    TIMESTAMPDIFF(SECOND, tc.cancelled_at, r.refill_confirmed_at) as refill_seconds
+                FROM target_cancellations tc
+                LEFT JOIN refills r ON tc.shift_employee_id = r.cancelled_employee_id
+            )
+            SELECT 
+                c.client_id,
+                c.name AS client_name,
+                COUNT(cs.shift_employee_id) AS total_cancellations,
+                AVG(cs.seconds_before_start) AS avg_seconds_before_start,
+                AVG(cs.refill_seconds) AS avg_refill_seconds,
+                SUM(CASE WHEN cs.refill_confirmed_at IS NULL THEN 1 ELSE 0 END) AS never_refilled_count
+            FROM client c
+            JOIN cancellation_stats cs ON c.client_id = cs.client_id
+            WHERE c.deleted_at IS NULL
+            GROUP BY c.client_id, c.name
+            ORDER BY c.name
+        """)
+        with engine.begin() as conn:
+            df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date})
+            
+            if df.empty:
+                return []
+            
+            def format_duration(seconds):
+                if pd.isna(seconds):
+                    return None
+                
+                is_negative = seconds < 0
+                seconds = abs(seconds)
+                days = int(seconds // 86400)
+                hours = int((seconds % 86400) // 3600)
+                minutes = int((seconds % 3600) // 60)
+                
+                prefix = "-" if is_negative else ""
+                
+                if days > 0:
+                    return f"{prefix}{days}d {hours}h {minutes}m"
+                elif hours > 0:
+                    return f"{prefix}{hours}h {minutes}m"
+                else:
+                    return f"{prefix}{minutes}m"
+            
+            df['avg_time_before_start'] = df['avg_seconds_before_start'].apply(format_duration)
+            df['avg_time_to_refill'] = df['avg_refill_seconds'].apply(format_duration)
+            
+            return df.astype(object).where(pd.notnull(df), None).to_dict(orient="records")
+    finally:
+        engine.dispose()
+
 # --- Hub Route ---
 @router.get("/", response_class=HTMLResponse)
 async def reports_home(request: Request):
