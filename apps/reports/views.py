@@ -254,6 +254,69 @@ async def export_dnr_data(client_id: int):
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
+# --- Commerce Casino Hours Routes ---
+@router.get("/commerce-hours", response_class=HTMLResponse)
+async def commerce_hours_page(request: Request):
+    return templates.TemplateResponse("reports/commerce_hours.html", {"request": request})
+
+async def _get_commerce_hours_df(start_date: str, end_date: str):
+    engine = _get_staffing_engine()
+    try:
+        sql = text("""
+            SELECT 
+                CONCAT(emp.first_name, ' ', emp.last_name) AS "Employee Name",
+                GROUP_CONCAT(DISTINCT p.description SEPARATOR ', ') AS "Positions Worked",
+                SUM(
+                    CASE 
+                        WHEN t.use_sheet = 'EMPLOYEE' THEN t.employee_seconds / 3600.0
+                        WHEN t.use_sheet = 'CLIENT' THEN t.client_seconds / 3600.0
+                        ELSE t.client_seconds / 3600.0
+                    END
+                ) AS "Sum of Hours"
+            FROM timesheet t
+            JOIN shift_employee se ON t.shift_employee_id = se.shift_employee_id
+            JOIN event e ON se.event_id = e.event_id
+            JOIN employee emp ON t.employee_id = emp.employee_id
+            LEFT JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
+            LEFT JOIN position p ON sp.position_id = p.position_id
+            WHERE e.client_id = 183
+              AND t.employee_worked = 'WORKED'
+              AND e.date >= :start_date AND e.date <= :end_date
+              AND t.employee_id NOT IN (
+                  SELECT dnr.employee_id FROM dnr WHERE dnr.client_id = 183
+              )
+            GROUP BY t.employee_id
+            ORDER BY emp.first_name ASC, emp.last_name ASC
+        """)
+        with engine.begin() as conn:
+            df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date})
+            return df
+    finally:
+        engine.dispose()
+
+@router.get("/api/commerce-hours")
+async def get_commerce_hours_data(start_date: str, end_date: str):
+    df = await _get_commerce_hours_df(start_date, end_date)
+    return df.astype(object).where(pd.notnull(df), None).to_dict(orient="records")
+
+@router.get("/api/commerce-hours/export")
+async def export_commerce_hours_data(start_date: str, end_date: str):
+    df = await _get_commerce_hours_df(start_date, end_date)
+    if df.empty:
+        raise HTTPException(status_code=404, detail="No data found for this date range")
+    
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Commerce Casino Hours')
+    output.seek(0)
+    
+    filename = f"commerce_hours_{start_date}_to_{end_date}.xlsx"
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 # --- AI Analytics Routes ---
 @router.get("/ai-analytics", response_class=HTMLResponse)
 async def ai_analytics_page(request: Request):
