@@ -72,6 +72,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class RequireLoginMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        allowed_paths = {"/auth/login", "/auth/logout", "/healthz"}
+        if request.url.path in allowed_paths or request.url.path.startswith("/static"):
+            return await call_next(request)
+            
+        if not request.session.get("user"):
+            return RedirectResponse(url=f"/auth/login?next={request.url.path}", status_code=303)
+            
+        return await call_next(request)
+
+app.add_middleware(RequireLoginMiddleware)
 app.add_middleware(SessionMiddleware, secret_key="golive-super-secret-key")
 
 # Static + templates
