@@ -1,0 +1,632 @@
+{% extends "base.html" %}
+{% block title %}GoLive Staffing — Employee Dashboard{% endblock %}
+{% block content %}
+<!-- Leaflet.js CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #workAreaMap { height: 350px; width: 100%; z-index: 10; }
+</style>
+<div class="space-y-8" x-data="employeeDashboard()">
+
+    <!-- Hero / Header -->
+    <section class="relative rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 text-white shadow-xl">
+        <div class="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_20%_20%,white,transparent_40%)] rounded-3xl overflow-hidden pointer-events-none"></div>
+        <div class="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-white/10 blur-3xl pointer-events-none"></div>
+        <div class="relative px-6 py-10 lg:px-12 lg:py-12 z-10">
+            <div class="flex flex-col md:flex-row gap-6 md:items-end md:justify-between">
+                <div class="space-y-3">
+                    <p class="uppercase tracking-widest text-xs font-semibold text-indigo-100">Staffing Tools</p>
+                    <h1 class="brand-serif text-4xl font-semibold leading-tight">Employee Dashboard</h1>
+                    <p class="text-indigo-100 max-w-xl">
+                        Search for an employee to view a comprehensive performance snapshot, including attendance, punctuality, and client relationships.
+                    </p>
+                </div>
+                <!-- Search Input -->
+                <div class="w-full md:max-w-md relative">
+                    <div class="relative">
+                        <!-- Search Form -->
+                        <form @submit.prevent="searchEmployees" class="relative">
+                            <input 
+                                type="text" 
+                                x-model="searchQuery" 
+                                @input="debouncedSearch"
+                                placeholder="Search by name, email, or mobile..." 
+                                class="w-full rounded-2xl border-0 bg-white/10 px-5 py-4 pl-12 text-white placeholder-indigo-200 ring-1 ring-inset ring-white/20 focus:bg-white/20 focus:ring-2 focus:ring-inset focus:ring-white transition shadow-inner backdrop-blur-sm"
+                                autocomplete="off"
+                            >
+                            <svg class="pointer-events-none absolute left-4 top-4 h-6 w-6 text-indigo-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </form>
+                        
+                        <!-- Search Results Dropdown -->
+                        <div x-show="searchResults.length > 0" @click.away="searchResults = []" class="absolute left-0 right-0 top-full mt-2 rounded-xl bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden z-20 max-h-80 overflow-y-auto" style="display: none;">
+                            <ul class="divide-y divide-gray-100 text-gray-800">
+                                <template x-for="emp in searchResults" :key="emp.employee_id">
+                                    <li>
+                                        <button @click="selectEmployee(emp.employee_id)" class="w-full text-left px-5 py-3 hover:bg-indigo-50 transition flex items-center justify-between group">
+                                            <div>
+                                                <p class="font-semibold text-gray-900 group-hover:text-indigo-700" x-text="emp.first_name + ' ' + emp.last_name"></p>
+                                                <div class="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                                                    <span x-text="emp.email"></span>
+                                                    <span>&bull;</span>
+                                                    <span x-text="emp.mobile"></span>
+                                                </div>
+                                            </div>
+                                            <div class="flex flex-col items-end">
+                                                <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset"
+                                                    :class="{
+                                                        'bg-green-50 text-green-700 ring-green-600/20': emp.status === 'ACTIVE',
+                                                        'bg-gray-50 text-gray-600 ring-gray-500/10': emp.status !== 'ACTIVE'
+                                                    }" 
+                                                    x-text="emp.status"></span>
+                                                <span class="text-xs text-gray-400 mt-1" x-text="'ID: ' + emp.employee_id"></span>
+                                            </div>
+                                        </button>
+                                    </li>
+                                </template>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Error/Loading States -->
+    <div x-show="isLoading" class="flex justify-center py-12" style="display: none;">
+        <svg class="h-10 w-10 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+        </svg>
+    </div>
+    
+    <div x-show="error" class="rounded-xl bg-red-50 p-4 border border-red-200" style="display: none;">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800" x-text="error"></h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div x-show="!selectedEmployee && !isLoading && !error" class="rounded-3xl border-2 border-dashed border-gray-200 bg-white py-16 px-6 text-center" style="display: none;">
+        <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+        <h3 class="mt-4 text-sm font-semibold text-gray-900">No Employee Selected</h3>
+        <p class="mt-1 text-sm text-gray-500">Search for an employee above to view their dashboard.</p>
+    </div>
+
+    <!-- Dashboard Content -->
+    <template x-if="selectedEmployee">
+        <div class="space-y-6">
+            <!-- Employee Profile Header -->
+            <div class="rounded-3xl bg-white shadow-sm ring-1 ring-gray-900/5 p-6 md:p-8 flex flex-col md:flex-row gap-6 md:items-center justify-between">
+                <div class="flex items-center gap-6">
+                    <div class="h-20 w-20 flex-shrink-0 rounded-full bg-gradient-to-tr from-indigo-100 to-indigo-50 text-indigo-600 flex items-center justify-center text-3xl font-bold ring-4 ring-white shadow-md">
+                        <span x-text="initials(selectedEmployee.first_name, selectedEmployee.last_name)"></span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <a :href="'https://golive.culinarystaffing.com/employees/' + selectedEmployee.employee_id" target="_blank" title="View Profile in GoLive">
+                                <h2 class="text-2xl font-bold text-gray-900 hover:text-indigo-600 hover:underline transition cursor-pointer" x-text="selectedEmployee.first_name + ' ' + selectedEmployee.last_name"></h2>
+                            </a>
+                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                                :class="{
+                                    'bg-green-100 text-green-800': selectedEmployee.status === 'ACTIVE',
+                                    'bg-red-100 text-red-800': selectedEmployee.status === 'DELETED',
+                                    'bg-gray-100 text-gray-800': selectedEmployee.status !== 'ACTIVE' && selectedEmployee.status !== 'DELETED'
+                                }" x-text="selectedEmployee.status">
+                            </span>
+                        </div>
+                        <div class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 test-sm text-gray-500">
+                            <span class="flex items-center gap-1">
+                                <svg class="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" /><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" /></svg>
+                                <span x-text="selectedEmployee.email || 'N/A'"></span>
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <svg class="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" /></svg>
+                                <span x-text="selectedEmployee.mobile || 'N/A'"></span>
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <svg class="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
+                                <span x-text="(selectedEmployee.county_name || 'N/A') + ' (' + (selectedEmployee.region || 'N/A') + ')'"></span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex gap-8 text-sm md:text-right border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-8">
+                    <div>
+                        <p class="text-gray-500 font-medium">Start Date</p>
+                        <p class="font-semibold text-gray-900 mt-0.5" x-text="formatDate(selectedEmployee.start_date) || 'N/A'"></p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 font-medium">Last Worked</p>
+                        <p class="font-semibold text-gray-900 mt-0.5" x-text="formatDate(selectedEmployee.last_worked_date) || 'Never'"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Position Tags -->
+            <div x-show="selectedEmployee.eligible_positions && selectedEmployee.eligible_positions.length > 0" class="flex flex-wrap items-center gap-2">
+                <span class="text-sm font-semibold text-gray-500 uppercase tracking-widest mr-2">Eligible For:</span>
+                <template x-for="pos in selectedEmployee.eligible_positions" :key="pos">
+                    <span class="inline-flex items-center rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10" x-text="pos"></span>
+                </template>
+            </div>
+
+            <!-- KPI Summary Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                
+                <!-- Worked Shifts -->
+                <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-900/5 hover:shadow-md transition">
+                    <p class="text-sm font-medium text-gray-500">Worked Shifts</p>
+                    <p class="mt-2 text-3xl font-bold tracking-tight text-gray-900" x-text="kpis.worked_shifts"></p>
+                </div>
+
+                <!-- Cancelled Shifts -->
+                <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-900/5 hover:shadow-md transition relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-red-50 opacity-0 group-hover:opacity-100 transition duration-300"></div>
+                    <div class="relative">
+                        <p class="text-sm font-medium text-gray-500 group-hover:text-red-600 transition">Cancelled Shifts</p>
+                        <p class="mt-2 text-3xl font-bold tracking-tight text-gray-900 group-hover:text-red-900 transition" x-text="kpis.cancelled_shifts"></p>
+                        <p class="mt-1 text-xs text-gray-400" x-show="kpis.worked_shifts > 0">
+                            <span x-text="((kpis.cancelled_shifts / (kpis.worked_shifts + kpis.cancelled_shifts + kpis.noshow_shifts)) * 100).toFixed(1) + '% of total assignments'"></span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- No-shows -->
+                <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-900/5 hover:shadow-md transition relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-orange-50 opacity-0 group-hover:opacity-100 transition duration-300"></div>
+                    <div class="relative">
+                        <p class="text-sm font-medium text-gray-500 group-hover:text-orange-600 transition">No-show Shifts</p>
+                        <p class="mt-2 text-3xl font-bold tracking-tight text-gray-900 group-hover:text-orange-900 transition" x-text="kpis.noshow_shifts"></p>
+                    </div>
+                </div>
+
+                <!-- Avg Clock In Variance -->
+                <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-900/5 hover:shadow-md transition">
+                    <p class="text-sm font-medium text-gray-500">Avg Clock-in Variance</p>
+                    <p class="mt-2 flex items-baseline gap-2">
+                        <span class="text-3xl font-bold tracking-tight text-gray-900" 
+                              :class="{'text-red-600': kpis.avg_clock_in_variance_minutes > 5, 'text-green-600': kpis.avg_clock_in_variance_minutes <= 5 && kpis.avg_clock_in_variance_minutes !== null}"
+                              x-text="kpis.avg_clock_in_variance_minutes !== null ? String(kpis.avg_clock_in_variance_minutes) : '-'"></span>
+                        <span class="text-sm text-gray-500">mins</span>
+                    </p>
+                    <p class="mt-1 text-xs text-gray-500" x-show="kpis.on_time_pct !== null" x-text="kpis.on_time_pct + '% strictly on time'"></p>
+                </div>
+
+                <!-- Preferred Clients/Venues -->
+                <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-900/5 hover:shadow-md transition border-l-4 border-green-500">
+                    <p class="text-sm font-medium text-gray-500">Preferred Status</p>
+                    <div class="mt-2 flex gap-4">
+                        <div>
+                            <span class="text-2xl font-bold text-gray-900" x-text="kpis.preferred_clients"></span>
+                            <span class="text-xs text-gray-500 ml-1">Clients</span>
+                        </div>
+                        <div>
+                            <span class="text-2xl font-bold text-gray-900" x-text="kpis.preferred_venues"></span>
+                            <span class="text-xs text-gray-500 ml-1">Venues</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DNR Clients/Venues -->
+                <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-900/5 hover:shadow-md transition border-l-4 border-red-500">
+                    <p class="text-sm font-medium text-gray-500">DNR Status</p>
+                    <div class="mt-2 flex gap-4">
+                        <div>
+                            <span class="text-2xl font-bold text-gray-900" x-text="kpis.dnr_clients"></span>
+                            <span class="text-xs text-gray-500 ml-1">Clients</span>
+                        </div>
+                        <div>
+                            <span class="text-2xl font-bold text-gray-900" x-text="kpis.dnr_venues"></span>
+                            <span class="text-xs text-gray-500 ml-1">Venues</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Avg Confirmation Time -->
+                <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-900/5 hover:shadow-md transition col-span-2 md:col-span-1 lg:col-span-2">
+                    <p class="text-sm font-medium text-gray-500">Avg Confirmation Speed</p>
+                    <p class="mt-2 flex items-baseline gap-2">
+                        <span class="text-3xl font-bold tracking-tight text-gray-900" 
+                              x-text="kpis.avg_confirmation_minutes !== null ? formatDuration(kpis.avg_confirmation_minutes) : '-'"></span>
+                        <span class="text-sm text-gray-500 px-1" x-show="kpis.avg_confirmation_minutes !== null">following request</span>
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- AI Reliability Summarization -->
+            <div class="mt-8 rounded-3xl bg-white shadow-sm ring-1 ring-gray-900/5 overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <svg class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        <h3 class="text-lg font-semibold text-gray-900">AI Reliability Assessment</h3>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div x-show="isAiLoading" class="flex justify-center p-8">
+                        <svg class="h-8 w-8 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                        </svg>
+                    </div>
+                    
+                    <div x-show="aiError" class="rounded-xl bg-red-50 p-4 border border-red-200" style="display: none;">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-red-800" x-text="aiError"></h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <template x-if="aiData && !isAiLoading && !aiError">
+                        <div class="flex flex-col md:flex-row gap-6">
+                            <!-- Score Display -->
+                            <div class="flex-shrink-0 flex flex-col items-center justify-center p-6 bg-gray-50 rounded-2xl md:w-48 border border-gray-100">
+                                <span class="text-sm font-medium text-gray-500 mb-2 uppercase tracking-wider text-center">Reliability Score</span>
+                                <div class="text-6xl font-black text-gray-900" x-text="aiData.reliability_score"></div>
+                                <span class="text-xs text-gray-400 mt-1">/ 100</span>
+                            </div>
+                            
+                            <!-- Summary Details -->
+                            <div class="flex-1 space-y-4">
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-900 uppercase tracking-widest text-indigo-600 mb-1">Executive Summary</h4>
+                                    <p class="text-gray-700 leading-relaxed" x-text="aiData.summary"></p>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div x-show="aiData.positive_indicators && aiData.positive_indicators.length > 0">
+                                        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Positive Indicators</h4>
+                                        <ul class="list-disc pl-4 space-y-1 text-sm text-green-700">
+                                            <template x-for="item in aiData.positive_indicators">
+                                                <li x-text="item"></li>
+                                            </template>
+                                        </ul>
+                                    </div>
+                                    <div x-show="aiData.risk_factors && aiData.risk_factors.length > 0">
+                                        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Risk Factors</h4>
+                                        <ul class="list-disc pl-4 space-y-1 text-sm text-red-700">
+                                            <template x-for="item in aiData.risk_factors">
+                                                <li x-text="item"></li>
+                                            </template>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div x-show="aiData.notable_incidents && aiData.notable_incidents.length > 0" class="mt-2 p-3 bg-red-50 rounded-lg border border-red-100">
+                                    <h4 class="text-xs font-semibold text-red-800 uppercase tracking-wider mb-1">Notable Incidents</h4>
+                                    <ul class="list-disc pl-4 space-y-1 text-sm text-red-700">
+                                        <template x-for="item in aiData.notable_incidents">
+                                            <li x-text="item"></li>
+                                        </template>
+                                    </ul>
+                                </div>
+                                <div x-show="aiData.caution" class="mt-2 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                                    <div class="flex gap-2">
+                                        <svg class="h-4 w-4 text-yellow-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                        <p class="text-sm text-yellow-800" x-text="aiData.caution"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Work Area Map Section -->
+            <div x-show="selectedEmployee.work_area_latitude && selectedEmployee.work_area_longitude" 
+                 class="mt-8 rounded-3xl bg-white shadow-sm ring-1 ring-gray-900/5 overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <svg class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <h3 class="text-lg font-semibold text-gray-900">Work Area & Mobility</h3>
+                    </div>
+                    <div class="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full" x-text="selectedEmployee.work_area_distance + ' mile range'"></div>
+                </div>
+                <div class="relative">
+                    <div id="workAreaMap" class="w-full"></div>
+                </div>
+            </div>
+
+            <!-- Shift History Table -->
+            <div class="mt-8 rounded-3xl bg-white shadow-sm ring-1 ring-gray-900/5 overflow-hidden">
+                <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Recent Shift History</h3>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="py-3.5 pl-6 pr-3 text-left font-semibold text-gray-900">Event Date</th>
+                                <th scope="col" class="px-3 py-3.5 text-left font-semibold text-gray-900">Client / Venue</th>
+                                <th scope="col" class="px-3 py-3.5 text-left font-semibold text-gray-900">Position</th>
+                                <th scope="col" class="px-3 py-3.5 text-left font-semibold text-gray-900">Scheduled</th>
+                                <th scope="col" class="px-3 py-3.5 text-left font-semibold text-gray-900">Status / Punches</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 bg-white">
+                            <template x-for="shift in shiftHistory" :key="shift.event_date + shift.client_name">
+                                <tr class="hover:bg-gray-50 transition">
+                                    <td class="whitespace-nowrap py-4 pl-6 pr-3 text-gray-900 font-medium font-mono text-xs" x-text="formatDateShort(shift.event_date)"></td>
+                                    <td class="px-3 py-4">
+                                        <div class="font-medium text-gray-900" x-text="shift.client_name"></div>
+                                        <div class="text-gray-500 text-xs mt-0.5" x-text="shift.venue_name || 'No Venue'"></div>
+                                    </td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-gray-700" x-text="shift.position_name"></td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-gray-500 text-xs font-mono">
+                                        <div x-text="formatTime(shift.scheduled_start)"></div>
+                                        <div class="text-gray-400 ml-1">to <span x-text="formatTime(shift.scheduled_end)"></span></div>
+                                    </td>
+                                    <td class="px-3 py-4 whitespace-nowrap">
+                                        <!-- Logic to show outcomes -->
+                                        <template x-if="shift.cancelled_at">
+                                            <span class="inline-flex items-center rounded-md bg-red-50 text-red-700 px-2 py-1 text-xs font-medium ring-1 ring-inset ring-red-600/20">
+                                                Cancelled (<span x-text="shift.cancel_reason || 'Unknown'"></span>)
+                                            </span>
+                                        </template>
+                                        <template x-if="!shift.cancelled_at && shift.employee_worked === 'NOSHOW'">
+                                            <span class="inline-flex items-center rounded-md bg-orange-50 text-orange-700 px-2 py-1 text-xs font-medium ring-1 ring-inset ring-orange-600/20">
+                                                No-Show
+                                            </span>
+                                        </template>
+                                        <template x-if="shift.employee_worked === 'WORKED'">
+                                            <div>
+                                                <span class="inline-flex items-center rounded-md bg-green-50 text-green-700 px-2 py-1 text-xs font-medium ring-1 ring-inset ring-green-600/20 mb-1">
+                                                    Worked
+                                                </span>
+                                                <div class="text-xs text-gray-500 font-mono mt-0.5">
+                                                    In: <span x-text="formatTime(shift.employee_start) || '?'" :class="{'text-red-500': isLate(shift.scheduled_start, shift.employee_start)}"></span>
+                                                    <template x-if="shift.employee_end">
+                                                        <span> Out: <span x-text="formatTime(shift.employee_end)"></span></span>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <template x-if="!shift.cancelled_at && shift.employee_worked !== 'NOSHOW' && shift.employee_worked !== 'WORKED'">
+                                            <span class="inline-flex items-center rounded-md bg-gray-100 text-gray-700 px-2 py-1 text-xs font-medium ring-1 ring-inset ring-gray-600/20" x-text="shift.employee_worked || (shift.confirmed_at ? 'Confirmed' : 'Unconfirmed')">
+                                            </span>
+                                        </template>
+                                    </td>
+                                </tr>
+                            </template>
+                            <tr x-show="shiftHistory.length === 0">
+                                <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500">No shift history found for this employee.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+        </div>
+    </template>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Leaflet.js for Maps -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Alpine.js for lightweight reactivity -->
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('employeeDashboard', () => ({
+            searchQuery: '',
+            searchResults: [],
+            isLoading: false,
+            error: null,
+            
+            selectedEmployee: null,
+            kpis: {},
+            shiftHistory: [],
+            
+            map: null,
+            mapLayers: null,
+            
+            aiData: null,
+            isAiLoading: false,
+            aiError: null,
+            
+            searchTimeout: null,
+
+            debouncedSearch() {
+                clearTimeout(this.searchTimeout);
+                if (this.searchQuery.length < 2) {
+                    this.searchResults = [];
+                    return;
+                }
+                this.searchTimeout = setTimeout(() => {
+                    this.performSearch();
+                }, 300);
+            },
+
+            async performSearch() {
+                try {
+                    const response = await fetch(`/staffing-employee-dashboard/api/search?q=${encodeURIComponent(this.searchQuery)}`);
+                    if (!response.ok) throw new Error('Search failed');
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        this.searchResults = data.data;
+                    } else {
+                        throw new Error(data.message);
+                    }
+                } catch (err) {
+                    console.error('Search error:', err);
+                }
+            },
+
+            async selectEmployee(employeeId) {
+                this.searchResults = [];
+                this.searchQuery = '';
+                this.isLoading = true;
+                this.error = null;
+                this.selectedEmployee = null;
+                this.aiData = null;
+                this.isAiLoading = false;
+                this.aiError = null;
+
+                try {
+                    const response = await fetch(`/staffing-employee-dashboard/api/dashboard/${employeeId}`);
+                    if (!response.ok) throw new Error('Failed to load dashboard data');
+                    const data = await response.json();
+                    
+                    if (data.status === 'success') {
+                        this.selectedEmployee = data.employee;
+                        this.kpis = data.kpis;
+                        this.shiftHistory = data.shift_history;
+                        
+                        this.fetchAiReliability(employeeId);
+                        
+                        // Render map on next tick to ensure DOM is ready
+                        this.$nextTick(() => {
+                            this.renderWorkAreaMap();
+                        });
+                    } else {
+                        throw new Error(data.message);
+                    }
+                } catch (err) {
+                    this.error = err.message;
+                } finally {
+                    this.isLoading = false;
+                }
+            },
+            
+            async fetchAiReliability(employeeId) {
+                this.isAiLoading = true;
+                this.aiError = null;
+                this.aiData = null;
+                try {
+                    const response = await fetch(`/staffing-employee-dashboard/api/dashboard/${employeeId}/reliability`);
+                    if (!response.ok) throw new Error('Failed to load AI reliability rating');
+                    const responseData = await response.json();
+                    
+                    if (responseData.status === 'success') {
+                        this.aiData = responseData.data;
+                    } else {
+                        throw new Error(responseData.message);
+                    }
+                } catch (err) {
+                    this.aiError = err.message;
+                } finally {
+                    this.isAiLoading = false;
+                }
+            },
+
+            renderWorkAreaMap() {
+                const lat = this.selectedEmployee.work_area_latitude;
+                const lng = this.selectedEmployee.work_area_longitude;
+                const dist = this.selectedEmployee.work_area_distance;
+
+                if (!lat || !lng) return;
+
+                // Always teardown existing map to avoid stale DOM references from x-if recreation
+                if (this.map) {
+                    try {
+                        this.map.remove();
+                    } catch (e) {
+                        console.error('Map removal failed:', e);
+                    }
+                    this.map = null;
+                }
+
+                // Initialize new map instance
+                this.map = L.map('workAreaMap').setView([lat, lng], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(this.map);
+                this.mapLayers = L.layerGroup().addTo(this.map);
+
+                // Add Marker
+                L.marker([lat, lng]).addTo(this.mapLayers)
+                    .bindPopup(`${this.selectedEmployee.first_name}'s Work Area Center`)
+                    .openPopup();
+
+                // Add Circle (distance is in miles, Leaflet needs meters)
+                const radiusInMeters = dist * 1609.34;
+                const circle = L.circle([lat, lng], {
+                    color: '#4f46e5',
+                    fillColor: '#4f46e5',
+                    fillOpacity: 0.15,
+                    radius: radiusInMeters
+                }).addTo(this.mapLayers);
+
+                // Fit bounds to the circle
+                this.map.fitBounds(circle.getBounds(), { padding: [20, 20] });
+                
+                // Force a resize check in case container was hidden/shown
+                setTimeout(() => { this.map.invalidateSize(); }, 100);
+            },
+            
+            initials(first, last) {
+                if (!first && !last) return '?';
+                return ((first?.[0] || '') + (last?.[0] || '')).toUpperCase();
+            },
+            
+            formatDate(dateStr) {
+                if (!dateStr) return null;
+                const d = new Date(dateStr);
+                if (isNaN(d.getTime())) return dateStr;
+                return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+            },
+            
+            formatDateShort(dateStr) {
+                if (!dateStr) return '';
+                const d = new Date(dateStr);
+                if (isNaN(d.getTime())) return dateStr;
+                return d.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
+            },
+
+            formatTime(dateStr) {
+                if (!dateStr) return '';
+                const d = new Date(dateStr);
+                if (isNaN(d.getTime())) return dateStr;
+                return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            },
+
+            isLate(scheduled, actual) {
+                if (!scheduled || !actual) return false;
+                const s = new Date(scheduled).getTime();
+                const a = new Date(actual).getTime();
+                return (a - s) > (5 * 60 * 1000); // More than 5 minutes later than scheduled
+            },
+
+            formatDuration(totalMinutes) {
+                if (totalMinutes === null || totalMinutes === undefined) return '-';
+                let m = Math.round(totalMinutes);
+                if (m === 0) return '0m';
+                let d = Math.floor(m / (24 * 60));
+                m %= 24 * 60;
+                let h = Math.floor(m / 60);
+                m %= 60;
+                let parts = [];
+                if (d > 0) parts.push(d + 'd');
+                if (h > 0) parts.push(h + 'h');
+                if (m > 0) parts.push(m + 'm');
+                return parts.join(' ');
+            }
+        }));
+    });
+</script>
+{% endblock %}

@@ -140,6 +140,26 @@ async def get_clients():
     finally:
         engine.dispose()
 
+@router.get("/api/clients/12-months")
+async def get_active_clients_12m():
+    engine = _get_staffing_engine()
+    try:
+        with engine.begin() as conn:
+            sql = text("""
+                SELECT c.client_id, c.name 
+                FROM client c
+                WHERE c.client_id IN (
+                    SELECT DISTINCT e.client_id 
+                    FROM event e 
+                    WHERE e.date >= DATE_SUB(LAST_DAY(NOW()), INTERVAL 12 MONTH)
+                ) AND c.deleted_at IS NULL
+                ORDER BY c.name
+            """)
+            df = pd.read_sql(sql, conn)
+            return df.to_dict(orient="records")
+    finally:
+        engine.dispose()
+
 # --- Preferred List Routes ---
 @router.get("/preferred", response_class=HTMLResponse)
 async def preferred_list_page(request: Request):
@@ -254,6 +274,69 @@ async def export_dnr_data(client_id: int):
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
+# --- Commerce Casino Hours Routes ---
+@router.get("/commerce-hours", response_class=HTMLResponse)
+async def commerce_hours_page(request: Request):
+    return templates.TemplateResponse("reports/commerce_hours.html", {"request": request})
+
+async def _get_commerce_hours_df(start_date: str, end_date: str):
+    engine = _get_staffing_engine()
+    try:
+        sql = text("""
+            SELECT 
+                CONCAT(emp.first_name, ' ', emp.last_name) AS "Employee Name",
+                GROUP_CONCAT(DISTINCT p.description SEPARATOR ', ') AS "Positions Worked",
+                SUM(
+                    CASE 
+                        WHEN t.use_sheet = 'EMPLOYEE' THEN t.employee_seconds / 3600.0
+                        WHEN t.use_sheet = 'CLIENT' THEN t.client_seconds / 3600.0
+                        ELSE t.client_seconds / 3600.0
+                    END
+                ) AS "Sum of Hours"
+            FROM timesheet t
+            JOIN shift_employee se ON t.shift_employee_id = se.shift_employee_id
+            JOIN event e ON se.event_id = e.event_id
+            JOIN employee emp ON t.employee_id = emp.employee_id
+            LEFT JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
+            LEFT JOIN position p ON sp.position_id = p.position_id
+            WHERE e.client_id = 183
+              AND t.employee_worked = 'WORKED'
+              AND e.date >= :start_date AND e.date <= :end_date
+              AND t.employee_id NOT IN (
+                  SELECT dnr.employee_id FROM dnr WHERE dnr.client_id = 183
+              )
+            GROUP BY t.employee_id
+            ORDER BY emp.first_name ASC, emp.last_name ASC
+        """)
+        with engine.begin() as conn:
+            df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date})
+            return df
+    finally:
+        engine.dispose()
+
+@router.get("/api/commerce-hours")
+async def get_commerce_hours_data(start_date: str, end_date: str):
+    df = await _get_commerce_hours_df(start_date, end_date)
+    return df.astype(object).where(pd.notnull(df), None).to_dict(orient="records")
+
+@router.get("/api/commerce-hours/export")
+async def export_commerce_hours_data(start_date: str, end_date: str):
+    df = await _get_commerce_hours_df(start_date, end_date)
+    if df.empty:
+        raise HTTPException(status_code=404, detail="No data found for this date range")
+    
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Commerce Casino Hours')
+    output.seek(0)
+    
+    filename = f"commerce_hours_{start_date}_to_{end_date}.xlsx"
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 # --- AI Analytics Routes ---
 @router.get("/ai-analytics", response_class=HTMLResponse)
 async def ai_analytics_page(request: Request):
@@ -302,6 +385,308 @@ async def api_ask(payload: AskRequest):
     result = await run_in_threadpool(run_sql, sql)
     answer = await run_in_threadpool(explain_result, question, sql, result)
     return JSONResponse({"answer": answer, "sql": sql})
+
+# --- Client Fill Rates Routes ---
+@router.get("/client-fill-rates", response_class=HTMLResponse)
+async def client_fill_rates_page(request: Request):
+    return templates.TemplateResponse("reports/client_fill_rates.html", {"request": request})
+
+@router.get("/api/client-fill-rates")
+async def get_client_fill_rates(start_date: str, end_date: str):
+    engine = _get_staffing_engine()
+    try:
+        sql = text("""
+            WITH valid_placements AS (
+                SELECT 
+                    se.shift_position_id,
+                    se.shift_employee_id,
+                    se.created_at AS placement_created_at,
+                    se.confirmed_at AS placement_confirmed_at
+                FROM shift_employee se
+                INNER JOIN timesheet t ON se.shift_employee_id = t.shift_employee_id
+                WHERE se.deleted_at IS NULL 
+                  AND (se.cancel_reason IS NULL OR se.cancel_reason IN ('0',''))
+            ),
+            position_stats AS (
+                SELECT 
+                    sp.shift_position_id,
+                    sp.shift_id,
+                    sp.count AS required_count,
+                    COUNT(vp.shift_employee_id) AS validated_employee_count,
+                    SUM(
+                        GREATEST(
+                            TIMESTAMPDIFF(
+                                SECOND, 
+                                COALESCE(sp.created_at, vp.placement_created_at), 
+                                COALESCE(vp.placement_confirmed_at, vp.placement_created_at)
+                            ), 
+                            0
+                        )
+                    ) AS total_fill_seconds
+                FROM shift_position sp
+                LEFT JOIN valid_placements vp ON sp.shift_position_id = vp.shift_position_id
+                WHERE sp.deleted_at IS NULL AND sp.count > 0
+                GROUP BY sp.shift_position_id
+            )
+            SELECT
+                c.client_id,
+                c.name AS client_name,
+                COUNT(DISTINCT e.event_id) AS total_events,
+                SUM(ps.required_count) AS total_shifts_created,
+                SUM(ps.validated_employee_count) AS total_shifts_filled,
+                SUM(ps.total_fill_seconds) / NULLIF(SUM(ps.validated_employee_count), 0) AS avg_fill_time_seconds
+            FROM client c
+            JOIN event e ON c.client_id = e.client_id
+            JOIN shift s ON e.event_id = s.event_id
+            JOIN position_stats ps ON s.shift_id = ps.shift_id
+            WHERE c.deleted_at IS NULL
+              AND e.deleted_at IS NULL
+              AND s.deleted_at IS NULL
+              AND e.date >= :start_date 
+              AND e.date <= :end_date
+            GROUP BY c.client_id, c.name
+            ORDER BY c.name
+        """)
+        with engine.begin() as conn:
+            df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date})
+            
+            if df.empty:
+                return []
+            
+            df['fill_rate'] = ((df['total_shifts_filled'] / df['total_shifts_created']) * 100).fillna(0).round(1)
+            
+            def format_duration(seconds):
+                if pd.isna(seconds):
+                    return None
+                
+                seconds = max(0, seconds)
+                days = int(seconds // 86400)
+                hours = int((seconds % 86400) // 3600)
+                minutes = int((seconds % 3600) // 60)
+                
+                if days > 0:
+                    return f"{days}d {hours}h {minutes}m"
+                elif hours > 0:
+                    return f"{hours}h {minutes}m"
+                else:
+                    return f"{minutes}m"
+            
+            df['avg_fill_time'] = df['avg_fill_time_seconds'].apply(format_duration)
+            
+            return df.astype(object).where(pd.notnull(df), None).to_dict(orient="records")
+    finally:
+        engine.dispose()
+
+# --- Less Than 24 Hr Cancellations Routes ---
+@router.get("/less-24-cancellations", response_class=HTMLResponse)
+async def less_24_cancellations_page(request: Request):
+    return templates.TemplateResponse("reports/less_24_cancellations.html", {"request": request})
+
+@router.get("/api/less-24-cancellations")
+async def get_less_24_cancellations(start_date: str, end_date: str):
+    engine = _get_staffing_engine()
+    try:
+        sql = text("""
+            WITH target_cancellations AS (
+                SELECT 
+                    se.shift_position_id,
+                    se.shift_employee_id,
+                    se.cancelled_at,
+                    s.start as shift_start,
+                    e.client_id,
+                    TIMESTAMPDIFF(SECOND, se.cancelled_at, s.start) as seconds_before_start
+                FROM shift_employee se
+                JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
+                JOIN shift s ON sp.shift_id = s.shift_id
+                JOIN event e ON s.event_id = e.event_id
+                WHERE se.cancel_reason = '2'
+                  AND e.deleted_at IS NULL
+                  AND s.deleted_at IS NULL
+                  AND e.date >= :start_date 
+                  AND e.date <= :end_date
+            ),
+            refills AS (
+                SELECT 
+                    tc.shift_employee_id as cancelled_employee_id,
+                    MIN(se_new.confirmed_at) as refill_confirmed_at
+                FROM target_cancellations tc
+                JOIN shift_employee se_new ON tc.shift_position_id = se_new.shift_position_id
+                WHERE se_new.confirmed = 1
+                  AND (se_new.cancel_reason = '0' OR se_new.cancel_reason IS NULL OR se_new.cancel_reason = '')
+                  AND se_new.confirmed_at > tc.cancelled_at
+                GROUP BY tc.shift_employee_id
+            ),
+            cancellation_stats AS (
+                SELECT 
+                    tc.client_id,
+                    tc.shift_employee_id,
+                    tc.seconds_before_start,
+                    r.refill_confirmed_at,
+                    TIMESTAMPDIFF(SECOND, tc.cancelled_at, r.refill_confirmed_at) as refill_seconds
+                FROM target_cancellations tc
+                LEFT JOIN refills r ON tc.shift_employee_id = r.cancelled_employee_id
+            )
+            SELECT 
+                c.client_id,
+                c.name AS client_name,
+                COUNT(cs.shift_employee_id) AS total_cancellations,
+                AVG(cs.seconds_before_start) AS avg_seconds_before_start,
+                AVG(cs.refill_seconds) AS avg_refill_seconds,
+                SUM(CASE WHEN cs.refill_confirmed_at IS NULL THEN 1 ELSE 0 END) AS never_refilled_count
+            FROM client c
+            JOIN cancellation_stats cs ON c.client_id = cs.client_id
+            WHERE c.deleted_at IS NULL
+            GROUP BY c.client_id, c.name
+            ORDER BY c.name
+        """)
+        with engine.begin() as conn:
+            df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date})
+            
+            if df.empty:
+                return []
+            
+            def format_duration(seconds):
+                if pd.isna(seconds):
+                    return None
+                
+                is_negative = seconds < 0
+                seconds = abs(seconds)
+                days = int(seconds // 86400)
+                hours = int((seconds % 86400) // 3600)
+                minutes = int((seconds % 3600) // 60)
+                
+                prefix = "-" if is_negative else ""
+                
+                if days > 0:
+                    return f"{prefix}{days}d {hours}h {minutes}m"
+                elif hours > 0:
+                    return f"{prefix}{hours}h {minutes}m"
+                else:
+                    return f"{prefix}{minutes}m"
+            
+            df['avg_time_before_start'] = df['avg_seconds_before_start'].apply(format_duration)
+            df['avg_time_to_refill'] = df['avg_refill_seconds'].apply(format_duration)
+            
+            return df.astype(object).where(pd.notnull(df), None).to_dict(orient="records")
+    finally:
+        engine.dispose()
+
+@router.get("/api/less-24-cancellations/chart/{client_id}")
+async def get_less_24_cancellations_chart(client_id: int):
+    engine = _get_staffing_engine()
+    try:
+        sql = text("""
+            WITH target_cancellations AS (
+                SELECT 
+                    se.shift_position_id,
+                    se.shift_employee_id,
+                    se.cancelled_at,
+                    s.start as shift_start,
+                    e.client_id,
+                    DATE_FORMAT(e.date, '%Y-%m') as month_str,
+                    TIMESTAMPDIFF(SECOND, se.cancelled_at, s.start) as seconds_before_start
+                FROM shift_employee se
+                JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
+                JOIN shift s ON sp.shift_id = s.shift_id
+                JOIN event e ON s.event_id = e.event_id
+                WHERE se.cancel_reason = '2'
+                  AND e.deleted_at IS NULL
+                  AND s.deleted_at IS NULL
+                  AND e.client_id = :client_id
+                  AND e.date >= DATE_SUB(LAST_DAY(NOW()), INTERVAL 12 MONTH)
+            ),
+            refills AS (
+                SELECT 
+                    tc.shift_employee_id as cancelled_employee_id,
+                    MIN(se_new.confirmed_at) as refill_confirmed_at
+                FROM target_cancellations tc
+                JOIN shift_employee se_new ON tc.shift_position_id = se_new.shift_position_id
+                WHERE se_new.confirmed = 1
+                  AND (se_new.cancel_reason = '0' OR se_new.cancel_reason IS NULL OR se_new.cancel_reason = '')
+                  AND se_new.confirmed_at > tc.cancelled_at
+                GROUP BY tc.shift_employee_id
+            ),
+            cancellation_stats AS (
+                SELECT 
+                    tc.month_str,
+                    tc.shift_employee_id,
+                    tc.seconds_before_start,
+                    r.refill_confirmed_at,
+                    TIMESTAMPDIFF(SECOND, tc.cancelled_at, r.refill_confirmed_at) as refill_seconds
+                FROM target_cancellations tc
+                LEFT JOIN refills r ON tc.shift_employee_id = r.cancelled_employee_id
+            ),
+            monthly_stats AS (
+                SELECT 
+                    cs.month_str as month,
+                    COUNT(cs.shift_employee_id) AS total_cancellations,
+                    AVG(cs.seconds_before_start) AS avg_seconds_before_start,
+                    AVG(cs.refill_seconds) AS avg_refill_seconds,
+                    SUM(CASE WHEN cs.refill_confirmed_at IS NULL THEN 1 ELSE 0 END) AS never_refilled_count
+                FROM cancellation_stats cs
+                GROUP BY cs.month_str
+            ),
+            monthly_totals AS (
+                SELECT 
+                    DATE_FORMAT(e.date, '%Y-%m') as month_str,
+                    SUM(sp.count) as total_shifts_created
+                FROM event e
+                JOIN shift s ON e.event_id = s.event_id
+                JOIN shift_position sp ON s.shift_id = sp.shift_id
+                WHERE e.deleted_at IS NULL
+                  AND s.deleted_at IS NULL
+                  AND sp.deleted_at IS NULL
+                  AND sp.count > 0
+                  AND e.client_id = :client_id
+                  AND e.date >= DATE_SUB(LAST_DAY(NOW()), INTERVAL 12 MONTH)
+                GROUP BY month_str
+            )
+            SELECT 
+                mt.month_str as month,
+                COALESCE(ms.total_cancellations, 0) AS total_cancellations,
+                ms.avg_seconds_before_start,
+                ms.avg_refill_seconds,
+                COALESCE(ms.never_refilled_count, 0) AS never_refilled_count,
+                mt.total_shifts_created,
+                (COALESCE(ms.total_cancellations, 0) / mt.total_shifts_created) * 100 AS cancellation_rate,
+                (COALESCE(ms.never_refilled_count, 0) / mt.total_shifts_created) * 100 AS never_refilled_rate
+            FROM monthly_totals mt
+            LEFT JOIN monthly_stats ms ON mt.month_str = ms.month
+            ORDER BY mt.month_str ASC
+        """)
+        with engine.begin() as conn:
+            df = pd.read_sql(sql, conn, params={"client_id": client_id})
+            
+            # Backfill missing months for the last 12 months
+            import datetime
+            from dateutil.relativedelta import relativedelta
+            
+            end_date = datetime.date.today().replace(day=1)
+            start_date = end_date - relativedelta(months=11)
+            all_months = [(start_date + relativedelta(months=i)).strftime('%Y-%m') for i in range(12)]
+            
+            if df.empty:
+                full_df = pd.DataFrame({'month': all_months})
+                full_df['total_cancellations'] = 0
+                full_df['avg_seconds_before_start'] = 0
+                full_df['avg_refill_seconds'] = 0
+                full_df['never_refilled_count'] = 0
+                full_df['cancellation_rate'] = 0.0
+                full_df['never_refilled_rate'] = 0.0
+                return full_df.to_dict(orient="records")
+            
+            # Set index & reindex to include all months
+            df.set_index('month', inplace=True)
+            df = df.reindex(all_months).fillna(0).reset_index()
+            df.rename(columns={'index': 'month'}, inplace=True)
+            
+            # Convert seconds to hours for charting (since averages in seconds are huge numbers)
+            df['avg_hours_before_start'] = (df['avg_seconds_before_start'] / 3600.0).round(2)
+            df['avg_refill_hours'] = (df['avg_refill_seconds'] / 3600.0).round(2)
+            
+            return df.to_dict(orient="records")
+    finally:
+        engine.dispose()
 
 # --- Hub Route ---
 @router.get("/", response_class=HTMLResponse)

@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+{% block title %}Payroll Notes — GoLive Staffing{% endblock %}
+{% block content %}
+<div class="space-y-8">
+    <!-- Header Section -->
+    <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400 text-white shadow-2xl">
+        <div class="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_30%,white,transparent_30%)]"></div>
+        <div class="relative px-8 py-10 lg:px-12 lg:py-12">
+            <div class="space-y-4">
+                <nav class="flex" aria-label="Breadcrumb">
+                    <ol class="flex items-center space-x-2 text-sm font-medium text-emerald-50/80">
+                        <li><a href="/" class="hover:text-white transition-colors">Home</a></li>
+                        <li><span class="px-1">/</span></li>
+                        <li class="text-white">Payroll Notes</li>
+                    </ol>
+                </nav>
+                <h1 class="brand-serif text-4xl md:text-5xl font-semibold leading-tight">Payroll Notes</h1>
+                <p class="text-emerald-50/90 text-lg max-w-2xl">
+                    View all Payroll and Timesheet notes for the selected date range.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Filters and Summary -->
+    <div class="grid gap-6 lg:grid-cols-4 items-start">
+        <div class="lg:col-span-1 space-y-6">
+            <div class="rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm">
+                <h3 class="text-lg font-semibold text-emerald-900 mb-4">Date Range</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label for="start_date" class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                        <input type="date" id="start_date" value="{{ start_date }}" 
+                            class="w-full rounded-xl border-emerald-100 bg-emerald-50/30 px-4 py-2 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label for="end_date" class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                        <input type="date" id="end_date" value="{{ end_date }}"
+                            class="w-full rounded-xl border-emerald-100 bg-emerald-50/30 px-4 py-2 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label for="link_filter" class="block text-sm font-medium text-gray-700 mb-1">Filter Notes</label>
+                        <select id="link_filter" class="w-full rounded-xl border-emerald-100 bg-emerald-50/30 px-4 py-2 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500 cursor-pointer">
+                            <option value="all">View All</option>
+                            <option value="shifts">View Notes Linked to Shifts</option>
+                            <option value="profiles">View Notes Linked to Profiles</option>
+                        </select>
+                    </div>
+                    <button id="apply_filters" 
+                        class="w-full mt-2 rounded-xl bg-emerald-600 px-4 py-3 font-semibold text-white shadow-lg shadow-emerald-900/10 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">
+                        <span>Refresh Data</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Summary Card -->
+            <div id="summary_card" class="hidden rounded-3xl bg-emerald-900 text-white p-6 shadow-xl relative overflow-hidden">
+                <div class="relative z-10">
+                    <p class="text-emerald-100/80 text-sm font-medium uppercase tracking-wider mb-1">Total Notes</p>
+                    <div class="text-4xl font-bold" id="total_count">0</div>
+                    <p class="text-emerald-100/60 text-xs mt-2">Payroll and Timesheet notes</p>
+                </div>
+                <div class="absolute -right-4 -bottom-4 opacity-10">
+                    <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 9h2V7h-2v2z"/></svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Data Table -->
+        <div class="lg:col-span-3">
+            <div class="rounded-3xl border border-emerald-100 bg-white shadow-lg overflow-hidden min-h-[400px]">
+                <div id="loading_state" class="flex flex-col items-center justify-center h-full py-20">
+                    <div class="animate-spin rounded-full h-12 w-12 border-4 border-emerald-500 border-t-transparent"></div>
+                    <p class="text-gray-500 mt-4 font-medium">Fetching payroll notes...</p>
+                </div>
+
+                <div id="empty_state" class="hidden flex flex-col items-center justify-center h-full py-20 px-8 text-center">
+                    <div class="bg-emerald-50 p-6 rounded-full mb-6">
+                        <svg class="w-12 h-12 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900">No notes found</h3>
+                    <p class="text-gray-500 mt-2 max-w-sm">No payroll or timesheet notes were found for the selected date range.</p>
+                </div>
+
+                <div id="error_state" class="hidden flex flex-col items-center justify-center h-full py-20 px-8 text-center">
+                    <div class="bg-red-50 p-6 rounded-full mb-6">
+                        <svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900">Connection Error</h3>
+                    <p id="error_message" class="text-gray-500 mt-2 max-w-sm"></p>
+                </div>
+
+                <div id="notes_container" class="hidden space-y-6 p-6">
+                    <!-- Cards will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const startDateInput = document.getElementById('start_date');
+        const endDateInput = document.getElementById('end_date');
+        const applyBtn = document.getElementById('apply_filters');
+        
+        const loadingState = document.getElementById('loading_state');
+        const emptyState = document.getElementById('empty_state');
+        const errorState = document.getElementById('error_state');
+        const errorMessage = document.getElementById('error_message');
+        const notesContainer = document.getElementById('notes_container');
+        const summaryCard = document.getElementById('summary_card');
+        const totalCount = document.getElementById('total_count');
+        const linkFilter = document.getElementById('link_filter');
+
+        let allData = [];
+
+        async function fetchData() {
+            // Show loading
+            loadingState.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            errorState.classList.add('hidden');
+            notesContainer.classList.add('hidden');
+            summaryCard.classList.add('hidden');
+
+            const start = startDateInput.value;
+            const end = endDateInput.value;
+
+            try {
+                const response = await fetch(`/payroll-notes/data?start_date=${start}&end_date=${end}`);
+                const result = await response.json();
+
+                if (response.ok) {
+                    allData = result.data || [];
+                    applyLocalFilter();
+                } else {
+                    throw new Error(result.error || 'Failed to fetch data');
+                }
+            } catch (err) {
+                errorMessage.textContent = err.message;
+                errorState.classList.remove('hidden');
+                loadingState.classList.add('hidden');
+                notesContainer.classList.add('hidden');
+                summaryCard.classList.add('hidden');
+            }
+        }
+
+        function applyLocalFilter() {
+            const filterValue = linkFilter.value;
+            let filteredData = allData;
+
+            if (filterValue === 'shifts') {
+                filteredData = allData.filter(row => row.event_id);
+            } else if (filterValue === 'profiles') {
+                filteredData = allData.filter(row => !row.event_id);
+            }
+
+            if (filteredData.length > 0) {
+                renderNotes(filteredData);
+                totalCount.textContent = filteredData.length;
+                summaryCard.classList.remove('hidden');
+                notesContainer.classList.remove('hidden');
+                loadingState.classList.add('hidden');
+                emptyState.classList.add('hidden');
+                errorState.classList.add('hidden');
+            } else {
+                emptyState.classList.remove('hidden');
+                loadingState.classList.add('hidden');
+                notesContainer.classList.add('hidden');
+                summaryCard.classList.add('hidden');
+                errorState.classList.add('hidden');
+            }
+        }
+
+        function renderNotes(data) {
+            notesContainer.innerHTML = '';
+            data.forEach(row => {
+                const isTimesheet = row.type === 'Timesheet Note';
+                const typeClass = isTimesheet 
+                    ? 'bg-blue-100 text-blue-800 border border-blue-200' 
+                    : 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+                
+                const card = document.createElement('div');
+                card.className = `rounded-2xl border bg-white p-6 shadow-sm transition-all space-y-4 ${isTimesheet ? 'border-blue-100 hover:border-blue-300' : 'border-emerald-100 hover:border-emerald-300'}`;
+                
+                card.innerHTML = `
+                    <div class="flex flex-wrap justify-between items-start gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="${isTimesheet ? 'bg-blue-50' : 'bg-emerald-50'} p-2 rounded-lg">
+                                <svg class="w-5 h-5 ${isTimesheet ? 'text-blue-600' : 'text-emerald-600'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold ${isTimesheet ? 'text-blue-900' : 'text-emerald-900'}">${row.date}</p>
+                                <p class="text-xs text-gray-500 font-medium">Added by ${row.user_name}</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${typeClass} uppercase tracking-wider">
+                                ${row.type}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="text-gray-700 text-lg leading-relaxed whitespace-pre-wrap font-medium">${row.note}</div>
+                    
+                    <div class="pt-4 border-t border-emerald-50 flex flex-wrap items-center gap-x-8 gap-y-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Employee</span>
+                            <a href="https://golive.culinarystaffing.com/employees/${row.employee_id}" target="_blank" class="${isTimesheet ? 'text-blue-700' : 'text-emerald-700'} font-bold hover:underline transition-colors">
+                                ${row.employee_name}
+                            </a>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Shift</span>
+                            ${row.event_id ? `
+                                <a href="https://golive.culinarystaffing.com/events/${row.event_id}/view" target="_blank" class="${isTimesheet ? 'text-blue-600' : 'text-emerald-600'} font-semibold hover:underline transition-colors">
+                                    ${row.shift_display}
+                                </a>
+                            ` : `
+                                <span class="text-gray-400 font-medium italic">${row.shift_display}</span>
+                            `}
+                        </div>
+                    </div>
+                `;
+                notesContainer.appendChild(card);
+            });
+        }
+
+        applyBtn.addEventListener('click', fetchData);
+        linkFilter.addEventListener('change', applyLocalFilter);
+        
+        // Initial fetch
+        fetchData();
+    });
+</script>
+{% endblock %}

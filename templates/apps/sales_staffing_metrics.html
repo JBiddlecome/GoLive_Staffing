@@ -40,21 +40,32 @@
   {% if chart_data.weeks %}
     <div class="space-y-6">
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 class="text-sm font-semibold text-gray-900">Presentation mode</h2>
+            <h2 class="text-sm font-semibold text-gray-900">Display Options</h2>
             <p class="mt-1 text-xs text-gray-500">
-              Show one chart at a time with larger visuals for meeting screens.
+              Customize chart visibility and presentation settings.
             </p>
           </div>
-          <label class="inline-flex items-center gap-2 text-sm font-semibold text-gray-700">
-            <input
-              id="presentation-toggle"
-              type="checkbox"
-              class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-            />
-            Slideshow view
-          </label>
+          <div class="flex flex-wrap items-center gap-4 sm:gap-6">
+            <label class="inline-flex items-center gap-2 text-sm font-semibold text-gray-700">
+              <input
+                id="revenue-goal-toggle"
+                type="checkbox"
+                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              Show Revenue and Goal
+            </label>
+            <div class="hidden h-4 w-px bg-gray-200 sm:block"></div>
+            <label class="inline-flex items-center gap-2 text-sm font-semibold text-gray-700">
+              <input
+                id="presentation-toggle"
+                type="checkbox"
+                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              Slideshow view
+            </label>
+          </div>
         </div>
       </div>
 
@@ -122,7 +133,7 @@
           </div>
         </div>
 
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm" data-chart-slide>
+        <div class="hidden rounded-xl border border-gray-200 bg-white p-4 shadow-sm" data-chart-slide data-revenue-chart>
           <h2 class="text-base font-semibold text-gray-900">Revenue and Goal</h2>
           <p class="mt-1 text-xs text-gray-500">
             Weekly revenue performance against 1% increase goal over last year.
@@ -502,9 +513,11 @@
       const industryPieCtx = document.getElementById("industry-pie-chart");
       const industryBarEmpty = document.getElementById("industry-bar-empty");
       const industryPieEmpty = document.getElementById("industry-pie-empty");
-      const presentationToggle = document.getElementById("presentation-toggle");
+       const presentationToggle = document.getElementById("presentation-toggle");
+      const revenueGoalToggle = document.getElementById("revenue-goal-toggle");
+      const revenueGoalContainer = document.querySelector("[data-revenue-chart]");
       const presentationRoot = document.querySelector("[data-presentation-root]");
-      const chartSlides = Array.from(document.querySelectorAll("[data-chart-slide]"));
+      let chartSlides = Array.from(document.querySelectorAll("[data-chart-slide]:not(.hidden)"));
       const chartNav = document.querySelector("[data-chart-nav]");
       const chartPrevButton = document.querySelector("[data-chart-prev]");
       const chartNextButton = document.querySelector("[data-chart-next]");
@@ -1201,7 +1214,9 @@
           return;
         }
 
-        const clients = topClientsByWeek[weekEnding] || [];
+        const rawClients = topClientsByWeek[weekEnding] || [];
+        // Filter out placeholder "Unknown Client" entries with $0 revenue
+        const clients = rawClients.filter(c => c.client !== "Unknown Client" || (c.revenue && c.revenue > 0));
 
         topClientsTableBody.innerHTML = "";
 
@@ -1664,6 +1679,37 @@
         chartNextButton.addEventListener("click", () => {
           setActiveSlide(activeSlideIndex + 1);
         });
+      }
+
+       function updateSlides() {
+        chartSlides = Array.from(document.querySelectorAll("[data-chart-slide]:not(.hidden)"));
+        if (presentationToggle && presentationToggle.checked) {
+          if (activeSlideIndex >= chartSlides.length) {
+            activeSlideIndex = Math.max(0, chartSlides.length - 1);
+          }
+          setActiveSlide(activeSlideIndex);
+        }
+      }
+
+      if (revenueGoalToggle && revenueGoalContainer) {
+        const syncGrid = () => {
+          const grid = revenueGoalContainer.parentElement;
+          if (grid && grid.hasAttribute("data-chart-grid")) {
+             grid.classList.toggle("lg:grid-cols-2", revenueGoalToggle.checked);
+          }
+        };
+
+        revenueGoalToggle.addEventListener("change", () => {
+          revenueGoalContainer.classList.toggle("hidden", !revenueGoalToggle.checked);
+          syncGrid();
+          updateSlides();
+          window.requestAnimationFrame(() => {
+            resizeCharts();
+          });
+        });
+        
+        // Initial sync
+        syncGrid();
       }
 
       if (presentationToggle) {

@@ -114,3 +114,114 @@ async def update_net_terms():
         return JSONResponse({"error": str(e)}, status_code=500)
     finally:
         engine.dispose()
+
+@router.get("/count-staffing-manager")
+async def get_staffing_manager_count():
+    engine = _engine()
+    try:
+        sql = text("SELECT COUNT(*) as count FROM venue WHERE staffing_manager_id = 11747")
+        with engine.connect() as connection:
+            result = connection.execute(sql).fetchone()
+            return JSONResponse({"count": result[0]})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+    finally:
+        engine.dispose()
+
+@router.post("/update-staffing-manager")
+async def update_staffing_manager():
+    engine = _engine()
+    try:
+        check_sql = text("SELECT COUNT(*) as count FROM venue WHERE staffing_manager_id = 11747")
+        update_sql = text("UPDATE venue SET staffing_manager_id = 74 WHERE staffing_manager_id = 11747")
+        
+        with engine.begin() as connection:
+            count_result = connection.execute(check_sql).fetchone()
+            count_before = count_result[0]
+            
+            if count_before == 0:
+                return JSONResponse({"message": "No venues found with Staffing Manager ID 11747.", "updated": 0})
+            
+            result = connection.execute(update_sql)
+            return JSONResponse({
+                "message": f"Successfully updated {result.rowcount} venues to Staffing Manager 74.",
+                "updated": result.rowcount
+            })
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+    finally:
+        engine.dispose()
+
+@router.post("/undo-staffing-manager")
+async def undo_staffing_manager():
+    engine = _engine()
+    try:
+        # Note: This simply reverses 74 back to 11747. 
+        # In a more complex system, we might want to track specific IDs, 
+        # but here we follow the user's manual "Undo" request.
+        update_sql = text("UPDATE venue SET staffing_manager_id = 11747 WHERE staffing_manager_id = 74")
+        
+        with engine.begin() as connection:
+            result = connection.execute(update_sql)
+            return JSONResponse({
+                "message": f"Successfully reverted {result.rowcount} venues back to Staffing Manager 11747.",
+                "updated": result.rowcount
+            })
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+    finally:
+        engine.dispose()
+
+@router.get("/count-dan-sm")
+async def get_dan_sm_count():
+    engine = _engine()
+    try:
+        sql = text("SELECT COUNT(*) as count FROM venue WHERE staffing_manager_id = 74")
+        with engine.connect() as connection:
+            result = connection.execute(sql).fetchone()
+            return JSONResponse({"count": result[0]})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+    finally:
+        engine.dispose()
+
+@router.post("/update-dan-sm")
+async def update_dan_sm():
+    engine = _engine()
+    try:
+        check_sql = text("SELECT COUNT(*) as count FROM venue WHERE staffing_manager_id = 74")
+        update_sql = text("UPDATE venue SET staffing_manager_id = 1803 WHERE staffing_manager_id = 74")
+        
+        with engine.begin() as connection:
+            count_result = connection.execute(check_sql).fetchone()
+            count_before = count_result[0]
+            
+            if count_before == 0:
+                return JSONResponse({"message": "No venues found with Staffing Manager ID 74.", "updated": 0})
+            
+            result = connection.execute(update_sql)
+            return JSONResponse({
+                "message": f"Successfully updated {result.rowcount} venues to Staffing Manager 1803.",
+                "updated": result.rowcount
+            })
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+    finally:
+        engine.dispose()
+
+@router.post("/undo-dan-sm")
+async def undo_dan_sm():
+    engine = _engine()
+    try:
+        update_sql = text("UPDATE venue SET staffing_manager_id = 74 WHERE staffing_manager_id = 1803")
+        
+        with engine.begin() as connection:
+            result = connection.execute(update_sql)
+            return JSONResponse({
+                "message": f"Successfully reverted {result.rowcount} venues back to Staffing Manager 74.",
+                "updated": result.rowcount
+            })
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+    finally:
+        engine.dispose()
