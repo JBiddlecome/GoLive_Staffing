@@ -688,6 +688,117 @@ async def get_less_24_cancellations_chart(client_id: int):
     finally:
         engine.dispose()
 
+@router.get("/api/less-24-cancellations/top-frequency")
+async def get_top_frequency_cancellations():
+    engine = _get_staffing_engine()
+    try:
+        sql = text("""
+            WITH target_cancellations AS (
+                SELECT 
+                    se.shift_position_id,
+                    se.shift_employee_id,
+                    se.cancelled_at,
+                    s.start as shift_start,
+                    e.client_id,
+                    HOUR(se.cancelled_at) as cancel_hour
+                FROM shift_employee se
+                JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
+                JOIN shift s ON sp.shift_id = s.shift_id
+                JOIN event e ON s.event_id = e.event_id
+                WHERE se.cancel_reason = '2'
+                  AND e.deleted_at IS NULL
+                  AND s.deleted_at IS NULL
+                  AND e.date >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
+            ),
+            refills AS (
+                SELECT 
+                    tc.shift_employee_id as cancelled_employee_id,
+                    MIN(se_new.confirmed_at) as refill_confirmed_at
+                FROM target_cancellations tc
+                JOIN shift_employee se_new ON tc.shift_position_id = se_new.shift_position_id
+                WHERE se_new.confirmed = 1
+                  AND (se_new.cancel_reason = '0' OR se_new.cancel_reason IS NULL OR se_new.cancel_reason = '')
+                  AND se_new.confirmed_at > tc.cancelled_at
+                GROUP BY tc.shift_employee_id
+            ),
+            client_cancellations AS (
+                SELECT 
+                    tc.client_id,
+                    COUNT(tc.shift_employee_id) as total_cancellations,
+                    SUM(CASE WHEN r.refill_confirmed_at IS NULL THEN 1 ELSE 0 END) as unfilled_shifts
+                FROM target_cancellations tc
+                LEFT JOIN refills r ON tc.shift_employee_id = r.cancelled_employee_id
+                GROUP BY tc.client_id
+            ),
+            client_shifts AS (
+                SELECT 
+                    e.client_id,
+                    SUM(sp.count) as total_shifts
+                FROM event e
+                JOIN shift s ON e.event_id = s.event_id
+                JOIN shift_position sp ON s.shift_id = sp.shift_id
+                WHERE e.deleted_at IS NULL
+                  AND s.deleted_at IS NULL
+                  AND sp.deleted_at IS NULL
+                  AND sp.count > 0
+                  AND e.date >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
+                GROUP BY e.client_id
+            ),
+            client_peak_hours AS (
+                SELECT
+                    client_id,
+                    cancel_hour
+                FROM (
+                    SELECT 
+                        client_id,
+                        cancel_hour,
+                        COUNT(*) as hour_count,
+                        ROW_NUMBER() OVER(PARTITION BY client_id ORDER BY COUNT(*) DESC) as rn
+                    FROM target_cancellations
+                    GROUP BY client_id, cancel_hour
+                ) ranked
+                WHERE rn = 1
+            )
+            SELECT 
+                c.name as client_name,
+                cs.total_shifts,
+                COALESCE(cc.total_cancellations, 0) as total_cancellations,
+                (COALESCE(cc.total_cancellations, 0) / cs.total_shifts) * 100 as cancellation_rate,
+                cph.cancel_hour,
+                COALESCE(cc.unfilled_shifts, 0) as unfilled_shifts
+            FROM client c
+            JOIN client_shifts cs ON c.client_id = cs.client_id
+            JOIN client_cancellations cc ON c.client_id = cc.client_id
+            LEFT JOIN client_peak_hours cph ON c.client_id = cph.client_id
+            WHERE c.deleted_at IS NULL
+              AND cs.total_shifts > 0
+            ORDER BY cancellation_rate DESC
+            LIMIT 10
+        """)
+        with engine.begin() as conn:
+            df = pd.read_sql(sql, conn)
+            
+            if df.empty:
+                return []
+            
+            # Format cancellation rate
+            df['cancellation_rate'] = df['cancellation_rate'].round(1)
+            
+            # Format peak hour
+            def format_hour(h):
+                if pd.isna(h): return "N/A"
+                h = int(h)
+                period = "AM" if h < 12 else "PM"
+                h_12 = h if h <= 12 else h - 12
+                if h_12 == 0: h_12 = 12
+                return f"{h_12}:00 {period} - {h_12}:59 {period}"
+                
+            df['peak_cancellation_time'] = df['cancel_hour'].apply(format_hour)
+            
+            return df.astype(object).where(pd.notnull(df), None).to_dict(orient="records")
+    finally:
+        engine.dispose()
+
 # --- Hub Route ---
 @router.get("/", response_class=HTMLResponse)
 async def reports_home(request: Request):

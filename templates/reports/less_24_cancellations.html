@@ -65,6 +65,37 @@
 
   <hr class="my-8 border-gray-200">
 
+  <!-- Top 10 High Frequency cancellations Section -->
+  <div class="flex flex-col space-y-6">
+    <div class="flex items-center justify-between">
+      <h2 class="brand-serif text-2xl font-semibold text-gray-900">Highest Frequency Cancellations (Last 3 Months)</h2>
+    </div>
+    
+    <div class="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead class="bg-gray-50/50 border-b border-gray-200">
+            <tr>
+              <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Client Name</th>
+              <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Total Shifts</th>
+              <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">&lt;24 Hr Cancellations</th>
+              <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Cancellation Rate</th>
+              <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Peak Cancel Time</th>
+              <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Unfilled Shifts</th>
+            </tr>
+          </thead>
+          <tbody id="topFrequencyBody" class="divide-y divide-gray-100">
+            <tr>
+              <td colspan="6" class="px-6 py-12 text-center text-gray-500 animate-pulse">Loading data...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <hr class="my-8 border-gray-200">
+
   <!-- 12-Month Client Trend Section -->
   <div class="flex flex-col space-y-6">
     <div class="flex items-center justify-between">
@@ -147,6 +178,37 @@
     }
   }
   loadClients();
+
+  // Top Frequency Data Fetch
+  async function loadTopFrequencyData() {
+    const tbody = document.getElementById('topFrequencyBody');
+    try {
+      const response = await fetch('/reports/api/less-24-cancellations/top-frequency');
+      if (!response.ok) throw new Error("Failed to fetch top frequency data.");
+      const data = await response.json();
+      
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-12 text-center text-gray-500">No data found in the last 3 months.</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = data.map(row => {
+        return `
+          <tr class="hover:bg-gray-50/50 transition-colors border-b border-gray-100 last:border-0">
+            <td class="px-6 py-4 font-medium text-gray-900">${row.client_name}</td>
+            <td class="px-6 py-4 text-gray-600 text-center">${row.total_shifts}</td>
+            <td class="px-6 py-4 text-gray-600 text-center text-red-600 font-medium">${row.total_cancellations}</td>
+            <td class="px-6 py-4 text-gray-600 text-center font-semibold text-red-600">${row.cancellation_rate}%</td>
+            <td class="px-6 py-4 text-gray-600 text-center">${row.peak_cancellation_time}</td>
+            <td class="px-6 py-4 text-gray-600 text-center text-orange-500">${row.unfilled_shifts}</td>
+          </tr>
+        `;
+      }).join('');
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-red-500">Error loading data: ${err.message}</td></tr>`;
+    }
+  }
+  loadTopFrequencyData();
 
   // Table Data Fetch
   async function fetchData() {
