@@ -61,12 +61,10 @@ from apps.admin_dashboard.tracker import admin_tracking_loop
 async def lifespan(app: FastAPI):
     monitor_task = asyncio.create_task(msp_monitoring_loop())
     cc_monitor_task = asyncio.create_task(cc_clients_monitoring_loop())
-    yield
-    monitor_task.cancel()
-    cc_monitor_task.cancel()
     admin_task = asyncio.create_task(admin_tracking_loop())
     yield
     monitor_task.cancel()
+    cc_monitor_task.cancel()
     admin_task.cancel()
 
 app = FastAPI(title="GoLive Staffing — Tools", lifespan=lifespan)
@@ -292,6 +290,8 @@ app.include_router(
     credit_card_clients_router,
     prefix="/credit-card-clients",
     tags=["Credit Card Clients"],
+)
+app.include_router(
     admin_dashboard_router,
     prefix="/admin-dashboard",
     tags=["Admin Dashboard"],
