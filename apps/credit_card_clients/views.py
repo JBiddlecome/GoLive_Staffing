@@ -54,7 +54,7 @@ async def get_credit_card_cancellations():
                 p.description     AS position,
                 se.bill_rate      AS bill_rate,
                 s.start           AS shift_date,
-                se.deleted_at     AS deleted_at
+                COALESCE(se.deleted_at, se.cancelled_at) AS deleted_at
             FROM shift_employee se
             JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
             JOIN shift s           ON sp.shift_id          = s.shift_id
@@ -63,8 +63,12 @@ async def get_credit_card_cancellations():
             JOIN client c          ON ev.client_id         = c.client_id
             WHERE se.cancel_reason = 4
               AND c.payment_type   = 1
-              AND se.deleted_at   >= :seven_days_ago
-            ORDER BY se.deleted_at DESC;
+              AND (
+                  se.deleted_at   >= :seven_days_ago
+                  OR se.cancelled_at >= :seven_days_ago
+                  OR (se.deleted_at IS NULL AND se.cancelled_at IS NULL AND s.start >= :seven_days_ago)
+              )
+            ORDER BY COALESCE(se.deleted_at, se.cancelled_at, s.start) DESC;
         """)
 
         seven_days_ago = (datetime.now() - timedelta(days=7)).strftime(
