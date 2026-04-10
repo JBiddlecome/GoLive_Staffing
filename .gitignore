@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
+.env.*
+.DS_Store
+tmp/
+data/client_drop_off.db
+data/client_drop_off_v2.db
+data/sales_staffing_deals.json
+data/sales_staffing_deals.json
+data/recruiting_ads.json
+apps/msp_dashboard/msp_sent_emails.json
+apps/msp_dashboard/msp_completed_shifts.json
