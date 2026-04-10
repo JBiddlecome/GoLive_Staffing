@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Credit Card Clients — Cancelled Shifts{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-semibold brand-serif">Credit Card Clients</h1>
+            <p class="text-gray-600">Monitoring shifts cancelled by credit card clients. Updates every 15 minutes.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 text-sm text-gray-500 bg-white px-4 py-2 rounded-full border border-gray-200 shadow-sm">
+                <span class="relative flex h-3 w-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                </span>
+                <span>Live updating (15m window)</span>
+            </div>
+            <button onclick="openLogModal()" class="flex items-center gap-2 text-sm text-gray-500 bg-white hover:bg-gray-50 px-4 py-2 rounded-full border border-gray-200 shadow-sm transition">
+                <span>View System Log</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white rounded-xl shadow-sm border border-red-100 p-4">
+            <div class="text-sm text-gray-500 mb-1">Cancelled Shifts (15m)</div>
+            <div class="text-2xl font-semibold text-red-800" id="totalCount">-</div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-red-100 p-4">
+            <div class="text-sm text-gray-500 mb-1">Est. Revenue Impact</div>
+            <div class="text-2xl font-semibold text-red-800" id="revenueImpact">-</div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-red-100 p-4">
+            <div class="text-sm text-gray-500 mb-1">Last Checked</div>
+            <div class="text-2xl font-semibold text-gray-700" id="lastChecked">-</div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bill Rate</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shift Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deleted At</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTableBody" class="bg-white divide-y divide-gray-200">
+                    <tr>
+                        <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                            Loading data...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Log Modal -->
+<div id="logModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto">
+    <div class="min-h-screen px-4 text-center">
+        <span class="inline-block h-screen align-middle" aria-hidden="true">&#8203;</span>
+        <div class="inline-block w-full max-w-4xl p-6 my-8 text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold text-gray-900 brand-serif">System Diagnostic Log</h3>
+                <button onclick="closeLogModal()" class="text-gray-400 hover:text-gray-500">
+                    <span class="text-2xl">&times;</span>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <p class="text-sm text-gray-600">This log fetches the absolute latest 50 credit‑card client cancellations from the database, ignoring the 15‑minute polling window. This helps diagnose if the server timezone differs from the timestamp timezone, causing records to be missed.</p>
+                
+                <div class="bg-gray-50 rounded-lg border border-gray-200 p-4 h-96 overflow-y-auto">
+                    <pre id="logContent" class="text-xs text-gray-800 font-mono whitespace-pre-wrap">Loading system logs...</pre>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex justify-end">
+                <button onclick="closeLogModal()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function loadData() {
+        try {
+            const response = await fetch('/credit-card-clients/data');
+            const result = await response.json();
+            
+            const tbody = document.getElementById('dataTableBody');
+            
+            if (!response.ok || result.error) {
+                const errorMessage = result.error || 'Failed to fetch data';
+                tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">Error: ${errorMessage}</td></tr>`;
+                return;
+            }
+
+            const data = result.data || [];
+            
+            // Update stats
+            document.getElementById('totalCount').textContent = data.length;
+            
+            const totalRevenue = data.reduce((sum, d) => sum + (d.bill_rate || 0), 0);
+            document.getElementById('revenueImpact').textContent = '$' + totalRevenue.toFixed(2);
+            
+            const now = new Date();
+            document.getElementById('lastChecked').textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500">No credit card client cancellations in the last 15 minutes.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = data.map(item => `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.client_name || 'N/A'}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${item.position || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                            $${(item.bill_rate || 0).toFixed(2)}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.shift_date || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.deleted_at || 'N/A'}</td>
+                </tr>
+            `).join('');
+
+        } catch (error) {
+            console.error('Error loading data:', error);
+            document.getElementById('dataTableBody').innerHTML = `
+                <tr><td colspan="5" class="px-6 py-4 text-center text-red-500">Error connecting to server</td></tr>
+            `;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadData();
+        // Refresh every 60 seconds to keep the display fresh within the 15m window
+        setInterval(loadData, 60000);
+    });
+
+    async function openLogModal() {
+        const modal = document.getElementById('logModal');
+        const content = document.getElementById('logContent');
+        
+        modal.classList.remove('hidden');
+        content.textContent = 'Loading system logs...';
+        
+        try {
+            const resp = await fetch('/credit-card-clients/log');
+            const data = await resp.json();
+            content.textContent = JSON.stringify(data, null, 2);
+        } catch (e) {
+            content.textContent = 'Error fetching log: ' + e.message;
+        }
+    }
+
+    function closeLogModal() {
+        document.getElementById('logModal').classList.add('hidden');
+    }
+</script>
+{% endblock %}
