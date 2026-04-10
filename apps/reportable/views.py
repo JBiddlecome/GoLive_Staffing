@@ -78,6 +78,12 @@ class MinimumWageCheckPayload(BaseModel):
     limit: int = Field(default=50000, ge=1, le=100000)
 
 
+class Cancellations48HourPayload(BaseModel):
+    start_date: str = Field(..., min_length=1)
+    end_date: str = Field(..., min_length=1)
+    limit: int = Field(default=50000, ge=1, le=100000)
+
+
 TIMESHEET_VERIFICATION_EXCLUDED_COLUMNS = {
     "Day",
     "WC",
@@ -1801,6 +1807,99 @@ async def reportable_minimum_wage_check_export(
     output.seek(0)
     
     filename = "minimum_wage_check_report.xlsx"
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers,
+    )
+
+
+@router.post("/export/48-hour-cancellations")
+async def reportable_48_hour_cancellations_export(
+    payload: Cancellations48HourPayload,
+) -> StreamingResponse:
+    engine = _engine()
+    try:
+        sql = text(
+            """
+            SELECT
+                emp.first_name AS `Employee First Name`,
+                emp.last_name AS `Employee Last Name`,
+                se.cancelled_at AS `Cancellation Datetime`,
+                s.start AS `Shift Datetime`,
+                TIMESTAMPDIFF(HOUR, se.cancelled_at, s.start) AS `Hours Prior to Shift`,
+                c.name AS `Client Name`,
+                se.cancel_reason AS `Reason ID`,
+                se.employee_cancel_reason AS `Employee Cancel Reason`,
+                CASE WHEN EXISTS (
+                    SELECT 1 
+                    FROM shift_employee se2 
+                    WHERE se2.shift_position_id = se.shift_position_id 
+                      AND se2.confirmed = 1 
+                      AND (se2.cancel_reason IS NULL OR se2.cancel_reason = 0)
+                      AND (se2.created_at >= se.cancelled_at OR se2.confirmed_at >= se.cancelled_at)
+                ) THEN 'Yes' ELSE 'No' END AS `Refilled After Cancellation`
+            FROM shift_employee se
+            JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
+            JOIN shift s ON sp.shift_id = s.shift_id
+            JOIN employee emp ON se.employee_id = emp.employee_id
+            JOIN event e ON s.event_id = e.event_id
+            JOIN client c ON e.client_id = c.client_id
+            WHERE se.cancelled_at IS NOT NULL
+              AND s.start >= :start_date
+              AND s.start <= :end_date
+              AND TIMESTAMPDIFF(HOUR, se.cancelled_at, s.start) > 0
+              AND TIMESTAMPDIFF(HOUR, se.cancelled_at, s.start) <= 48
+              AND se.cancel_reason NOT IN (0, 4, 5, 12, 41, 51)
+            ORDER BY se.cancelled_at DESC
+            LIMIT :limit
+            """
+        )
+
+        params = {
+            "start_date": payload.start_date,
+            "end_date": payload.end_date,
+            "limit": payload.limit,
+        }
+
+        with engine.begin() as connection:
+            df = pd.read_sql(sql, connection, params=params)
+
+    finally:
+        engine.dispose()
+
+    if df.empty:
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            pd.DataFrame(columns=[
+                'Employee First Name', 'Employee Last Name', 'Cancellation Datetime', 'Shift Datetime', 'Hours Prior to Shift', 'Client Name', 'Cancellation Reason Text', 'Employee Cancel Reason', 'Refilled After Cancellation'
+            ]).to_excel(writer, index=False, sheet_name="48_hour_cancellations")
+        output.seek(0)
+        filename = "48_hour_cancellations_report.xlsx"
+        headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers=headers,
+        )
+
+    df["Cancellation Reason Text"] = df["Reason ID"].map(CANCEL_REASON_MAP).fillna("Unknown")
+    
+    final_columns = [
+        'Employee First Name', 'Employee Last Name', 'Cancellation Datetime', 
+        'Shift Datetime', 'Hours Prior to Shift', 'Client Name', 
+        'Cancellation Reason Text', 'Employee Cancel Reason',
+        'Refilled After Cancellation'
+    ]
+    df = df[final_columns]
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="48_hour_cancellations")
+    output.seek(0)
+    
+    filename = "48_hour_cancellations_report.xlsx"
     headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
     return StreamingResponse(
         output,
