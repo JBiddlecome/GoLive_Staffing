@@ -46,6 +46,7 @@ from apps.sales_rate_intelligence.views import router as sales_rate_intelligence
 from apps.staffing_employee_dashboard.views import router as staffing_employee_dashboard_router
 from apps.daily_report_assessment.views import router as daily_report_assessment_router
 from apps.msp_dashboard.views import router as msp_dashboard_router
+from apps.credit_card_clients.views import router as credit_card_clients_router
 from apps.admin_dashboard.views import router as admin_dashboard_router
 from apps.auth.views import router as auth_router, get_current_user
 from apps.contacts_data import add_contact, load_contacts, remove_contact
@@ -53,11 +54,16 @@ from apps.contacts_data import add_contact, load_contacts, remove_contact
 from contextlib import asynccontextmanager
 import asyncio
 from apps.msp_dashboard.scheduler import msp_monitoring_loop
+from apps.credit_card_clients.scheduler import cc_clients_monitoring_loop
 from apps.admin_dashboard.tracker import admin_tracking_loop
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     monitor_task = asyncio.create_task(msp_monitoring_loop())
+    cc_monitor_task = asyncio.create_task(cc_clients_monitoring_loop())
+    yield
+    monitor_task.cancel()
+    cc_monitor_task.cancel()
     admin_task = asyncio.create_task(admin_tracking_loop())
     yield
     monitor_task.cancel()
@@ -283,6 +289,9 @@ app.include_router(
     tags=["MSP Dashboard"],
 )
 app.include_router(
+    credit_card_clients_router,
+    prefix="/credit-card-clients",
+    tags=["Credit Card Clients"],
     admin_dashboard_router,
     prefix="/admin-dashboard",
     tags=["Admin Dashboard"],
