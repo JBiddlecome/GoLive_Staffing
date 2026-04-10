@@ -13,3 +13,4 @@ data/sales_staffing_deals.json
 data/recruiting_ads.json
 apps/msp_dashboard/msp_sent_emails.json
 apps/msp_dashboard/msp_completed_shifts.json
+apps/credit_card_clients/cc_sent_emails.json

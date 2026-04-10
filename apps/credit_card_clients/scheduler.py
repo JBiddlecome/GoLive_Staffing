@@ -1,16 +1,34 @@
 import asyncio
 from datetime import datetime, timedelta
 import os
+import json
+from pathlib import Path
 from sqlalchemy import text
+from zoneinfo import ZoneInfo
 from apps.credit_card_clients.views import _engine
 
-_sent_cancellation_records = set()
+_sent_emails_file = Path("apps/credit_card_clients/cc_sent_emails.json")
+
+
+def _load_sent_records():
+    if _sent_emails_file.exists():
+        try:
+            with open(_sent_emails_file, "r") as f:
+                return set(json.load(f))
+        except Exception:
+            return set()
+    return set()
+
+
+def _save_sent_records(records_set):
+    with open(_sent_emails_file, "w") as f:
+        json.dump(list(records_set), f)
 
 
 def fetch_latest_15m_cc_cancellations():
     """Fetch credit-card client cancellations from the last 15 minutes.
-    Uses se.deleted_at as the cancellation timestamp — it is reliably set
-    when a client cancels a shift."""
+    Uses COALESCE across deleted_at, cancelled_at, and shift start to handle
+    records where deleted_at may be NULL."""
     engine = _engine()
     try:
         sql = text("""
@@ -29,11 +47,15 @@ def fetch_latest_15m_cc_cancellations():
             JOIN client c          ON ev.client_id         = c.client_id
             WHERE se.cancel_reason = 4
               AND c.payment_type   = 1
-              AND se.deleted_at   >= :fifteen_mins_ago
-            ORDER BY se.deleted_at DESC;
+              AND (
+                  se.deleted_at   >= :fifteen_mins_ago
+                  OR se.cancelled_at >= :fifteen_mins_ago
+              )
+            ORDER BY COALESCE(se.deleted_at, se.cancelled_at) DESC;
         """)
 
-        fifteen_mins_ago = (datetime.now() - timedelta(minutes=15)).strftime(
+        la_time = datetime.now(ZoneInfo("America/Los_Angeles"))
+        fifteen_mins_ago = (la_time - timedelta(minutes=15)).strftime(
             "%Y-%m-%d %H:%M:%S"
         )
         with engine.begin() as connection:
@@ -97,7 +119,7 @@ def send_cc_cancellation_alert_email(cancellations: list[dict]):
     <html>
       <body style="font-family: Arial, sans-serif;">
         <h2 style="color: #991b1b;">Credit Card Client — Cancelled Shifts</h2>
-        <p>The following {len(cancellations)} shift(s) were cancelled by credit card clients in the last 15 minutes:</p>
+        <p>The following {len(cancellations)} shift(s) were cancelled by credit card clients:</p>
         <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; max-width: 800px;">
             <tr style="background-color: #f3f4f6; text-align: left;">
                 <th>Client Name</th>
@@ -172,7 +194,7 @@ def send_cc_cancellation_alert_email(cancellations: list[dict]):
 
 async def cc_clients_monitoring_loop():
     """Background loop that checks every 15 minutes for new credit-card client cancellations."""
-    global _sent_cancellation_records
+    _sent_cancellation_records = _load_sent_records()
 
     # Stagger startup to avoid colliding with MSP monitor
     await asyncio.sleep(45)
@@ -180,27 +202,30 @@ async def cc_clients_monitoring_loop():
     while True:
         try:
             data = fetch_latest_15m_cc_cancellations()
+            print(f"[CC Clients] Poll found {len(data)} cancellation(s) in last 15m window.")
 
             new_cancellations = []
             for d in data:
-                record_id = (
-                    f"{d.get('shift_employee_id')}-{d.get('event_id')}"
-                )
+                record_id = str(d.get("shift_employee_id"))
                 if record_id not in _sent_cancellation_records:
                     new_cancellations.append(d)
 
-            if len(new_cancellations) >= 1:
+            if new_cancellations:
+                print(f"[CC Clients] {len(new_cancellations)} new cancellation(s) to alert on.")
                 send_cc_cancellation_alert_email(new_cancellations)
 
                 for c in new_cancellations:
-                    _sent_cancellation_records.add(
-                        f"{c.get('shift_employee_id')}-{c.get('event_id')}"
-                    )
+                    _sent_cancellation_records.add(str(c.get("shift_employee_id")))
+
+                _save_sent_records(_sent_cancellation_records)
 
                 if len(_sent_cancellation_records) > 500:
                     _sent_cancellation_records = set(
                         list(_sent_cancellation_records)[-250:]
                     )
+                    _save_sent_records(_sent_cancellation_records)
+            else:
+                print("[CC Clients] No new cancellations to alert on.")
 
         except Exception as e:
             print(f"[CC Clients Monitor] Exception in loop: {e}")
