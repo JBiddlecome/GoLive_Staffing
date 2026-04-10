@@ -51,16 +51,17 @@
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="bg-gray-50/80 backdrop-blur-sm">
-                        <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100">Client Info</th>
+                        <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 cursor-pointer sortable hover:text-emerald-600 transition-colors" data-sort="client_name">Client Info <span class="sort-icon ml-1">↕</span></th>
                         <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-center">Events</th>
                         <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-center">Coverage (Slots)</th>
-                        <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-center">Fill Rate</th>
-                        <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-right">Avg Fill Time</th>
+                        <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-center cursor-pointer sortable hover:text-emerald-600 transition-colors" data-sort="fill_rate">Fill Rate <span class="sort-icon ml-1">↕</span></th>
+                        <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-right cursor-pointer sortable hover:text-emerald-600 transition-colors" data-sort="avg_fill_seconds">Avg Fill Time <span class="sort-icon ml-1">↕</span></th>
+                        <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-left">Notes</th>
                     </tr>
                 </thead>
                 <tbody id="dashboardBody" class="divide-y divide-gray-50">
                     <tr>
-                        <td colspan="5" class="px-8 py-24 text-center">
+                        <td colspan="6" class="px-8 py-24 text-center">
                             <div class="flex flex-col items-center space-y-4">
                                 <div class="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
                                 <p class="text-gray-500 font-medium">Analyzing staffing data...</p>
@@ -96,8 +97,8 @@
                 const result = await response.json();
                 if (result.status === 'success') {
                     dashboardData = result.data;
-                    renderDashboard(dashboardData);
-                    updateCounters(dashboardData);
+                    updateSortIcons();
+                    applyFilterAndSort();
                 } else {
                     showError(result.message);
                 }
@@ -122,7 +123,7 @@
         function showError(msg) {
             dashboardBody.innerHTML = `
                 <tr>
-                    <td colspan="5" class="px-8 py-16 text-center">
+                    <td colspan="6" class="px-8 py-16 text-center">
                         <div class="inline-flex p-4 rounded-2xl bg-red-50 border border-red-100 text-red-700">
                             <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                             <span class="font-semibold">Error: ${msg}</span>
@@ -140,7 +141,7 @@
 
         function renderDashboard(data) {
             if (data.length === 0) {
-                dashboardBody.innerHTML = `<tr><td colspan="5" class="px-8 py-16 text-center text-gray-500 italic">No upcoming events found.</td></tr>`;
+                dashboardBody.innerHTML = `<tr><td colspan="6" class="px-8 py-16 text-center text-gray-500 italic">No upcoming events found.</td></tr>`;
                 return;
             }
 
@@ -184,25 +185,113 @@
                             <div class="font-bold text-gray-900">${item.avg_time_to_fill}</div>
                             <div class="text-[10px] text-gray-400 uppercase font-bold tracking-widest mt-1">6mo average</div>
                         </td>
+                        <td class="px-8 py-6 w-64">
+                            <div class="flex flex-col gap-1">
+                                <textarea 
+                                    class="w-full text-sm p-2.5 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-y min-h-[70px] outline-none" 
+                                    placeholder="Add a note..."
+                                    onchange="saveNote(${item.client_id}, this)"
+                                >${item.client_note ? item.client_note.replace(/</g, '&lt;').replace(/>/g, '&gt;') : ''}</textarea>
+                                <span id="note-status-${item.client_id}" class="text-[10px] text-emerald-600 font-bold uppercase tracking-wider opacity-0 transition-opacity duration-300">Saved</span>
+                            </div>
+                        </td>
                     </tr>
                 `;
             }).join('');
         }
 
-        searchInput.addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
+        let currentSort = { column: 'client_name', direction: 'asc' };
+
+        function updateSortIcons() {
+            document.querySelectorAll('th.sortable').forEach(th => {
+                const icon = th.querySelector('.sort-icon');
+                if (th.dataset.sort === currentSort.column) {
+                    icon.innerHTML = currentSort.direction === 'asc' ? '↑' : '↓';
+                } else {
+                    icon.innerHTML = '↕';
+                }
+            });
+        }
+
+        document.querySelectorAll('th.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                const col = th.dataset.sort;
+                if (currentSort.column === col) {
+                    currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentSort.column = col;
+                    currentSort.direction = 'asc';
+                }
+                updateSortIcons();
+                applyFilterAndSort();
+            });
+        });
+
+        function sortData(data) {
+            return [...data].sort((a, b) => {
+                let valA = a[currentSort.column];
+                let valB = b[currentSort.column];
+
+                if (valA === undefined || valA === null) valA = '';
+                if (valB === undefined || valB === null) valB = '';
+
+                if (['fill_rate', 'avg_fill_seconds'].includes(currentSort.column)) {
+                    valA = parseFloat(valA) || 0;
+                    valB = parseFloat(valB) || 0;
+                } else {
+                    if (typeof valA === 'string') valA = valA.toLowerCase();
+                    if (typeof valB === 'string') valB = valB.toLowerCase();
+                }
+
+                if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+                if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        function applyFilterAndSort() {
+            const term = searchInput.value.toLowerCase();
             const filtered = dashboardData.filter(item => 
                 item.client_name.toLowerCase().includes(term) || 
                 (item.staffing_manager_name && item.staffing_manager_name.toLowerCase().includes(term))
             );
-            renderDashboard(filtered);
-            updateCounters(filtered);
-        });
+            const sorted = sortData(filtered);
+            renderDashboard(sorted);
+            updateCounters(sorted);
+        }
+
+        searchInput.addEventListener('input', applyFilterAndSort);
 
         refreshBtn.addEventListener('click', fetchData);
 
         // Init
         fetchData();
     });
+
+    window.saveNote = async function(clientId, el) {
+        const statusEl = document.getElementById(`note-status-${clientId}`);
+        try {
+            const response = await fetch(`/staffing-dashboard/notes/${clientId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ note: el.value })
+            });
+            if (response.ok) {
+                statusEl.textContent = "Saved";
+                statusEl.classList.remove('text-red-600');
+                statusEl.classList.add('text-emerald-600');
+                statusEl.classList.remove('opacity-0');
+                setTimeout(() => statusEl.classList.add('opacity-0'), 2000);
+            } else {
+                throw new Error("Failed to save");
+            }
+        } catch (err) {
+            statusEl.textContent = "Error saving";
+            statusEl.classList.remove('text-emerald-600');
+            statusEl.classList.add('text-red-600');
+            statusEl.classList.remove('opacity-0');
+            setTimeout(() => statusEl.classList.add('opacity-0'), 3000);
+        }
+    };
 </script>
 {% endblock %}

@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+{% block title %}Less Than 24 Hour Cancellations — GoLive Staffing{% endblock %}
+
+{% block content %}
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="max-w-7xl mx-auto space-y-6">
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <h1 class="brand-serif text-3xl font-semibold text-gray-900">Less Than 24 Hour Cancellations</h1>
+    <a href="/reports" class="text-sm font-medium text-emerald-600 hover:text-emerald-700">← Back to Reports</a>
+  </div>
+
+  <div class="bg-white p-6 rounded-2xl shadow-sm text-gray-600">
+    This report analyzes shifts where an employee cancelled with less than 24 hours notice or within 24 hours of the shift start time. It calculates how long before the shift starts the cancellation happens, and how long it takes to find a refill for that exact shift.
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row items-end gap-6">
+    <div class="flex-1 w-full max-w-xs">
+      <label class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+      <input type="date" id="startDate" class="w-full rounded-xl border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
+    </div>
+    <div class="flex-1 w-full max-w-xs">
+      <label class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+      <input type="date" id="endDate" class="w-full rounded-xl border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
+    </div>
+    <button onclick="fetchData()" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl transition duration-200 shadow-md whitespace-nowrap">
+      Generate Report
+    </button>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden mb-8">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead class="bg-gray-50/50 border-b border-gray-200">
+          <tr>
+            <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition select-none" onclick="sortTable('client_name')">
+              <div class="flex items-center gap-1">Client Name <span class="sort-icon text-gray-400 transition-colors" id="sort-icon-client_name">↕</span></div>
+            </th>
+            <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition select-none" onclick="sortTable('total_cancellations')">
+              <div class="flex items-center gap-1 text-center md:text-left">Total &lt;24 Hr Cancellations <span class="sort-icon text-gray-400 transition-colors" id="sort-icon-total_cancellations">↕</span></div>
+            </th>
+            <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition select-none text-right" onclick="sortTable('avg_seconds_before_start')">
+              <div class="flex items-center justify-end gap-1">Avg Time Cancelled Before Start <span class="sort-icon text-gray-400 transition-colors" id="sort-icon-avg_seconds_before_start">↕</span></div>
+            </th>
+            <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition select-none text-right" onclick="sortTable('avg_refill_seconds')">
+              <div class="flex items-center justify-end gap-1">Avg Time to Refill <span class="sort-icon text-gray-400 transition-colors" id="sort-icon-avg_refill_seconds">↕</span></div>
+            </th>
+            <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition select-none" onclick="sortTable('never_refilled_count')">
+              <div class="flex items-center gap-1 text-center md:text-left">Total Shifts Never Refilled <span class="sort-icon text-gray-400 transition-colors" id="sort-icon-never_refilled_count">↕</span></div>
+            </th>
+          </tr>
+        </thead>
+        <tbody id="tableBody" class="divide-y divide-gray-100">
+          <tr>
+            <td colspan="5" class="px-6 py-12 text-center text-gray-500 italic">Select a date range and click Generate Report.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <hr class="my-8 border-gray-200">
+
+  <!-- Top 10 High Frequency cancellations Section -->
+  <div class="flex flex-col space-y-6">
+    <div class="flex items-center justify-between">
+      <h2 class="brand-serif text-2xl font-semibold text-gray-900">Highest Frequency Cancellations (Last 3 Months)</h2>
+    </div>
+    
+    <div class="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead class="bg-gray-50/50 border-b border-gray-200">
+            <tr>
+              <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Client Name</th>
+              <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Total Shifts</th>
+              <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">&lt;24 Hr Cancellations</th>
+              <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Cancellation Rate</th>
+              <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Peak Cancel Time</th>
+              <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Unfilled Shifts</th>
+            </tr>
+          </thead>
+          <tbody id="topFrequencyBody" class="divide-y divide-gray-100">
+            <tr>
+              <td colspan="6" class="px-6 py-12 text-center text-gray-500 animate-pulse">Loading data...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <hr class="my-8 border-gray-200">
+
+  <!-- 12-Month Client Trend Section -->
+  <div class="flex flex-col space-y-6">
+    <div class="flex items-center justify-between">
+      <h2 class="brand-serif text-2xl font-semibold text-gray-900">12-Month Client Trends</h2>
+    </div>
+    
+    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row items-end gap-6">
+      <div class="flex-1 w-full max-w-sm">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Select Client</label>
+        <select id="clientSelect" class="w-full rounded-xl border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
+          <option value="">Loading clients...</option>
+        </select>
+      </div>
+      <button onclick="fetchChartData()" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition duration-200 shadow-md whitespace-nowrap">
+        View Trends
+      </button>
+    </div>
+
+    <div id="chartContainer" class="hidden grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <!-- Chart 1 -->
+      <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+        <h3 class="text-sm font-semibold text-gray-700 mb-4 text-center">Total &lt;24 Hr Cancellations</h3>
+        <canvas id="chartCount"></canvas>
+      </div>
+      <!-- Chart 2 -->
+      <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+        <h3 class="text-sm font-semibold text-gray-700 mb-4 text-center">Avg Time Cancelled Before Start (Hours)</h3>
+        <canvas id="chartTimeBefore"></canvas>
+      </div>
+      <!-- Chart 3 -->
+      <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+        <h3 class="text-sm font-semibold text-gray-700 mb-4 text-center">Avg Time to Refill (Hours)</h3>
+        <canvas id="chartTimeRefill"></canvas>
+      </div>
+      <!-- Chart 4 -->
+      <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+        <h3 class="text-sm font-semibold text-gray-700 mb-4 text-center">Total Shifts Never Refilled</h3>
+        <canvas id="chartNeverRefilled"></canvas>
+      </div>
+      <!-- Chart 5 -->
+      <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+        <h3 class="text-sm font-semibold text-gray-700 mb-4 text-center">Cancellation Rate (%)</h3>
+        <canvas id="chartCancellationRate"></canvas>
+      </div>
+      <!-- Chart 6 -->
+      <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+        <h3 class="text-sm font-semibold text-gray-700 mb-4 text-center">Never Refilled Rate (%)</h3>
+        <canvas id="chartNeverRefilledRate"></canvas>
+      </div>
+    </div>
+    
+    <div id="chartLoading" class="hidden text-center text-blue-600 font-medium py-12 animate-pulse">
+      Loading chart data...
+    </div>
+  </div>
+</div>
+
+<script>
+  // default to last 30 days
+  const today = new Date();
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(today.getDate() - 30);
+  
+  document.getElementById('startDate').value = thirtyDaysAgo.toISOString().split('T')[0];
+  document.getElementById('endDate').value = today.toISOString().split('T')[0];
+
+  let reportData = [];
+  let currentSort = { column: 'client_name', direction: 'asc' };
+
+  // Setup Clients
+  async function loadClients() {
+    try {
+      const response = await fetch('/reports/api/clients/12-months');
+      if (!response.ok) return;
+      const clients = await response.json();
+      const select = document.getElementById('clientSelect');
+      select.innerHTML = '<option value="">-- Choose a Client --</option>' + clients.map(c => `<option value="${c.client_id}">${c.name}</option>`).join('');
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  loadClients();
+
+  // Top Frequency Data Fetch
+  async function loadTopFrequencyData() {
+    const tbody = document.getElementById('topFrequencyBody');
+    try {
+      const response = await fetch('/reports/api/less-24-cancellations/top-frequency');
+      if (!response.ok) throw new Error("Failed to fetch top frequency data.");
+      const data = await response.json();
+      
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-12 text-center text-gray-500">No data found in the last 3 months.</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = data.map(row => {
+        return `
+          <tr class="hover:bg-gray-50/50 transition-colors border-b border-gray-100 last:border-0">
+            <td class="px-6 py-4 font-medium text-gray-900">${row.client_name}</td>
+            <td class="px-6 py-4 text-gray-600 text-center">${row.total_shifts}</td>
+            <td class="px-6 py-4 text-gray-600 text-center text-red-600 font-medium">${row.total_cancellations}</td>
+            <td class="px-6 py-4 text-gray-600 text-center font-semibold text-red-600">${row.cancellation_rate}%</td>
+            <td class="px-6 py-4 text-gray-600 text-center">${row.peak_cancellation_time}</td>
+            <td class="px-6 py-4 text-gray-600 text-center text-orange-500">${row.unfilled_shifts}</td>
+          </tr>
+        `;
+      }).join('');
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-red-500">Error loading data: ${err.message}</td></tr>`;
+    }
+  }
+  loadTopFrequencyData();
+
+  // Table Data Fetch
+  async function fetchData() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    const tbody = document.getElementById('tableBody');
+    
+    if (!startDate || !endDate) return alert("Please select both dates.");
+
+    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-emerald-600 font-medium animate-pulse">Calculating data...</td></tr>';
+
+    try {
+      const response = await fetch(`/reports/api/less-24-cancellations?start_date=${startDate}&end_date=${endDate}`);
+      if (!response.ok) throw new Error("Failed to fetch data.");
+      reportData = await response.json();
+      
+      sortTable(currentSort.column, true);
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-red-500">Error loading data: ${err.message}</td></tr>`;
+    }
+  }
+
+  function sortTable(column, preserveDirection = false) {
+    if (!preserveDirection) {
+      if (currentSort.column === column) {
+        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+      } else {
+        currentSort.column = column;
+        currentSort.direction = column === 'client_name' ? 'asc' : 'desc';
+      }
+    }
+
+    reportData.sort((a, b) => {
+      let valA = a[column];
+      let valB = b[column];
+
+      if (valA === null || valA === undefined) valA = column === 'client_name' ? '' : -999999;
+      if (valB === null || valB === undefined) valB = column === 'client_name' ? '' : -999999;
+
+      if (typeof valA === 'string') valA = valA.toLowerCase();
+      if (typeof valB === 'string') valB = valB.toLowerCase();
+
+      if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+      if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    renderTable();
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('tableBody');
+    if (reportData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-500">No cancellations found in this date range.</td></tr>';
+      return;
+    }
+
+    document.querySelectorAll('.sort-icon').forEach(icon => {
+      icon.innerHTML = '↕';
+      icon.classList.remove('text-emerald-600', 'font-black');
+      icon.classList.add('text-gray-400');
+    });
+
+    const activeIcon = document.getElementById(`sort-icon-${currentSort.column}`);
+    if (activeIcon) {
+      activeIcon.innerHTML = currentSort.direction === 'asc' ? '↑' : '↓';
+      activeIcon.classList.remove('text-gray-400');
+      activeIcon.classList.add('text-emerald-600', 'font-black');
+    }
+
+    tbody.innerHTML = reportData.map(row => {
+      return `
+        <tr class="hover:bg-gray-50/50 transition-colors border-b border-gray-100 last:border-0">
+          <td class="px-6 py-4 font-medium text-gray-900">${row.client_name}</td>
+          <td class="px-6 py-4 text-gray-600 text-center md:text-left">${row.total_cancellations}</td>
+          <td class="px-6 py-4 text-gray-600 whitespace-nowrap text-right text-red-600 font-medium">${row.avg_time_before_start || 'N/A'}</td>
+          <td class="px-6 py-4 text-gray-600 whitespace-nowrap text-right text-emerald-600 font-medium">${row.avg_time_to_refill || 'N/A'}</td>
+          <td class="px-6 py-4 text-gray-600 text-center md:text-left">${row.never_refilled_count}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // Charts functionality
+  let charts = {};
+
+  async function fetchChartData() {
+    const clientId = document.getElementById('clientSelect').value;
+    if (!clientId) return alert("Please select a client.");
+    
+    const chartContainer = document.getElementById('chartContainer');
+    const loading = document.getElementById('chartLoading');
+    
+    chartContainer.classList.add('hidden');
+    loading.classList.remove('hidden');
+
+    try {
+      const response = await fetch(`/reports/api/less-24-cancellations/chart/${clientId}`);
+      if (!response.ok) throw new Error("Failed to fetch chart data.");
+      const data = await response.json();
+      
+      loading.classList.add('hidden');
+      chartContainer.classList.remove('hidden');
+      
+      renderCharts(data);
+    } catch (err) {
+      loading.classList.add('hidden');
+      alert(`Error loading chart data: ${err.message}`);
+    }
+  }
+
+  function renderCharts(data) {
+    const labels = data.map(d => d.month);
+    
+    const renderOrCreate = (id, label, dataKey, color, bg) => {
+      const ctx = document.getElementById(id).getContext('2d');
+      if (charts[id]) charts[id].destroy();
+      
+      charts[id] = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: label,
+            data: data.map(d => d[dataKey]),
+            borderColor: color,
+            backgroundColor: bg,
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    };
+
+    renderOrCreate('chartCount', 'Cancellations', 'total_cancellations', '#3b82f6', 'rgba(59, 130, 246, 0.1)'); // Blue
+    renderOrCreate('chartTimeBefore', 'Avg Time Before Start (Hours)', 'avg_hours_before_start', '#ef4444', 'rgba(239, 68, 68, 0.1)'); // Red
+    renderOrCreate('chartTimeRefill', 'Avg Time To Refill (Hours)', 'avg_refill_hours', '#10b981', 'rgba(16, 185, 129, 0.1)'); // Emerald
+    renderOrCreate('chartNeverRefilled', 'Shifts Never Refilled', 'never_refilled_count', '#f59e0b', 'rgba(245, 158, 11, 0.1)'); // Amber
+    renderOrCreate('chartCancellationRate', 'Cancellation Rate (%)', 'cancellation_rate', '#8b5cf6', 'rgba(139, 92, 246, 0.1)'); // Violet
+    renderOrCreate('chartNeverRefilledRate', 'Never Refilled Rate (%)', 'never_refilled_rate', '#ec4899', 'rgba(236, 72, 153, 0.1)'); // Pink
+  }
+</script>
+{% endblock %}

@@ -4,10 +4,26 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
+import json
+from pathlib import Path
 from sqlalchemy import text
+from zoneinfo import ZoneInfo
 from apps.msp_dashboard.views import _engine
 
-_sent_shift_records = set()
+_sent_emails_file = Path("apps/msp_dashboard/msp_sent_emails.json")
+
+def _load_sent_records():
+    if _sent_emails_file.exists():
+        try:
+            with open(_sent_emails_file, "r") as f:
+                return set(json.load(f))
+        except:
+            return set()
+    return set()
+
+def _save_sent_records(records_set):
+    with open(_sent_emails_file, "w") as f:
+        json.dump(list(records_set), f)
 
 def fetch_latest_15m_confirmations():
     engine = _engine()
@@ -37,7 +53,9 @@ def fetch_latest_15m_confirmations():
             ORDER BY se.confirmed_at DESC;
         """)
         
-        fifteen_mins_ago = (datetime.now() - timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S")
+        la_time = datetime.now(ZoneInfo("America/Los_Angeles"))
+        fifteen_mins_ago = (la_time - timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S")
+        
         with engine.begin() as connection:
             result = connection.execute(sql, {"fifteen_mins_ago": fifteen_mins_ago}).mappings().all()
             return [dict(r) for r in result]
@@ -49,7 +67,7 @@ def fetch_latest_15m_confirmations():
 
 def send_msp_alert_email(confirmations: list[dict]):
     sender_email = "golive@culinarystaffing.com"
-    receiver_email = "jake@culinarystaffing.com"
+    receiver_emails = ["jake@culinarystaffing.com", "suraj@culinarystaffing.com", "sankalp@culinarystaffing.com"]
     
     import requests
     tenant_id = os.getenv("O365_TENANT_ID")
@@ -124,9 +142,7 @@ def send_msp_alert_email(confirmations: list[dict]):
                 "content": html_body
             },
             "toRecipients": [
-                {
-                    "emailAddress": {"address": receiver_email}
-                }
+                {"emailAddress": {"address": email}} for email in receiver_emails
             ]
         },
         "saveToSentItems": "false"
@@ -149,29 +165,35 @@ def send_msp_alert_email(confirmations: list[dict]):
         if error_info: print(error_info.text)
 
 async def msp_monitoring_loop():
-    global _sent_shift_records
-    
     # Random offset to avoid running right as server starts heavily
     await asyncio.sleep(30) 
     
+    if os.getenv("RENDER", "").lower() != "true":
+        print("[MSP Monitor] Local environment detected (RENDER=true is missing). Stopping background monitor to prevent duplicate emails.")
+        return
+        
     while True:
         try:
             data = fetch_latest_15m_confirmations()
+            sent_records = _load_sent_records()
             
             new_confirmations = []
             for d in data:
                 record_id = f"{d.get('employee_id')}-{d.get('event_id')}"
-                if record_id not in _sent_shift_records:
+                if record_id not in sent_records:
                     new_confirmations.append(d)
             
             if len(new_confirmations) >= 1:
                 send_msp_alert_email(new_confirmations)
                 
                 for c in new_confirmations:
-                    _sent_shift_records.add(f"{c.get('employee_id')}-{c.get('event_id')}")
+                    sent_records.add(f"{c.get('employee_id')}-{c.get('event_id')}")
                     
-                if len(_sent_shift_records) > 500:
-                    _sent_shift_records = set(list(_sent_shift_records)[-250:])
+                # To prevent file from growing indefinitely, keep only last reasonably large number
+                if len(sent_records) > 1000:
+                    sent_records = set(list(sent_records)[-500:])
+                    
+                _save_sent_records(sent_records)
                     
         except Exception as e:
             print(f"[MSP Monitor] Exception in loop: {e}")

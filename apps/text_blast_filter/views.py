@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+import os
 from io import StringIO
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 from uuid import uuid4
 
 import pandas as pd
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import URL
 
 from apps.context import default_employee_filter_context, default_text_blast_context
 
@@ -31,6 +34,36 @@ EXPECTED_COLUMNS: List[str] = [
     "Miles from Location",
     "Preferred",
 ]
+
+CANDIDATE_STATUSES = {
+    1: "Active",
+    2: "Candidate",
+    3: "Hiatus",
+    5: "Terminated",
+    6: "Resigned",
+    10: "Inactive (60)",
+    14: "Other Status",
+    15: "Ineligible for Rehire"
+}
+
+def _db_url_from_env() -> URL:
+    host = os.getenv("DB_HOST", "localhost")
+    name = os.getenv("DB_NAME", "cstaffing_live")
+    user = os.getenv("DB_USER", "root")
+    password = os.getenv("DB_PASSWORD", "")
+    port = int(os.getenv("DB_PORT", "3306"))
+
+    return URL.create(
+        drivername="mysql+pymysql",
+        username=user,
+        password=password,
+        host=host,
+        port=port,
+        database=name,
+    )
+
+def _engine():
+    return create_engine(_db_url_from_env(), pool_pre_ping=True)
 
 UPLOAD_DIR = Path("tmp/text_blast_uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -73,6 +106,23 @@ async def page(request: Request):
     context: Dict[str, object] = {"request": request}
     context.update(default_text_blast_context())
     context.update(default_employee_filter_context())
+
+    engine = _engine()
+    county_choices = []
+    try:
+        with engine.connect() as conn:
+            rs = conn.execute(text("SELECT id, name FROM county ORDER BY name"))
+            for row in rs:
+                county_choices.append((row[0], row[1]))
+    except Exception:
+        pass
+    finally:
+        engine.dispose()
+        
+    context.update({
+        "candidate_statuses": CANDIDATE_STATUSES,
+        "county_choices": county_choices
+    })
 
     return templates.TemplateResponse("apps/text_blast_filter.html", context)
 
@@ -262,3 +312,80 @@ async def process(
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
+
+@router.post("/candidate-report")
+async def candidate_report(
+    candidate_status: str = Form(""),
+    counties: List[str] = Form(default=[]),
+    created_start: str = Form(""),
+    created_end: str = Form("")
+):
+    engine = _engine()
+    try:
+        query = """
+            SELECT e.status, e.first_name, e.last_name, e.mobile, e.created_on, e.email, c.name as county
+            FROM employee e
+            LEFT JOIN county c ON e.county_id = c.id
+            WHERE 1=1
+        """
+        params = {}
+        
+        if candidate_status:
+            query += " AND e.status = :status"
+            params["status"] = int(candidate_status)
+            
+        if counties:
+            valid_counties = [int(x) for x in counties if x.isdigit()]
+            if valid_counties:
+                placeholders = ', '.join([f':c{i}' for i in range(len(valid_counties))])
+                query += f" AND e.county_id IN ({placeholders})"
+                for i, cid in enumerate(valid_counties):
+                    params[f"c{i}"] = cid
+                    
+        if created_start:
+            query += " AND DATE(e.created_on) >= :created_start"
+            params["created_start"] = created_start
+            
+        if created_end:
+            query += " AND DATE(e.created_on) <= :created_end"
+            params["created_end"] = created_end
+            
+        with engine.connect() as conn:
+            df = pd.read_sql(text(query), conn, params=params)
+            
+        df['Status'] = df['status'].map(CANDIDATE_STATUSES).fillna("Unknown Status")
+        df['First Name'] = df['first_name']
+        df['Last Name'] = df['last_name']
+        
+        def format_mobile(mobile):
+            if pd.isna(mobile):
+                return ""
+            digits = ''.join(filter(str.isdigit, str(mobile)))
+            if not digits:
+                return ""
+            if len(digits) == 10:
+                return '1' + digits
+            elif len(digits) > 10 and digits.startswith('1'):
+                return digits
+            return '1' + digits
+
+        df['Mobile'] = df['mobile'].apply(format_mobile)
+        df['Email'] = df['email']
+        df['County'] = df['county']
+        
+        output_columns = ["Status", "First Name", "Last Name", "Mobile", "Email", "County"]
+        df_out = df[output_columns]
+        
+        output_buffer = StringIO()
+        df_out.to_csv(output_buffer, index=False)
+        output_buffer.seek(0)
+
+        filename = f"candidate_contact_report_{uuid4().hex[:8]}.csv"
+        return StreamingResponse(
+            output_buffer,
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename={filename}"},
+        )
+            
+    finally:
+        engine.dispose()

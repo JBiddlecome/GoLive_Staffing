@@ -9,9 +9,45 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
+from zoneinfo import ZoneInfo
+from pydantic import BaseModel
+import json
+from pathlib import Path
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+
+_completed_shifts_file = Path("apps/msp_dashboard/msp_completed_shifts.json")
+
+def _load_completed_shifts():
+    if _completed_shifts_file.exists():
+        try:
+            with open(_completed_shifts_file, "r") as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+def _save_completed_shifts(data):
+    with open(_completed_shifts_file, "w") as f:
+        json.dump(data, f)
+
+class CompleteShiftRequest(BaseModel):
+    employee_id: int
+    event_id: int
+    completed: bool
+
+@router.post("/complete")
+async def toggle_complete_shift(req: CompleteShiftRequest):
+    data = _load_completed_shifts()
+    key = f"{req.employee_id}-{req.event_id}"
+    if req.completed:
+        data[key] = True
+    else:
+        if key in data:
+            del data[key]
+    _save_completed_shifts(data)
+    return JSONResponse({"status": "ok", "completed": req.completed})
 
 def _db_url_from_env() -> URL:
     host = os.getenv("DB_HOST")
@@ -45,12 +81,15 @@ async def get_msp_dashboard_data():
     try:
         sql = text("""
             SELECT 
+                se.employee_id,
+                ev.event_id,
                 e.first_name, 
                 e.last_name, 
                 IFNULL(NULLIF(ev.title, ''), v.name) AS event_name, 
                 c.msp_id,
                 m.name AS msp_name, 
-                s.start AS shift_date
+                s.start AS shift_date,
+                se.confirmed_at
             FROM shift_employee se
             JOIN employee e ON se.employee_id = e.employee_id AND e.deleted_at IS NULL
             JOIN event ev ON se.event_id = ev.event_id AND ev.deleted_at IS NULL
@@ -63,28 +102,38 @@ async def get_msp_dashboard_data():
                 se.confirmed = 1 
                 AND c.msp_id IN (3, 5, 20)
                 AND se.deleted_at IS NULL
-                AND se.confirmed_at >= :fifteen_mins_ago
+                AND se.confirmed_at >= :start_of_day
             ORDER BY se.confirmed_at DESC;
         """)
         
-        fifteen_mins_ago = (datetime.now() - timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S")
+        la_time = datetime.now(ZoneInfo("America/Los_Angeles"))
+        start_of_day = la_time.replace(hour=0, minute=0, second=0, microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
         
         with engine.begin() as connection:
-            result = connection.execute(sql, {"fifteen_mins_ago": fifteen_mins_ago}).mappings().all()
+            result = connection.execute(sql, {"start_of_day": start_of_day}).mappings().all()
             
+            completed_shifts = _load_completed_shifts()
             data = []
             for row in result:
                 item = dict(row)
                 item["employee_name"] = f"{item['first_name']} {item['last_name']}"
                 if item["shift_date"]:
                     item["shift_date"] = item["shift_date"].strftime("%Y-%m-%d %H:%M")
+                if item["confirmed_at"]:
+                    item["confirmed_at"] = item["confirmed_at"].strftime("%Y-%m-%d %H:%M:%S")
+                
+                key = f"{item['employee_id']}-{item['event_id']}"
                 
                 data.append({
+                    "employee_id": item["employee_id"],
+                    "event_id": item["event_id"],
                     "employee_name": item["employee_name"],
                     "event_name": item["event_name"],
                     "msp_id": item["msp_id"],
                     "msp_name": item["msp_name"],
-                    "shift_date": item["shift_date"]
+                    "shift_date": item["shift_date"],
+                    "confirmed_at": item["confirmed_at"],
+                    "is_completed": completed_shifts.get(key, False)
                 })
                 
             return JSONResponse({"data": data})
