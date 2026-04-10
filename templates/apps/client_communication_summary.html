@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+{% block title %}Client Communication Summary — GoLive Staffing{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-5xl mx-auto">
+
+    <!-- Header -->
+    <div>
+        <h1 class="text-3xl font-semibold brand-serif">Client Communication Summary</h1>
+        <p class="text-gray-600 mt-1">AI-powered analysis of client email communications via Close.com</p>
+    </div>
+
+    <!-- Input Card -->
+    <div class="bg-white rounded-2xl shadow-lg border border-emerald-100 overflow-hidden">
+        <div class="bg-gradient-to-r from-emerald-50 to-white px-6 py-4 border-b border-emerald-100">
+            <h2 class="text-lg font-semibold text-emerald-900 flex items-center gap-2">
+                <span class="h-7 w-7 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-sm">1</span>
+                Enter Client Details
+            </h2>
+            <p class="text-sm text-gray-500 ml-9">Enter a client name and optionally customise the analysis prompt.</p>
+        </div>
+
+        <form id="analyzeForm" class="p-6 space-y-5">
+            <!-- Client Name -->
+            <div>
+                <label for="clientName" class="block text-sm font-medium text-gray-700 mb-1">Client Name <span class="text-red-500">*</span></label>
+                <input
+                    type="text"
+                    id="clientName"
+                    name="client_name"
+                    required
+                    placeholder="e.g. Marriott International"
+                    class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition text-sm"
+                />
+            </div>
+
+            <!-- Prompt Template -->
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label for="customPrompt" class="block text-sm font-medium text-gray-700">Analysis Prompt</label>
+                    <button type="button" onclick="resetPrompt()" class="text-xs text-emerald-600 hover:text-emerald-800 font-medium transition">Reset to default</button>
+                </div>
+                <textarea
+                    id="customPrompt"
+                    name="custom_prompt"
+                    rows="5"
+                    class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition text-sm font-mono leading-relaxed"
+                >{{ default_prompt }}</textarea>
+                <p class="text-xs text-gray-400 mt-1">Use <code class="bg-gray-100 px-1 py-0.5 rounded text-emerald-700">{client_name}</code> as a placeholder — it will be replaced with the client name you enter above.</p>
+            </div>
+
+            <!-- Submit -->
+            <div class="flex items-center gap-4">
+                <button
+                    type="submit"
+                    id="submitBtn"
+                    class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-emerald-600 text-white font-semibold shadow-lg shadow-emerald-200 hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                    <svg id="submitIcon" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    <span id="submitText">Analyze Communications</span>
+                </button>
+                <div id="progressInfo" class="hidden text-sm text-gray-500 flex items-center gap-2">
+                    <div class="h-4 w-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span>Connecting to Close.com and analysing emails — this may take up to two minutes…</span>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Results Card -->
+    <div id="resultsCard" class="hidden">
+        <div class="bg-white rounded-2xl shadow-lg border border-emerald-100 overflow-hidden">
+            <div class="bg-gradient-to-r from-emerald-50 to-white px-6 py-4 border-b border-emerald-100 flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-emerald-900 flex items-center gap-2">
+                    <span class="h-7 w-7 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-sm">2</span>
+                    <span>Analysis for <span id="resultClientName" class="text-emerald-700"></span></span>
+                </h2>
+                <div class="flex items-center gap-3">
+                    <span id="resultMeta" class="text-xs text-gray-400"></span>
+                    <button onclick="copyAnalysis()" id="copyBtn" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-gray-200 text-xs font-semibold text-gray-600 bg-white hover:bg-gray-50 shadow-sm transition">
+                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                        Copy
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <div id="analysisContent" class="prose prose-emerald max-w-none text-sm leading-relaxed"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Card -->
+    <div id="errorCard" class="hidden">
+        <div class="bg-white rounded-2xl shadow-lg border border-red-200 overflow-hidden">
+            <div class="bg-red-50 px-6 py-4 border-b border-red-100">
+                <h2 class="text-lg font-semibold text-red-800 flex items-center gap-2">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    Something went wrong
+                </h2>
+            </div>
+            <div class="p-6">
+                <p id="errorMessage" class="text-sm text-red-700"></p>
+                <pre id="errorDetails" class="mt-3 text-xs text-gray-500 bg-gray-50 p-3 rounded-lg overflow-x-auto hidden"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const DEFAULT_PROMPT = {{ default_prompt | tojson }};
+
+    function resetPrompt() {
+        document.getElementById('customPrompt').value = DEFAULT_PROMPT;
+    }
+
+    // Simple markdown-to-HTML (handles headers, bold, italic, lists, paragraphs)
+    function renderMarkdown(md) {
+        let html = md
+            // Code blocks
+            .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre class="bg-gray-50 rounded-lg p-4 overflow-x-auto border border-gray-200 text-xs"><code>$2</code></pre>')
+            // Headers
+            .replace(/^#### (.+)$/gm, '<h4 class="text-base font-semibold text-gray-900 mt-5 mb-2">$1</h4>')
+            .replace(/^### (.+)$/gm, '<h3 class="text-lg font-semibold text-gray-900 mt-6 mb-2">$1</h3>')
+            .replace(/^## (.+)$/gm, '<h2 class="text-xl font-semibold text-emerald-900 mt-6 mb-3 pb-2 border-b border-emerald-100">$1</h2>')
+            .replace(/^# (.+)$/gm, '<h1 class="text-2xl font-bold text-emerald-900 mt-6 mb-3">$1</h1>')
+            // Bold & italic
+            .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            // Inline code
+            .replace(/`([^`]+)`/g, '<code class="bg-gray-100 px-1.5 py-0.5 rounded text-emerald-700 text-xs">$1</code>')
+            // Horizontal rules
+            .replace(/^---$/gm, '<hr class="my-4 border-gray-200">')
+            // Unordered lists
+            .replace(/^[-*] (.+)$/gm, '<li class="ml-4 list-disc text-gray-700">$1</li>')
+            // Ordered lists
+            .replace(/^\d+\. (.+)$/gm, '<li class="ml-4 list-decimal text-gray-700">$1</li>')
+            // Wrap consecutive <li> in <ul>/<ol>
+            .replace(/((?:<li class="ml-4 list-disc[^>]*>.*<\/li>\n?)+)/g, '<ul class="space-y-1 my-3">$1</ul>')
+            .replace(/((?:<li class="ml-4 list-decimal[^>]*>.*<\/li>\n?)+)/g, '<ol class="space-y-1 my-3">$1</ol>')
+            // Paragraphs (double newlines)
+            .replace(/\n\n+/g, '</p><p class="text-gray-700 my-2">')
+
+        return '<p class="text-gray-700 my-2">' + html + '</p>';
+    }
+
+    document.getElementById('analyzeForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const clientName = document.getElementById('clientName').value.trim();
+        if (!clientName) return;
+
+        const submitBtn = document.getElementById('submitBtn');
+        const submitText = document.getElementById('submitText');
+        const submitIcon = document.getElementById('submitIcon');
+        const progress = document.getElementById('progressInfo');
+        const resultsCard = document.getElementById('resultsCard');
+        const errorCard = document.getElementById('errorCard');
+
+        // Reset state
+        submitBtn.disabled = true;
+        submitText.textContent = 'Analyzing…';
+        submitIcon.classList.add('animate-pulse');
+        progress.classList.remove('hidden');
+        resultsCard.classList.add('hidden');
+        errorCard.classList.add('hidden');
+
+        try {
+            const formData = new FormData(e.target);
+            const resp = await fetch('/client-communication-summary/analyze', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await resp.json();
+
+            if (!resp.ok || data.error) {
+                // Show error
+                document.getElementById('errorMessage').textContent = data.error || 'An unexpected error occurred.';
+                const details = document.getElementById('errorDetails');
+                if (data.details) {
+                    details.textContent = data.details;
+                    details.classList.remove('hidden');
+                } else {
+                    details.classList.add('hidden');
+                }
+                errorCard.classList.remove('hidden');
+            } else {
+                // Show results
+                document.getElementById('resultClientName').textContent = data.client_name;
+                document.getElementById('analysisContent').innerHTML = renderMarkdown(data.analysis);
+
+                const usage = data.usage || {};
+                const tokens = (usage.input_tokens || 0) + (usage.output_tokens || 0);
+                const emailCount = data.email_count || 0;
+                document.getElementById('resultMeta').textContent = `${emailCount} emails analyzed · Model: ${data.model} · ${tokens.toLocaleString()} tokens`;
+
+                resultsCard.classList.remove('hidden');
+                resultsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        } catch (err) {
+            document.getElementById('errorMessage').textContent = 'Network error — could not reach the server. Please try again.';
+            document.getElementById('errorDetails').classList.add('hidden');
+            errorCard.classList.remove('hidden');
+        } finally {
+            submitBtn.disabled = false;
+            submitText.textContent = 'Analyze Communications';
+            submitIcon.classList.remove('animate-pulse');
+            progress.classList.add('hidden');
+        }
+    });
+
+    async function copyAnalysis() {
+        const content = document.getElementById('analysisContent').innerText;
+        const btn = document.getElementById('copyBtn');
+        try {
+            await navigator.clipboard.writeText(content);
+            btn.innerHTML = `<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Copied!`;
+        } catch {
+            const temp = document.createElement('textarea');
+            temp.value = content;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+            btn.innerHTML = `<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Copied!`;
+        }
+        setTimeout(() => {
+            btn.innerHTML = `<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg> Copy`;
+        }, 2000);
+    }
+</script>
+{% endblock %}
