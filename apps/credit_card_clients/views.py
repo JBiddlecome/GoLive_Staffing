@@ -45,7 +45,7 @@ async def credit_card_clients_page(request: Request):
 
 @router.get("/data")
 async def get_credit_card_cancellations():
-    """Return client-cancelled shifts for credit-card clients in the last 15 minutes."""
+    """Return client-cancelled shifts for credit-card clients in the last 7 days."""
     engine = _engine()
     try:
         sql = text("""
@@ -63,17 +63,17 @@ async def get_credit_card_cancellations():
             JOIN client c          ON ev.client_id         = c.client_id
             WHERE se.cancel_reason = 4
               AND c.payment_type   = 1
-              AND se.deleted_at   >= :fifteen_mins_ago
+              AND se.deleted_at   >= :seven_days_ago
             ORDER BY se.deleted_at DESC;
         """)
 
-        fifteen_mins_ago = (datetime.now() - timedelta(minutes=15)).strftime(
+        seven_days_ago = (datetime.now() - timedelta(days=7)).strftime(
             "%Y-%m-%d %H:%M:%S"
         )
 
         with engine.begin() as connection:
             result = connection.execute(
-                sql, {"fifteen_mins_ago": fifteen_mins_ago}
+                sql, {"seven_days_ago": seven_days_ago}
             ).mappings().all()
 
             data = []
