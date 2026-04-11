@@ -49,6 +49,7 @@ from apps.msp_dashboard.views import router as msp_dashboard_router
 from apps.credit_card_clients.views import router as credit_card_clients_router
 from apps.admin_dashboard.views import router as admin_dashboard_router
 from apps.client_communication_summary.views import router as client_communication_summary_router
+from apps.employee_available_shift_history.views import router as employee_available_shift_history_router
 from apps.auth.views import router as auth_router, get_current_user
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 
@@ -301,6 +302,11 @@ app.include_router(
     client_communication_summary_router,
     prefix="/client-communication-summary",
     tags=["Client Communication Summary"],
+)
+app.include_router(
+    employee_available_shift_history_router,
+    prefix="/employee-available-shift-history",
+    tags=["Employee Available Shift History"],
 )
 
 # Redirect /sms_paraphraser to /sms-paraphraser for backward compatibility
