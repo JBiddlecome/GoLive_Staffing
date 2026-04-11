@@ -73,7 +73,7 @@ def fetch_latest_15m_cc_cancellations():
 def send_cc_cancellation_alert_email(cancellations: list[dict]):
     """Send an email alert for new credit-card client cancellations via MS Graph."""
     sender_email = "golive@culinarystaffing.com"
-    receiver_email = "jake@culinarystaffing.com"
+    receiver_emails = ["jake@culinarystaffing.com", "monish@culinarystaffing.com"]
 
     import requests
 
@@ -163,7 +163,7 @@ def send_cc_cancellation_alert_email(cancellations: list[dict]):
             "subject": subject,
             "body": {"contentType": "HTML", "content": html_body},
             "toRecipients": [
-                {"emailAddress": {"address": receiver_email}}
+                {"emailAddress": {"address": email}} for email in receiver_emails
             ],
         },
         "saveToSentItems": "false",
