@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}GoLive Staffing — Employee Available Shift History{% endblock %}
+
+{% block content %}
+<div class="px-4 py-8 max-w-7xl mx-auto space-y-8">
+    <section class="relative rounded-3xl bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 text-white shadow-lg overflow-hidden">
+        <div class="absolute inset-0 bg-white/10 [mask-image:linear-gradient(to_bottom,white,transparent)]"></div>
+        <div class="relative px-8 py-12 z-10">
+            <p class="uppercase tracking-widest text-xs font-semibold text-blue-100 mb-2">HR Tools</p>
+            <h1 class="text-4xl font-bold mb-4 font-serif">Employee Available Shift History</h1>
+            <p class="text-blue-100 max-w-2xl text-lg">
+                Report all the shifts a particular employee received in a date range. Select an employee and a date range to find shifts that were published to them during those dates.
+            </p>
+        </div>
+    </section>
+
+    <div class="bg-white rounded-2xl shadow-sm ring-1 ring-gray-900/5 p-6 md:p-8">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+            <div class="col-span-1 md:col-span-2 space-y-2">
+                <label for="employee_id" class="block text-sm font-semibold text-gray-700">Select Employee</label>
+                <select name="employee_id" id="employee_id" required class="w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2.5 px-4 bg-gray-50 text-gray-900">
+                    <option value="">-- Choose Employee --</option>
+                    {% for emp in employees %}
+                        <option value="{{ emp.id }}" {% if selected_employee_id|string == emp.id|string %}selected{% endif %}>{{ emp.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-span-1 space-y-2">
+                <label for="start_date" class="block text-sm font-semibold text-gray-700">Start Date</label>
+                <input type="date" name="start_date" id="start_date" value="{{ start_date or '' }}" required class="w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2.5 px-4 bg-gray-50">
+            </div>
+            <div class="col-span-1 space-y-2">
+                <label for="end_date" class="block text-sm font-semibold text-gray-700">End Date</label>
+                <input type="date" name="end_date" id="end_date" value="{{ end_date or '' }}" required class="w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2.5 px-4 bg-gray-50">
+            </div>
+            <div class="col-span-1 md:col-span-4 mt-4 flex justify-end">
+                <button type="submit" class="bg-indigo-600 border border-transparent rounded-xl px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all">
+                    Search History
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {% if error %}
+    <div class="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <p class="text-sm text-red-700">{{ error }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if request.query_params.get("employee_id") and not error %}
+    <div class="bg-white rounded-3xl shadow-sm ring-1 ring-gray-900/5 overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <svg class="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Published Shifts ({{ shifts|length }})
+            </h3>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-white">
+                    <tr>
+                        <th scope="col" class="py-3.5 pl-6 pr-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Event Date</th>
+                        <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Shift Time</th>
+                        <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Client & Event</th>
+                        <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Position & Pay</th>
+                        <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Published To Employee on</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 bg-white">
+                    {% for shift in shifts %}
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="whitespace-nowrap py-4 pl-6 pr-3 text-sm font-medium text-gray-900">{{ shift.event_date }}</td>
+                        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-600">
+                            {{ shift.shift_start }} - {{ shift.shift_end }}
+                        </td>
+                        <td class="px-3 py-4 text-sm">
+                            <div class="font-medium text-gray-900">{{ shift.client_name }}</div>
+                            <div class="text-gray-500">{{ shift.event_title }}</div>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-4 text-sm">
+                            <div class="font-medium text-gray-900">{{ shift.position }}</div>
+                            <div class="text-green-600 font-medium">${{ "%.2f"|format(shift.pay_rate) }}</div>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {{ shift.published_at }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                            No shifts found published to this employee within the selected date range.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
