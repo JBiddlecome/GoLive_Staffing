@@ -10,6 +10,7 @@ from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 import httpx
+import asyncio
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -228,11 +229,6 @@ async def analyze_client_communication(
 
     full_prompt = f"{user_prompt}\n\n{email_context}"
 
-    models_to_try = [
-        "claude-sonnet-4-20250514",
-        "claude-3-haiku-20240307"
-    ]
-
     headers = {
         "x-api-key": anthropic_key,
         "anthropic-version": "2023-06-01",
@@ -241,6 +237,16 @@ async def analyze_client_communication(
 
     try:
         async with httpx.AsyncClient(timeout=120.0) as http:
+            # Dynamically discover available models for this specific API key
+            models_resp = await http.get("https://api.anthropic.com/v1/models", headers={"x-api-key": anthropic_key, "anthropic-version": "2023-06-01"})
+            if models_resp.status_code == 200:
+                models_data = models_resp.json().get("data", [])
+                models_to_try = [m["id"] for m in models_data if "id" in m]
+            else:
+                # Fallback to the known working model if the models endpoint fails
+                models_to_try = ["claude-sonnet-4-20250514"]
+
+            resp = None
             for model in models_to_try:
                 payload = {
                     "model": model,
@@ -256,12 +262,12 @@ async def analyze_client_communication(
                     json=payload,
                 )
 
-                if resp.status_code != 529:
+                if resp.status_code == 200:
                     break
                 
-                logger.warning("Claude API returned 529 Overloaded for model %s. Trying fallback model if available.", model)
+                logger.warning("Claude API returned %s for model %s. Trying next...", resp.status_code, model)
 
-        if resp.status_code != 200:
+        if not resp or resp.status_code != 200:
             error_body = resp.text
             logger.error("Anthropic API error %s: %s", resp.status_code, error_body)
             
