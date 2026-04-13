@@ -194,10 +194,18 @@ def send_cc_cancellation_alert_email(cancellations: list[dict]):
 
 async def cc_clients_monitoring_loop():
     """Background loop that checks every 15 minutes for new credit-card client cancellations."""
-    _sent_cancellation_records = _load_sent_records()
-
     # Stagger startup to avoid colliding with MSP monitor
     await asyncio.sleep(45)
+
+    if os.getenv("RENDER", "").lower() != "true":
+        print(
+            "[CC Clients] Local environment detected (RENDER=true is missing). "
+            "Stopping background monitor to prevent duplicate emails."
+        )
+        return
+
+    _sent_cancellation_records = _load_sent_records()
+    print(f"[CC Clients] Monitor started. {len(_sent_cancellation_records)} record(s) already in dedup cache.")
 
     while True:
         try:
