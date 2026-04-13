@@ -19,7 +19,7 @@
             <div class="col-span-1 md:col-span-2 space-y-2">
                 <label for="employee_id" class="block text-sm font-semibold text-gray-700">Select Employee</label>
                 <select name="employee_id" id="employee_id" required class="w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2.5 px-4 bg-gray-50 text-gray-900">
-                    <option value="">-- Choose Employee --</option>
+                    <option value=""></option>
                     {% for emp in employees %}
                         <option value="{{ emp.id }}" {% if selected_employee_id|string == emp.id|string %}selected{% endif %}>{{ emp.name }}</option>
                     {% endfor %}
@@ -33,10 +33,18 @@
                 <label for="end_date" class="block text-sm font-semibold text-gray-700">End Date</label>
                 <input type="date" name="end_date" id="end_date" value="{{ end_date or '' }}" required class="w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2.5 px-4 bg-gray-50">
             </div>
-            <div class="col-span-1 md:col-span-4 mt-4 flex justify-end">
+            <div class="col-span-1 md:col-span-4 mt-4 flex justify-end gap-3">
                 <button type="submit" class="bg-indigo-600 border border-transparent rounded-xl px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all">
                     Search History
                 </button>
+                {% if request.query_params.get("employee_id") and not error and shifts %}
+                <button type="button" onclick="downloadPDF()" class="no-print inline-flex items-center gap-2 bg-white border border-gray-300 rounded-xl px-6 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all">
+                    <svg class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h4a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                    </svg>
+                    Download PDF
+                </button>
+                {% endif %}
             </div>
         </form>
     </div>
@@ -57,8 +65,25 @@
     {% endif %}
 
     {% if request.query_params.get("employee_id") and not error %}
+
+    {# ── Print-only header (hidden on screen) ─────────────────────────── #}
+    <div id="print-header" class="hidden">
+        <div style="border-bottom: 2px solid #4f46e5; padding-bottom: 16px; margin-bottom: 20px;">
+            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #6b7280; margin-bottom: 4px;">GoLive! Staffing — HR Tools</div>
+            <div style="font-size: 22px; font-weight: 700; color: #111827; margin-bottom: 6px;">Employee Available Shift History</div>
+            {% if employees %}
+            <div style="font-size: 15px; font-weight: 600; color: #1e1b4b;">{{ employees[0].name }}</div>
+            {% endif %}
+            <div style="font-size: 13px; color: #4b5563; margin-top: 4px;">
+                Date Range: <strong>{{ start_date }}</strong> — <strong>{{ end_date }}</strong>
+                &nbsp;&nbsp;|&nbsp;&nbsp;
+                Total Shifts: <strong>{{ shifts|length }}</strong>
+            </div>
+        </div>
+    </div>
+
     <div class="bg-white rounded-3xl shadow-sm ring-1 ring-gray-900/5 overflow-hidden">
-        <div class="px-6 py-5 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+        <div class="px-6 py-5 border-b border-gray-100 bg-gray-50 flex justify-between items-center no-print">
             <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <svg class="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -68,13 +93,13 @@
         </div>
         
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+            <table class="min-w-full divide-y divide-gray-200" id="shifts-table">
                 <thead class="bg-white">
                     <tr>
                         <th scope="col" class="py-3.5 pl-6 pr-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Event Date</th>
                         <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Shift Time</th>
-                        <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Client & Event</th>
-                        <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Position & Pay</th>
+                        <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Client &amp; Event</th>
+                        <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Position &amp; Pay</th>
                         <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Published To Employee on</th>
                     </tr>
                 </thead>
@@ -117,6 +142,51 @@
 {% block scripts %}
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<style>
+    @media print {
+        /* Hide everything except the report */
+        header, nav, footer, .no-print { display: none !important; }
+        body { background: white !important; }
+        main { padding: 0 !important; margin: 0 !important; }
+        .px-4 { padding-left: 0 !important; padding-right: 0 !important; }
+        .py-8 { padding-top: 0 !important; padding-bottom: 0 !important; }
+        .space-y-8 > * + * { margin-top: 1rem !important; }
+
+        /* Hero banner — hide on print */
+        section.relative { display: none !important; }
+
+        /* Form card — hide on print */
+        .bg-white.rounded-2xl { display: none !important; }
+
+        /* Show the print-only header */
+        #print-header { display: block !important; }
+
+        /* Table card: remove rounded/shadow styling */
+        .bg-white.rounded-3xl {
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+
+        table { font-size: 11px; width: 100%; border-collapse: collapse; }
+        th { background: #f3f4f6 !important; color: #374151 !important; padding: 6px 8px !important; border-bottom: 1px solid #d1d5db; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+        td { padding: 5px 8px !important; border-bottom: 1px solid #e5e7eb; }
+        tr:nth-child(even) td { background: #f9fafb !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+
+        /* Render badge as plain text */
+        .bg-blue-100.text-blue-800 {
+            background: none !important;
+            color: #374151 !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+        }
+
+        /* Pay rate green */
+        .text-green-600 { color: #15803d !important; }
+
+        @page { margin: 15mm 12mm; }
+    }
+</style>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         new TomSelect("#employee_id", {
@@ -126,13 +196,15 @@
                 fetch('/employee-available-shift-history/api/search?q=' + encodeURIComponent(query))
                     .then(response => response.json())
                     .then(json => {
-                        const results = json.map(item => ({value: item.id, text: item.name}));
+                        const results = json.map(item => ({value: String(item.id), text: item.name}));
                         callback(results);
-                    }).catch(()=>{
-                        callback();
-                    });
+                    }).catch(() => { callback(); });
             }
         });
     });
+
+    function downloadPDF() {
+        window.print();
+    }
 </script>
 {% endblock %}
