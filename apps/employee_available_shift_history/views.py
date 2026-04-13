@@ -1,7 +1,7 @@
 import os
 from datetime import datetime, date
 from fastapi import APIRouter, Request, Query, Form
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
@@ -50,15 +50,15 @@ async def page(
 
     try:
         with engine.connect() as conn:
-            # Fetch employees for the dropdown
-            emp_sql = text('''
-                SELECT employee_id, first_name, last_name, email
-                FROM employee
-                WHERE first_name IS NOT NULL AND first_name != ''
-                ORDER BY first_name, last_name
-            ''')
-            result = conn.execute(emp_sql).mappings().all()
-            employees = [{"id": r["employee_id"], "name": f"{r['first_name']} {r['last_name']} ({r['email']})"} for r in result]
+            if employee_id:
+                emp_sql = text('''
+                    SELECT employee_id, first_name, last_name, email
+                    FROM employee
+                    WHERE employee_id = :emp_id
+                ''')
+                result = conn.execute(emp_sql, {"emp_id": employee_id}).mappings().first()
+                if result:
+                    employees = [{"id": result["employee_id"], "name": f"{result['first_name']} {result['last_name']} ({result['email']})"}]
 
             if employee_id and start_date and end_date:
                 # Fetch shift history
@@ -120,3 +120,36 @@ async def page(
         "end_date": end_date,
         "error": error
     })
+
+
+@router.get("/api/search")
+async def search_employees(q: str = Query("")):
+    if len(q) < 2:
+        return JSONResponse([])
+    
+    engine = _get_engine()
+    results = []
+    try:
+        with engine.connect() as conn:
+            sql = text('''
+                SELECT employee_id, first_name, last_name, email
+                FROM employee
+                WHERE first_name LIKE :q 
+                   OR last_name LIKE :q 
+                   OR CONCAT(first_name, ' ', last_name) LIKE :q
+                   OR email LIKE :q
+                ORDER BY first_name, last_name
+                LIMIT 50
+            ''')
+            res = conn.execute(sql, {"q": f"%{q}%"}).mappings().all()
+            for r in res:
+                results.append({
+                    "id": r["employee_id"], 
+                    "name": f"{r['first_name']} {r['last_name']} ({r['email']})"
+                })
+    except Exception:
+        pass
+    finally:
+        engine.dispose()
+    
+    return JSONResponse(results)
