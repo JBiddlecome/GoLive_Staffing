@@ -228,13 +228,10 @@ async def analyze_client_communication(
 
     full_prompt = f"{user_prompt}\n\n{email_context}"
 
-    payload = {
-        "model": "claude-sonnet-4-20250514",
-        "max_tokens": 8192,
-        "messages": [
-            {"role": "user", "content": full_prompt}
-        ],
-    }
+    models_to_try = [
+        "claude-sonnet-4-20250514",
+        "claude-3-haiku-20240307"
+    ]
 
     headers = {
         "x-api-key": anthropic_key,
@@ -244,18 +241,43 @@ async def analyze_client_communication(
 
     try:
         async with httpx.AsyncClient(timeout=120.0) as http:
-            resp = await http.post(
-                "https://api.anthropic.com/v1/messages",
-                headers=headers,
-                json=payload,
-            )
+            for model in models_to_try:
+                payload = {
+                    "model": model,
+                    "max_tokens": 8192,
+                    "messages": [
+                        {"role": "user", "content": full_prompt}
+                    ],
+                }
+
+                resp = await http.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers=headers,
+                    json=payload,
+                )
+
+                if resp.status_code != 529:
+                    break
+                
+                logger.warning("Claude API returned 529 Overloaded for model %s. Trying fallback model if available.", model)
 
         if resp.status_code != 200:
             error_body = resp.text
             logger.error("Anthropic API error %s: %s", resp.status_code, error_body)
+            
+            error_message = f"Claude API returned {resp.status_code}"
+            status_code = 502
+            
+            if resp.status_code == 529:
+                error_message = "The Claude API is currently overloaded. Please try again in a few moments."
+                status_code = 503
+            elif resp.status_code == 429:
+                error_message = "Rate limit exceeded for Claude API. Please try again later."
+                status_code = 429
+
             return JSONResponse(
-                {"error": f"Claude API returned {resp.status_code}", "details": error_body},
-                status_code=502,
+                {"error": error_message, "details": error_body},
+                status_code=status_code,
             )
 
         data = resp.json()
