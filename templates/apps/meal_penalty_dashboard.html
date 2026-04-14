@@ -103,6 +103,37 @@
                     </table>
                 </div>
             </div>
+
+            <!-- Second Main Data Table: Meal Breaks after 5 Hours -->
+            <h2 class="text-2xl font-bold text-emerald-900 mb-4 mt-8">Meal Breaks after 5 Hours</h2>
+            <div class="rounded-3xl border border-emerald-100 bg-white shadow-lg overflow-hidden min-h-[200px]">
+                <div id="late_breaks_empty_state" class="hidden flex flex-col items-center justify-center h-full py-10 px-8 text-center">
+                    <div class="bg-emerald-50 p-6 rounded-full mb-6">
+                        <svg class="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900">All clear!</h3>
+                    <p class="text-gray-500 mt-2 max-w-sm">No meal breaks after 5 hours for the selected range.</p>
+                </div>
+                
+                <div id="late_breaks_table_container" class="hidden overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="bg-emerald-50/50 text-emerald-900 font-semibold text-sm uppercase tracking-wider">
+                                <th class="px-6 py-4">Date</th>
+                                <th class="px-6 py-4">Client</th>
+                                <th class="px-6 py-4">Venue</th>
+                                <th class="px-6 py-4">Employee</th>
+                                <th class="px-6 py-4 text-center">Time to Break</th>
+                                <th class="px-6 py-4 text-center">Emp Penalty</th>
+                                <th class="px-6 py-4 text-center">Cli Penalty</th>
+                            </tr>
+                        </thead>
+                        <tbody id="late_breaks_data_body" class="divide-y divide-emerald-50">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -123,6 +154,10 @@
         const dataBody = document.getElementById('data_body');
         const summaryCard = document.getElementById('summary_card');
         const totalCount = document.getElementById('total_count');
+        
+        const lateBreaksEmptyState = document.getElementById('late_breaks_empty_state');
+        const lateBreaksTableContainer = document.getElementById('late_breaks_table_container');
+        const lateBreaksDataBody = document.getElementById('late_breaks_data_body');
 
         async function fetchData() {
             // Show loading
@@ -131,6 +166,9 @@
             errorState.classList.add('hidden');
             tableContainer.classList.add('hidden');
             summaryCard.classList.add('hidden');
+            
+            lateBreaksEmptyState.classList.add('hidden');
+            lateBreaksTableContainer.classList.add('hidden');
 
             const start = startDateInput.value;
             const end = endDateInput.value;
@@ -141,16 +179,25 @@
 
                 if (response.ok) {
                     const data = result.data;
+                    const lateBreaksData = result.late_breaks_data;
+                    
                     if (data && data.length > 0) {
                         renderTable(data);
                         totalCount.textContent = data.length;
                         summaryCard.classList.remove('hidden');
                         tableContainer.classList.remove('hidden');
-                        loadingState.classList.add('hidden');
                     } else {
                         emptyState.classList.remove('hidden');
-                        loadingState.classList.add('hidden');
                     }
+
+                    if (lateBreaksData && lateBreaksData.length > 0) {
+                        renderLateBreaksTable(lateBreaksData);
+                        lateBreaksTableContainer.classList.remove('hidden');
+                    } else {
+                        lateBreaksEmptyState.classList.remove('hidden');
+                    }
+
+                    loadingState.classList.add('hidden');
                 } else {
                     throw new Error(result.error || 'Failed to fetch data');
                 }
@@ -159,6 +206,38 @@
                 errorState.classList.remove('hidden');
                 loadingState.classList.add('hidden');
             }
+        }
+
+        function renderLateBreaksTable(data) {
+            lateBreaksDataBody.innerHTML = '';
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-emerald-50/50 transition-colors cursor-pointer group';
+                tr.onclick = () => window.open(`https://golive.culinarystaffing.com/events/${row.event_id}/timesheets`, '_blank');
+                
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-gray-700 font-medium group-hover:text-emerald-700 transition-colors">${row.date}</td>
+                    <td class="px-6 py-4 text-gray-900 font-semibold">${row.client_name}</td>
+                    <td class="px-6 py-4 text-gray-600">${row.venue_name}</td>
+                    <td class="px-6 py-4 text-gray-900">${row.employee_name}</td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
+                            ${row.time_to_break_str}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="font-bold ${row.employee_penalty === 'Yes' ? 'text-red-600' : 'text-gray-400'}">
+                            ${row.employee_penalty}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="font-bold ${row.client_penalty === 'Yes' ? 'text-red-600' : 'text-gray-400'}">
+                            ${row.client_penalty}
+                        </span>
+                    </td>
+                `;
+                lateBreaksDataBody.appendChild(tr);
+            });
         }
 
         function renderTable(data) {

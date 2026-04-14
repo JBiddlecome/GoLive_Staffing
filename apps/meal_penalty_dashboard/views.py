@@ -88,6 +88,30 @@ async def get_meal_penalty_data(
             ORDER BY e.date DESC, c.name ASC
         """)
         
+        sql_late_breaks = text("""
+            SELECT 
+                e.event_id,
+                e.date,
+                c.name AS client_name,
+                v.name AS venue_name,
+                emp.first_name,
+                emp.last_name,
+                t.employee_no_break_penalty,
+                t.client_no_break_penalty,
+                TIMESTAMPDIFF(MINUTE, t.employee_start, t.employee_break_start) AS mins_to_break
+            FROM timesheet t
+            JOIN employee emp ON t.employee_id = emp.employee_id
+            JOIN event e ON t.event_id = e.event_id
+            JOIN client c ON e.client_id = c.client_id
+            JOIN venue v ON e.venue_id = v.venue_id
+            WHERE e.date >= :start_date 
+              AND e.date <= :end_date
+              AND t.employee_break_start IS NOT NULL 
+              AND t.employee_start IS NOT NULL
+              AND TIMESTAMPDIFF(MINUTE, t.employee_start, t.employee_break_start) > 300
+            ORDER BY e.date DESC, c.name ASC
+        """)
+        
         with engine.begin() as connection:
             result = connection.execute(sql, {"start_date": start_date, "end_date": end_date}).mappings().all()
             
@@ -130,7 +154,29 @@ async def get_meal_penalty_data(
                 
                 data.append(item)
                 
-            return JSONResponse({"data": data})
+            result_late_breaks = connection.execute(sql_late_breaks, {"start_date": start_date, "end_date": end_date}).mappings().all()
+            
+            late_breaks_data = []
+            for row in result_late_breaks:
+                item = dict(row)
+                item["employee_name"] = f"{item['first_name']} {item['last_name']}"
+                item["date"] = item["date"].strftime("%Y-%m-%d")
+                item["employee_penalty"] = "Yes" if item["employee_no_break_penalty"] == 1 else "No"
+                item["client_penalty"] = "Yes" if item["client_no_break_penalty"] == 1 else "No"
+                
+                mins = item["mins_to_break"]
+                h = mins // 60
+                m = mins % 60
+                item["time_to_break_str"] = f"{h}h {m}m"
+                
+                for key in list(item.keys()):
+                    if key not in ["event_id", "date", "client_name", "venue_name", "employee_name", 
+                                  "employee_penalty", "client_penalty", "time_to_break_str", "mins_to_break"]:
+                        item.pop(key)
+                
+                late_breaks_data.append(item)
+                
+            return JSONResponse({"data": data, "late_breaks_data": late_breaks_data})
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
     finally:
