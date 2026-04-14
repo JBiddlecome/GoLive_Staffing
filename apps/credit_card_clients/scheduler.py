@@ -14,15 +14,16 @@ def _load_sent_records():
     if _sent_emails_file.exists():
         try:
             with open(_sent_emails_file, "r") as f:
-                return set(json.load(f))
+                # Return a list to preserve insertion order
+                return list(json.load(f))
         except Exception:
-            return set()
-    return set()
+            return []
+    return []
 
 
-def _save_sent_records(records_set):
+def _save_sent_records(records_list):
     with open(_sent_emails_file, "w") as f:
-        json.dump(list(records_set), f)
+        json.dump(records_list, f)
 
 
 def fetch_latest_15m_cc_cancellations():
@@ -50,17 +51,21 @@ def fetch_latest_15m_cc_cancellations():
               AND (
                   se.deleted_at   >= :fifteen_mins_ago
                   OR se.cancelled_at >= :fifteen_mins_ago
+                  OR (se.deleted_at IS NULL AND se.cancelled_at IS NULL AND s.start >= :seven_days_ago)
               )
-            ORDER BY COALESCE(se.deleted_at, se.cancelled_at) DESC;
+            ORDER BY COALESCE(se.deleted_at, se.cancelled_at, s.start) DESC;
         """)
 
         la_time = datetime.now(ZoneInfo("America/Los_Angeles"))
         fifteen_mins_ago = (la_time - timedelta(minutes=15)).strftime(
             "%Y-%m-%d %H:%M:%S"
         )
+        seven_days_ago = (la_time - timedelta(days=7)).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
         with engine.begin() as connection:
             result = connection.execute(
-                sql, {"fifteen_mins_ago": fifteen_mins_ago}
+                sql, {"fifteen_mins_ago": fifteen_mins_ago, "seven_days_ago": seven_days_ago}
             ).mappings().all()
             return [dict(r) for r in result]
     except Exception as e:
@@ -210,7 +215,7 @@ async def cc_clients_monitoring_loop():
     while True:
         try:
             data = fetch_latest_15m_cc_cancellations()
-            print(f"[CC Clients] Poll found {len(data)} cancellation(s) in last 15m window.")
+            print(f"[CC Clients] Poll found {len(data)} cancellation(s) matching criteria.")
 
             new_cancellations = []
             for d in data:
@@ -223,15 +228,15 @@ async def cc_clients_monitoring_loop():
                 send_cc_cancellation_alert_email(new_cancellations)
 
                 for c in new_cancellations:
-                    _sent_cancellation_records.add(str(c.get("shift_employee_id")))
-
-                _save_sent_records(_sent_cancellation_records)
+                    record_id = str(c.get("shift_employee_id"))
+                    if record_id not in _sent_cancellation_records:
+                        _sent_cancellation_records.append(record_id)
 
                 if len(_sent_cancellation_records) > 500:
-                    _sent_cancellation_records = set(
-                        list(_sent_cancellation_records)[-250:]
-                    )
-                    _save_sent_records(_sent_cancellation_records)
+                    # keep the last 250 elements
+                    _sent_cancellation_records = _sent_cancellation_records[-250:]
+
+                _save_sent_records(_sent_cancellation_records)
             else:
                 print("[CC Clients] No new cancellations to alert on.")
 
