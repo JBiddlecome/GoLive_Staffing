@@ -193,28 +193,21 @@
         <p class="mt-1 text-xs text-gray-500">
           Revenue totals for each industry in the selected week.
         </p>
-        <div class="mt-4 grid gap-6 lg:grid-cols-2" data-chart-grid>
-          <div>
-            <div class="relative h-72" data-chart-canvas>
-              <canvas id="industry-bar-chart" class="hidden"></canvas>
-              <div
-                id="industry-bar-empty"
-                class="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-gray-500"
-              >
-                No industry revenue data for this week.
-              </div>
+        <div class="mt-4" data-chart-grid>
+          <div class="relative h-72" data-chart-canvas>
+            <canvas id="industry-bar-chart" class="hidden"></canvas>
+            <div
+              id="industry-bar-empty"
+              class="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-gray-500"
+            >
+              No industry revenue data for this week.
             </div>
           </div>
-          <div>
-            <div class="relative h-72" data-chart-canvas>
-              <canvas id="industry-pie-chart" class="hidden"></canvas>
-              <div
-                id="industry-pie-empty"
-                class="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-gray-500"
-              >
-                No industry revenue data for this week.
-              </div>
-            </div>
+        </div>
+        <div class="mt-6">
+          <h3 class="text-sm font-semibold text-gray-900 mb-2">Top 3 Clients (by Industry)</h3>
+          <div id="industry-top-clients-container" class="space-y-2">
+            <!-- Populated dynamically via JS -->
           </div>
         </div>
       </div>
@@ -510,10 +503,9 @@
       const topClientsTableBody = document.getElementById("top-clients-table-body");
       const newClientsTableBody = document.getElementById("new-clients-table-body");
       const industryBarCtx = document.getElementById("industry-bar-chart");
-      const industryPieCtx = document.getElementById("industry-pie-chart");
       const industryBarEmpty = document.getElementById("industry-bar-empty");
-      const industryPieEmpty = document.getElementById("industry-pie-empty");
-       const presentationToggle = document.getElementById("presentation-toggle");
+      const industryTopClientsContainer = document.getElementById("industry-top-clients-container");
+      const presentationToggle = document.getElementById("presentation-toggle");
       const revenueGoalToggle = document.getElementById("revenue-goal-toggle");
       const revenueGoalContainer = document.querySelector("[data-revenue-chart]");
       const presentationRoot = document.querySelector("[data-presentation-root]");
@@ -680,12 +672,6 @@
         }
         if (industryBarEmpty) {
           industryBarEmpty.classList.toggle("hidden", !isEmpty);
-        }
-        if (industryPieCtx) {
-          industryPieCtx.classList.toggle("hidden", isEmpty);
-        }
-        if (industryPieEmpty) {
-          industryPieEmpty.classList.toggle("hidden", !isEmpty);
         }
       }
 
@@ -1095,57 +1081,14 @@
             })
           : null;
 
-      const industryPieChart =
-        industryPieCtx && Chart
-          ? new Chart(industryPieCtx, {
-              type: "pie",
-              data: {
-                labels: [],
-                datasets: [
-                  {
-                    label: "Revenue Share",
-                    data: [],
-                    backgroundColor: [],
-                    borderWidth: 1,
-                    datalabels: {
-                      display: false,
-                    },
-                  },
-                ],
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    display: false,
-                  },
-                  tooltip: {
-                    callbacks: {
-                      label(context) {
-                        const value = context.parsed ?? 0;
-                        const dataset = context.chart.data.datasets[context.datasetIndex];
-                        const total = dataset.data.reduce((sum, entry) => {
-                          return sum + (typeof entry === "number" && Number.isFinite(entry) ? entry : 0);
-                        }, 0);
-                        const percentage = total > 0 ? (value / total) * 100 : 0;
-                        const pctLabel = percentage >= 10 ? percentage.toFixed(0) : percentage.toFixed(1);
-                        return `${context.label}: ${currencyFormatter.format(value)} (${pctLabel}%)`;
-                      },
-                    },
-                  },
-                },
-              },
-            })
-          : null;
+
 
       const chartInstances = [
         shiftChart,
         fillChart,
         revenueChart,
         newSalesChart,
-        industryBarChart,
-        industryPieChart,
+        industryBarChart
       ].filter(Boolean);
 
       let activeSlideIndex = 0;
@@ -1288,7 +1231,8 @@
       }
 
       function updateIndustryCharts(weekEnding) {
-        const entries = (industryTotalsByWeek[weekEnding] || []).map((entry) => {
+        const rawEntries = industryTotalsByWeek[weekEnding] || [];
+        const entries = rawEntries.map((entry) => {
           const value =
             typeof entry.totalBill === "number" && Number.isFinite(entry.totalBill)
               ? entry.totalBill
@@ -1299,6 +1243,7 @@
           return {
             industry: industryLabel,
             totalBill: Number.isFinite(value) ? value : 0,
+            topClients: entry.topClients || []
           };
         });
 
@@ -1316,11 +1261,54 @@
           industryBarChart.update();
         }
 
-        if (industryPieChart) {
-          industryPieChart.data.labels = labels;
-          industryPieChart.data.datasets[0].data = values;
-          industryPieChart.data.datasets[0].backgroundColor = colors;
-          industryPieChart.update();
+        if (industryTopClientsContainer) {
+          industryTopClientsContainer.innerHTML = "";
+          if (!entries.length) {
+            industryTopClientsContainer.innerHTML = '<p class="text-sm text-gray-500">No client details available.</p>';
+          } else {
+            entries.forEach(entry => {
+              if (entry.totalBill > 0) {
+                const details = document.createElement("details");
+                details.className = "group rounded-lg border border-gray-200 overflow-hidden";
+                const summary = document.createElement("summary");
+                summary.className = "flex cursor-pointer items-center justify-between bg-gray-50 px-4 py-2 text-sm font-medium text-gray-800 transition hover:bg-gray-100";
+                
+                summary.innerHTML = `
+                  <div class="flex items-center gap-2">
+                    <span>${entry.industry}</span>
+                  </div>
+                  <div class="flex items-center gap-4">
+                    <span class="text-xs font-semibold text-gray-500">${currencyFormatter.format(entry.totalBill)}</span>
+                    <svg class="h-4 w-4 text-gray-400 transition-transform group-open:rotate-180" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                `;
+                
+                details.appendChild(summary);
+                
+                const clientsList = document.createElement("ul");
+                clientsList.className = "divide-y divide-gray-100 bg-white px-4 text-sm text-gray-700";
+                
+                if (entry.topClients.length === 0) {
+                  clientsList.innerHTML = '<li class="py-2 text-gray-500">No clients identified.</li>';
+                } else {
+                  entry.topClients.forEach((tc, idx) => {
+                    const li = document.createElement("li");
+                    li.className = "flex justify-between py-2";
+                    li.innerHTML = `
+                      <span><span class="text-xs text-gray-400 mr-2">${idx + 1}.</span>${tc.client}</span>
+                      <span class="font-medium">${currencyFormatter.format(tc.totalBill)}</span>
+                    `;
+                    clientsList.appendChild(li);
+                  });
+                }
+                
+                details.appendChild(clientsList);
+                industryTopClientsContainer.appendChild(details);
+              }
+            });
+          }
         }
       }
 
