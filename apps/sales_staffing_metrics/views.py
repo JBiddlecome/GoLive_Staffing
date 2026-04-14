@@ -992,6 +992,10 @@ def _summarize_industry_totals(df: pd.DataFrame) -> List[Dict[str, Any]]:
 
     working = df.copy()
     working["Industry"] = working["Industry"].fillna("Unknown Industry").astype(str)
+    if "Client" in working.columns:
+        working["Client"] = working["Client"].fillna("Unknown Client").astype(str)
+    else:
+        working["Client"] = "Unknown Client"
     working["Total Bill"] = working["Total Bill"].apply(_normalize_money)
 
     grouped = (
@@ -1003,7 +1007,28 @@ def _summarize_industry_totals(df: pd.DataFrame) -> List[Dict[str, Any]]:
     results: List[Dict[str, Any]] = []
     for _, row in grouped.iterrows():
         total_bill_value = float(row["total_bill"]) if pd.notna(row["total_bill"]) else 0.0
-        results.append({"industry": row["Industry"], "totalBill": total_bill_value})
+        
+        industry_df = working[working["Industry"] == row["Industry"]]
+        client_grouped = (
+            industry_df.groupby("Client", as_index=False)
+            .agg(client_total=("Total Bill", "sum"))
+            .sort_values("client_total", ascending=False)
+            .head(3)
+        )
+        
+        top_clients = []
+        for _, c_row in client_grouped.iterrows():
+            if pd.notna(c_row["client_total"]) and c_row["client_total"] > 0:
+                top_clients.append({
+                    "client": c_row["Client"],
+                    "totalBill": float(c_row["client_total"])
+                })
+                
+        results.append({
+            "industry": row["Industry"], 
+            "totalBill": total_bill_value,
+            "topClients": top_clients
+        })
 
     return results
 
@@ -1017,7 +1042,7 @@ def _calculate_industry_totals_by_week(
 ) -> Dict[str, List[Dict[str, Any]]]:
     results: Dict[str, List[Dict[str, Any]]] = {week: [] for week in week_endings}
 
-    required_columns = {"Date", "Industry", "Total Bill"}
+    required_columns = {"Date", "Industry", "Client", "Total Bill"}
     if payroll_df.empty or not required_columns.issubset(payroll_df.columns):
         return results
 
