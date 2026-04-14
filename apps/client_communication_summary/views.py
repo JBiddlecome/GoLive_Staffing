@@ -28,6 +28,36 @@ DEFAULT_PROMPT = (
     "and suggest ways to improve business with the client."
 )
 
+CONTACTS_PROMPT = (
+    "Using the provided contacts from the client lead and the email communication "
+    "data below for {client_name}, list all the contacts from the lead and then "
+    "identify the main contact(s) that are involved in the email communications. "
+    "Discuss the engagement level of these main contacts."
+)
+
+ORDER_HISTORY_PROMPT = (
+    "Using the email communication data provided below for {client_name}, "
+    "look at when email orders are placed in the email history and determine "
+    "how long it's been since the last order and how frequently they have "
+    "ordered in the past. Look at year over year order history if emails go back "
+    "that far. Basically, were they ordering more or less at the same time in prior years."
+)
+
+PROMPTS = {
+    "general_overview": {
+        "name": "General Overview",
+        "prompt": DEFAULT_PROMPT
+    },
+    "contacts": {
+        "name": "Contacts",
+        "prompt": CONTACTS_PROMPT
+    },
+    "order_history": {
+        "name": "Order History",
+        "prompt": ORDER_HISTORY_PROMPT
+    }
+}
+
 
 def _anthropic_api_key() -> str:
     key = os.getenv("CLOSECONNECTKEY", "")
@@ -108,12 +138,32 @@ MAX_CONTEXT_CHARS = 400_000
 MAX_BODY_CHARS = 800
 
 
-def _format_emails_for_prompt(emails: list[dict], client_name: str) -> str:
-    """Format Close.com email data into a readable block for the LLM prompt."""
-    if not emails:
-        return f"No email communications found for {client_name} in Close.com."
+def _format_context_for_prompt(lead: dict, emails: list[dict], client_name: str) -> str:
+    """Format Close.com email and lead data into a readable block for the LLM prompt."""
+    header = f"=== LEAD DETAILS FOR {client_name.upper()} ===\n"
+    contacts = lead.get("contacts") or []
+    if contacts:
+        header += "Contacts on Lead:\n"
+        for c in contacts:
+            name = c.get("display_name") or c.get("name") or "Unknown"
+            title = c.get("title") or ""
+            emails_data = c.get("emails") or []
+            emails_list = [e.get("email", "") for e in emails_data if isinstance(e, dict) and e.get("email")]
+            header += f"- {name}"
+            if title:
+                header += f" ({title})"
+            if emails_list:
+                header += f" | Emails: {', '.join(emails_list)}"
+            header += "\n"
+    else:
+        header += "No contacts listed on lead.\n"
+    
+    header += "\n"
 
-    header = f"=== EMAIL COMMUNICATIONS FOR {client_name.upper()} ({len(emails)} total emails in Close) ===\n"
+    if not emails:
+        return header + f"No email communications found for {client_name} in Close.com."
+
+    header += f"=== EMAIL COMMUNICATIONS FOR {client_name.upper()} ({len(emails)} total emails in Close) ===\n"
     lines: list[str] = [header]
     char_count = len(header)
     included = 0
@@ -165,7 +215,13 @@ def _format_emails_for_prompt(emails: list[dict], client_name: str) -> str:
 async def client_communication_summary_page(request: Request):
     return templates.TemplateResponse(
         "apps/client_communication_summary.html",
-        {"request": request, "default_prompt": DEFAULT_PROMPT},
+        {
+            "request": request, 
+            "default_prompt": DEFAULT_PROMPT, 
+            "prompts": PROMPTS,
+            "prompts_json": json.dumps(PROMPTS),
+            "default_prompt_json": json.dumps(DEFAULT_PROMPT)
+        },
     )
 
 
@@ -222,7 +278,7 @@ async def analyze_client_communication(
     # ------------------------------------------------------------------
     # Step 3: Send to Claude for analysis
     # ------------------------------------------------------------------
-    email_context = _format_emails_for_prompt(emails, lead_name)
+    email_context = _format_context_for_prompt(lead, emails, lead_name)
 
     prompt_template = custom_prompt.strip() if custom_prompt and custom_prompt.strip() else DEFAULT_PROMPT
     user_prompt = prompt_template.replace("{client_name}", lead_name)
