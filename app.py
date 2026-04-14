@@ -82,7 +82,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 class RequireLoginMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        allowed_paths = {"/auth/login", "/auth/logout", "/healthz"}
+        allowed_paths = {"/auth/login", "/auth/logout", "/healthz", "/client-communication-summary"}
         if request.url.path in allowed_paths or request.url.path.startswith("/static"):
             return await call_next(request)
             
