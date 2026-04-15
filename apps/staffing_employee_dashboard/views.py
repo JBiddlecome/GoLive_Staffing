@@ -124,15 +124,17 @@ async def get_dashboard_reliability(employee_id: int):
             noshow_sql = text("SELECT COUNT(DISTINCT t.timesheet_id) FROM timesheet t JOIN shift_employee se ON t.shift_employee_id = se.shift_employee_id JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id JOIN shift s ON sp.shift_id = s.shift_id WHERE t.employee_id = :emp_id AND t.employee_worked = 'NOSHOW' AND s.start <= NOW()")
             confirmed_no_shows = conn.execute(noshow_sql, {"emp_id": employee_id}).scalar() or 0
 
-            dnr_sql = text("SELECT COUNT(*) as cnt, GROUP_CONCAT(COALESCE(sr.reason, d.other_reason) SEPARATOR '; ') as details FROM dnr d LEFT JOIN status_reason sr ON d.reason_id = sr.id WHERE d.employee_id = :emp_id")
+            dnr_sql = text("SELECT COUNT(*) as cnt, GROUP_CONCAT(COALESCE(sr.reason, d.other_reason) SEPARATOR '; ') as details, GROUP_CONCAT(CASE WHEN d.notes IS NOT NULL AND d.notes != '' THEN d.notes END SEPARATOR '; ') as notes FROM dnr d LEFT JOIN status_reason sr ON d.reason_id = sr.id WHERE d.employee_id = :emp_id")
             dnr_row = conn.execute(dnr_sql, {"emp_id": employee_id}).fetchone()
             dnr_count = dnr_row[0] if dnr_row else 0
             dnr_details = dnr_row[1] if dnr_row and dnr_row[1] else "None"
+            dnr_notes = dnr_row[2] if dnr_row and dnr_row[2] else "None"
 
-            pref_sql = text("SELECT COUNT(*) as cnt, GROUP_CONCAT(reason SEPARATOR '; ') as details FROM exclusive WHERE employee_id = :emp_id")
+            pref_sql = text("SELECT COUNT(*) as cnt, GROUP_CONCAT(reason SEPARATOR '; ') as details, GROUP_CONCAT(CASE WHEN notes IS NOT NULL AND notes != '' THEN notes END SEPARATOR '; ') as notes FROM exclusive WHERE employee_id = :emp_id")
             pref_row = conn.execute(pref_sql, {"emp_id": employee_id}).fetchone()
             preferred_count = pref_row[0] if pref_row else 0
             preferred_details = pref_row[1] if pref_row and pref_row[1] else "None"
+            preferred_notes = pref_row[2] if pref_row and pref_row[2] else "None"
 
             variance_sql = text("SELECT AVG(TIMESTAMPDIFF(MINUTE, s.start, t.employee_start)) FROM timesheet t JOIN shift_employee se ON se.shift_employee_id = t.shift_employee_id JOIN shift_position sp ON sp.shift_position_id = se.shift_position_id JOIN shift s ON s.shift_id = sp.shift_id WHERE t.employee_id = :emp_id AND t.employee_start IS NOT NULL AND t.employee_worked = 'WORKED' AND s.start <= NOW()")
             variance_val = conn.execute(variance_sql, {"emp_id": employee_id}).scalar()
@@ -158,8 +160,10 @@ INPUT DATA:
 •	confirmed_no_shows: integer (actual verified no-shows)
 •	dnr_count: integer
 •	dnr_details: optional text describing reasons for DNR
+•	dnr_notes: optional freeform notes associated with DNR entries
 •	preferred_count: integer
 •	preferred_details: optional text describing reasons for Preferred
+•	preferred_notes: optional freeform notes associated with Preferred/Exclusive entries
 •	clock_in_variance: integer
 ANALYSIS INSTRUCTIONS:
 1.	Normalize note bias:
@@ -228,8 +232,10 @@ Structured data:
 •	confirmed_no_shows: {confirmed_no_shows}
 •	dnr_count: {dnr_count}
 •	dnr_details: {dnr_details}
+•	dnr_notes: {dnr_notes}
 •	preferred_count: {preferred_count}
 •	preferred_details: {preferred_details}
+•	preferred_notes: {preferred_notes}
 •	clock_in_variance: {clock_in_variance}"""
 
     try:

@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Review | GoLive Staffing Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <!-- html2pdf for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --surface-light: #334155;
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --transition: all 0.2s ease;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .header {
+            padding: 1rem 2rem;
+            background-color: rgba(30, 41, 59, 0.9);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .header-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .header-title i {
+            color: var(--primary-color);
+        }
+
+        .back-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+
+        .back-link:hover {
+            color: var(--text-primary);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Setup Instructions Alert */
+        .alert-info {
+            background-color: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-left: 4px solid var(--primary-color);
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .alert-info h4 {
+            margin: 0 0 0.5rem 0;
+            color: #60a5fa;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .alert-info p {
+            margin: 0;
+            color: #bfdbfe;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .alert-close {
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        .alert-close:hover { color: white; }
+
+        /* Form Area */
+        .search-card {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .form-input {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-md);
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: var(--transition);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        .form-actions {
+            margin-top: 1.5rem;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            background-color: var(--surface-light);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-md);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: var(--transition);
+            font-family: inherit;
+        }
+
+        .btn:hover {
+            background-color: var(--border-color);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+            color: white;
+        }
+        .btn-success:hover { background-color: #059669; }
+
+        /* Loading Spinner */
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Results Area */
+        .results-area {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .email-card {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .email-header {
+            padding: 1.25rem 1.5rem;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            position: relative;
+        }
+
+        .email-header:hover {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .email-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .email-subject {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+            padding-right: 2rem;
+        }
+        
+        .email-to {
+            font-weight: 500;
+            color: #93c5fd;
+        }
+
+        .chevron {
+            position: absolute;
+            right: 1.5rem;
+            top: 1.5rem;
+            color: var(--text-secondary);
+            transition: transform 0.3s;
+        }
+
+        .email-card.expanded .chevron {
+            transform: rotate(180deg);
+        }
+
+        .email-body {
+            display: none;
+            padding: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            background-color: var(--surface-light);
+        }
+
+        .email-card.expanded .email-body {
+            display: block;
+        }
+
+        .email-content-box {
+            background-color: white;
+            color: #1e293b;
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+            white-space: pre-wrap;
+        }
+
+        .email-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        /* AI Analysis Card */
+        .ai-analysis {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: var(--radius-md);
+            display: none;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .ai-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--success-color);
+            font-weight: 600;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .score-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .ai-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .ai-section h5 {
+            margin: 0 0 0.5rem 0;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .ai-section p, .ai-section ul {
+            margin: 0;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .ai-section ul {
+            padding-left: 1.5rem;
+            color: var(--danger-color);
+        }
+
+        .ai-section.good { color: var(--text-primary); }
+
+        /* Utilities */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+        .empty-state i {
+            font-size: 3rem;
+            opacity: 0.5;
+            margin-bottom: 1rem;
+        }
+
+        /* Hidden PDF renderer anchor */
+        .pdf-container {
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            width: 800px;
+        }
+        .pdf-content {
+            background: white;
+            color: black;
+            padding: 40px;
+            font-family: 'Helvetica', sans-serif;
+            font-size: 12pt;
+            line-height: 1.5;
+        }
+        .pdf-content h2 { margin-top: 0; color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .pdf-content .meta { margin-bottom: 20px; color: #475569; font-size: 10pt; }
+        .pdf-content .body-text { white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="header-title">
+            <i class="fa-solid fa-envelope-open-text"></i>
+            Email Review Admin
+        </div>
+        <a href="/admin" class="back-link">
+            <i class="fa-solid fa-arrow-left"></i>
+            Back to Admin Portal
+        </a>
+    </header>
+
+    <div class="container">
+        
+        <div class="alert-info" id="setupAlert">
+            <button class="alert-close" onclick="document.getElementById('setupAlert').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+            <h4><i class="fa-solid fa-circle-info"></i> Microsoft 365 Setup Required</h4>
+            <p>
+                To fetch user emails, the application uses the Microsoft Graph API. As a global admin, please ensure you have registered a Microsoft Entra ID App with <strong>Application Permissions</strong> for <code>Mail.Read</code> (and granted Admin Consent). The backend environment variables <code>O365_TENANT_ID</code>, <code>O365_CLIENT_ID</code>, and <code>O365_CLIENT_SECRET</code> must be set.
+            </p>
+        </div>
+
+        <div class="search-card">
+            <form id="searchForm" onsubmit="fetchEmails(event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Employee Email (Sender)</label>
+                        <input type="email" id="employee_email" name="employee_email" class="form-input" placeholder="jake@culinarystaffing.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" id="start_date" name="start_date" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">End Date</label>
+                        <input type="date" id="end_date" name="end_date" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Sent To (Optional)</label>
+                        <input type="text" id="sent_to" name="sent_to" class="form-input" placeholder="domain.com or user@">
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="searchBtn">
+                        <span class="btn-text">Fetch Sent Emails</span>
+                        <div class="spinner" id="searchSpinner"></div>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="results-area" id="resultsArea">
+            <div class="empty-state">
+                <i class="fa-solid fa-inbox"></i>
+                <h3>Ready to search</h3>
+                <p>Enter an employee's email and date range to pull their sent items.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Hidden div used strictly for generating PDFs via JS -->
+    <div class="pdf-container" id="pdfContainer">
+        <div class="pdf-content" id="pdfContent">
+            <!-- Populated dynamically -->
+        </div>
+    </div>
+
+    <script>
+        // Set default dates to past 7 days
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date();
+            const lastWeek = new Date(today);
+            lastWeek.setDate(today.getDate() - 7);
+            
+            document.getElementById('end_date').value = today.toISOString().split('T')[0];
+            document.getElementById('start_date').value = lastWeek.toISOString().split('T')[0];
+        });
+
+        async function fetchEmails(e) {
+            e.preventDefault();
+            
+            const form = document.getElementById('searchForm');
+            const btn = document.getElementById('searchBtn');
+            const spinner = document.getElementById('searchSpinner');
+            const btnText = btn.querySelector('.btn-text');
+            const resultsArea = document.getElementById('resultsArea');
+            
+            // UI Loading state
+            btn.disabled = true;
+            spinner.style.display = 'block';
+            btnText.textContent = 'Fetching...';
+            
+            try {
+                const formData = new FormData(form);
+                const response = await fetch('/email-review/fetch', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to fetch emails');
+                }
+                
+                renderEmails(result.data);
+                
+            } catch (error) {
+                resultsArea.innerHTML = `
+                    <div class="alert-info" style="background-color: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); border-left-color: var(--danger-color);">
+                        <h4 style="color: #f87171;"><i class="fa-solid fa-circle-exclamation"></i> Error</h4>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            } finally {
+                btn.disabled = false;
+                spinner.style.display = 'none';
+                btnText.textContent = 'Fetch Sent Emails';
+            }
+        }
+
+        function renderEmails(emails) {
+            const resultsArea = document.getElementById('resultsArea');
+            resultsArea.innerHTML = '';
+            
+            if (!emails || emails.length === 0) {
+                resultsArea.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-regular fa-folder-open"></i>
+                        <h3>No emails found</h3>
+                        <p>Try adjusting your date range or recipient filters.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const employeeEmail = document.getElementById('employee_email').value;
+
+            // Global Actions Header
+            const globalActions = document.createElement('div');
+            globalActions.style.display = 'flex';
+            globalActions.style.flexDirection = 'column';
+            globalActions.style.gap = '1rem';
+            globalActions.style.marginBottom = '1rem';
+            
+            globalActions.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0; color: var(--text-primary);">${emails.length} Emails Found</h3>
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn btn-primary" onclick="analyzeAllAI(this)">
+                            <i class="fa-solid fa-robot"></i> Analyze All with AI
+                            <div class="spinner" style="border-top-color: white;"></div>
+                        </button>
+                        <button class="btn btn-success" onclick="downloadAllPDF()">
+                            <i class="fa-solid fa-file-pdf"></i> Download All as PDF
+                        </button>
+                    </div>
+                </div>
+                <!-- Global AI Analysis Box -->
+                <div class="ai-analysis" id="globalAIAnalysis"></div>
+            `;
+            resultsArea.appendChild(globalActions);
+            
+            // Store for global access
+            window.lastFetchedEmails = emails;
+
+            emails.forEach((email, index) => {
+                const dateObj = new Date(email.sent_date);
+                const dateStr = dateObj.toLocaleString();
+                
+                // If body is empty, use preview
+                let bodyText = email.body || email.preview || '';
+                // Strip simple HTML tags if body is extremely messy, but we will keep it as pre-wrap for now.
+                // Assuming "body" contains plaintext since graph API provides contentType, we might need simple text strip.
+                if(email.content_type === 'html') {
+                    // Quick strip of HTML tags just for display purposes
+                    const tmp = document.createElement('div');
+                    tmp.innerHTML = bodyText;
+                    bodyText = tmp.textContent || tmp.innerText || '';
+                }
+
+                const card = document.createElement('div');
+                card.className = 'email-card';
+                card.innerHTML = `
+                    <div class="email-header" onclick="toggleEmail(this)">
+                        <div class="email-meta">
+                            <span>Sent on ${dateStr}</span>
+                            <span class="email-to">To: ${email.to}</span>
+                        </div>
+                        <h4 class="email-subject">${email.subject || '(No Subject)'}</h4>
+                        <i class="fa-solid fa-chevron-down chevron"></i>
+                    </div>
+                    <div class="email-body">
+                        <div class="email-content-box" id="content-${index}">${sanitizeHTML(bodyText)}</div>
+                        
+                        <div class="email-actions">
+                            <button class="btn btn-primary" onclick="analyzeEmail(this, '${index}')">
+                                <i class="fa-solid fa-robot"></i> Analyze AI
+                                <div class="spinner" style="border-top-color: white;"></div>
+                            </button>
+                            <button class="btn btn-success" onclick="downloadPDF('${index}', '${sanitizeHTML(email.subject)}', '${email.to}', '${dateStr}', '${employeeEmail}')">
+                                <i class="fa-solid fa-file-pdf"></i> Download PDF
+                            </button>
+                        </div>
+                        
+                        <div class="ai-analysis" id="ai-${index}">
+                            <!-- AI content injected here -->
+                        </div>
+                    </div>
+                `;
+                resultsArea.appendChild(card);
+            });
+        }
+
+        function toggleEmail(element) {
+            const card = element.closest('.email-card');
+            card.classList.toggle('expanded');
+        }
+
+        async function analyzeEmail(btn, index) {
+            const aiCard = document.getElementById(`ai-${index}`);
+            const contentBox = document.getElementById(`content-${index}`);
+            const emailText = contentBox.innerText;
+            
+            const spinner = btn.querySelector('.spinner');
+            const icon = btn.querySelector('i');
+            
+            btn.disabled = true;
+            spinner.style.display = 'inline-block';
+            icon.style.display = 'none';
+            
+            try {
+                const response = await fetch('/email-review/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email_text: emailText })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to analyze');
+                }
+                
+                renderAnalysis(aiCard, result.analysis);
+                
+            } catch (err) {
+                alert('Analysis Error: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                spinner.style.display = 'none';
+                icon.style.display = 'inline-block';
+            }
+        }
+
+        async function analyzeAllAI(btn) {
+            if (!window.lastFetchedEmails || window.lastFetchedEmails.length === 0) return;
+            
+            const aiCard = document.getElementById('globalAIAnalysis');
+            const spinner = btn.querySelector('.spinner');
+            const icon = btn.querySelector('i');
+            
+            // Extract raw text for all fetched emails
+            const allEmailTexts = window.lastFetchedEmails.map(email => {
+                let bodyText = email.body || email.preview || '';
+                if(email.content_type === 'html') {
+                    const tmp = document.createElement('div');
+                    tmp.innerHTML = bodyText;
+                    bodyText = tmp.textContent || tmp.innerText || '';
+                }
+                return bodyText;
+            });
+            
+            btn.disabled = true;
+            spinner.style.display = 'inline-block';
+            icon.style.display = 'none';
+            aiCard.style.display = 'none'; // reset
+            
+            try {
+                const response = await fetch('/email-review/analyze_batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ emails: allEmailTexts })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to analyze batch');
+                }
+                
+                renderAnalysis(aiCard, result.analysis, true);
+                
+            } catch (err) {
+                alert('Batch Analysis Error: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                spinner.style.display = 'none';
+                icon.style.display = 'inline-block';
+            }
+        }
+
+        function renderAnalysis(container, data, isBatch = false) {
+            container.style.display = 'block';
+            
+            const redFlagsHTML = data.red_flags && data.red_flags.length > 0 
+                ? `<ul>${data.red_flags.map(f => `<li>${f}</li>`).join('')}</ul>`
+                : `<p class="good"><i class="fa-solid fa-check-circle" style="color:var(--success-color)"></i> No red flags detected.</p>`;
+                
+            let scoreColor = data.professional_score >= 8 ? 'var(--success-color)' : 
+                             (data.professional_score >= 5 ? 'var(--warning-color)' : 'var(--danger-color)');
+
+            container.innerHTML = `
+                <div class="ai-header">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> ${isBatch ? 'Overall Communication Profile (Batch AI)' : 'AI Analysis Profile'}
+                    <span class="score-badge" style="background-color: ${scoreColor}; color: #fff; margin-left: auto;">
+                        Score: ${data.professional_score} / 10
+                    </span>
+                </div>
+                <div class="ai-grid">
+                    <div class="ai-section">
+                        <h5>Professionalism Assessment</h5>
+                        <p>${data.is_professional ? '✅ Generally Professional' : '❌ Unprofessional / Needs Review'}</p>
+                        
+                        <h5 style="margin-top: 1rem;">Detected Red Flags</h5>
+                        ${redFlagsHTML}
+                    </div>
+                    <div class="ai-section">
+                        <h5>Recommendations for Improvement</h5>
+                        <p class="good">${data.suggestions}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function downloadPDF(index, subject, to, dateStr, from) {
+            const contentBox = document.getElementById(`content-${index}`);
+            const text = contentBox.innerText;
+            
+            const htmlString = `
+                <div style="padding: 40px; font-family: 'Helvetica', sans-serif; font-size: 12pt; color: black; background: white;">
+                    <h2 style="color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-top: 0;">Email Review Document</h2>
+                    <div style="background:#f1f5f9; padding:15px; border-radius:6px; font-size: 10pt; color: #475569; margin-bottom: 20px;">
+                        <strong>From:</strong> ${from}<br>
+                        <strong>To:</strong> ${to}<br>
+                        <strong>Date Sent:</strong> ${dateStr}<br>
+                        <strong>Subject:</strong> ${subject || 'No Subject'}
+                    </div>
+                    <div style="white-space: pre-wrap; margin-top: 20px; line-height: 1.6;">${text}</div>
+                    <hr style="border: 0; border-top: 1px solid #cbd5e1; margin: 40px 0 20px 0;">
+                    <p style="text-align:center; font-size: 9pt; color:#666;">Generated by GoLive Staffing Email Review Tool</p>
+                </div>
+            `;
+            
+            const opt = {
+                margin:       [0.5, 0.5, 0.5, 0.5],
+                filename:     `Email_Review_${from}_${dateStr.split(',')[0].replace(/\\//g,'-')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+            
+            html2pdf().set(opt).from(htmlString).save();
+        }
+
+        function sanitizeHTML(str) {
+            if (!str) return '';
+            const temp = document.createElement('div');
+            temp.textContent = str;
+            return temp.innerHTML;
+        }
+
+        function downloadAllPDF() {
+            if (!window.lastFetchedEmails || window.lastFetchedEmails.length === 0) return;
+            const employeeEmail = document.getElementById('employee_email').value;
+            
+            let allHtml = `
+                <div style="padding: 40px; font-family: 'Helvetica', sans-serif; font-size: 12pt; color: black; background: white;">
+                    <h2 style="color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-top: 0;">Complete Email Review Document</h2>
+                    <p style="color: #475569; font-size: 11pt;"><strong>Employee:</strong> ${employeeEmail}</p>
+                    <p style="color: #475569; font-size: 11pt; margin-bottom: 30px;"><strong>Generated on:</strong> ${new Date().toLocaleString()}</p>
+            `;
+                           
+            window.lastFetchedEmails.forEach((email) => {
+                const dateObj = new Date(email.sent_date);
+                const dateStr = dateObj.toLocaleString();
+                
+                let bodyText = email.body || email.preview || '';
+                if(email.content_type === 'html') {
+                    const tmp = document.createElement('div');
+                    tmp.innerHTML = bodyText;
+                    bodyText = tmp.textContent || tmp.innerText || '';
+                }
+                
+                allHtml += `
+                    <div style="page-break-inside: avoid; margin-bottom: 40px;">
+                        <div style="background:#f8fafc; padding:15px; border-radius:6px; font-size: 10pt; color: #334155; border: 1px solid #e2e8f0; margin-bottom: 15px;">
+                            <strong>From:</strong> ${employeeEmail}<br>
+                            <strong>To:</strong> ${email.to}<br>
+                            <strong>Date Sent:</strong> ${dateStr}<br>
+                            <strong>Subject:</strong> ${sanitizeHTML(email.subject || 'No Subject')}
+                        </div>
+                        <div style="white-space: pre-wrap; line-height: 1.6; padding: 0 10px;">${sanitizeHTML(bodyText)}</div>
+                        <hr style="border: 0; border-top: 1px dashed #cbd5e1; margin: 30px 0 0 0;">
+                    </div>
+                `;
+            });
+            
+            allHtml += `
+                    <p style="text-align:center; font-size: 9pt; color:#666; margin-top: 50px;">Generated by GoLive Staffing Email Review Tool</p>
+                </div>
+            `;
+            
+            const opt = {
+                margin:       [0.5, 0.5, 0.5, 0.5],
+                filename:     `Email_Review_All_${employeeEmail}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
+                pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+            };
+            
+            html2pdf().set(opt).from(allHtml).save();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+{% block title %}Basic Client Report — GoLive Staffing{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8">
+  <div class="rounded-3xl bg-white shadow-lg border border-emerald-100 overflow-hidden">
+    <div class="bg-gradient-to-r from-emerald-600 to-emerald-500 px-8 py-6 text-white">
+      <div class="flex items-center gap-4 mb-2">
+        <a href="/reports" class="text-emerald-100 hover:text-white transition">← Back to Hub</a>
+      </div>
+      <p class="uppercase text-sm font-semibold tracking-[0.2em] text-emerald-100">Client Reports</p>
+      <h1 class="brand-serif text-4xl font-semibold leading-tight">Basic Client Report</h1>
+      <p class="mt-2 text-emerald-50/90 max-w-3xl">Search for a client, select a date range, and view employee hours, positions worked, and shift details.</p>
+    </div>
+
+    <div class="p-8 space-y-8">
+      <!-- Controls -->
+      <div class="flex flex-wrap gap-4 items-end">
+        <div class="flex-1 min-w-[280px] max-w-[350px] relative">
+          <label for="clientSearch" class="block text-sm font-medium text-slate-700 mb-2">Search Client</label>
+          <input type="text" id="clientSearch" placeholder="Type to search clients..." autocomplete="off"
+            class="w-full bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 p-2.5">
+          <input type="hidden" id="clientId">
+          <div id="clientDropdown" class="hidden absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-xl max-h-60 overflow-y-auto"></div>
+        </div>
+        <div class="flex-1 min-w-[180px] max-w-[220px]">
+          <label for="startDate" class="block text-sm font-medium text-slate-700 mb-2">Start Date</label>
+          <input type="date" id="startDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 p-2.5">
+        </div>
+        <div class="flex-1 min-w-[180px] max-w-[220px]">
+          <label for="endDate" class="block text-sm font-medium text-slate-700 mb-2">End Date</label>
+          <input type="date" id="endDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 p-2.5">
+        </div>
+        <div class="flex gap-3">
+          <button id="generateBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-lg transition-colors flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+            Generate Report
+          </button>
+          <button id="exportBtn" disabled class="bg-slate-700 hover:bg-slate-600 text-white font-medium py-2.5 px-6 rounded-lg transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            Download Excel
+          </button>
+        </div>
+      </div>
+
+      <!-- Selected client badge -->
+      <div id="selectedClient" class="hidden">
+        <div class="inline-flex items-center gap-2 bg-emerald-50 text-emerald-800 px-4 py-2 rounded-full text-sm font-semibold border border-emerald-200">
+          <span id="selectedClientName"></span>
+          <button id="clearClient" class="ml-1 text-emerald-600 hover:text-red-500 transition font-bold text-lg leading-none">&times;</button>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div id="loading" class="hidden flex justify-center py-12">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+      </div>
+
+      <!-- Summary Stats -->
+      <div id="summary-stats" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100/60 border border-emerald-200 p-5 text-center">
+          <p class="text-xs font-semibold uppercase tracking-wider text-emerald-600 mb-1">Total Employees</p>
+          <p id="statEmployees" class="text-3xl font-bold text-emerald-800">0</p>
+        </div>
+        <div class="rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100/60 border border-blue-200 p-5 text-center">
+          <p class="text-xs font-semibold uppercase tracking-wider text-blue-600 mb-1">Total Hours</p>
+          <p id="statHours" class="text-3xl font-bold text-blue-800">0</p>
+        </div>
+        <div class="rounded-2xl bg-gradient-to-br from-amber-50 to-amber-100/60 border border-amber-200 p-5 text-center">
+          <p class="text-xs font-semibold uppercase tracking-wider text-amber-600 mb-1">Unique Positions</p>
+          <p id="statPositions" class="text-3xl font-bold text-amber-800">0</p>
+        </div>
+      </div>
+
+      <!-- Report Table -->
+      <div id="report-container" class="hidden overflow-hidden rounded-2xl border border-emerald-100">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-emerald-50 text-emerald-800 font-semibold uppercase tracking-wider">
+            <tr>
+              <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider">Employee Name</th>
+              <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider">Positions Worked</th>
+              <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider">Total Hours</th>
+              <th class="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider">List Status</th>
+            </tr>
+          </thead>
+          <tbody id="report-body" class="divide-y divide-emerald-50 bg-white">
+          </tbody>
+        </table>
+      </div>
+
+      <div id="no-data" class="hidden text-center py-12 text-gray-500">
+        No shifts found for this client in the selected date range.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const clientSearch = document.getElementById('clientSearch');
+    const clientIdInput = document.getElementById('clientId');
+    const clientDropdown = document.getElementById('clientDropdown');
+    const selectedClientDiv = document.getElementById('selectedClient');
+    const selectedClientName = document.getElementById('selectedClientName');
+    const clearClientBtn = document.getElementById('clearClient');
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    const generateBtn = document.getElementById('generateBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const loading = document.getElementById('loading');
+    const container = document.getElementById('report-container');
+    const body = document.getElementById('report-body');
+    const noData = document.getElementById('no-data');
+    const summaryStats = document.getElementById('summary-stats');
+
+    let allClients = [];
+
+    // Load all clients on page load
+    try {
+      const resp = await fetch('/reports/api/clients');
+      allClients = await resp.json();
+    } catch (err) { console.error('Failed to load clients', err); }
+
+    // Client search with dropdown
+    function showDropdown(matches) {
+      clientDropdown.innerHTML = '';
+      if (matches.length === 0) {
+        clientDropdown.classList.add('hidden');
+        return;
+      }
+      matches.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'px-4 py-2.5 cursor-pointer hover:bg-emerald-50 text-sm text-slate-800 transition';
+        div.textContent = c.name;
+        div.addEventListener('click', () => selectClient(c));
+        clientDropdown.appendChild(div);
+      });
+      clientDropdown.classList.remove('hidden');
+    }
+
+    function selectClient(client) {
+      clientIdInput.value = client.client_id;
+      clientSearch.value = client.name;
+      clientDropdown.classList.add('hidden');
+      selectedClientName.textContent = client.name;
+      selectedClientDiv.classList.remove('hidden');
+    }
+
+    clientSearch.addEventListener('input', () => {
+      const q = clientSearch.value.trim().toLowerCase();
+      if (q.length < 2) {
+        clientDropdown.classList.add('hidden');
+        return;
+      }
+      const matches = allClients.filter(c => c.name.toLowerCase().includes(q)).slice(0, 20);
+      showDropdown(matches);
+    });
+
+    clientSearch.addEventListener('focus', () => {
+      const q = clientSearch.value.trim().toLowerCase();
+      if (q.length >= 2) {
+        const matches = allClients.filter(c => c.name.toLowerCase().includes(q)).slice(0, 20);
+        showDropdown(matches);
+      }
+    });
+
+    // Close dropdown on outside click
+    document.addEventListener('click', (e) => {
+      if (!clientSearch.contains(e.target) && !clientDropdown.contains(e.target)) {
+        clientDropdown.classList.add('hidden');
+      }
+    });
+
+    clearClientBtn.addEventListener('click', () => {
+      clientIdInput.value = '';
+      clientSearch.value = '';
+      selectedClientDiv.classList.add('hidden');
+      container.classList.add('hidden');
+      noData.classList.add('hidden');
+      summaryStats.classList.add('hidden');
+      exportBtn.disabled = true;
+    });
+
+    // Generate Report
+    generateBtn.addEventListener('click', async () => {
+      const clientId = clientIdInput.value;
+      const start = startDateInput.value;
+      const end = endDateInput.value;
+
+      if (!clientId) { alert('Please search for and select a client.'); return; }
+      if (!start || !end) { alert('Please select both a start and end date.'); return; }
+
+      container.classList.add('hidden');
+      noData.classList.add('hidden');
+      summaryStats.classList.add('hidden');
+      loading.classList.remove('hidden');
+      body.innerHTML = '';
+      exportBtn.disabled = true;
+
+      try {
+        const resp = await fetch(`/reports/api/basic-client-report?client_id=${clientId}&start_date=${start}&end_date=${end}`);
+        if (!resp.ok) throw new Error(await resp.text());
+        const data = await resp.json();
+
+        if (!data || data.length === 0) {
+          noData.classList.remove('hidden');
+        } else {
+          // Calculate stats
+          let totalHours = 0;
+          const allPositions = new Set();
+          data.forEach(row => {
+            totalHours += row['total_hours'] || 0;
+            if (row['positions_worked']) {
+              row['positions_worked'].split(', ').forEach(p => allPositions.add(p));
+            }
+          });
+
+          document.getElementById('statEmployees').textContent = data.length;
+          document.getElementById('statHours').textContent = totalHours.toFixed(2);
+          document.getElementById('statPositions').textContent = allPositions.size;
+          summaryStats.classList.remove('hidden');
+
+          data.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-emerald-50/50 transition';
+            let statusBadge = '';
+            const status = row['list_status'] || '';
+            if (status.includes('Preferred') && status.includes('DNR')) {
+              statusBadge = '<span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 mr-1">Preferred</span><span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">DNR</span>';
+            } else if (status === 'Preferred') {
+              statusBadge = '<span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Preferred</span>';
+            } else if (status === 'DNR') {
+              statusBadge = '<span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">DNR</span>';
+            }
+            tr.innerHTML = `
+              <td class="px-6 py-4 font-semibold text-gray-900">${row['employee_name'] || ''}</td>
+              <td class="px-6 py-4 text-gray-600">${row['positions_worked'] || ''}</td>
+              <td class="px-6 py-4 text-emerald-700 font-bold text-right">${row['total_hours'] ? Number(row['total_hours']).toFixed(2) : '0.00'}</td>
+              <td class="px-6 py-4 text-center">${statusBadge}</td>
+            `;
+            body.appendChild(tr);
+          });
+          container.classList.remove('hidden');
+          exportBtn.disabled = false;
+        }
+      } catch (err) {
+        console.error('Failed to fetch data', err);
+        alert('Error fetching report data.');
+      } finally {
+        loading.classList.add('hidden');
+      }
+    });
+
+    // Export to Excel
+    exportBtn.addEventListener('click', () => {
+      const clientId = clientIdInput.value;
+      const start = startDateInput.value;
+      const end = endDateInput.value;
+      if (!clientId || !start || !end) return;
+      window.location.href = `/reports/api/basic-client-report/export?client_id=${clientId}&start_date=${start}&end_date=${end}`;
+    });
+  });
+</script>
+{% endblock %}
