@@ -52,6 +52,7 @@ from apps.client_communication_summary.views import router as client_communicati
 from apps.employee_available_shift_history.views import router as employee_available_shift_history_router
 from apps.admin_portal.views import router as admin_portal_router
 from apps.email_review.views import router as email_review_router
+from apps.position_requests.views import router as position_requests_router
 from apps.auth.views import router as auth_router, get_current_user
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 
@@ -60,16 +61,19 @@ import asyncio
 from apps.msp_dashboard.scheduler import msp_monitoring_loop
 from apps.credit_card_clients.scheduler import cc_clients_monitoring_loop
 from apps.admin_dashboard.tracker import admin_tracking_loop
+from apps.position_requests.scheduler import position_requests_monitoring_loop
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     monitor_task = asyncio.create_task(msp_monitoring_loop())
     cc_monitor_task = asyncio.create_task(cc_clients_monitoring_loop())
     admin_task = asyncio.create_task(admin_tracking_loop())
+    pr_task = asyncio.create_task(position_requests_monitoring_loop())
     yield
     monitor_task.cancel()
     cc_monitor_task.cancel()
     admin_task.cancel()
+    pr_task.cancel()
 
 app = FastAPI(title="GoLive Staffing — Tools", lifespan=lifespan)
 
@@ -319,6 +323,11 @@ app.include_router(
     email_review_router,
     prefix="/email-review",
     tags=["Email Review"],
+)
+app.include_router(
+    position_requests_router,
+    prefix="/position-requests",
+    tags=["Position Requests"],
 )
 
 # Redirect /sms_paraphraser to /sms-paraphraser for backward compatibility

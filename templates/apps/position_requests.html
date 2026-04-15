@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}GoLive Staffing — Position Requests{% endblock %}
+
+{% block content %}
+<div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto py-8">
+  <div class="sm:flex sm:items-center">
+    <div class="sm:flex-auto border-b border-gray-200 pb-5">
+      <h1 class="text-3xl font-semibold leading-tight text-emerald-800 brand-serif">Position Requests</h1>
+      <p class="mt-2 text-sm text-gray-700">A continuous feed of employees applying for positions evaluated directly from the gethired@culinarystaffing.com inbox.</p>
+    </div>
+  </div>
+  
+  <div class="mt-8 flow-root">
+    <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+      <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+        <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 rounded-lg bg-white border border-gray-200">
+          <table class="min-w-full divide-y divide-gray-300">
+            <thead class="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 w-16">Completed</th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Name</th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Phone</th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Requested Positions</th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 hidden md:table-cell">Experience</th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Resume</th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-40">Recruiter</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 bg-white" id="requests-tbody">
+              {% for row in records %}
+              <tr class="transition-colors duration-150 {% if row.completed %}bg-emerald-50/60{% endif %} hover:bg-gray-50">
+                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 text-center">
+                  <input type="checkbox" 
+                         class="h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-600 transition-colors update-row cursor-pointer" 
+                         data-msg-id="{{ row.message_id }}"
+                         {% if row.completed %}checked{% endif %}>
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm font-semibold text-gray-900 text-gray-900">{{ row.employee_name }}</td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-600">{{ row.phone }}</td>
+                <td class="px-3 py-4 text-sm text-gray-600 truncate max-w-[12rem]" title="{{ row.positions }}">{{ row.positions }}</td>
+                <td class="px-3 py-4 text-sm text-gray-600 truncate max-w-[18rem] hidden md:table-cell" title="{{ row.experience }}">{{ row.experience }}</td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-600">
+                  {% if row.resume_link %}
+                    {% if row.resume_link.startswith('http') %}
+                      <a href="{{ row.resume_link }}" target="_blank" class="inline-flex items-center gap-1.5 text-emerald-700 hover:text-emerald-900 font-medium underline underline-offset-2 transition-colors">
+                        View
+                        <span aria-hidden="true">↗</span>
+                      </a>
+                    {% else %}
+                      {{ row.resume_link }}
+                    {% endif %}
+                  {% else %}
+                    <span class="text-gray-400 italic">None</span>
+                  {% endif %}
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-600">
+                  <select class="block w-full rounded-md border-0 py-1.5 pl-3 pr-8 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:text-sm sm:leading-6 bg-white cursor-pointer update-row transition-all" data-msg-id="{{ row.message_id }}">
+                    <option value="" {% if not row.recruiter %}selected{% endif %}>Assign...</option>
+                    {% for r in recruiters %}
+                    <option value="{{ r }}" {% if row.recruiter == r %}selected{% endif %}>{{ r }}</option>
+                    {% endfor %}
+                  </select>
+                </td>
+              </tr>
+              {% endfor %}
+              {% if not records %}
+              <tr>
+                <td colspan="7" class="py-12 text-center text-gray-500">
+                  <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                  </svg>
+                  <p class="mt-4 text-sm font-medium text-gray-900">No position requests found</p>
+                  <p class="mt-1 text-sm text-gray-500">New requests will appear here automatically when emails arrive.</p>
+                </td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const updateElements = document.querySelectorAll('.update-row');
+  
+  updateElements.forEach(el => {
+    el.addEventListener('change', async (e) => {
+      const tr = el.closest('tr');
+      const msgId = el.dataset.msgId;
+      const checkbox = tr.querySelector('input[type="checkbox"]');
+      const select = tr.querySelector('select');
+      
+      const formData = new FormData();
+      formData.append('message_id', msgId);
+      formData.append('recruiter', select.value);
+      if (checkbox.checked) {
+        formData.append('completed', '1');
+      }
+      
+      try {
+        const response = await fetch('/position-requests/update', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (response.ok) {
+          if (checkbox.checked) {
+            tr.classList.add('bg-emerald-50/60');
+          } else {
+            tr.classList.remove('bg-emerald-50/60');
+          }
+        } else {
+          console.error("Failed to update row", await response.text());
+        }
+      } catch (err) {
+        console.error("Error updating row", err);
+      }
+    });
+  });
+});
+</script>
+{% endblock %}
