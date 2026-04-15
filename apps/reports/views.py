@@ -799,6 +799,171 @@ async def get_top_frequency_cancellations():
     finally:
         engine.dispose()
 
+# --- Basic Client Report Routes ---
+@router.get("/basic-client-report", response_class=HTMLResponse)
+async def basic_client_report_page(request: Request):
+    return templates.TemplateResponse("reports/basic_client_report.html", {"request": request})
+
+async def _get_basic_client_summary_df(client_id: int, start_date: str, end_date: str):
+    engine = _get_staffing_engine()
+    try:
+        sql = text("""
+            SELECT 
+                CONCAT(emp.first_name, ' ', emp.last_name) AS employee_name,
+                GROUP_CONCAT(DISTINCT p.description SEPARATOR ', ') AS positions_worked,
+                SUM(
+                    CASE 
+                        WHEN t.use_sheet = 'EMPLOYEE' THEN t.employee_seconds / 3600.0
+                        WHEN t.use_sheet = 'CLIENT' THEN t.client_seconds / 3600.0
+                        ELSE t.client_seconds / 3600.0
+                    END
+                ) AS total_hours,
+                CASE
+                    WHEN EXISTS (SELECT 1 FROM exclusive ex WHERE ex.employee_id = t.employee_id AND ex.client_id = :client_id)
+                         AND EXISTS (SELECT 1 FROM dnr d WHERE d.employee_id = t.employee_id AND d.client_id = :client_id)
+                    THEN 'Preferred, DNR'
+                    WHEN EXISTS (SELECT 1 FROM exclusive ex WHERE ex.employee_id = t.employee_id AND ex.client_id = :client_id)
+                    THEN 'Preferred'
+                    WHEN EXISTS (SELECT 1 FROM dnr d WHERE d.employee_id = t.employee_id AND d.client_id = :client_id)
+                    THEN 'DNR'
+                    ELSE ''
+                END AS list_status
+            FROM timesheet t
+            JOIN shift_employee se ON t.shift_employee_id = se.shift_employee_id
+            JOIN event e ON se.event_id = e.event_id
+            JOIN employee emp ON t.employee_id = emp.employee_id
+            LEFT JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
+            LEFT JOIN position p ON sp.position_id = p.position_id
+            WHERE e.client_id = :client_id
+              AND t.employee_worked = 'WORKED'
+              AND e.date >= :start_date AND e.date <= :end_date
+            GROUP BY t.employee_id
+            ORDER BY emp.first_name ASC, emp.last_name ASC
+        """)
+        with engine.begin() as conn:
+            df = pd.read_sql(sql, conn, params={
+                "client_id": client_id,
+                "start_date": start_date,
+                "end_date": end_date,
+            })
+            return df
+    finally:
+        engine.dispose()
+
+async def _get_basic_client_detail_df(client_id: int, start_date: str, end_date: str):
+    engine = _get_staffing_engine()
+    try:
+        sql = text("""
+            SELECT 
+                e.date AS shift_date,
+                CONCAT(emp.first_name, ' ', emp.last_name) AS employee_name,
+                COALESCE(p.description, '') AS position,
+                COALESCE(
+                    TIMESTAMPDIFF(SECOND, s.start, s.end) / 3600.0,
+                    0
+                ) AS scheduled_hours,
+                CASE 
+                    WHEN t.use_sheet = 'EMPLOYEE' THEN t.employee_seconds / 3600.0
+                    WHEN t.use_sheet = 'CLIENT' THEN t.client_seconds / 3600.0
+                    ELSE t.client_seconds / 3600.0
+                END AS worked_hours,
+                COALESCE(se.rate, 0) AS pay_rate,
+                COALESCE(se.bill_rate, 0) AS bill_rate,
+                CASE
+                    WHEN EXISTS (SELECT 1 FROM exclusive ex WHERE ex.employee_id = t.employee_id AND ex.client_id = :client_id)
+                         AND EXISTS (SELECT 1 FROM dnr d WHERE d.employee_id = t.employee_id AND d.client_id = :client_id)
+                    THEN 'Preferred, DNR'
+                    WHEN EXISTS (SELECT 1 FROM exclusive ex WHERE ex.employee_id = t.employee_id AND ex.client_id = :client_id)
+                    THEN 'Preferred'
+                    WHEN EXISTS (SELECT 1 FROM dnr d WHERE d.employee_id = t.employee_id AND d.client_id = :client_id)
+                    THEN 'DNR'
+                    ELSE ''
+                END AS list_status
+            FROM timesheet t
+            JOIN shift_employee se ON t.shift_employee_id = se.shift_employee_id
+            JOIN event e ON se.event_id = e.event_id
+            JOIN employee emp ON t.employee_id = emp.employee_id
+            LEFT JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
+            LEFT JOIN position p ON sp.position_id = p.position_id
+            LEFT JOIN shift s ON sp.shift_id = s.shift_id
+            WHERE e.client_id = :client_id
+              AND t.employee_worked = 'WORKED'
+              AND e.date >= :start_date AND e.date <= :end_date
+            ORDER BY e.date ASC, emp.first_name ASC, emp.last_name ASC
+        """)
+        with engine.begin() as conn:
+            df = pd.read_sql(sql, conn, params={
+                "client_id": client_id,
+                "start_date": start_date,
+                "end_date": end_date,
+            })
+            if "shift_date" in df.columns and not df.empty:
+                df["shift_date"] = pd.to_datetime(df["shift_date"]).dt.strftime('%m/%d/%Y')
+            return df
+    finally:
+        engine.dispose()
+
+@router.get("/api/basic-client-report")
+async def get_basic_client_report(client_id: int, start_date: str, end_date: str):
+    df = await _get_basic_client_summary_df(client_id, start_date, end_date)
+    return df.astype(object).where(pd.notnull(df), None).to_dict(orient="records")
+
+@router.get("/api/basic-client-report/export")
+async def export_basic_client_report(client_id: int, start_date: str, end_date: str):
+    summary_df = await _get_basic_client_summary_df(client_id, start_date, end_date)
+    detail_df = await _get_basic_client_detail_df(client_id, start_date, end_date)
+
+    if summary_df.empty:
+        raise HTTPException(status_code=404, detail="No data found for this client and date range")
+
+    # Fetch client name for the filename
+    engine = _get_staffing_engine()
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(
+                text("SELECT name FROM client WHERE client_id = :cid"),
+                {"cid": client_id},
+            )
+            row = result.fetchone()
+            client_name = row[0] if row else str(client_id)
+    finally:
+        engine.dispose()
+
+    # Clean client name for filename
+    safe_name = "".join(c if c.isalnum() or c in (' ', '-', '_') else '' for c in client_name).strip().replace(' ', '_')
+
+    # Rename columns for nicer Excel headers
+    summary_export = summary_df.rename(columns={
+        "employee_name": "Employee Name",
+        "positions_worked": "Positions Worked",
+        "total_hours": "Total Hours",
+        "list_status": "List Status",
+    })
+
+    detail_export = detail_df.rename(columns={
+        "shift_date": "Date of Shift",
+        "employee_name": "Employee Name",
+        "position": "Position",
+        "scheduled_hours": "Scheduled Hours",
+        "worked_hours": "Worked Hours",
+        "pay_rate": "Pay Rate",
+        "bill_rate": "Bill Rate",
+        "list_status": "List Status",
+    })
+
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        summary_export.to_excel(writer, index=False, sheet_name='Employee Summary')
+        detail_export.to_excel(writer, index=False, sheet_name='Shift Details')
+    output.seek(0)
+
+    filename = f"{safe_name}_report_{start_date}_to_{end_date}.xlsx"
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
 # --- Hub Route ---
 @router.get("/", response_class=HTMLResponse)
 async def reports_home(request: Request):

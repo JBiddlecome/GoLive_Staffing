@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Tools Portal | GoLive Staffing</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image: radial-gradient(circle at top right, rgba(59, 130, 246, 0.15), transparent 40%),
+                              radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.1), transparent 40%);
+            background-attachment: fixed;
+        }
+
+        .header {
+            padding: 1.5rem 3rem;
+            background-color: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #60a5fa, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            font-size: 1.5rem;
+            -webkit-text-fill-color: #3b82f6;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .home-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .home-link:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 4rem 3rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .page-header {
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        .page-title {
+            font-size: 2.75rem;
+            font-weight: 700;
+            margin: 0 0 1rem 0;
+            letter-spacing: -0.025em;
+        }
+
+        .page-subtitle {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .app-card {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: var(--transition);
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+
+        .app-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            opacity: 0;
+            transition: var(--transition);
+        }
+        
+        .app-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--card-shadow);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        .app-card:hover::before {
+            opacity: 1;
+        }
+
+        .app-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            color: #3b82f6;
+            margin-bottom: 1.5rem;
+            box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.2);
+            transition: var(--transition);
+        }
+
+        .app-card:hover .app-icon {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4);
+        }
+
+        .app-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin: 0 0 0.75rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .app-desc {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            line-height: 1.6;
+            margin: 0;
+            flex: 1;
+        }
+
+        .app-arrow {
+            color: var(--text-secondary);
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: var(--transition);
+        }
+
+        .app-card:hover .app-arrow {
+            opacity: 1;
+            transform: translateX(0);
+            color: var(--primary-color);
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 1rem 1.5rem;
+            }
+            .main-content {
+                padding: 2rem 1.5rem;
+            }
+            .page-title {
+                font-size: 2rem;
+            }
+            .apps-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <i class="fa-solid fa-lock"></i>
+            Admin Portal
+        </div>
+        <div class="nav-actions">
+            {% if user %}
+            <div class="user-info">
+                <div class="user-avatar">{{ user.email[0].upper() if user.email else 'U' }}</div>
+                <span>{{ user.email }}</span>
+            </div>
+            {% endif %}
+            <a href="/" class="home-link">
+                <i class="fa-solid fa-house"></i>
+                Home
+            </a>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">Administrative Tools</h1>
+            <p class="page-subtitle">Secure access to sensitive administrative applications and data insight tools. These tools are restricted and not visible to standard users.</p>
+        </div>
+
+        <div class="apps-grid">
+            <a href="/email-review" class="app-card">
+                <div class="app-icon">
+                    <i class="fa-solid fa-envelope-open-text"></i>
+                </div>
+                <h3 class="app-title">
+                    Email Review
+                    <i class="fa-solid fa-arrow-right app-arrow"></i>
+                </h3>
+                <p class="app-desc">Monitor employee Outlook emails securely. Retrieve sent items by date, filter by recipient, analyze communication professionally with AI, and export findings as PDFs.</p>
+            </a>
+            
+            <!-- Future admin apps can be added here -->
+        </div>
+    </main>
+</body>
+</html>
