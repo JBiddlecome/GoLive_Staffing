@@ -5,9 +5,9 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
-
 import json
 import logging
+import re
 from openai import OpenAI, OpenAIError
 
 router = APIRouter()
@@ -437,6 +437,60 @@ async def get_dashboard_data(employee_id: int):
 
             shift_history = history_df.to_dict(orient="records")
 
+            # Fetch DA Notes
+            da_notes = []
+
+            # 1. employee_note
+            da_sql1 = text("""
+                SELECT datetime AS created_at, type, note 
+                FROM employee_note 
+                WHERE employee_id = :emp_id 
+                  AND type IN ('DAILY', 'PERSONNEL')
+            """)
+            da_res1 = conn.execute(da_sql1, {"emp_id": employee_id}).fetchall()
+            pattern = re.compile(r'\b(flag|warning|ww|fww)\b', re.IGNORECASE)
+            for row in da_res1:
+                dt = row[0]
+                n_type = row[1]
+                n_text = row[2]
+                if n_text and pattern.search(n_text):
+                    da_notes.append({
+                        "date": dt.isoformat() if pd.notnull(dt) else "",
+                        "type": f"Note ({n_type})",
+                        "text": n_text.strip(),
+                        "timestamp": dt.timestamp() if pd.notnull(dt) else 0
+                    })
+
+            # 2. history_entry
+            da_sql2 = text("""
+                SELECT created_at, changes, notes 
+                FROM history_entry 
+                WHERE related = 'Employee' 
+                  AND related_id = :emp_id 
+                  AND model = 'Notification'
+            """)
+            da_res2 = conn.execute(da_sql2, {"emp_id": employee_id}).fetchall()
+            warning_pattern = re.compile(r'\bwarning\b', re.IGNORECASE)
+            for row in da_res2:
+                dt = row[0]
+                changes = row[1]
+                n_notes = row[2]
+                if changes and warning_pattern.search(changes):
+                    text_content = changes
+                    if n_notes:
+                        text_content += f" | {n_notes}"
+                    da_notes.append({
+                        "date": dt.isoformat() if pd.notnull(dt) else "",
+                        "type": "Notification",
+                        "text": text_content.strip(),
+                        "timestamp": dt.timestamp() if pd.notnull(dt) else 0
+                    })
+
+            # Sort da_notes by date descending
+            da_notes.sort(key=lambda x: x["timestamp"], reverse=True)
+            for n in da_notes:
+                del n["timestamp"]
+
             return JSONResponse({
                 "status": "success",
                 "employee": header_data,
@@ -452,7 +506,8 @@ async def get_dashboard_data(employee_id: int):
                     "dnr_venues": dnr_venues,
                     "avg_confirmation_minutes": avg_conf_time
                 },
-                "shift_history": shift_history
+                "shift_history": shift_history,
+                "da_notes": da_notes
             })
     except Exception as e:
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
