@@ -451,6 +451,14 @@
             
             searchTimeout: null,
 
+            init() {
+                const searchParams = new URLSearchParams(window.location.search);
+                const employeeId = searchParams.get('employee_id');
+                if (employeeId) {
+                    this.selectEmployee(employeeId);
+                }
+            },
+
             debouncedSearch() {
                 clearTimeout(this.searchTimeout);
                 if (this.searchQuery.length < 2) {
