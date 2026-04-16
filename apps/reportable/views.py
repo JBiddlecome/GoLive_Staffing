@@ -61,6 +61,12 @@ class NowstaReportPayload(BaseModel):
     limit: int = Field(default=50000, ge=1, le=100000)
 
 
+class FoxTimesheetsPayload(BaseModel):
+    start_date: str = Field(..., min_length=1)
+    end_date: str = Field(..., min_length=1)
+    limit: int = Field(default=50000, ge=1, le=100000)
+
+
 class VenueShiftsPayload(BaseModel):
     start_date: str = Field(default="2025-01-01")
     end_date: str = Field(default="2025-12-31")
@@ -1901,6 +1907,101 @@ async def reportable_48_hour_cancellations_export(
     
     filename = "48_hour_cancellations_report.xlsx"
     headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers,
+    )
+
+
+@router.post("/export/fox-timesheets")
+async def reportable_fox_timesheets_export(
+    payload: FoxTimesheetsPayload,
+) -> StreamingResponse:
+    engine = _engine()
+    try:
+        sql = text(
+            """
+            SELECT
+                DATE_FORMAT(e.date, '%Y-%m-%d') AS `Shift Date`,
+                c.name                          AS `Client Name`,
+                v.name                          AS `Venue Name`,
+                p.description                   AS `Position Worked`,
+                emp.payroll_id                  AS `Payroll ID`,
+                emp.first_name                  AS `Employee First Name`,
+                emp.last_name                   AS `Employee Last Name`,
+                t.employee_start                AS `Employee Start`,
+                t.employee_end                  AS `Employee End`,
+                t.employee_break_start          AS `Employee Break Start`,
+                t.employee_break_end            AS `Employee Break End`,
+                t.employee_sec_break_start      AS `Employee Sec Break Start`,
+                t.employee_sec_break_end        AS `Employee Sec Break End`,
+                CASE t.client_worked
+                    WHEN 1 THEN 'Worked'
+                    WHEN 2 THEN 'No Show'
+                    WHEN 3 THEN 'Sent Home'
+                    ELSE COALESCE(CAST(t.client_worked AS CHAR), 'Pending')
+                END                             AS `Timesheet Status`
+            FROM shift_employee se
+            JOIN event e            ON se.event_id             = e.event_id
+            JOIN client c           ON e.client_id             = c.client_id
+            JOIN venue v            ON e.venue_id              = v.venue_id
+            JOIN employee emp       ON se.employee_id           = emp.employee_id
+            JOIN shift_position sp  ON se.shift_position_id    = sp.shift_position_id
+            JOIN position p         ON sp.position_id           = p.position_id
+            LEFT JOIN timesheet t   ON se.shift_employee_id    = t.shift_employee_id
+            WHERE e.date >= :start_date
+              AND e.date <= :end_date
+              AND c.client_id = 1619
+            ORDER BY e.date, c.name, emp.last_name, emp.first_name
+            LIMIT :limit
+            """
+        )
+
+        params = {
+            "start_date": payload.start_date,
+            "end_date": payload.end_date,
+            "limit": payload.limit,
+        }
+
+        with engine.begin() as connection:
+            df = pd.read_sql(sql, connection, params=params)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        engine.dispose()
+
+    # ensure timestamp formatting if any
+    for col in df.columns:
+        if pd.api.types.is_timedelta64_dtype(df[col]):
+            df[col] = df[col].astype(str).str.split('0 days ', regex=False).str[-1]
+
+    if df.empty:
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            pd.DataFrame(columns=[
+                "Shift Date", "Client Name", "Venue Name", "Position Worked", 
+                "Payroll ID", "Employee First Name", "Employee Last Name", 
+                "Employee Start", "Employee End", 
+                "Employee Break Start", "Employee Break End", 
+                "Employee Sec Break Start", "Employee Sec Break End", 
+                "Timesheet Status"
+            ]).to_excel(writer, index=False, sheet_name="fox_timesheets")
+        output.seek(0)
+        headers = {"Content-Disposition": 'attachment; filename="fox_timesheets_report.xlsx"'}
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers=headers,
+        )
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="fox_timesheets")
+    output.seek(0)
+
+    headers = {"Content-Disposition": 'attachment; filename="fox_timesheets_report.xlsx"'}
     return StreamingResponse(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
