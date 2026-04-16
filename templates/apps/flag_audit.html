@@ -32,6 +32,24 @@
                     {% endfor %}
                 </div>
             </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                <div>
+                    <label class="block text-sm font-semibold text-emerald-900 mb-2">DNR (Last 2 Years)</label>
+                    <select name="has_dnr" class="w-full rounded-xl border border-emerald-200 bg-white px-4 py-2.5 text-sm font-medium text-emerald-800 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 outline-none transition-colors">
+                        <option value="All" {% if selected_dnr == 'All' %}selected{% endif %}>All</option>
+                        <option value="Yes" {% if selected_dnr == 'Yes' %}selected{% endif %}>Yes</option>
+                        <option value="No" {% if selected_dnr == 'No' %}selected{% endif %}>No</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-emerald-900 mb-2">Disciplinary Action (Last 2 Years)</label>
+                    <select name="has_da" class="w-full rounded-xl border border-emerald-200 bg-white px-4 py-2.5 text-sm font-medium text-emerald-800 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 outline-none transition-colors">
+                        <option value="All" {% if selected_da == 'All' %}selected{% endif %}>All</option>
+                        <option value="Yes" {% if selected_da == 'Yes' %}selected{% endif %}>Yes</option>
+                        <option value="No" {% if selected_da == 'No' %}selected{% endif %}>No</option>
+                    </select>
+                </div>
+            </div>
             <div class="flex justify-end border-t border-emerald-100 pt-4">
                 <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-600/30 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

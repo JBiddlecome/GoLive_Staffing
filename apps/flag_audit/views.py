@@ -48,7 +48,9 @@ FLAG_COLORS = {
 @router.get("", response_class=HTMLResponse)
 async def page(
     request: Request,
-    flags: list[int] = Query(default=[0, 1])
+    flags: list[int] = Query(default=[0, 1]),
+    has_dnr: str = Query(default="All"),
+    has_da: str = Query(default="All")
 ):
     engine = _get_engine()
     employees = []
@@ -106,12 +108,20 @@ async def page(
                 
                 for r in emp_result:
                     emp_id = r['employee_id']
+                    dnr_val = "Yes" if emp_id in dnr_emp_ids else "No"
+                    da_val = "Yes" if emp_id in da_emp_ids else "No"
+                    
+                    if has_dnr != "All" and dnr_val != has_dnr:
+                        continue
+                    if has_da != "All" and da_val != has_da:
+                        continue
+                        
                     employees.append({
                         "employee_id": emp_id,
                         "name": f"{r['first_name']} {r['last_name']}",
                         "flag_color": FLAG_COLORS.get(r['flag'], f"Unknown ({r['flag']})"),
-                        "has_dnr_last_2_years": "Yes" if emp_id in dnr_emp_ids else "No",
-                        "has_da_last_2_years": "Yes" if emp_id in da_emp_ids else "No"
+                        "has_dnr_last_2_years": dnr_val,
+                        "has_da_last_2_years": da_val
                     })
 
     except Exception as e:
@@ -123,6 +133,8 @@ async def page(
         "request": request,
         "employees": employees,
         "selected_flags": flags,
+        "selected_dnr": has_dnr,
+        "selected_da": has_da,
         "all_flags": FLAG_COLORS,
         "error": error
     })
