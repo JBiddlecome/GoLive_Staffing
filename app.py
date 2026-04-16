@@ -53,6 +53,7 @@ from apps.employee_available_shift_history.views import router as employee_avail
 from apps.admin_portal.views import router as admin_portal_router
 from apps.email_review.views import router as email_review_router
 from apps.position_requests.views import router as position_requests_router
+from apps.flag_audit.views import router as flag_audit_router
 from apps.auth.views import router as auth_router, get_current_user
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 
@@ -328,6 +329,11 @@ app.include_router(
     position_requests_router,
     prefix="/position-requests",
     tags=["Position Requests"],
+)
+app.include_router(
+    flag_audit_router,
+    prefix="/flag-audit",
+    tags=["Flag Audit"],
 )
 
 # Redirect /sms_paraphraser to /sms-paraphraser for backward compatibility
