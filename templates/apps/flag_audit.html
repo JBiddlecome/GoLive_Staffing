@@ -4,6 +4,11 @@
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <h1 class="text-3xl font-bold tracking-tight text-gray-900 brand-serif">Flag Audit</h1>
+        {% if employees is defined %}
+        <span class="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 font-semibold text-emerald-800 text-sm">
+            {{ employees|length }} Employee{% if employees|length != 1 %}s{% endif %}
+        </span>
+        {% endif %}
     </div>
 
     {% if error %}
@@ -79,13 +84,18 @@
                         <th scope="col" class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-emerald-800">
                             Disciplinary Action (Last 2 Years)
                         </th>
+                        <th scope="col" class="relative px-6 py-4">
+                            <span class="sr-only">Actions</span>
+                        </th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-emerald-100 bg-white">
                     {% for emp in employees %}
                     <tr class="hover:bg-emerald-50/40 transition-colors group">
                         <td class="whitespace-nowrap px-6 py-4">
-                            <div class="font-medium text-gray-900 group-hover:text-emerald-700 transition-colors">{{ emp.name }}</div>
+                            <a href="https://golive.culinarystaffing.com/employees/{{ emp.employee_id }}" target="_blank" class="font-medium text-gray-900 group-hover:text-emerald-700 hover:underline transition-colors block">
+                                {{ emp.name }}
+                            </a>
                             <div class="text-xs text-gray-500">ID: {{ emp.employee_id }}</div>
                         </td>
                         <td class="whitespace-nowrap px-6 py-4">
@@ -126,6 +136,12 @@
                                 No
                             </span>
                             {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-6 py-4 text-right">
+                            <a href="/staffing-employee-dashboard?employee_id={{ emp.employee_id }}" target="_blank" class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 hover:text-indigo-800 transition-colors border border-indigo-100 shadow-sm">
+                                Dashboard
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                            </a>
                         </td>
                     </tr>
                     {% endfor %}
