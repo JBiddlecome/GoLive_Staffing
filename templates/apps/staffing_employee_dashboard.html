@@ -329,6 +329,38 @@
                 </div>
             </div>
 
+            <!-- Disciplinary Action Notes Section -->
+            <div x-show="daNotes && daNotes.length > 0" class="mt-8 rounded-3xl bg-white shadow-sm ring-1 ring-gray-900/5 overflow-hidden border-l-4 border-red-500" style="display: none;">
+                <div class="px-6 py-5 border-b border-gray-100 bg-red-50/50 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <svg class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <h3 class="text-lg font-semibold text-red-900">Disciplinary Action History</h3>
+                    </div>
+                </div>
+                <div class="p-0 overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th scope="col" class="py-3.5 pl-6 pr-3 text-left font-semibold text-gray-900 w-32">Date</th>
+                                <th scope="col" class="px-3 py-3.5 text-left font-semibold text-gray-900 w-48">Source</th>
+                                <th scope="col" class="px-3 py-3.5 text-left font-semibold text-gray-900">Notes / Details</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 bg-white">
+                            <template x-for="note in daNotes" :key="note.date + note.text">
+                                <tr class="hover:bg-red-50/50 transition">
+                                    <td class="whitespace-nowrap py-4 pl-6 pr-3 text-gray-900 font-medium font-mono text-xs align-top" x-text="formatDateShort(note.date)"></td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-gray-700 font-medium text-xs uppercase tracking-wider align-top" x-text="note.type"></td>
+                                    <td class="px-3 py-4 text-gray-700 whitespace-pre-wrap leading-relaxed align-top" x-text="note.text"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- Work Area Map Section -->
             <div x-show="selectedEmployee.work_area_latitude && selectedEmployee.work_area_longitude" 
                  class="mt-8 rounded-3xl bg-white shadow-sm ring-1 ring-gray-900/5 overflow-hidden">
@@ -441,6 +473,7 @@
             selectedEmployee: null,
             kpis: {},
             shiftHistory: [],
+            daNotes: [],
             
             map: null,
             mapLayers: null,
@@ -504,6 +537,7 @@
                         this.selectedEmployee = data.employee;
                         this.kpis = data.kpis;
                         this.shiftHistory = data.shift_history;
+                        this.daNotes = data.da_notes;
                         
                         this.fetchAiReliability(employeeId);
                         
