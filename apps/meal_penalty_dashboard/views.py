@@ -108,7 +108,13 @@ async def get_meal_penalty_data(
               AND e.date <= :end_date
               AND t.employee_break_start IS NOT NULL 
               AND t.employee_start IS NOT NULL
+              AND t.employee_end IS NOT NULL
               AND TIMESTAMPDIFF(MINUTE, t.employee_start, t.employee_break_start) > 300
+              AND IFNULL(e.state, '') NOT IN ('NV', 'WA')
+              AND (
+                  TIMESTAMPDIFF(MINUTE, t.employee_start, t.employee_end) - 
+                  IFNULL(TIMESTAMPDIFF(MINUTE, t.employee_break_start, t.employee_break_end), 0)
+              ) >= 360
             ORDER BY e.date DESC, c.name ASC
         """)
         
