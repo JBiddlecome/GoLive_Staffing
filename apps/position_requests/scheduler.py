@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import re
+import random
 from pathlib import Path
 
 import httpx
@@ -108,6 +109,8 @@ async def fetch_submissions():
                     else:
                         experience = val_str
 
+            recruiter = random.choices(["Piyush", "Mercedes"], weights=[60, 40], k=1)[0]
+
             new_record = {
                 "message_id": sub_id,  # Using submission id as message_id for compatibility
                 "employee_name": name,
@@ -115,7 +118,7 @@ async def fetch_submissions():
                 "positions": positions[:500],
                 "experience": experience,
                 "resume_link": resume_link,
-                "recruiter": "",
+                "recruiter": recruiter,
                 "completed": False,
                 "received_date": sub.get("created_at", "")
             }
