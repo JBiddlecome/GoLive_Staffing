@@ -53,7 +53,7 @@ async def get_coverage_data():
                 p.description AS position_name,
                 p.position_id,
                 cl.name AS client_name,
-                COUNT(sp.shift_position_id) - COUNT(se.shift_employee_id) AS open_spots
+                SUM(sp.count - COALESCE(se_counts.taken, 0)) AS open_spots
             FROM event e
             JOIN client cl ON e.client_id = cl.client_id
             JOIN venue v ON e.venue_id = v.venue_id
@@ -61,7 +61,12 @@ async def get_coverage_data():
             JOIN shift s ON e.event_id = s.event_id
             JOIN shift_position sp ON s.shift_id = sp.shift_id
             JOIN position p ON sp.position_id = p.position_id
-            LEFT JOIN shift_employee se ON sp.shift_position_id = se.shift_position_id AND se.cancel_reason = 0
+            LEFT JOIN (
+                SELECT shift_position_id, COUNT(shift_employee_id) as taken
+                FROM shift_employee
+                WHERE cancel_reason = 0
+                GROUP BY shift_position_id
+            ) se_counts ON sp.shift_position_id = se_counts.shift_position_id
             WHERE e.date >= :current_date
               AND e.deleted_at IS NULL 
               AND s.deleted_at IS NULL
