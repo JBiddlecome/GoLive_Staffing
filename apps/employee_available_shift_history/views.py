@@ -90,7 +90,7 @@ async def page(
                             ON p.position_id = sp.position_id
                     WHERE 
                         pe.employee_id = :employee_id
-                        AND DATE(pe.created_on) BETWEEN :start_date AND :end_date
+                        AND ev.date BETWEEN :start_date AND :end_date
                     ORDER BY 
                         pe.created_on DESC, ev.date, s.start;
                 ''')

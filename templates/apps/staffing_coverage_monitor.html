@@ -29,15 +29,15 @@
         <div class="space-y-3">
           <div class="flex items-center space-x-3">
             <div class="h-3 w-3 rounded-full bg-emerald-500 shadow-sm shadow-emerald-200"></div>
-            <span class="text-sm font-medium text-slate-700"><strong class="text-slate-900">Healthy:</strong> &gt; 10 eligible employees per open spot</span>
+            <span class="text-sm font-medium text-slate-700"><strong class="text-slate-900">Healthy:</strong> &gt; 25 eligible employees per open spot</span>
           </div>
           <div class="flex items-center space-x-3">
             <div class="h-3 w-3 rounded-full bg-amber-500 shadow-sm shadow-amber-200"></div>
-            <span class="text-sm font-medium text-slate-700"><strong class="text-slate-900">Tight:</strong> 5 - 10 eligible employees per open spot</span>
+            <span class="text-sm font-medium text-slate-700"><strong class="text-slate-900">Tight:</strong> 15 - 25 eligible employees per open spot</span>
           </div>
           <div class="flex items-center space-x-3">
             <div class="h-3 w-3 rounded-full bg-rose-500 shadow-sm shadow-rose-200"></div>
-            <span class="text-sm font-medium text-slate-700"><strong class="text-slate-900">Shortage:</strong> &lt; 5 per spot or fewer employees than spots</span>
+            <span class="text-sm font-medium text-slate-700"><strong class="text-slate-900">Shortage:</strong> &lt; 15 per spot or fewer employees than spots</span>
           </div>
         </div>
       </div>
@@ -94,12 +94,12 @@
             let borderHover = 'hover:border-emerald-200';
             let label = 'Healthy';
 
-            if (ratio < 5 || pos.eligible_employees < pos.open_spots) {
+            if (ratio < 15 || pos.eligible_employees < pos.open_spots) {
               statusColor = 'text-rose-600';
               bgColor = 'bg-rose-50';
               borderHover = 'hover:border-rose-200';
               label = 'Shortage';
-            } else if (ratio <= 10) {
+            } else if (ratio <= 25) {
               statusColor = 'text-amber-600';
               bgColor = 'bg-amber-50';
               borderHover = 'hover:border-amber-200';
