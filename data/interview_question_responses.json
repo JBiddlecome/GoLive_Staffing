@@ -1,0 +1,118 @@
+[
+  {
+    "transcript": "\"How do you quickly assess and manage a team of temporary staff who may have never worked together before?\"\nAnswer: I would introduce myself to the team and try to get a feel for who knows what they're doing. I'd probably ask if anyone has questions and go from there. As long as everyone shows up and does their job it usually works itself out.\n\"Walk me through how you prepare and assign roles to staff before an event starts.\"\nAnswer: I'd look over the staff list beforehand so I have a general idea of who's doing what. I'd make sure people know where to go when they arrive and answer any questions they have. I try to stay organized so things run smoothly.\n\"How would you handle multiple staff call-outs right before or during an event?\"\nAnswer: That's always tough. I'd let the staffing office know and see if they can send someone over. In the meantime I'd try to spread the remaining staff around to cover the gaps as best as possible and hope for the best.\n\"How do you ensure agency or temporary staff follow client standards, even if they're unfamiliar with the environment?\"\nAnswer: I'd give a quick rundown of the expectations at the start and remind them to follow the client's rules. If someone seems confused I'd check in with them. Most people pick it up pretty quickly once they're on the floor.\n\"What steps do you take during an event to ensure service quality and consistency from start to finish?\"\nAnswer: I try to keep an eye on things throughout the event and step in if something looks off. If I notice a problem I'll address it and let the client know if anything major comes up. Staying visible helps keep staff on track.\n\"If a staff member is underperforming during an event, how do you address it in the moment?\"\nAnswer: I'd pull them aside and let them know they need to pick it up. I'd give them a chance to improve before escalating it to anyone else. Usually a quick conversation is enough to get things back on track.",
+    "evaluation": {
+      "overall_recommendation": {
+        "flag": "Yellow Flag",
+        "confidence": 90
+      },
+      "question_evaluations": [
+        {
+          "question_number": 6,
+          "question": "How do you quickly assess and manage a team of temporary staff who may have never worked together before?",
+          "flag": "Yellow Flag",
+          "confidence": 85,
+          "rationale": "The candidate shows a somewhat basic approach by introducing themselves and asking if anyone has questions, then relying on staff to do their job. This demonstrates some initiative but lacks depth in proactive team assessment or explicit management strategies for new teams."
+        },
+        {
+          "question_number": 7,
+          "question": "Walk me through how you prepare and assign roles to staff before an event starts.",
+          "flag": "Yellow Flag",
+          "confidence": 85,
+          "rationale": "The candidate reviews the staff list and ensures staff know where to go and answers questions, showing organizational effort. However, the approach is somewhat general and lacks detail on how roles are strategically assigned to optimize team effectiveness."
+        },
+        {
+          "question_number": 8,
+          "question": "How would you handle multiple staff call-outs right before or during an event.",
+          "flag": "Yellow Flag",
+          "confidence": 90,
+          "rationale": "The candidate notifies the staffing office and attempts to cover gaps with remaining staff, which is a reasonable but somewhat passive approach. The phrase 'hope for the best' indicates a lack of confidence or contingency planning."
+        },
+        {
+          "question_number": 9,
+          "question": "How do you ensure agency or temporary staff follow client standards, even if they\u2019re unfamiliar with the environment?",
+          "flag": "Green Flag",
+          "confidence": 90,
+          "rationale": "The candidate proactively provides a quick rundown of expectations, checks in with confused staff, and believes most adapt quickly. This reflects awareness of onboarding needs and ongoing supervision."
+        },
+        {
+          "question_number": 10,
+          "question": "If a staff member is underperforming during an event, how do you address it in the moment?",
+          "flag": "Green Flag",
+          "confidence": 95,
+          "rationale": "The candidate addresses underperformance by pulling the staff member aside for a direct but supportive conversation, giving them a chance to improve before escalating. This approach shows professionalism and effective real-time management."
+        }
+      ],
+      "strengths": [
+        "Proactive in ensuring client standards are communicated and followed.",
+        "Handles underperformance professionally and constructively with direct communication.",
+        "Organized in reviewing staff lists and clarifying roles before events."
+      ],
+      "concerns": [
+        "Approach to managing new teams is somewhat basic and reactive rather than strategic.",
+        "Relies on hope rather than robust contingency plans when handling multiple call-outs.",
+        "Role assignment and team management responses lack specific, proactive techniques."
+      ],
+      "notes_for_hiring_manager": "The candidate demonstrates solid fundamental skills in managing temporary staff and ensuring client expectations are met. They show professionalism in addressing underperformance and maintain visibility during events. However, their approach to quickly assessing and managing unfamiliar teams and handling staffing shortages appears somewhat passive and could benefit from more proactive or strategic planning. Further development or mentoring may help strengthen these areas."
+    },
+    "saved_at": "2026-04-21T18:28:32.120090+00:00",
+    "interviewer_name": null
+  },
+  {
+    "transcript": "\u201cHow do you quickly assess and manage a team of temporary staff who may have never worked together before?\u201d \nAnswer: The goal here is to make sure everyone is informed with the same information so we all can work together towards a common goal. The details for the shifts employees worked are outlined in GoLive so the event supervisor\u2019s job should be to ensure everyone is following those same details and are on the same page. It means I have to be informed and knowledgeable to that I can answer any of their questions and ensure everyone is working together with the same information.\n\u201cWalk me through how you prepare and assign roles to staff before an event starts.\u201d \u201cHow would you would handle multiple staff call-outs right before or during an event. \nEach employee is already assigned a position in the app so I would review everyone\u2019s name and shift position prior to the event so I know where they are going and what they should be doing on arrival. I will have the app handy to ensure I have the most up to date information.\nIf there are multiple call-outs I would publish the newly open shifts out to all available staff and ask the staff who arrive if they know of anyone looking for work the same day.\n\u201cHow do you ensure agency or temporary staff follow client standards, even if they\u2019re unfamiliar with the environment?\u201d \nI can first check on arrival that every employee is the correct uniform, ask them if they understand their position, where they check-in, and what they should be doing, according to the client\u2019s instructions. If they answer correctly I send them on their way. If they don\u2019t, then I review with them the shift details prior to sending them to their work spot.\n\u201cWhat steps do you take during an event to ensure service quality and consistency from start to finish?\u201d \nEvent supervisors should constantly be doing rounds where possible to ensure everyone is working in the correct place, following the client\u2019s standards and rules, and assisting where there are gaps. I would also communicate with the client any details that would effect their event.\n\u201cIf a staff member is underperforming during an event, how do you address it in the moment?\u201d\nFirst, attempt to speak with the employee to motivate them to pick up the pace or follow instructions. If they don\u2019t comply, then consider speaking with the staffing manager or client to see if they would prefer the employee leaves or is replaced.",
+    "evaluation": {
+      "overall_recommendation": {
+        "flag": "Green Flag",
+        "confidence": 90
+      },
+      "question_evaluations": [
+        {
+          "question_number": 6,
+          "question": "How do you quickly assess and manage a team of temporary staff who may have never worked together before?",
+          "flag": "Green Flag",
+          "confidence": 90,
+          "rationale": "The candidate emphasizes ensuring all staff are equally informed and working toward a common goal, demonstrating proactive communication and leadership."
+        },
+        {
+          "question_number": 7,
+          "question": "Walk me through how you prepare and assign roles to staff before an event starts.",
+          "flag": "Green Flag",
+          "confidence": 90,
+          "rationale": "Candidate uses technology to review assignments, shows thorough preparation, and maintains up-to-date information for accurate role assignments."
+        },
+        {
+          "question_number": 8,
+          "question": "How would you handle multiple staff call-outs right before or during an event?",
+          "flag": "Green Flag",
+          "confidence": 90,
+          "rationale": "Candidate proactively opens shifts to available staff and seeks referrals, showing resourcefulness and quick problem solving."
+        },
+        {
+          "question_number": 9,
+          "question": "How do you ensure agency or temporary staff follow client standards, even if they\u2019re unfamiliar with the environment?",
+          "flag": "Green Flag",
+          "confidence": 90,
+          "rationale": "The candidate verifies uniform compliance and understanding of roles, with a willingness to review details to ensure standards are met."
+        },
+        {
+          "question_number": 10,
+          "question": "If a staff member is underperforming during an event, how do you address it in the moment?",
+          "flag": "Green Flag",
+          "confidence": 90,
+          "rationale": "Candidate prefers a direct, motivational conversation first and escalates appropriately if improvement is not made, demonstrating professionalism and good judgment."
+        }
+      ],
+      "strengths": [
+        "Proactive communication and information sharing",
+        "Use of technology for preparation and management",
+        "Resourcefulness in handling staffing shortages",
+        "Clear process for ensuring standards are understood and followed",
+        "Professional and measured approach to managing underperformance"
+      ],
+      "concerns": [],
+      "notes_for_hiring_manager": "The candidate demonstrates strong leadership and organizational skills in managing temporary staff and client standards. They show professional problem solving and clear communication strategies that align well with event supervision and staffing roles. Consider this candidate a solid fit for roles requiring quick team assessment, role assignment, and on-the-spot performance management."
+    },
+    "saved_at": "2026-04-21T18:27:16.342147+00:00",
+    "interviewer_name": null
+  }
+]
