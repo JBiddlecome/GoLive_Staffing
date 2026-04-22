@@ -300,6 +300,22 @@ async def fetch_submissions():
             records.insert(0, new_record)
             added = True
             
+        # Backfill any existing records that somehow lack a status (e.g., loaded from persistent disk before this feature)
+        for record in records:
+            if record.get("status") in [None, "", "Pending"] or "Database error during checking" in record.get("ai_analysis", ""):
+                try:
+                    status, ai_analysis = await evaluate_candidate(
+                        record.get("phone", ""), 
+                        record.get("resume_link", ""), 
+                        record.get("experience", ""), 
+                        record.get("positions", "")
+                    )
+                    record["status"] = status
+                    record["ai_analysis"] = ai_analysis
+                    added = True
+                except Exception as e:
+                    print("Error during backfill in fetch_submissions:", str(e))
+            
         if added:
             save_records(records)
 
