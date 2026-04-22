@@ -14,8 +14,18 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
 
 DATA_FILE = Path("data/position_requests.json")
+SEED_FILE = Path("apps/position_requests/seed_data.json")
 
 def load_records():
+    if SEED_FILE.exists():
+        import shutil
+        try:
+            shutil.copy(SEED_FILE, DATA_FILE)
+            SEED_FILE.unlink()
+            print("Successfully seeded position_requests.json from seed_data.json")
+        except Exception as e:
+            print("Error seeding data:", e)
+
     if not DATA_FILE.exists():
         return []
     try:
