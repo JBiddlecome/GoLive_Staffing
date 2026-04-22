@@ -121,7 +121,8 @@ def _maybe_sync_from_db(start_date: str, end_date: str):
                         ELSE NULL
                     END
                     SEPARATOR ', '
-                ) AS `Language`
+                ) AS `Language`,
+                (SELECT MAX(ev.date) FROM timesheet t JOIN event ev ON t.event_id = ev.event_id WHERE t.employee_id = e.employee_id) AS `Last Timesheet Date`
             FROM employee e
             LEFT JOIN employee_language el ON e.employee_id = el.employee_id
             WHERE e.payroll_id IS NOT NULL AND e.payroll_id != ''
@@ -164,7 +165,6 @@ async def update_employee(
     request: Request,
     employee_id: str = Form(...),
     called_date: str = Form(""),
-    call_count: str = Form(""),
     recruiter: str = Form(""),
     concierged: str | None = Form(None),
     follow_up_status: str = Form(""),
@@ -198,23 +198,10 @@ async def update_employee(
             sort=sort,
         )
 
-    try:
-        parsed_calls = int(call_count) if str(call_count).strip() else 0
-        if parsed_calls < 0:
-            raise ValueError
-    except ValueError:
-        return _response_for_update(
-            request,
-            error="Number of calls must be a non-negative integer.",
-            concierged_filter=concierged_filter,
-            sort=sort,
-        )
-
     normalized_status = follow_up_status if follow_up_status in FOLLOW_UP_OPTIONS else ""
     normalized_flag = flag if flag in {"green", "orange", "red"} else ""
 
     record["called_date"] = normalized_called
-    record["call_count"] = parsed_calls
     record["recruiter"] = recruiter if recruiter in ALLOWED_RECRUITERS or recruiter == record.get("recruiter") else ""
     record["concierged"] = concierged is not None
     record["follow_up_status"] = normalized_status
@@ -522,6 +509,18 @@ def _merge_new_employees(dataframe: pd.DataFrame, filter_start: pd.Timestamp | N
                 _date_in_range(formatted_rehire, filter_start, filter_end)
             )
 
+        needs_rehire_tag = False
+        if rehire_date is not None:
+            last_timesheet = _normalize_date(row.get("Last Timesheet Date"))
+            two_years_ago = pd.Timestamp.today().normalize() - pd.DateOffset(years=2)
+            
+            if last_timesheet is not None:
+                if last_timesheet < two_years_ago:
+                    needs_rehire_tag = True
+            else:
+                if start_date is not None and start_date < two_years_ago:
+                    needs_rehire_tag = True
+
         if employee_id in existing_by_id:
             record = existing_by_id[employee_id]
             record["first_name"] = str(row.get("First Name", "")).strip() or record.get("first_name", "")
@@ -539,6 +538,8 @@ def _merge_new_employees(dataframe: pd.DataFrame, filter_start: pd.Timestamp | N
                 record["language"] = language
             if "DB Employee ID" in row:
                 record["db_employee_id"] = str(row["DB Employee ID"]).strip()
+            
+            record["needs_rehire_tag"] = needs_rehire_tag
             continue
 
         if not in_range:
@@ -552,7 +553,6 @@ def _merge_new_employees(dataframe: pd.DataFrame, filter_start: pd.Timestamp | N
             "rehire_date": formatted_rehire,
             "concierge_date": formatted_concierge,
             "called_date": "",
-            "call_count": 0,
             "recruiter": "",
             "concierged": concierge_date is not None,
             "mobile": mobile,
@@ -561,6 +561,7 @@ def _merge_new_employees(dataframe: pd.DataFrame, filter_start: pd.Timestamp | N
             "follow_up_status": "",
             "notes": "",
             "flag": "",
+            "needs_rehire_tag": needs_rehire_tag,
         }
 
         records.append(record)
@@ -648,7 +649,6 @@ def _save_records(records: List[Dict[str, object]]) -> None:
 def _ensure_record_defaults(record: Dict[str, object]) -> Dict[str, object]:
     defaults = {
         "called_date": "",
-        "call_count": 0,
         "recruiter": "",
         "concierged": False,
         "follow_up_status": "",
@@ -657,6 +657,7 @@ def _ensure_record_defaults(record: Dict[str, object]) -> Dict[str, object]:
         "db_employee_id": "",
         "notes": "",
         "flag": "",
+        "needs_rehire_tag": False,
     }
     for key, value in defaults.items():
         record.setdefault(key, value)
