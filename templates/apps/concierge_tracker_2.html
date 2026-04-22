@@ -71,7 +71,6 @@
           <th class="py-2 pr-3">Start Date</th>
           <th class="py-2 pr-3">Rehire Date</th>
           <th class="py-2 pr-3">Called Date</th>
-          <th class="py-2 pr-3"># Calls</th>
           <th class="py-2 pr-3">
             {% set recruiter_next_sort = 'recruiter_desc' if sort == 'recruiter_asc' else 'recruiter_asc' %}
             <a class="inline-flex items-center gap-1 hover:underline" href="{{ request.url_for('concierge_tracker_2_page') }}?concierged={{ concierged_filter }}&sort={{ recruiter_next_sort }}&start_date={{ start_date }}&end_date={{ end_date }}&search={{ search }}">
@@ -129,9 +128,6 @@
               <input type="date" name="called_date" form="{{ form_id }}" value="{{ record.called_date }}" class="border rounded-md px-2 py-1 w-40" />
           </td>
           <td class="py-3 pr-3">
-              <input type="number" name="call_count" form="{{ form_id }}" min="0" value="{{ record.call_count }}" class="border rounded-md px-2 py-1 w-24" />
-          </td>
-          <td class="py-3 pr-3">
               <select name="recruiter" form="{{ form_id }}" class="border rounded-md px-2 py-1 w-36">
                 <option value="" {% if not record.recruiter %}selected{% endif %}>Select</option>
                 {% set display_recruiters = recruiters %}
@@ -184,6 +180,11 @@
                     <path d="M4.5 3A1.5 1.5 0 0 0 3 4.5v11A1.5 1.5 0 0 0 4.5 17h7.879a1.5 1.5 0 0 0 1.06-.44l2.121-2.121a1.5 1.5 0 0 0 .44-1.06V4.5A1.5 1.5 0 0 0 14.5 3h-10Zm1 3.25c0-.138.112-.25.25-.25h8.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-8.5a.25.25 0 0 1-.25-.25v-.5Zm0 3c0-.138.112-.25.25-.25h6.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-6.5a.25.25 0 0 1-.25-.25v-.5Zm0 3c0-.138.112-.25.25-.25h4.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-4.5a.25.25 0 0 1-.25-.25v-.5Z" />
                   </svg>
                 </button>
+                {% if record.needs_rehire_tag %}
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 text-purple-600 cursor-help" title="Employee has not worked in over 2 years">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z" clip-rule="evenodd" />
+                  </svg>
+                {% endif %}
               </div>
           </td>
           <td class="py-3 pr-3 text-right">
