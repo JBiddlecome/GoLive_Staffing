@@ -107,9 +107,12 @@
             }
 
             const clientsList = pos.clients.map(client => `
-              <li class="flex items-center space-x-2 py-1">
-                <div class="h-1 w-1 rounded-full bg-slate-300"></div>
-                <span class="text-[12px] text-slate-600 font-medium">${client}</span>
+              <li class="flex items-center justify-between py-1 pr-2">
+                <div class="flex items-center space-x-2">
+                  <div class="h-1 w-1 rounded-full bg-slate-300"></div>
+                  <span class="text-[12px] text-slate-600 font-medium">${client.name}</span>
+                </div>
+                <span class="text-[11px] font-semibold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">${client.open_spots} ${client.open_spots === 1 ? 'spot' : 'spots'}</span>
               </li>
             `).join('');
 

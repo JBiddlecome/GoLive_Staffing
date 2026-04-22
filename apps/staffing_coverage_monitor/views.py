@@ -83,10 +83,12 @@ async def get_coverage_data():
 
             # Calculate total open spots and collect unique clients per (county, position)
             # Before merging with employee data, we need to collapse the client-level rows
-            summary_shifts = shifts_df.groupby(['county_id', 'county_name', 'position_id', 'position_name']).agg({
-                'open_spots': 'sum',
-                'client_name': lambda x: sorted(list(set(x)))
-            }).reset_index()
+            summary_shifts = shifts_df.groupby(['county_id', 'county_name', 'position_id', 'position_name']).apply(
+                lambda x: pd.Series({
+                    'open_spots': x['open_spots'].sum(),
+                    'client_name': sorted([{"name": row['client_name'], "open_spots": int(row['open_spots'])} for _, row in x.iterrows()], key=lambda k: k['name'])
+                })
+            ).reset_index()
 
             # 2. For the positions and counties found, fetch active/eligible employee counts
             county_ids = summary_shifts['county_id'].unique().tolist()

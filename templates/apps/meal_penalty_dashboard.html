@@ -105,24 +105,35 @@
             </div>
 
             <!-- Second Main Data Table: Meal Breaks after 5 Hours -->
-            <h2 class="text-2xl font-bold text-emerald-900 mb-4 mt-8">Meal Breaks after 5 Hours</h2>
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 mt-8 gap-4">
+                <h2 class="text-2xl font-bold text-emerald-900">Meal Breaks after 5 Hours</h2>
+                <div class="flex gap-4 items-center">
+                    <select id="client_filter" class="rounded-xl border-emerald-100 bg-white px-4 py-2 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500 shadow-sm min-w-[200px]">
+                        <option value="">All Clients</option>
+                    </select>
+                    <button id="export_pdf_btn" class="rounded-xl bg-emerald-600 px-4 py-2 font-semibold text-white shadow-lg shadow-emerald-900/10 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        <span>Export PDF</span>
+                    </button>
+                </div>
+            </div>
             <div class="rounded-3xl border border-emerald-100 bg-white shadow-lg overflow-hidden min-h-[200px]">
                 <div id="late_breaks_empty_state" class="hidden flex flex-col items-center justify-center h-full py-10 px-8 text-center">
                     <div class="bg-emerald-50 p-6 rounded-full mb-6">
                         <svg class="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </div>
                     <h3 class="text-lg font-semibold text-gray-900">All clear!</h3>
-                    <p class="text-gray-500 mt-2 max-w-sm">No meal breaks after 5 hours for the selected range.</p>
+                    <p class="text-gray-500 mt-2 max-w-sm">No meal breaks after 5 hours for the selected criteria.</p>
                 </div>
                 
                 <div id="late_breaks_table_container" class="hidden overflow-x-auto">
                     <table class="w-full text-left">
                         <thead>
                             <tr class="bg-emerald-50/50 text-emerald-900 font-semibold text-sm uppercase tracking-wider">
-                                <th class="px-6 py-4">Date</th>
-                                <th class="px-6 py-4">Client</th>
-                                <th class="px-6 py-4">Venue</th>
-                                <th class="px-6 py-4">Employee</th>
+                                <th class="px-6 py-4 cursor-pointer hover:bg-emerald-100 transition-colors" onclick="sortLateBreaks('date')">Date ↕</th>
+                                <th class="px-6 py-4 cursor-pointer hover:bg-emerald-100 transition-colors" onclick="sortLateBreaks('client_name')">Client ↕</th>
+                                <th class="px-6 py-4 cursor-pointer hover:bg-emerald-100 transition-colors" onclick="sortLateBreaks('venue_name')">Venue ↕</th>
+                                <th class="px-6 py-4 cursor-pointer hover:bg-emerald-100 transition-colors" onclick="sortLateBreaks('employee_name')">Employee ↕</th>
                                 <th class="px-6 py-4 text-center">Time to Break</th>
                                 <th class="px-6 py-4 text-center">Emp Penalty</th>
                                 <th class="px-6 py-4 text-center">Cli Penalty</th>
@@ -140,8 +151,124 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        let allLateBreaksData = [];
+        let currentSort = { column: 'date', direction: 'desc' };
+
+        window.sortLateBreaks = function(column) {
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+            renderFilteredLateBreaksTable();
+        };
+
+        function populateClientFilter(data) {
+            const filter = document.getElementById('client_filter');
+            const currentValue = filter.value;
+            filter.innerHTML = '<option value="">All Clients</option>';
+            
+            const clients = [...new Set(data.map(item => item.client_name))].sort();
+            
+            clients.forEach(client => {
+                const option = document.createElement('option');
+                option.value = client;
+                option.textContent = client;
+                if (client === currentValue) {
+                    option.selected = true;
+                }
+                filter.appendChild(option);
+            });
+        }
+
+        function renderFilteredLateBreaksTable() {
+            let filteredData = [...allLateBreaksData];
+            const clientFilterValue = document.getElementById('client_filter').value;
+            
+            if (clientFilterValue) {
+                filteredData = filteredData.filter(item => item.client_name === clientFilterValue);
+            }
+            
+            filteredData.sort((a, b) => {
+                let valA = a[currentSort.column];
+                let valB = b[currentSort.column];
+                
+                if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+                if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            renderLateBreaksTable(filteredData);
+            
+            if (filteredData.length > 0) {
+                lateBreaksEmptyState.classList.add('hidden');
+                lateBreaksTableContainer.classList.remove('hidden');
+            } else {
+                lateBreaksEmptyState.classList.remove('hidden');
+                lateBreaksTableContainer.classList.add('hidden');
+            }
+        }
+
+        document.getElementById('client_filter').addEventListener('change', renderFilteredLateBreaksTable);
+
+        document.getElementById('export_pdf_btn').addEventListener('click', () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            const clientFilterValue = document.getElementById('client_filter').value;
+            const startDate = document.getElementById('start_date').value;
+            const endDate = document.getElementById('end_date').value;
+            
+            let title = 'Meal Breaks after 5 Hours';
+            if (clientFilterValue) {
+                title += ` - ${clientFilterValue}`;
+            } else {
+                title += ' - All Clients';
+            }
+            
+            doc.setFontSize(16);
+            doc.text(title, 14, 22);
+            doc.setFontSize(10);
+            doc.text(`Date Range: ${startDate} to ${endDate}`, 14, 30);
+            
+            let filteredData = [...allLateBreaksData];
+            if (clientFilterValue) {
+                filteredData = filteredData.filter(item => item.client_name === clientFilterValue);
+            }
+            
+            filteredData.sort((a, b) => {
+                let valA = a[currentSort.column];
+                let valB = b[currentSort.column];
+                if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+                if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+            
+            const tableData = filteredData.map(row => [
+                row.date,
+                row.client_name,
+                row.venue_name,
+                row.employee_name,
+                row.time_to_break_str
+            ]);
+            
+            doc.autoTable({
+                startY: 35,
+                head: [['Date', 'Client', 'Venue', 'Employee', 'Time to Break']],
+                body: tableData,
+                theme: 'grid',
+                styles: { fontSize: 9 },
+                headStyles: { fillColor: [16, 185, 129] }
+            });
+            
+            doc.save('meal_breaks_after_5_hours.pdf');
+        });
+
         const startDateInput = document.getElementById('start_date');
         const endDateInput = document.getElementById('end_date');
         const applyBtn = document.getElementById('apply_filters');
@@ -190,11 +317,10 @@
                         emptyState.classList.remove('hidden');
                     }
 
-                    if (lateBreaksData && lateBreaksData.length > 0) {
-                        renderLateBreaksTable(lateBreaksData);
-                        lateBreaksTableContainer.classList.remove('hidden');
-                    } else {
-                        lateBreaksEmptyState.classList.remove('hidden');
+                    if (lateBreaksData) {
+                        allLateBreaksData = lateBreaksData;
+                        populateClientFilter(allLateBreaksData);
+                        renderFilteredLateBreaksTable();
                     }
 
                     loadingState.classList.add('hidden');
