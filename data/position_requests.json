@@ -1,5 +1,60 @@
 [
   {
+    "message_id": "6526771378842411004",
+    "employee_name": "Maria Resendez-Naser",
+    "phone": "(702) 499-2892",
+    "positions": "Barback",
+    "experience": "5 years Barback ,10 years Bartender and cocktail server at a very busy casino Bar and Pool Bar",
+    "resume_link": "https://www.jotform.com/uploads/Seastead/240575384332053/6526771378842411004/Resume 2.pdf",
+    "recruiter": "Mercedes",
+    "completed": false,
+    "received_date": "2026-04-22 10:25:38"
+  },
+  {
+    "message_id": "6526315589867342671",
+    "employee_name": "Sergio Ballon",
+    "phone": "(951) 205-6782",
+    "positions": "Barista 1",
+    "experience": "My barista experience is formed from three places first being Starbucks then peets coffee where I became a shift lead then a part time at a specialty coffee shop.",
+    "resume_link": "https://www.jotform.com/uploads/Seastead/240575384332053/6526315589867342671/Black and White Simple Infographic Resume.pdf",
+    "recruiter": "Piyush",
+    "completed": false,
+    "received_date": "2026-04-21 21:45:59"
+  },
+  {
+    "message_id": "6526265303323726981",
+    "employee_name": "David Gastelum",
+    "phone": "(213) 923-0101",
+    "positions": "Cook 1",
+    "experience": "Working in steak houses and large party\u2019s saut\u00e9 and sides like Mac and cheese, creamy spinach, asparagus, mushroom pot and others.",
+    "resume_link": "https://www.jotform.com/uploads/Seastead/240575384332053/6526265303323726981/DGA RESUME.pdf",
+    "recruiter": "Piyush",
+    "completed": false,
+    "received_date": "2026-04-21 20:22:11"
+  },
+  {
+    "message_id": "6526256054727107623",
+    "employee_name": "Samuel Adjei",
+    "phone": "(206) 303-0639",
+    "positions": "Prep Cook 2",
+    "experience": "I have been working in the kitchen since late 2013. I have deep understanding of how the kitchen operate from back of the house to front of the house. I can and know how to prep, cook, clean, serve, buss, and do any duties when it comes to kitchen and hospitality in general. I am also a super fast learner so I am able to learn new recipes and menus at unfamiliar kitchens or restaurants on the go at a super fast pace,",
+    "resume_link": "https://www.jotform.com/uploads/Seastead/240575384332053/6526256054727107623/2026 cook resume sammy Adjei .pdf",
+    "recruiter": "Piyush",
+    "completed": false,
+    "received_date": "2026-04-21 20:06:46"
+  },
+  {
+    "message_id": "6526235691659780756",
+    "employee_name": "shey Garland",
+    "phone": "(630) 386-1408",
+    "positions": "Sous Chef",
+    "experience": "20+ years of hospitality and food service experience in restaurants, hotels, catering, and high-volume events. Experience includes Head Chef and kitchen leadership roles with responsibility for food preparation, menu execution, inventory control, ordering, scheduling, staff supervision, sanitation, and quality standards.\n\nWorked with Hilton Hotels, catering companies including 24 Carrots Catering, and staffing assignments in hotels, shelters, and event venues throughout Southern California. Skilled in banquet production, plated service, buffets, high-volume prep, team leadership, and maintaining efficiency under pressure.\n\nKnown for reliability, professionalism, adaptability, and delivering excellent guest experiences in fast-paced environments.",
+    "resume_link": "https://www.jotform.com/uploads/Seastead/240575384332053/6526235691659780756/Shey Garland Resume.pdf",
+    "recruiter": "Mercedes",
+    "completed": false,
+    "received_date": "2026-04-21 19:32:50"
+  },
+  {
     "message_id": "6526189864316852132",
     "employee_name": "Johnathan Sneed",
     "phone": "(562) 388-5498",
