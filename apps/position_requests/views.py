@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
-from apps.position_requests.scheduler import load_records, save_records
+from apps.position_requests.scheduler import load_records, save_records, _engine
+from sqlalchemy import text
+import re
 import httpx
 import pypdf
 import docx
@@ -135,3 +137,106 @@ Analyze the candidate's experience and determine if they are qualified for the r
         "resume_text": resume_text,
         "ai_analysis": ai_analysis
     })
+
+@router.post("/add-position")
+async def add_position(
+    request: Request,
+    phone: str = Form(...),
+    positions: str = Form(...)
+):
+    clean_phone = re.sub(r'\D', '', phone)
+    if len(clean_phone) > 10:
+        clean_phone = clean_phone[-10:]
+        
+    if not clean_phone or len(clean_phone) < 10:
+        return JSONResponse({"status": "error", "message": "No valid 10-digit phone number provided."}, status_code=400)
+        
+    engine = _engine()
+    try:
+        with engine.connect() as conn:
+            # 1. Find employee_id
+            emp_sql = text("""
+                SELECT employee_id 
+                FROM employee 
+                WHERE REPLACE(REPLACE(REPLACE(REPLACE(mobile, ' ', ''), '-', ''), '(', ''), ')', '') LIKE :phone
+                   OR REPLACE(REPLACE(REPLACE(REPLACE(home, ' ', ''), '-', ''), '(', ''), ')', '') LIKE :phone
+                   OR REPLACE(REPLACE(REPLACE(REPLACE(work, ' ', ''), '-', ''), '(', ''), ')', '') LIKE :phone
+                LIMIT 1
+            """)
+            emp_res = conn.execute(emp_sql, {"phone": f"%{clean_phone}%"}).fetchone()
+            
+            if not emp_res:
+                return JSONResponse({"status": "error", "message": "Employee not found in database."}, status_code=404)
+                
+            employee_id = emp_res[0]
+            
+            # 2. Find position_id for the given positions
+            position_names = [p.strip() for p in positions.split(",") if p.strip()]
+            if not position_names:
+                position_names = [p.strip() for p in positions.split("\n") if p.strip()]
+            if not position_names:
+                 position_names = [positions.strip()]
+
+            added_positions = []
+            not_found_positions = []
+
+            for pos_name in position_names:
+                if not pos_name:
+                    continue
+                pos_sql = text("""
+                    SELECT position_id, description FROM position
+                    WHERE description LIKE :pos_name
+                    LIMIT 1
+                """)
+                # Try exact match or starts with first
+                pos_res = conn.execute(pos_sql, {"pos_name": f"{pos_name}%"}).fetchone()
+                
+                if not pos_res:
+                    # Try partial match anywhere
+                    pos_res = conn.execute(pos_sql, {"pos_name": f"%{pos_name}%"}).fetchone()
+
+                if not pos_res:
+                    not_found_positions.append(pos_name)
+                    continue
+                    
+                position_id = pos_res[0]
+                
+                # 3. Check if employee has that position
+                emp_pos_sql = text("""
+                    SELECT employee_position_id FROM employee_position
+                    WHERE employee_id = :employee_id AND position_id = :position_id
+                    LIMIT 1
+                """)
+                emp_pos_res = conn.execute(emp_pos_sql, {"employee_id": employee_id, "position_id": position_id}).fetchone()
+                
+                if emp_pos_res:
+                    # Update existing
+                    update_sql = text("""
+                        UPDATE employee_position
+                        SET eligible = 1, status = 1
+                        WHERE employee_position_id = :employee_position_id
+                    """)
+                    conn.execute(update_sql, {"employee_position_id": emp_pos_res[0]})
+                else:
+                    # Insert new
+                    insert_sql = text("""
+                        INSERT INTO employee_position (employee_id, position_id, eligible, status, sub_type_id)
+                        VALUES (:employee_id, :position_id, 1, 1, -1)
+                    """)
+                    conn.execute(insert_sql, {"employee_id": employee_id, "position_id": position_id})
+                
+                conn.commit()
+                added_positions.append(pos_res[1])
+
+            if not added_positions:
+                return JSONResponse({"status": "error", "message": f"Could not match positions: {', '.join(not_found_positions)}"}, status_code=404)
+            
+            msg = f"Successfully added/updated positions: {', '.join(added_positions)}"
+            if not_found_positions:
+                msg += f". Could not find: {', '.join(not_found_positions)}"
+                
+            return JSONResponse({"status": "success", "message": msg})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": f"Database error: {str(e)}"}, status_code=500)
+    finally:
+        engine.dispose()
