@@ -55,6 +55,7 @@ from apps.email_review.views import router as email_review_router
 from apps.email_count.views import router as email_count_router
 from apps.position_requests.views import router as position_requests_router
 from apps.flag_audit.views import router as flag_audit_router
+from apps.ar_contact_updates.views import router as ar_contact_updates_router
 from apps.auth.views import router as auth_router, get_current_user
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 
@@ -64,6 +65,7 @@ from apps.msp_dashboard.scheduler import msp_monitoring_loop
 from apps.credit_card_clients.scheduler import cc_clients_monitoring_loop
 from apps.admin_dashboard.tracker import admin_tracking_loop
 from apps.position_requests.scheduler import position_requests_monitoring_loop
+from apps.ar_contact_updates.scheduler import ar_contacts_monitoring_loop
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -71,11 +73,13 @@ async def lifespan(app: FastAPI):
     cc_monitor_task = asyncio.create_task(cc_clients_monitoring_loop())
     admin_task = asyncio.create_task(admin_tracking_loop())
     pr_task = asyncio.create_task(position_requests_monitoring_loop())
+    ar_task = asyncio.create_task(ar_contacts_monitoring_loop())
     yield
     monitor_task.cancel()
     cc_monitor_task.cancel()
     admin_task.cancel()
     pr_task.cancel()
+    ar_task.cancel()
 
 app = FastAPI(title="GoLive Staffing — Tools", lifespan=lifespan)
 
@@ -340,6 +344,11 @@ app.include_router(
     flag_audit_router,
     prefix="/flag-audit",
     tags=["Flag Audit"],
+)
+app.include_router(
+    ar_contact_updates_router,
+    prefix="/ar-contact-updates",
+    tags=["AR Contact Updates"],
 )
 
 # Redirect /sms_paraphraser to /sms-paraphraser for backward compatibility
