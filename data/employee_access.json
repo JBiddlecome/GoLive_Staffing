@@ -19,9 +19,28 @@
       "department": "Staffing",
       "status": "active",
       "access": {},
-      "history": [],
+      "history": [
+        {
+          "id": "5761ddc9eead4927a71325abdd03ddfc",
+          "when": "2026-04-23T23:56:48+00:00",
+          "access_id": null,
+          "action": "terminated",
+          "details": {
+            "employee": "Monica Sanchez"
+          }
+        },
+        {
+          "id": "468afb79b67d4238a2761a240433d727",
+          "when": "2026-04-23T23:56:57+00:00",
+          "access_id": null,
+          "action": "restored",
+          "details": {
+            "employee": "Monica Sanchez"
+          }
+        }
+      ],
       "created_at": "2026-02-25T17:08:27+00:00",
-      "updated_at": "2026-02-25T17:08:27+00:00",
+      "updated_at": "2026-04-23T23:56:57+00:00",
       "terminated_at": ""
     },
     {
