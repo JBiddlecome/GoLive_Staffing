@@ -59,7 +59,7 @@
     </div>
   </header>
 
-  <main class="max-w-screen-2xl mx-auto px-4 py-8">
+  <main class="{% block main_class %}max-w-screen-2xl mx-auto px-4 py-8{% endblock %}">
     {% block content %}{% endblock %}
   </main>
 

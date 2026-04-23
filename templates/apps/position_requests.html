@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}GoLive Staffing — Position Requests{% endblock %}
+{% block main_class %}w-full px-4 py-8{% endblock %}
 
 {% block content %}
 <div class="px-4 sm:px-6 lg:px-8 w-full py-8">
@@ -12,15 +13,27 @@
   </div>
   
   <div class="mt-8 flex justify-between items-center">
-    <div class="flex gap-4 items-center">
-      <label for="recruiter-filter" class="text-sm font-medium text-gray-700">Filter by Recruiter:</label>
-      <select id="recruiter-filter" class="block rounded-md border-0 py-1.5 pl-3 pr-8 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:text-sm sm:leading-6 bg-white cursor-pointer transition-all">
-        <option value="">All</option>
-        {% for r in recruiters %}
-        <option value="{{ r }}">{{ r }}</option>
-        {% endfor %}
-        <option value="Unassigned">Unassigned</option>
-      </select>
+    <div class="flex gap-6 items-center">
+      <div class="flex gap-2 items-center">
+        <label for="recruiter-filter" class="text-sm font-medium text-gray-700 whitespace-nowrap">Filter by Recruiter:</label>
+        <select id="recruiter-filter" class="block rounded-md border-0 py-1.5 pl-3 pr-8 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:text-sm sm:leading-6 bg-white cursor-pointer transition-all">
+          <option value="">All</option>
+          {% for r in recruiters %}
+          <option value="{{ r }}">{{ r }}</option>
+          {% endfor %}
+          <option value="Unassigned">Unassigned</option>
+        </select>
+      </div>
+      <div class="flex gap-2 items-center">
+        <label for="status-filter" class="text-sm font-medium text-gray-700 whitespace-nowrap">Filter by Status:</label>
+        <select id="status-filter" class="block rounded-md border-0 py-1.5 pl-3 pr-8 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:text-sm sm:leading-6 bg-white cursor-pointer transition-all">
+          <option value="">All</option>
+          <option value="Approved">Approved</option>
+          <option value="Not Approved">Not Approved</option>
+          <option value="Consider">Consider</option>
+          <option value="Pending">Pending</option>
+        </select>
+      </div>
     </div>
   </div>
   
@@ -32,7 +45,9 @@
             <thead class="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 w-16">Completed</th>
-                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status</th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer hover:text-emerald-700 select-none group" id="sort-status-btn">
+                  Status <span id="sort-status-icon" class="inline-block text-gray-400 group-hover:text-emerald-700 transition-colors ml-1">↕</span>
+                </th>
                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Date</th>
                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Name</th>
                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Phone</th>
@@ -53,7 +68,7 @@
                          data-msg-id="{{ row.message_id }}"
                          {% if row.completed %}checked{% endif %}>
                 </td>
-                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-600">
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-600" data-status="{% if row.status == 'Approved' %}Approved{% elif row.status == 'Not Approved' %}Not Approved{% elif row.status == 'Consider' %}Consider{% else %}Pending{% endif %}">
                   {% if row.status == 'Approved' %}
                     <span title="{{ row.ai_analysis | default('') | escape }}" class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 cursor-help">Approved</span>
                   {% elif row.status == 'Not Approved' %}
@@ -110,12 +125,22 @@
                   </select>
                 </td>
                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-600">
-                  <button class="inline-flex items-center gap-x-1.5 rounded-md bg-emerald-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 analyze-btn transition-colors" data-msg-id="{{ row.message_id }}" data-pre-analysis="{{ row.ai_analysis | default('') | escape }}">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
-                    </svg>
-                    {% if row.ai_analysis %}View Analysis{% else %}Analyze{% endif %}
-                  </button>
+                  <div class="flex items-center gap-2">
+                    <button class="inline-flex items-center gap-x-1.5 rounded-md bg-emerald-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 analyze-btn transition-colors" data-msg-id="{{ row.message_id }}" data-pre-analysis="{{ row.ai_analysis | default('') | escape }}">
+                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+                      </svg>
+                      {% if row.ai_analysis %}View Analysis{% else %}Analyze{% endif %}
+                    </button>
+                    {% if row.status == 'Approved' %}
+                    <button class="inline-flex items-center gap-x-1.5 rounded-md bg-blue-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 add-position-btn transition-colors" data-phone="{{ row.phone }}" data-positions="{{ row.positions | escape }}">
+                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                      </svg>
+                      Add Position
+                    </button>
+                    {% endif %}
+                  </div>
                 </td>
               </tr>
               {% endif %}
@@ -222,20 +247,62 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   const recruiterFilter = document.getElementById('recruiter-filter');
+  const statusFilter = document.getElementById('status-filter');
+
+  function applyFilters() {
+    const filterValue = recruiterFilter ? recruiterFilter.value : '';
+    const statusValue = statusFilter ? statusFilter.value : '';
+    
+    const rows = document.querySelectorAll('.filterable-row');
+    rows.forEach(row => {
+      const select = row.querySelector('select');
+      if (!select) return;
+      const recruiter = select.value;
+      const statusTd = row.querySelector('td[data-status]');
+      const status = statusTd ? statusTd.dataset.status : '';
+      
+      const matchRecruiter = !filterValue || filterValue === recruiter || (filterValue === 'Unassigned' && !recruiter);
+      const matchStatus = !statusValue || statusValue === status;
+      
+      if (matchRecruiter && matchStatus) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  }
+
   if (recruiterFilter) {
-    recruiterFilter.addEventListener('change', () => {
-      const filterValue = recruiterFilter.value;
-      const rows = document.querySelectorAll('.filterable-row');
-      rows.forEach(row => {
-        const select = row.querySelector('select');
-        if (!select) return;
-        const recruiter = select.value;
-        if (!filterValue || filterValue === recruiter || (filterValue === 'Unassigned' && !recruiter)) {
-          row.style.display = '';
-        } else {
-          row.style.display = 'none';
-        }
+    recruiterFilter.addEventListener('change', applyFilters);
+  }
+  
+  if (statusFilter) {
+    statusFilter.addEventListener('change', applyFilters);
+  }
+
+  const sortStatusBtn = document.getElementById('sort-status-btn');
+  let statusSortAsc = true;
+  
+  if (sortStatusBtn) {
+    sortStatusBtn.addEventListener('click', () => {
+      const tbody = document.getElementById('requests-tbody');
+      const rows = Array.from(tbody.querySelectorAll('tr.filterable-row'));
+      
+      rows.sort((a, b) => {
+        const aStatus = a.querySelector('td[data-status]')?.dataset.status || '';
+        const bStatus = b.querySelector('td[data-status]')?.dataset.status || '';
+        if (aStatus < bStatus) return statusSortAsc ? -1 : 1;
+        if (aStatus > bStatus) return statusSortAsc ? 1 : -1;
+        return 0;
       });
+      
+      statusSortAsc = !statusSortAsc;
+      const icon = document.getElementById('sort-status-icon');
+      if (icon) {
+        icon.textContent = statusSortAsc ? '↑' : '↓';
+      }
+      
+      rows.forEach(row => tbody.appendChild(row));
     });
   }
 
@@ -287,6 +354,49 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (err) {
         analysisContent.innerText = "Error analyzing request.";
         resumeContent.innerText = "N/A";
+        console.error(err);
+      }
+    });
+  });
+  const addPositionButtons = document.querySelectorAll('.add-position-btn');
+  addPositionButtons.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const phone = btn.dataset.phone;
+      const positions = btn.dataset.positions;
+      
+      if (!confirm(`Are you sure you want to add the following positions to this employee's profile?\n\nPositions: ${positions}`)) {
+        return;
+      }
+      
+      const originalText = btn.innerHTML;
+      btn.innerHTML = 'Adding...';
+      btn.disabled = true;
+      
+      const formData = new FormData();
+      formData.append('phone', phone);
+      formData.append('positions', positions);
+      
+      try {
+        const response = await fetch('/position-requests/add-position', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await response.json();
+        if (response.ok && data.status === 'success') {
+          alert(data.message);
+          btn.innerHTML = 'Added';
+          btn.classList.remove('bg-blue-600', 'hover:bg-blue-500');
+          btn.classList.add('bg-gray-400', 'cursor-not-allowed');
+        } else {
+          alert('Error: ' + (data.message || 'Unknown error'));
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+        }
+      } catch (err) {
+        alert('Error communicating with server.');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
         console.error(err);
       }
     });
