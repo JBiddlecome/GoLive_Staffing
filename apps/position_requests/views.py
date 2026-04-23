@@ -138,6 +138,83 @@ Analyze the candidate's experience and determine if they are qualified for the r
         "ai_analysis": ai_analysis
     })
 
+def send_position_added_email(employee_email: str, first_name: str, added_positions: list):
+    sender_email = "golive@culinarystaffing.com"
+    
+    import requests
+    tenant_id = os.getenv("O365_TENANT_ID")
+    client_id = os.getenv("O365_CLIENT_ID")
+    client_secret = os.getenv("O365_CLIENT_SECRET")
+    
+    if not all([tenant_id, client_id, client_secret, employee_email]):
+        print("Skipping email: Microsoft 365 OAuth credentials missing or employee email is empty.")
+        return False
+        
+    token_url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
+    token_data = {
+        "grant_type": "client_credentials",
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "scope": "https://graph.microsoft.com/.default"
+    }
+    
+    try:
+        r = requests.post(token_url, data=token_data)
+        r.raise_for_status()
+        access_token = r.json().get("access_token")
+    except Exception as e:
+        print(f"Failed to authenticate with Microsoft Graph: {e}")
+        return False
+
+    subject = "New Position(s) Added to Your GoLive! Profile"
+    
+    html_body = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #047857;">Profile Update</h2>
+        <p>Hi {first_name},</p>
+        <p>Good news! Your request has been approved, and the following position(s) have been added to your profile:</p>
+        <ul>
+    """
+    for p in added_positions:
+        html_body += f"<li><strong>{p}</strong></li>"
+        
+    html_body += f"""
+        </ul>
+        <p>You will now be eligible to request shifts for these positions in GoLive!</p>
+        <p>Best regards,<br>The Culinary Staffing Team</p>
+      </body>
+    </html>
+    """
+    
+    email_msg = {
+        "message": {
+            "subject": subject,
+            "body": {
+                "contentType": "HTML",
+                "content": html_body
+            },
+            "toRecipients": [
+                {"emailAddress": {"address": employee_email}}
+            ]
+        },
+        "saveToSentItems": "true"
+    }
+
+    send_url = f"https://graph.microsoft.com/v1.0/users/{sender_email}/sendMail"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    
+    try:
+        send_res = requests.post(send_url, headers=headers, json=email_msg)
+        send_res.raise_for_status()
+        return True
+    except Exception as e:
+        print(f"Failed to send email via MS Graph: {e}")
+        return False
+
 @router.post("/add-position")
 async def add_position(
     request: Request,
@@ -155,8 +232,9 @@ async def add_position(
     try:
         with engine.connect() as conn:
             # 1. Find employee_id
+            # 1. Find employee_id, first_name, email
             emp_sql = text("""
-                SELECT employee_id 
+                SELECT employee_id, first_name, email 
                 FROM employee 
                 WHERE REPLACE(REPLACE(REPLACE(REPLACE(mobile, ' ', ''), '-', ''), '(', ''), ')', '') LIKE :phone
                    OR REPLACE(REPLACE(REPLACE(REPLACE(home, ' ', ''), '-', ''), '(', ''), ')', '') LIKE :phone
@@ -169,6 +247,8 @@ async def add_position(
                 return JSONResponse({"status": "error", "message": "Employee not found in database."}, status_code=404)
                 
             employee_id = emp_res[0]
+            first_name = emp_res[1] or "Employee"
+            employee_email = emp_res[2]
             
             # 2. Find position_id for the given positions
             position_names = [p.strip() for p in positions.split(",") if p.strip()]
@@ -232,8 +312,19 @@ async def add_position(
                 return JSONResponse({"status": "error", "message": f"Could not match positions: {', '.join(not_found_positions)}"}, status_code=404)
             
             msg = f"Successfully added/updated positions: {', '.join(added_positions)}"
+            
+            email_sent = False
+            if employee_email:
+                email_sent = send_position_added_email(employee_email, first_name, added_positions)
+                if email_sent:
+                    msg += ". Notification email sent."
+                else:
+                    msg += ". Failed to send email."
+            else:
+                msg += ". No email address found for employee."
+                
             if not_found_positions:
-                msg += f". Could not find: {', '.join(not_found_positions)}"
+                msg += f" Could not find: {', '.join(not_found_positions)}"
                 
             return JSONResponse({"status": "success", "message": msg})
     except Exception as e:
