@@ -2,6 +2,8 @@ import asyncio
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import os
+import json
+from pathlib import Path
 from sqlalchemy import text
 from apps.ar_contact_updates.views import _engine
 
@@ -10,6 +12,40 @@ _ar_contacts_cache = {}  # {client_contact_id: {client_name, contact_name, conta
 _ar_contacts_changes = []  # List of change events
 _is_initialized = False
 _last_email_sent_date = None
+_ar_state_file = Path("apps/ar_contact_updates/ar_state.json")
+
+def load_ar_state():
+    if _ar_state_file.exists():
+        try:
+            with open(_ar_state_file, "r") as f:
+                state = json.load(f)
+                return state.get("cache", {}), state.get("changes", [])
+        except Exception:
+            return {}, []
+    return {}, []
+
+def save_ar_state(cache, changes):
+    try:
+        # Keep only changes from the last 30 days
+        now_la = datetime.now(ZoneInfo("America/Los_Angeles"))
+        thirty_days_ago = now_la - timedelta(days=30)
+        
+        filtered_changes = []
+        for c in changes:
+            try:
+                ctime = datetime.strptime(c["timestamp"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=ZoneInfo("America/Los_Angeles"))
+                if ctime >= thirty_days_ago:
+                    filtered_changes.append(c)
+            except:
+                pass
+
+        with open(_ar_state_file, "w") as f:
+            json.dump({"cache": cache, "changes": filtered_changes}, f)
+            
+        return filtered_changes
+    except Exception as e:
+        print(f"[AR Contacts] Error saving state: {e}")
+        return changes
 
 def send_weekly_ar_email(changes: list[dict]):
     sender_email = "golive@culinarystaffing.com"
@@ -141,6 +177,14 @@ def get_ar_changes_log():
 async def ar_contacts_monitoring_loop():
     global _ar_contacts_cache, _is_initialized, _ar_contacts_changes, _last_email_sent_date
 
+    # Load initial state
+    loaded_cache, loaded_changes = load_ar_state()
+    if loaded_cache:
+        _ar_contacts_cache = loaded_cache
+        _ar_contacts_changes = loaded_changes
+        _is_initialized = True
+        print(f"[AR Contacts] Loaded {len(_ar_contacts_cache)} contacts and {len(_ar_contacts_changes)} changes from disk.")
+
     # Stagger startup
     await asyncio.sleep(20)
 
@@ -194,9 +238,8 @@ async def ar_contacts_monitoring_loop():
                         del _ar_contacts_cache[cid]
                         print(f"[AR Contacts] Removed: {contact['contact_name']} at {contact['client_name']}")
                         
-                    # Limit the changes log to keep memory usage bounded
-                    if len(_ar_contacts_changes) > 1000:
-                        _ar_contacts_changes = _ar_contacts_changes[-1000:]
+                    if added_ids or removed_ids:
+                        _ar_contacts_changes = save_ar_state(_ar_contacts_cache, _ar_contacts_changes)
                         
         except Exception as e:
             print(f"[AR Contacts] Exception in loop: {e}")
