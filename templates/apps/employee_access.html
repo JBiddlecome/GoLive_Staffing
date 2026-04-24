@@ -96,7 +96,10 @@
                   </select>
                 </div>
                 <form action="/employee-access/employees/{{ employee.id }}/terminate" method="post" onsubmit="return confirm('Archive this employee and preserve access history?');">
-                  <button class="rounded-full border border-red-200 text-red-700 px-4 py-2 text-sm font-semibold hover:bg-red-50">Terminate</button>
+                  <button class="rounded-full border border-amber-200 text-amber-700 px-4 py-2 text-sm font-semibold hover:bg-amber-50">Terminate</button>
+                </form>
+                <form action="/employee-access/employees/{{ employee.id }}/delete" method="post" onsubmit="return confirm('Permanently delete this employee? This action cannot be undone.');">
+                  <button class="rounded-full border border-red-200 text-red-700 px-4 py-2 text-sm font-semibold hover:bg-red-50">Delete</button>
                 </form>
               </div>
 
@@ -191,7 +194,15 @@
           {% set view = archived_view.get(employee.id, {}) %}
           <details class="rounded-lg border border-amber-200 bg-white p-4">
             <summary class="cursor-pointer font-semibold">{{ employee.name }} — {{ employee.department }}</summary>
-            <p class="text-sm text-gray-600 mt-2">Terminated: {{ employee.terminated_at }}</p>
+            <div class="mt-3 mb-2 flex gap-3">
+              <form action="/employee-access/employees/{{ employee.id }}/restore" method="post">
+                <button class="rounded border border-emerald-200 text-emerald-700 px-3 py-1 text-xs font-semibold hover:bg-emerald-50">Restore to Department</button>
+              </form>
+              <form action="/employee-access/employees/{{ employee.id }}/delete" method="post" onsubmit="return confirm('Permanently delete this archived employee? This action cannot be undone.');">
+                <button class="rounded border border-red-200 text-red-700 px-3 py-1 text-xs font-semibold hover:bg-red-50">Delete Permanently</button>
+              </form>
+            </div>
+            <p class="text-sm text-gray-600">Terminated: {{ employee.terminated_at }}</p>
             <p class="text-sm text-gray-600">Title: {{ employee.title or 'No title listed' }}</p>
             <p class="mt-3 text-sm font-semibold">Recorded access status:</p>
             <ul class="text-sm text-gray-700 list-disc pl-5 mt-1">

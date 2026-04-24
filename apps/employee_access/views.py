@@ -316,6 +316,36 @@ async def terminate_employee(employee_id: str):
     return _redirect(notice=f"Archived {employee.get('name', 'employee')}.")
 
 
+@router.post("/employees/{employee_id}/restore")
+async def restore_employee(employee_id: str):
+    data = _load_data()
+    employee = _find_employee(data, employee_id)
+    if employee is None:
+        return _redirect(error="Employee was not found.")
+
+    if employee.get("status") == "terminated":
+        employee["status"] = "active"
+        employee["terminated_at"] = ""
+        employee["updated_at"] = _now_iso()
+        _append_history(employee, None, "restored", {"employee": employee.get("name", "")})
+        _save_data(data)
+
+    return _redirect(notice=f"Restored {employee.get('name', 'employee')} to active status.")
+
+
+@router.post("/employees/{employee_id}/delete")
+async def delete_employee(employee_id: str):
+    data = _load_data()
+    employee = _find_employee(data, employee_id)
+    if employee is None:
+        return _redirect(error="Employee was not found.")
+
+    data["employees"] = [emp for emp in data["employees"] if emp.get("id") != employee_id]
+    _save_data(data)
+
+    return _redirect(notice=f"Deleted {employee.get('name', 'employee')} entirely.")
+
+
 @router.post("/access-items")
 async def add_access_item(name: str = Form(...), department: str = Form(...)):
     data = _load_data()
