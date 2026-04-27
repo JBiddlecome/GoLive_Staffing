@@ -56,8 +56,7 @@ async def get_coverage_data():
                 SUM(sp.count - COALESCE(se_counts.taken, 0)) AS open_spots
             FROM event e
             JOIN client cl ON e.client_id = cl.client_id
-            JOIN venue v ON e.venue_id = v.venue_id
-            JOIN county co ON v.county_id = co.id
+            JOIN county co ON e.county_id = co.id
             JOIN shift s ON e.event_id = s.event_id
             JOIN shift_position sp ON s.shift_id = sp.shift_id
             JOIN position p ON sp.position_id = p.position_id
@@ -70,6 +69,7 @@ async def get_coverage_data():
             WHERE e.date >= :current_date
               AND e.deleted_at IS NULL 
               AND s.deleted_at IS NULL
+              AND sp.was_published != 0
             GROUP BY co.id, p.position_id, cl.client_id
             HAVING open_spots > 0
             ORDER BY co.name, p.description
