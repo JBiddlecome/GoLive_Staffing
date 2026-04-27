@@ -19,19 +19,29 @@ def load_ar_state():
         try:
             with open(_ar_state_file, "r") as f:
                 state = json.load(f)
-                return state.get("cache", {}), state.get("changes", [])
+                return state.get("cache", {}), state.get("changes", []), state.get("last_email_sent_date")
         except Exception:
-            return {}, []
-    return {}, []
+            return {}, [], None
+    return {}, [], None
 
-def save_ar_state(cache, changes):
+def save_ar_state(cache, changes, last_email_sent_date=None):
     try:
+        # Load existing first to merge changes from other workers
+        existing_cache, existing_changes, existing_email_date = load_ar_state()
+        
+        # Merge changes by a unique key to prevent duplicates
+        merged_changes = { f"{c.get('timestamp', '')}_{c.get('client_name', '')}_{c.get('contact_name', '')}": c for c in existing_changes }
+        for c in changes:
+            merged_changes[f"{c.get('timestamp', '')}_{c.get('client_name', '')}_{c.get('contact_name', '')}"] = c
+            
+        all_changes = list(merged_changes.values())
+        
         # Keep only changes from the last 30 days
         now_la = datetime.now(ZoneInfo("America/Los_Angeles"))
         thirty_days_ago = now_la - timedelta(days=30)
         
         filtered_changes = []
-        for c in changes:
+        for c in all_changes:
             try:
                 ctime = datetime.strptime(c["timestamp"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=ZoneInfo("America/Los_Angeles"))
                 if ctime >= thirty_days_ago:
@@ -39,8 +49,20 @@ def save_ar_state(cache, changes):
             except:
                 pass
 
-        with open(_ar_state_file, "w") as f:
-            json.dump({"cache": cache, "changes": filtered_changes}, f)
+        # Sort changes descending by timestamp
+        filtered_changes.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+        
+        final_email_date = last_email_sent_date or existing_email_date
+
+        # Atomic write
+        temp_file = _ar_state_file.with_suffix(".tmp")
+        with open(temp_file, "w") as f:
+            json.dump({
+                "cache": cache, 
+                "changes": filtered_changes,
+                "last_email_sent_date": final_email_date
+            }, f)
+        temp_file.replace(_ar_state_file)
             
         return filtered_changes
     except Exception as e:
@@ -178,10 +200,12 @@ async def ar_contacts_monitoring_loop():
     global _ar_contacts_cache, _is_initialized, _ar_contacts_changes, _last_email_sent_date
 
     # Load initial state
-    loaded_cache, loaded_changes = load_ar_state()
+    loaded_cache, loaded_changes, loaded_email_date = load_ar_state()
     if loaded_cache:
         _ar_contacts_cache = loaded_cache
         _ar_contacts_changes = loaded_changes
+        if loaded_email_date:
+            _last_email_sent_date = loaded_email_date
         _is_initialized = True
         print(f"[AR Contacts] Loaded {len(_ar_contacts_cache)} contacts and {len(_ar_contacts_changes)} changes from disk.")
 
@@ -250,6 +274,12 @@ async def ar_contacts_monitoring_loop():
             # Monday is weekday() == 0
             if now_la.weekday() == 0 and now_la.hour >= 9:
                 today_str = now_la.strftime("%Y-%m-%d")
+                
+                # Check disk state again in case another worker already sent it
+                _, _, disk_email_date = load_ar_state()
+                if disk_email_date == today_str:
+                    _last_email_sent_date = today_str
+                
                 if _last_email_sent_date != today_str:
                     seven_days_ago = now_la - timedelta(days=7)
                     recent_changes = []
@@ -268,6 +298,7 @@ async def ar_contacts_monitoring_loop():
                         print("[AR Contacts] No changes this week, skipping email.")
                     
                     _last_email_sent_date = today_str
+                    _ar_contacts_changes = save_ar_state(_ar_contacts_cache, _ar_contacts_changes, _last_email_sent_date)
         except Exception as e:
             print(f"[AR Contacts] Error sending weekly email: {e}")
 
