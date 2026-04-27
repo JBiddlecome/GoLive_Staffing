@@ -397,6 +397,30 @@ async def remove_access_item(access_id: str):
     return _redirect(notice=f"Removed access item: {item.get('name', 'item')}.")
 
 
+@router.post("/access-items/remove-bulk")
+async def remove_access_items_bulk(request: Request):
+    form_data = await request.form()
+    access_ids = form_data.getlist("access_ids")
+    
+    if not access_ids:
+        return _redirect(error="No access items selected.")
+
+    data = _load_data()
+    removed_count = 0
+    for access_id in access_ids:
+        item = next((record for record in data["access_items"] if record["id"] == str(access_id)), None)
+        if item and item.get("active", True):
+            item["active"] = False
+            item["updated_at"] = _now_iso()
+            removed_count += 1
+            
+    if removed_count > 0:
+        _save_data(data)
+        return _redirect(notice=f"Removed {removed_count} access item(s).")
+    
+    return _redirect(notice="No active access items were removed.")
+
+
 def _build_employee_access_view(employee: dict[str, Any], access_items: list[dict[str, Any]], include_inactive: bool = False):
     access_state = employee.get("access", {})
 

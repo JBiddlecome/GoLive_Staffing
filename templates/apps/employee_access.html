@@ -167,22 +167,29 @@
       </div>
     </button>
     <div class="hidden overflow-auto border rounded-lg" data-catalog-content>
-      <table class="min-w-full text-sm">
-        <thead class="bg-gray-50"><tr><th class="px-3 py-2 text-left">Access</th><th class="px-3 py-2 text-left">Department</th><th class="px-3 py-2 text-left">Action</th></tr></thead>
-        <tbody class="divide-y">
-          {% for item in access_items %}
-            <tr>
-              <td class="px-3 py-2">{{ item.name }}</td>
-              <td class="px-3 py-2 text-gray-600">{{ item.department }}</td>
-              <td class="px-3 py-2">
-                <form action="/employee-access/access-items/{{ item.id }}/remove" method="post" onsubmit="return confirm('Remove this access item from active lists?');">
-                  <button class="rounded-md border border-red-200 text-red-700 px-3 py-1 hover:bg-red-50">Remove</button>
-                </form>
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      <form action="/employee-access/access-items/remove-bulk" method="post" onsubmit="return confirm('Are you sure you want to remove the selected items?');">
+        <div class="p-3 bg-gray-50 border-b flex justify-between items-center">
+          <span class="text-sm text-gray-600 font-medium">Select items to remove in bulk</span>
+          <button class="rounded-md bg-red-600 text-white px-3 py-1 hover:bg-red-700 text-sm font-semibold">Remove Selected</button>
+        </div>
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-50"><tr><th class="px-3 py-2 w-8 text-center"><input type="checkbox" id="selectAllAccess" /></th><th class="px-3 py-2 text-left">Access</th><th class="px-3 py-2 text-left">Department</th><th class="px-3 py-2 text-left">Action</th></tr></thead>
+          <tbody class="divide-y">
+            {% for item in access_items %}
+              <tr>
+                <td class="px-3 py-2 text-center">
+                  <input type="checkbox" name="access_ids" value="{{ item.id }}" class="access-item-checkbox" />
+                </td>
+                <td class="px-3 py-2">{{ item.name }}</td>
+                <td class="px-3 py-2 text-gray-600">{{ item.department }}</td>
+                <td class="px-3 py-2">
+                  <button type="submit" formaction="/employee-access/access-items/{{ item.id }}/remove" formmethod="post" onclick="return confirm('Remove this access item from active lists?');" class="rounded-md border border-red-200 text-red-700 px-3 py-1 hover:bg-red-50">Remove</button>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </form>
     </div>
   </section>
 
@@ -247,6 +254,15 @@
       label.textContent = isHidden ? 'Collapse' : 'Expand';
     });
   });
+
+  const selectAllAccess = document.getElementById('selectAllAccess');
+  if (selectAllAccess) {
+    selectAllAccess.addEventListener('change', (e) => {
+      document.querySelectorAll('.access-item-checkbox').forEach((checkbox) => {
+        checkbox.checked = e.target.checked;
+      });
+    });
+  }
 
   async function saveAccess(employeeId, accessId) {
     const granted = document.querySelector(`[data-access-toggle][data-employee-id="${employeeId}"][data-access-id="${accessId}"][data-field="granted"]`);
