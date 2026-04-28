@@ -1,0 +1,522 @@
+{% extends "base.html" %}
+{% block title %}Shift Risk Dashboard — GoLive Tools{% endblock %}
+
+{% block head %}
+<style>
+    .risk-critical { background-color: #fee2e2; color: #991b1b; border: 1px solid #f87171; }
+    .risk-warning { background-color: #fef3c7; color: #92400e; border: 1px solid #fbbf24; }
+    .risk-at-risk { background-color: #dbeafe; color: #1e40af; border: 1px solid #60a5fa; }
+    
+    .progress-critical { background-color: #ef4444; }
+    .progress-warning { background-color: #f59e0b; }
+    .progress-at-risk { background-color: #3b82f6; }
+
+    .expand-icon { transition: transform 0.2s ease; }
+    .expanded .expand-icon { transform: rotate(180deg); }
+    
+    .timeline-container {
+        display: none;
+        animation: fadeIn 0.3s ease;
+    }
+    .expanded .timeline-container { display: block; }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-3xl font-bold brand-serif text-gray-900">Shift Risk Dashboard</h1>
+            <p class="text-sm text-gray-600 mt-1">Monitoring future published shifts that are at risk of being understaffed.</p>
+        </div>
+        <div class="flex items-center gap-4 text-sm">
+            <span id="last-updated" class="text-gray-500 font-medium">Loading...</span>
+            <button onclick="fetchData()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition font-medium">
+                Refresh Now
+            </button>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="summary-cards">
+        <!-- Rendered via JS -->
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-1 bg-gray-100 p-1 rounded-2xl w-fit mt-2" id="tab-bar">
+        <button id="tab-today" onclick="switchTab('today')"
+            class="tab-btn px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 bg-white text-gray-900 shadow-sm">
+            🔴 Today
+            <span id="badge-today" class="ml-2 bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full"></span>
+        </button>
+        <button id="tab-future" onclick="switchTab('future')"
+            class="tab-btn px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 text-gray-500 hover:text-gray-700">
+            📅 Future
+            <span id="badge-future" class="ml-2 bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full"></span>
+        </button>
+    </div>
+
+    <!-- Today Panel -->
+    <div id="panel-today" class="space-y-0">
+        <div class="py-12 text-center text-gray-500">
+            <svg class="animate-spin h-8 w-8 mx-auto mb-4 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p>Analyzing shift fill rates...</p>
+        </div>
+    </div>
+
+    <!-- Future Panel -->
+    <div id="panel-future" class="space-y-0 hidden"></div>
+</div>
+
+<template id="event-card-template">
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden event-card mb-6 transition-all">
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-1 rounded-md client-name"></span>
+                    <span class="text-sm font-medium text-gray-500 venue-name"></span>
+                </div>
+                <h2 class="text-xl font-bold text-gray-900 event-title"></h2>
+                <div class="text-sm text-gray-600 mt-1 event-date-info"></div>
+            </div>
+            <div class="text-right">
+                <div class="text-2xl font-bold text-gray-900 event-spots"></div>
+                <div class="text-xs text-gray-500 uppercase tracking-wide font-semibold mt-1">Open Spots at Risk</div>
+            </div>
+        </div>
+        <div class="p-0 shifts-container divide-y divide-gray-100">
+            <!-- Shifts go here -->
+        </div>
+    </div>
+</template>
+
+<template id="shift-position-template">
+    <div class="position-row px-6 py-4 hover:bg-gray-50 transition cursor-pointer" onclick="toggleTimeline(this)">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+            
+            <div class="col-span-3">
+                <div class="font-bold text-gray-900 text-lg position-name"></div>
+                <div class="text-xs text-gray-500 shift-window mt-1"></div>
+            </div>
+
+            <div class="col-span-2">
+                <div class="flex items-center gap-2">
+                    <div class="text-2xl font-bold text-gray-900 open-spots-val"></div>
+                    <div class="text-xs text-gray-500 uppercase font-semibold">Open<br>Spots</div>
+                </div>
+                <div class="text-xs text-gray-500 mt-1 spots-detail"></div>
+            </div>
+
+            <div class="col-span-3">
+                <div class="flex justify-between text-xs mb-1 font-medium">
+                    <span class="fill-pct-text text-gray-700"></span>
+                    <span class="time-status-text text-gray-500"></span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                    <div class="h-2.5 rounded-full progress-bar transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <div class="text-xs text-gray-500 mt-1 rate-detail"></div>
+            </div>
+
+            <div class="col-span-2">
+                 <div class="text-sm text-gray-700"><span class="font-semibold pay-rate"></span> / hr</div>
+                 <div class="text-xs text-gray-500 mt-1 publish-date"></div>
+            </div>
+
+            <div class="col-span-2 flex justify-end items-center gap-3">
+                <span class="px-3 py-1 rounded-full text-xs font-bold tracking-wide risk-badge"></span>
+                <svg class="w-5 h-5 text-gray-400 expand-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
+        </div>
+
+        <!-- Chart Container -->
+        <div class="timeline-container mt-4 pt-4 border-t border-gray-100">
+            <div class="h-48 w-full relative chart-wrapper">
+                <canvas></canvas>
+            </div>
+        </div>
+    </div>
+</template>
+
+{% endblock %}
+
+{% block scripts %}
+<!-- Load all chart deps synchronously before any app code runs -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.1.0/dist/chartjs-plugin-annotation.min.js"></script>
+<script>
+    let lastFetched = null;
+    let refreshInterval = null;
+    let charts = {};
+
+    // ── Native date helpers (no moment dependency in render code) ────────
+    const _DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const _MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    function fmtDate(iso) {
+        // iso: "2026-04-28" or "2026-04-28T..."
+        const d = new Date(iso.includes('T') ? iso : iso + 'T00:00:00');
+        return `${_DAYS[d.getDay()]}, ${_MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+    }
+
+    function fmtTime(iso) {
+        const d = new Date(iso);
+        let h = d.getHours(), m = d.getMinutes(), ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        return `${h}:${String(m).padStart(2,'0')} ${ampm}`;
+    }
+
+    function fmtMonthDay(iso) {
+        const d = new Date(iso);
+        return `${_MONTHS[d.getMonth()]} ${d.getDate()}`;
+    }
+
+    function fmtPublished(iso) {
+        const d = new Date(iso);
+        let h = d.getHours(), m = d.getMinutes(), ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        return `${_MONTHS[d.getMonth()]} ${d.getDate()}, ${h}:${String(m).padStart(2,'0')} ${ampm.toLowerCase()}`;
+    }
+
+    function formatTimeAgo(date) {
+        const seconds = Math.floor((new Date() - date) / 1000);
+        if (seconds < 60) return "Just now";
+        const minutes = Math.floor(seconds / 60);
+        return `${minutes} min ago`;
+    }
+
+    function updateLastUpdated() {
+        if (lastFetched) {
+            document.getElementById('last-updated').textContent = `Updated ${formatTimeAgo(lastFetched)}`;
+        }
+    }
+
+    setInterval(updateLastUpdated, 60000);
+
+    function getRiskColorClass(level) {
+        if (level === 'CRITICAL') return 'risk-critical';
+        if (level === 'WARNING') return 'risk-warning';
+        return 'risk-at-risk';
+    }
+
+    function getProgressColorClass(level) {
+        if (level === 'CRITICAL') return 'progress-critical';
+        if (level === 'WARNING') return 'progress-warning';
+        return 'progress-at-risk';
+    }
+
+    function formatCurrency(val) {
+        if (!val) return 'N/A';
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
+    }
+
+    async function fetchData() {
+        document.getElementById('last-updated').textContent = 'Refreshing...';
+        try {
+            const res = await fetch('/shift-risk-dashboard/data');
+            if (!res.ok) throw new Error('Network response was not ok');
+            const data = await res.json();
+            
+            lastFetched = new Date(data.generated_at + 'Z');
+            updateLastUpdated();
+            renderDashboard(data);
+        } catch (err) {
+            console.error(err);
+            document.getElementById('last-updated').textContent = 'Error refreshing';
+            document.getElementById('panel-today').innerHTML = `
+                <div class="p-6 bg-red-50 text-red-700 rounded-xl border border-red-200">
+                    Failed to load dashboard data. Please try again.
+                </div>
+            `;
+        }
+    }
+
+    function renderSummaryCards(data) {
+        const container = document.getElementById('summary-cards');
+        container.innerHTML = `
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+                <div class="text-sm text-gray-500 font-medium uppercase tracking-wide">Total At Risk Events</div>
+                <div class="text-3xl font-bold text-gray-900 mt-1">${data.total_at_risk_events}</div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-red-200 border-l-4 border-l-red-500">
+                <div class="text-sm text-red-600 font-medium uppercase tracking-wide">Critical Events</div>
+                <div class="text-3xl font-bold text-gray-900 mt-1">${data.critical_events}</div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-amber-200 border-l-4 border-l-amber-500">
+                <div class="text-sm text-amber-600 font-medium uppercase tracking-wide">Warning Events</div>
+                <div class="text-3xl font-bold text-gray-900 mt-1">${data.warning_events}</div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+                <div class="text-sm text-gray-500 font-medium uppercase tracking-wide">Total Open Spots</div>
+                <div class="text-3xl font-bold text-gray-900 mt-1">${data.total_open_spots}</div>
+            </div>
+        `;
+    }
+
+    let activeTab = 'today';
+
+    function switchTab(tab) {
+        activeTab = tab;
+        const todayPanel = document.getElementById('panel-today');
+        const futurePanel = document.getElementById('panel-future');
+        const todayBtn = document.getElementById('tab-today');
+        const futureBtn = document.getElementById('tab-future');
+
+        if (tab === 'today') {
+            todayPanel.classList.remove('hidden');
+            futurePanel.classList.add('hidden');
+            todayBtn.className = 'tab-btn px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 bg-white text-gray-900 shadow-sm';
+            futureBtn.className = 'tab-btn px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 text-gray-500 hover:text-gray-700';
+        } else {
+            todayPanel.classList.add('hidden');
+            futurePanel.classList.remove('hidden');
+            futureBtn.className = 'tab-btn px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 bg-white text-gray-900 shadow-sm';
+            todayBtn.className = 'tab-btn px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 text-gray-500 hover:text-gray-700';
+        }
+    }
+
+    function renderDashboard(data) {
+        renderSummaryCards(data);
+
+        const todayEvents = data.events.filter(e => e.min_hours_until_shift <= 24);
+        const futureEvents = data.events.filter(e => e.min_hours_until_shift > 24);
+
+        // Update tab badges
+        document.getElementById('badge-today').textContent = todayEvents.length;
+        document.getElementById('badge-future').textContent = futureEvents.length;
+
+        renderEventList(todayEvents, 'panel-today', 'No shifts starting in the next 24 hours are at risk.');
+        renderEventList(futureEvents, 'panel-future', 'No upcoming future shifts are at risk.');
+    }
+
+    function renderEventList(events, containerId, emptyMsg) {
+        const container = document.getElementById(containerId);
+        if (events.length === 0) {
+            container.innerHTML = `
+                <div class="bg-emerald-50 text-emerald-800 p-8 rounded-2xl border border-emerald-200 text-center shadow-sm">
+                    <svg class="w-12 h-12 mx-auto text-emerald-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <h3 class="text-xl font-bold mb-2">All Clear!</h3>
+                    <p>${emptyMsg}</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = '';
+        const eventTpl = document.getElementById('event-card-template');
+        const posTpl = document.getElementById('shift-position-template');
+
+        events.forEach(event => {
+            try {
+                const eventNode = eventTpl.content.cloneNode(true);
+                
+                eventNode.querySelector('.client-name').textContent = event.client_name;
+                eventNode.querySelector('.venue-name').textContent = event.venue_name;
+                eventNode.querySelector('.event-title').textContent = event.event_title;
+                
+                const eventDateStr = fmtDate(event.event_date);
+                const daysText = event.days_until_event === 0 ? 'Today' : 
+                                 event.days_until_event === 1 ? 'Tomorrow' : 
+                                 `in ${event.days_until_event} days`;
+                
+                eventNode.querySelector('.event-date-info').textContent = `${eventDateStr} • ${daysText}`;
+                eventNode.querySelector('.event-spots').textContent = `${event.total_open_spots} / ${event.total_spots}`;
+
+                const shiftsContainer = eventNode.querySelector('.shifts-container');
+
+                event.shifts.forEach(shift => {
+                    shift.positions.forEach(pos => {
+                        const posNode = posTpl.content.cloneNode(true);
+                        const row = posNode.querySelector('.position-row');
+                        
+                        // Attach data for timeline
+                        row.dataset.positionId = pos.shift_position_id;
+                        row.dataset.totalSpots = pos.total_spots;
+                        row.dataset.publishedAt = pos.published_at;
+                        row.dataset.t0 = pos.t0;
+                        row.dataset.tDeadline = pos.t_deadline;
+                        row.dataset.shiftStart = shift.shift_start;
+
+                        row.querySelector('.position-name').textContent = pos.position_name;
+                        
+                        const startStr = fmtTime(shift.shift_start);
+                        const endStr = fmtTime(shift.shift_end);
+                        row.querySelector('.shift-window').textContent = `${fmtMonthDay(shift.shift_start)} • ${startStr} - ${endStr}`;
+                        
+                        row.querySelector('.open-spots-val').textContent = pos.open_spots;
+                        row.querySelector('.spots-detail').textContent = `${pos.filled_spots} filled of ${pos.total_spots} total`;
+
+                        row.querySelector('.fill-pct-text').textContent = `${pos.fill_pct}% Filled`;
+                        
+                        let timeText = '';
+                        if (pos.is_past_deadline) {
+                            timeText = 'Past 24h Deadline';
+                        } else if (pos.hours_until_deadline < 24) {
+                            timeText = `${Math.floor(pos.hours_until_deadline)}h until deadline`;
+                        } else {
+                            timeText = `${Math.floor(pos.hours_until_deadline/24)}d until deadline`;
+                        }
+                        row.querySelector('.time-status-text').textContent = timeText;
+
+                        const bar = row.querySelector('.progress-bar');
+                        bar.style.width = `${pos.fill_pct}%`;
+                        bar.className = `h-2.5 rounded-full progress-bar transition-all duration-500 ${getProgressColorClass(pos.risk_level)}`;
+
+                        row.querySelector('.rate-detail').textContent = `Projected to fill: ${pos.projected_fill}`;
+
+                        row.querySelector('.pay-rate').textContent = formatCurrency(pos.pay_rate);
+                        row.querySelector('.publish-date').textContent = pos.published_at ? `Pub: ${fmtPublished(pos.published_at)}` : 'Not pub';
+
+                        const badge = row.querySelector('.risk-badge');
+                        badge.textContent = pos.risk_level;
+                        badge.className = `px-3 py-1 rounded-full text-xs font-bold tracking-wide risk-badge ${getRiskColorClass(pos.risk_level)}`;
+
+                        shiftsContainer.appendChild(posNode);
+                    });
+                });
+
+                container.appendChild(eventNode);
+            } catch (eventErr) {
+                console.error("Error rendering event:", event, eventErr);
+                const errDiv = document.createElement('div');
+                errDiv.className = "p-4 mb-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-mono overflow-auto";
+                errDiv.innerHTML = `Error rendering event ${event.event_id}: ${eventErr.message}<br>${eventErr.stack}`;
+                container.appendChild(errDiv);
+            }
+        });
+    }
+
+    async function toggleTimeline(rowElement) {
+        rowElement.classList.toggle('expanded');
+        const isExpanded = rowElement.classList.contains('expanded');
+        const posId = rowElement.dataset.positionId;
+        const canvas = rowElement.querySelector('canvas');
+
+        if (!isExpanded) return;
+
+        // Load timeline if not already loaded
+        if (!charts[posId]) {
+            try {
+                const res = await fetch(`/shift-risk-dashboard/timeline/${posId}`);
+                if (!res.ok) throw new Error('Timeline fetch failed');
+                const tdata = await res.json();
+                renderChart(canvas, posId, tdata.timeline, rowElement.dataset);
+            } catch(e) {
+                console.error(e);
+                canvas.parentElement.innerHTML = '<div class="text-sm text-red-500 py-4">Failed to load timeline.</div>';
+            }
+        }
+    }
+
+    function renderChart(canvas, posId, timeline, dataset) {
+        const totalSpots = parseInt(dataset.totalSpots, 10);
+        // Use backend-computed t0 and tDeadline — always valid even when publishedAt is null
+        const t0 = moment(dataset.t0);
+        const tDeadline = moment(dataset.tDeadline);
+        const shiftStart = moment(dataset.shiftStart);
+        const now = moment();
+
+        // Actual fill data — starts at 0 when position was published
+        const dataPoints = [{ x: t0.toDate(), y: 0 }];
+        timeline.forEach(pt => {
+            dataPoints.push({ x: moment(pt.timestamp).toDate(), y: pt.cumulative_filled });
+        });
+        // Extend to now at current fill level
+        dataPoints.push({ x: now.toDate(), y: dataPoints[dataPoints.length - 1].y });
+
+        // Target trajectory: from T0 (0 filled) to deadline (fully filled)
+        const targetLine = [
+            { x: t0.toDate(), y: 0 },
+            { x: tDeadline.toDate(), y: totalSpots }
+        ];
+        // If deadline is in the past, extend the target dashed line to deadline only (don't draw into future)
+
+        const ctx = canvas.getContext('2d');
+        charts[posId] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [
+                    {
+                        label: 'Actual Fills',
+                        data: dataPoints,
+                        borderColor: '#059669', // Emerald 600
+                        backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                        stepped: true,
+                        fill: true,
+                        borderWidth: 2,
+                        pointRadius: 2
+                    },
+                    {
+                        label: 'Target Trajectory',
+                        data: targetLine,
+                        borderColor: '#9ca3af', // Gray 400
+                        borderDash: [5, 5],
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top', align: 'end', labels: { boxWidth: 12, usePointStyle: true } },
+                    annotation: {
+                        annotations: {
+                            line1: {
+                                type: 'line',
+                                xMin: now.toDate(),
+                                xMax: now.toDate(),
+                                borderColor: 'rgba(239, 68, 68, 0.5)',
+                                borderWidth: 2,
+                                borderDash: [2, 2],
+                                label: { content: 'NOW', enabled: true, position: 'start', backgroundColor: 'rgba(239,68,68,0.8)' }
+                            },
+                            line2: {
+                                type: 'line',
+                                xMin: tDeadline.toDate(),
+                                xMax: tDeadline.toDate(),
+                                borderColor: 'rgba(0, 0, 0, 0.3)',
+                                borderWidth: 2,
+                                label: { content: 'DEADLINE', enabled: true, position: 'start', backgroundColor: 'rgba(0,0,0,0.6)' }
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: { unit: 'hour', displayFormats: { hour: 'MMM D ha' } },
+                        min: t0.toDate(),
+                        max: shiftStart.toDate(),
+                        grid: { display: false }
+                    },
+                    y: {
+                        min: 0,
+                        max: totalSpots + 1,
+                        ticks: { stepSize: 1 },
+                        grid: { color: '#f3f4f6' }
+                    }
+                }
+            }
+        });
+    }
+
+    // Init — all scripts already loaded synchronously above
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchData();
+        refreshInterval = setInterval(fetchData, 300000); // 5 minutes
+    });
+</script>
+{% endblock %}
