@@ -56,6 +56,7 @@ from apps.email_count.views import router as email_count_router
 from apps.position_requests.views import router as position_requests_router
 from apps.flag_audit.views import router as flag_audit_router
 from apps.ar_contact_updates.views import router as ar_contact_updates_router
+from apps.shift_risk_dashboard.views import router as shift_risk_dashboard_router
 from apps.auth.views import router as auth_router, get_current_user
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 
@@ -349,6 +350,11 @@ app.include_router(
     ar_contact_updates_router,
     prefix="/ar-contact-updates",
     tags=["AR Contact Updates"],
+)
+app.include_router(
+    shift_risk_dashboard_router,
+    prefix="/shift-risk-dashboard",
+    tags=["Shift Risk Dashboard"],
 )
 
 # Redirect /sms_paraphraser to /sms-paraphraser for backward compatibility
