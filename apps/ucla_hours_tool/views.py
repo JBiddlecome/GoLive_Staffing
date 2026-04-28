@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import re
+import zipfile
 from datetime import date, datetime, timedelta
 from typing import Dict
 
@@ -9,6 +10,7 @@ import pandas as pd
 from fastapi import APIRouter, Request, UploadFile, File
 from fastapi.responses import StreamingResponse
 from fastapi.templating import Jinja2Templates
+from pypdf import PdfReader, PdfWriter
 
 templates = Jinja2Templates(directory="templates")
 router = APIRouter()
@@ -199,3 +201,70 @@ async def upload(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers=headers,
     )
+
+
+@router.post("/split-pdf")
+async def split_pdf(request: Request, pdf_file: UploadFile = File(...)):
+    try:
+        # Extract employee name from filename
+        filename = pdf_file.filename
+        # Remove date pattern and extension
+        name_part = re.sub(r'-\d{2}-\d{2}-\d{4}.*$', '', filename, flags=re.IGNORECASE)
+        name_part = re.sub(r'\.pdf$', '', name_part, flags=re.IGNORECASE)
+        employee_name = name_part.replace('-', ' ')
+        
+        pdf_bytes = await pdf_file.read()
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+        
+        if len(reader.pages) < 6:
+            raise ValueError("The uploaded PDF must have at least 6 pages.")
+            
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            # General: pages 1-2
+            writer_gen = PdfWriter()
+            writer_gen.add_page(reader.pages[0])
+            writer_gen.add_page(reader.pages[1])
+            gen_buffer = io.BytesIO()
+            writer_gen.write(gen_buffer)
+            zip_file.writestr(f"{employee_name} - UCLA Acknowledgment Letter (General).pdf", gen_buffer.getvalue())
+            
+            # Server: pages 3-4
+            writer_srv = PdfWriter()
+            writer_srv.add_page(reader.pages[2])
+            writer_srv.add_page(reader.pages[3])
+            srv_buffer = io.BytesIO()
+            writer_srv.write(srv_buffer)
+            zip_file.writestr(f"{employee_name} - UCLA Acknowledgment Letter (Server).pdf", srv_buffer.getvalue())
+            
+            # Cook: pages 5-6
+            writer_cook = PdfWriter()
+            writer_cook.add_page(reader.pages[4])
+            writer_cook.add_page(reader.pages[5])
+            cook_buffer = io.BytesIO()
+            writer_cook.write(cook_buffer)
+            zip_file.writestr(f"{employee_name} - UCLA Acknowledgment Letter (Cook).pdf", cook_buffer.getvalue())
+            
+        zip_buffer.seek(0)
+        
+        headers = {"Content-Disposition": f"attachment; filename=\"{employee_name} UCLA Acknowledgment Letters.zip\""}
+        return StreamingResponse(
+            zip_buffer,
+            media_type="application/zip",
+            headers=headers
+        )
+        
+    except ValueError as exc:
+        return templates.TemplateResponse(
+            "apps/ucla_hours_tool.html",
+            {"request": request, "error": str(exc)},
+        )
+    except Exception as e:
+        return templates.TemplateResponse(
+            "apps/ucla_hours_tool.html",
+            {
+                "request": request,
+                "error": "An unexpected error occurred while splitting the PDF.",
+            },
+            status_code=500,
+        )

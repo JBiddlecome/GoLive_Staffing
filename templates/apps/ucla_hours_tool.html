@@ -25,4 +25,20 @@
     {{ error }}
   </div>
 {% endif %}
+
+<hr class="my-8 border-gray-200" />
+
+<h2 class="text-lg font-semibold mb-4">Acknowledgment Letter PDF Separator</h2>
+<p class="text-sm text-gray-600 mb-4">
+  Upload a 6-page Acknowledgment Letter PDF (e.g., "Jake-Biddlecome-04-27-2026.pdf").
+  It will be split into three separate 2-page PDFs for General, Server, and Cook, named appropriately and downloaded as a ZIP file.
+</p>
+<form class="space-y-4" method="post" enctype="multipart/form-data" action="/ucla-hours-tool/split-pdf">
+  <div>
+    <label class="block text-sm font-medium mb-1">Acknowledgment Letter (.pdf)</label>
+    <input class="border rounded p-2 w-full bg-white" type="file" name="pdf_file" accept=".pdf" required />
+  </div>
+  <button class="px-4 py-2 rounded-xl border shadow bg-white hover:bg-gray-50" type="submit">Split PDF</button>
+</form>
+
 {% endblock %}
