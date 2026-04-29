@@ -55,6 +55,12 @@ class GlobalShiftReportPayload(BaseModel):
     limit: int = Field(default=50000, ge=1, le=100000)
 
 
+class SummaryReportPayload(BaseModel):
+    start_date: str = Field(..., min_length=1)
+    end_date: str = Field(..., min_length=1)
+    limit: int = Field(default=50000, ge=1, le=100000)
+
+
 class NowstaReportPayload(BaseModel):
     start_date: str = Field(..., min_length=1)
     end_date: str = Field(..., min_length=1)
@@ -602,6 +608,282 @@ async def reportable_timesheet_verification_export(
     output.seek(0)
 
     headers = {"Content-Disposition": 'attachment; filename="timesheet_verification_report.xlsx"'}
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers,
+    )
+
+
+@router.post("/export/summary")
+async def reportable_summary_report_export(
+    payload: SummaryReportPayload,
+) -> StreamingResponse:
+    engine = _engine()
+    try:
+        inspector = inspect(engine)
+        client_columns = {col["name"] for col in inspector.get_columns("client")}
+        timesheet_columns = {col["name"] for col in inspector.get_columns("timesheet")}
+
+        ts_cols = [
+            "client_seconds", "employee_seconds",
+            "client_min_bill", "employee_min_pay",
+            "client_no_bill", "employee_no_pay",
+            "client_no_break_penalty", "employee_no_break_penalty",
+            "client_tips", "client_parking", "client_travel", "client_service_charge",
+            "employee_tips", "employee_parking", "employee_travel", "employee_service_charge"
+        ]
+        ts_select_str = ", ".join(
+            f"t.{col}" if col in timesheet_columns else f"0 AS {col}"
+            for col in ts_cols
+        )
+
+        sql = text(
+            f"""
+            SELECT
+                e.state                      AS event_state,
+                COALESCE(wc.wc_code, '8810') AS wc,
+                c.name                       AS client_name,
+                c.client_id                  AS client_id,
+                v.name                       AS venue_name,
+                c.separate_venue             AS separate_venue,
+                se.bill_rate                 AS bill_rate,
+                se.rate                      AS pay_rate,
+                v.service_charge             AS venue_service_charge,
+                wc.rate                      AS wc_rate,
+                m.name                       AS msp_name,
+                m.rate                       AS msp_rate,
+                d.name                       AS division_name,
+                u.first_name                 AS se_first_name,
+                u.last_name                  AS se_last_name,
+                c.won_date                   AS won_date,
+                {ts_select_str}
+            FROM shift_employee se
+            JOIN event e            ON se.event_id             = e.event_id
+            JOIN client c           ON e.client_id             = c.client_id
+            LEFT JOIN msp m         ON c.msp_id                = m.id
+            LEFT JOIN division d    ON c.division_id           = d.id
+            LEFT JOIN user u        ON c.sales_executive_id    = u.id
+            LEFT JOIN wc_code wc    ON c.wc_id                 = wc.wc_id
+            LEFT JOIN venue v       ON e.venue_id              = v.venue_id
+            LEFT JOIN timesheet t   ON se.shift_employee_id    = t.shift_employee_id
+            WHERE e.date >= :start_date
+              AND e.date <= :end_date
+              AND se.confirmed = 1 
+              AND se.cancel_reason = 0
+            """
+        )
+
+        params = {
+            "start_date": payload.start_date,
+            "end_date": payload.end_date,
+        }
+
+        with engine.begin() as connection:
+            df = pd.read_sql(sql, connection, params=params)
+
+    finally:
+        engine.dispose()
+
+    empty_columns = [
+        "WEEKLY RECAP", "CLASS CODE", "Client ID", "WC rate", "MSP rate", "GROSS",
+        "SAL REG", "SAL O/T", "SAL D/T", "Non Worked Pay", "Meal Penalty Pay", "Etc.",
+        "Wage Replace.", "Service Charge", "Travel", "Bonus", "Additional Shift Pay",
+        "Parking", "P.A.W.", "TOTAL SALARIES & TIPS", "%", "HRS REG", "HRS O/T",
+        "HRS D/T", "Non Worked Hours", "Meal Penalty Hours", "Sick", "Wage Replace..",
+        "TOTAL HOURS", "Sales Executive", "WON Date", "Cert Cost", "Reimb Pay"
+    ]
+    if df.empty:
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            pd.DataFrame(columns=empty_columns).to_excel(
+                writer, index=False, sheet_name="summary_report"
+            )
+        output.seek(0)
+        headers = {"Content-Disposition": 'attachment; filename="summary_report.xlsx"'}
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers=headers,
+        )
+
+    numeric_cols = [
+        "client_seconds", "client_tips", "client_parking", "client_travel", "client_service_charge", 
+        "venue_service_charge", "client_no_break_penalty", "employee_no_break_penalty",
+        "bill_rate", "pay_rate", "employee_tips", "employee_parking", "employee_travel", "employee_service_charge"
+    ]
+    existing_numeric_cols = [col for col in numeric_cols if col in df.columns]
+    if existing_numeric_cols:
+        df[existing_numeric_cols] = df[existing_numeric_cols].fillna(0)
+
+    def process_row(row):
+        client_hours = float(row["client_seconds"]) / 3600.0 if row["client_seconds"] else 0.0
+        if row.get("client_min_bill") and client_hours < 4.0:
+            client_hours = 4.0
+        if row.get("client_no_bill"):
+            client_hours = 0.0
+
+        employee_hours = float(row["employee_seconds"]) / 3600.0 if row.get("employee_seconds") else 0.0
+        if row.get("employee_min_pay") and employee_hours < 4.0:
+            employee_hours = 4.0
+        if row.get("employee_no_pay"):
+            employee_hours = 0.0
+            
+        c_reg = c_ot = c_dt = 0.0
+        e_reg = e_ot = e_dt = 0.0
+        state = str(row["event_state"]).upper() if row["event_state"] else ""
+        
+        if state in ("CA", "CALIFORNIA"):
+            if client_hours > 12: c_dt = client_hours - 12; c_ot = 4.0; c_reg = 8.0
+            elif client_hours > 8: c_ot = client_hours - 8; c_reg = 8.0
+            else: c_reg = client_hours
+            
+            if employee_hours > 12: e_dt = employee_hours - 12; e_ot = 4.0; e_reg = 8.0
+            elif employee_hours > 8: e_ot = employee_hours - 8; e_reg = 8.0
+            else: e_reg = employee_hours
+        elif state in ("NV", "NEVADA"):
+            if client_hours > 8: c_ot = client_hours - 8; c_reg = 8.0
+            else: c_reg = client_hours
+            
+            if employee_hours > 8: e_ot = employee_hours - 8; e_reg = 8.0
+            else: e_reg = employee_hours
+        else:
+            c_reg = client_hours
+            e_reg = employee_hours
+
+        bill_rate = float(row["bill_rate"])
+        pay_rate = float(row["pay_rate"])
+        
+        reg_bill = c_reg * bill_rate
+        ot_bill = c_ot * (bill_rate * 1.5)
+        dt_bill = c_dt * (bill_rate * 2.0)
+        
+        reg_pay = e_reg * pay_rate
+        ot_pay = e_ot * (pay_rate * 1.5)
+        dt_pay = e_dt * (pay_rate * 2.0)
+
+        service_pct_c = float(row.get("client_service_charge") or 0)
+        venue_flat = float(row["venue_service_charge"] or 0)
+        service_amt_c = ((reg_bill + ot_bill + dt_bill) * service_pct_c / 100.0) + venue_flat
+
+        service_pct_e = float(row.get("employee_service_charge") or 0)
+        service_amt_e = ((reg_pay + ot_pay + dt_pay) * service_pct_e / 100.0)
+        
+        meal_amt_c = bill_rate if float(row["client_no_break_penalty"]) > 0 else 0.0
+        meal_amt_e = pay_rate if float(row["employee_no_break_penalty"]) > 0 else 0.0
+        
+        total_bill = (
+            reg_bill + ot_bill + dt_bill + service_amt_c + meal_amt_c + 
+            float(row.get("client_tips", 0)) + float(row.get("client_parking", 0)) + float(row.get("client_travel", 0))
+        )
+        total_pay = (
+            reg_pay + ot_pay + dt_pay + service_amt_e + meal_amt_e + 
+            float(row.get("employee_tips", 0)) + float(row.get("employee_parking", 0)) + float(row.get("employee_travel", 0))
+        )
+
+        parts = []
+        if row["msp_name"]: parts.append(row["msp_name"])
+        if row["division_name"]: parts.append(row["division_name"])
+        parts.append(row["venue_name"] if row["separate_venue"] else row["client_name"])
+        
+        se_first = row['se_first_name'] or ''
+        se_last = row['se_last_name'] or ''
+
+        return pd.Series({
+            "group_key": " - ".join(parts),
+            "class_code": row["wc"],
+            "client_id": row["client_id"],
+            "wc_rate": row["wc_rate"],
+            "msp_rate": row["msp_rate"],
+            "sales_executive": f"{se_first} {se_last}".strip(),
+            "won_date": row["won_date"],
+            "GROSS": total_bill,
+            "SAL REG": reg_pay,
+            "SAL O/T": ot_pay,
+            "SAL D/T": dt_pay,
+            "Meal Penalty Pay": meal_amt_e,
+            "Service Charge": service_amt_e + float(row.get("employee_tips", 0)),
+            "Travel": float(row.get("employee_travel", 0)),
+            "Parking": float(row.get("employee_parking", 0)),
+            "TOTAL SALARIES & TIPS": total_pay,
+            "P.A.W.": total_bill - total_pay,
+            "HRS REG": e_reg,
+            "HRS O/T": e_ot,
+            "HRS D/T": e_dt,
+            "Meal Penalty Hours": float(row["employee_no_break_penalty"]),
+            "TOTAL HOURS": e_reg + e_ot + e_dt
+        })
+
+    calc_df = df.apply(process_row, axis=1)
+    
+    grouped = calc_df.groupby("group_key").agg({
+        "class_code": "first",
+        "client_id": "first",
+        "wc_rate": "first",
+        "msp_rate": "first",
+        "GROSS": "sum",
+        "SAL REG": "sum",
+        "SAL O/T": "sum",
+        "SAL D/T": "sum",
+        "Meal Penalty Pay": "sum",
+        "Service Charge": "sum",
+        "Travel": "sum",
+        "Parking": "sum",
+        "TOTAL SALARIES & TIPS": "sum",
+        "P.A.W.": "sum",
+        "HRS REG": "sum",
+        "HRS O/T": "sum",
+        "HRS D/T": "sum",
+        "Meal Penalty Hours": "sum",
+        "TOTAL HOURS": "sum",
+        "sales_executive": "first",
+        "won_date": "first"
+    }).reset_index()
+
+    grouped["%"] = grouped.apply(lambda r: (r["GROSS"] / r["TOTAL SALARIES & TIPS"]) if r["TOTAL SALARIES & TIPS"] else 0, axis=1)
+    
+    final_df = pd.DataFrame({
+        "WEEKLY RECAP": grouped["group_key"],
+        "CLASS CODE": grouped["class_code"],
+        "Client ID": grouped["client_id"],
+        "WC rate": grouped["wc_rate"],
+        "MSP rate": grouped["msp_rate"],
+        "GROSS": grouped["GROSS"],
+        "SAL REG": grouped["SAL REG"],
+        "SAL O/T": grouped["SAL O/T"],
+        "SAL D/T": grouped["SAL D/T"],
+        "Non Worked Pay": 0.0,
+        "Meal Penalty Pay": grouped["Meal Penalty Pay"],
+        "Etc.": "",
+        "Wage Replace.": "",
+        "Service Charge": grouped["Service Charge"],
+        "Travel": grouped["Travel"],
+        "Bonus": 0.0,
+        "Additional Shift Pay": 0.0,
+        "Parking": grouped["Parking"],
+        "P.A.W.": grouped["P.A.W."],
+        "TOTAL SALARIES & TIPS": grouped["TOTAL SALARIES & TIPS"],
+        "%": grouped["%"],
+        "HRS REG": grouped["HRS REG"],
+        "HRS O/T": grouped["HRS O/T"],
+        "HRS D/T": grouped["HRS D/T"],
+        "Non Worked Hours": 0.0,
+        "Meal Penalty Hours": grouped["Meal Penalty Hours"],
+        "Sick": "",
+        "Wage Replace..": "",
+        "TOTAL HOURS": grouped["TOTAL HOURS"],
+        "Sales Executive": grouped["sales_executive"],
+        "WON Date": grouped["won_date"],
+        "Cert Cost": 0.0,
+        "Reimb Pay": 0.0
+    })
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        final_df.to_excel(writer, index=False, sheet_name="summary_report")
+    output.seek(0)
+
+    headers = {"Content-Disposition": 'attachment; filename="summary_report.xlsx"'}
     return StreamingResponse(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
