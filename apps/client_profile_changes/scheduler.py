@@ -475,13 +475,19 @@ def run_check():
         print("[Client Profile Changes] DB fetch returned None — skipping check.")
         return new_changes
 
+    print(f"[Client Profile Changes] run_check: "
+          f"is_initialized={_is_initialized}, "
+          f"cache_size={len(_client_cache)}, "
+          f"db_size={len(current_clients)}")
+
     if not _is_initialized or not _client_cache:
         # First successful fetch — snapshot the current state as baseline
         _client_cache = current_clients
         _venue_cache = current_venues or {}
         _late_fee_cache = current_late_fees or {}
         _is_initialized = True
-        print(f"[Client Profile Changes] Initialized with {len(_client_cache)} clients.")
+        print(f"[Client Profile Changes] Initialized with {len(_client_cache)} clients. "
+              "Next check will detect diffs.")
         # Persist the initial snapshot so the next check can diff
         _save_state(_client_cache, _venue_cache,
                     _serialise_late_fee_cache(_late_fee_cache), _changes_log)
@@ -602,49 +608,55 @@ async def client_profile_changes_monitoring_loop():
 
     # Stagger startup
     await asyncio.sleep(30)
-    print("[Client Profile Changes] Monitor started.")
+    print("[Client Profile Changes] Monitor started. "
+          f"initialized={_is_initialized}, cache_size={len(_client_cache)}")
 
     while True:
         try:
-            run_check()
+            new = run_check()
+            print(f"[Client Profile Changes] Check complete. "
+                  f"new_changes={len(new)}, total={len(_changes_log)}, "
+                  f"cache_size={len(_client_cache)}")
         except Exception as e:
             print(f"[Client Profile Changes] Exception in loop: {e}")
             import traceback
             traceback.print_exc()
 
         # ── Daily email check ──
-        try:
-            now_la = datetime.now(ZoneInfo("America/Los_Angeles"))
-            if now_la.hour >= 8:
-                today_str = now_la.strftime("%Y-%m-%d")
+        # Only attempt if we have a valid cache (i.e. DB was reachable)
+        if _client_cache:
+            try:
+                now_la = datetime.now(ZoneInfo("America/Los_Angeles"))
+                if now_la.hour >= 8:
+                    today_str = now_la.strftime("%Y-%m-%d")
 
-                # Re-check disk in case another worker already sent
-                _, _, _, _, disk_email_date = _load_state()
-                if disk_email_date == today_str:
-                    _last_email_sent_date = today_str
+                    # Re-check disk in case another worker already sent
+                    _, _, _, _, disk_email_date = _load_state()
+                    if disk_email_date == today_str:
+                        _last_email_sent_date = today_str
 
-                if _last_email_sent_date != today_str:
-                    yesterday = now_la - timedelta(days=1)
-                    yesterday_str = yesterday.strftime("%Y-%m-%d")
-                    recent_changes = []
-                    for c in _changes_log:
-                        ts = c.get("timestamp", "")
-                        if ts.startswith(today_str) or ts.startswith(yesterday_str):
-                            recent_changes.append(c)
+                    if _last_email_sent_date != today_str:
+                        yesterday = now_la - timedelta(days=1)
+                        yesterday_str = yesterday.strftime("%Y-%m-%d")
+                        recent_changes = []
+                        for c in _changes_log:
+                            ts = c.get("timestamp", "")
+                            if ts.startswith(today_str) or ts.startswith(yesterday_str):
+                                recent_changes.append(c)
 
-                    if recent_changes:
-                        _send_daily_email(recent_changes)
-                    else:
-                        print("[Client Profile Changes] No changes today, skipping email.")
+                        if recent_changes:
+                            _send_daily_email(recent_changes)
+                        else:
+                            print("[Client Profile Changes] No changes today, skipping email.")
 
-                    _last_email_sent_date = today_str
-                    _changes_log[:] = _save_state(
-                        _client_cache, _venue_cache,
-                        _serialise_late_fee_cache(_late_fee_cache),
-                        _changes_log, _last_email_sent_date,
-                    )
-        except Exception as e:
-            print(f"[Client Profile Changes] Error sending daily email: {e}")
+                        _last_email_sent_date = today_str
+                        _changes_log[:] = _save_state(
+                            _client_cache, _venue_cache,
+                            _serialise_late_fee_cache(_late_fee_cache),
+                            _changes_log, _last_email_sent_date,
+                        )
+            except Exception as e:
+                print(f"[Client Profile Changes] Error sending daily email: {e}")
 
         # Background check every 30 minutes
         await asyncio.sleep(1800)

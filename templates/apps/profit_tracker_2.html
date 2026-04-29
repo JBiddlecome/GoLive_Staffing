@@ -471,6 +471,7 @@
                             <th class="text-right">WC Fee</th>
                             <th class="text-right">Payroll Tax</th>
                             <th class="text-right">Profit</th>
+                            <th class="text-right">Profit %</th>
                         </tr>
                     </thead>
                     <tbody id="clientTableBody">
@@ -573,6 +574,7 @@
             if (data.client_breakdown && data.client_breakdown.length > 0) {
                 data.client_breakdown.forEach(client => {
                     const tr = document.createElement('tr');
+                    const pctColor = client.profit_pct >= 0 ? 'color: var(--pt-success)' : 'color: var(--pt-danger)';
                     tr.innerHTML = `
                         <td class="font-medium text-white">${client.client_name}</td>
                         <td class="text-right">${formatCurrency(client.total_bill)}</td>
@@ -581,11 +583,12 @@
                         <td class="text-right text-amber-400">${formatCurrency(client.wc_fee)}</td>
                         <td class="text-right text-red-400">${formatCurrency(client.payroll_tax)}</td>
                         <td class="text-right font-bold ${client.profit >= 0 ? 'text-emerald-400' : 'text-red-500'}">${formatCurrency(client.profit)}</td>
+                        <td class="text-right font-bold" style="${pctColor}">${client.profit_pct}%</td>
                     `;
                     tbody.appendChild(tr);
                 });
             } else {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center text-gray-400 py-6">No client data found for this date range.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-gray-400 py-6">No client data found for this date range.</td></tr>`;
             }
 
             document.getElementById('loader').style.display = 'none';

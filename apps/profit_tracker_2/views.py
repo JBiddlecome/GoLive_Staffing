@@ -122,6 +122,7 @@ async def get_profit_data(payload: ProfitPayload):
         c_wc = float(r["wc_fee"])
         c_tax = c_pay * 0.10
         c_profit = c_bill - c_pay - c_msp - c_wc - c_tax
+        c_profit_pct = (c_profit / c_bill * 100) if c_bill else 0.0
         client_breakdown.append({
             "client_name": r["client_name"],
             "total_bill": round(c_bill, 2),
@@ -130,6 +131,7 @@ async def get_profit_data(payload: ProfitPayload):
             "wc_fee": round(c_wc, 2),
             "payroll_tax": round(c_tax, 2),
             "profit": round(c_profit, 2),
+            "profit_pct": round(c_profit_pct, 1),
         })
 
     client_breakdown.sort(key=lambda x: x["total_bill"], reverse=True)
