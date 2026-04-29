@@ -1,0 +1,606 @@
+{% extends "base.html" %}
+
+{% block title %}Profit Tracker 2 | GoLive Staffing{% endblock %}
+
+{% block main_class %}{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --pt-bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        --pt-glass-bg: rgba(255, 255, 255, 0.05);
+        --pt-glass-border: rgba(255, 255, 255, 0.1);
+        --pt-text-main: #f8fafc;
+        --pt-text-muted: #94a3b8;
+        --pt-accent: #38bdf8;
+        --pt-success: #34d399;
+        --pt-warning: #fbbf24;
+        --pt-danger: #f87171;
+        --pt-card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        --pt-radius: 16px;
+    }
+
+    /* Target specific container so we override Tailwind base styles gently */
+    .pt-wrapper-main {
+        background: var(--pt-bg-gradient);
+        color: var(--pt-text-main);
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        min-height: 100vh;
+        margin: -2rem; /* Negate the main padding from base.html */
+        padding: 2rem;
+    }
+
+    .pt-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .pt-header {
+        text-align: center;
+        margin-bottom: 3rem;
+        animation: fadeInDown 0.8s ease-out;
+    }
+
+    .pt-header h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: linear-gradient(to right, #38bdf8, #818cf8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.5rem;
+    }
+
+    .pt-header p {
+        color: var(--pt-text-muted);
+        font-size: 1.1rem;
+    }
+
+    .pt-controls {
+        background: var(--pt-glass-bg);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--pt-glass-border);
+        border-radius: var(--pt-radius);
+        padding: 1.5rem;
+        display: flex;
+        gap: 1rem;
+        align-items: flex-end;
+        justify-content: center;
+        margin-bottom: 3rem;
+        box-shadow: var(--pt-card-shadow);
+        animation: fadeInUp 0.8s ease-out 0.2s both;
+    }
+
+    .pt-control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: left;
+    }
+
+    .pt-control-group label {
+        font-size: 0.875rem;
+        color: var(--pt-text-muted);
+        font-weight: 500;
+    }
+
+    .pt-input {
+        background: rgba(0, 0, 0, 0.2) !important;
+        border: 1px solid var(--pt-glass-border) !important;
+        color: var(--pt-text-main) !important;
+        padding: 0.75rem 1rem !important;
+        border-radius: 8px !important;
+        outline: none !important;
+        transition: all 0.3s ease !important;
+        font-family: inherit !important;
+        color-scheme: dark;
+    }
+
+    .pt-input:focus {
+        border-color: var(--pt-accent) !important;
+        box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2) !important;
+    }
+
+    .pt-btn {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .pt-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+    }
+
+    .pt-btn:active {
+        transform: translateY(0);
+    }
+
+    .pt-dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .pt-card {
+        background: var(--pt-glass-bg);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--pt-glass-border);
+        border-radius: var(--pt-radius);
+        padding: 1.5rem;
+        box-shadow: var(--pt-card-shadow);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        animation: zoomIn 0.6s ease-out both;
+        text-align: left;
+    }
+
+    .pt-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .pt-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: var(--pt-accent);
+        opacity: 0.7;
+    }
+
+    .pt-card.profit::before { background: var(--pt-success); }
+    .pt-card.expense::before { background: var(--pt-danger); }
+    .pt-card.total::before { background: var(--pt-accent); }
+
+    .pt-card-title {
+        color: var(--pt-text-muted);
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+
+    .pt-card-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+        color: var(--pt-text-main);
+    }
+
+    .pt-card-value.profit-val { color: var(--pt-success); }
+
+    .pt-card-percent {
+        font-size: 1rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.1);
+        display: inline-block;
+        font-weight: 500;
+    }
+
+    .pt-loader {
+        display: none;
+        width: 48px;
+        height: 48px;
+        border: 5px solid var(--pt-glass-border);
+        border-bottom-color: var(--pt-accent);
+        border-radius: 50%;
+        margin: 2rem auto;
+        animation: rotation 1s linear infinite;
+    }
+
+    /* Progress Bar for Visualizing */
+    .pt-breakdown {
+        background: var(--pt-glass-bg);
+        border-radius: var(--pt-radius);
+        border: 1px solid var(--pt-glass-border);
+        padding: 2rem;
+        margin-top: 2rem;
+        animation: fadeInUp 0.8s ease-out 0.6s both;
+    }
+
+    .pt-breakdown-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        color: var(--pt-text-main);
+        text-align: left;
+    }
+
+    .pt-progress-wrapper {
+        height: 24px;
+        background: rgba(0,0,0,0.3);
+        border-radius: 12px;
+        overflow: hidden;
+        display: flex;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .pt-progress-segment {
+        height: 100%;
+        transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: bold;
+        color: rgba(0,0,0,0.7);
+    }
+
+    .pt-progress-segment:hover {
+        filter: brightness(1.2);
+    }
+
+    .bg-profit { background: var(--pt-success); }
+    .bg-gross { background: #60a5fa; }
+    .bg-msp { background: #f472b6; }
+    .bg-wc { background: #fbbf24; }
+    .bg-tax { background: #f87171; }
+    .bg-other { background: #c084fc; }
+
+    .pt-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 1rem;
+        justify-content: center;
+    }
+
+    .pt-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: var(--pt-text-muted);
+    }
+
+    .pt-legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+
+    /* Client Table Styles */
+    .pt-table-container {
+        margin-top: 3rem;
+        animation: fadeInUp 0.8s ease-out 0.8s both;
+    }
+
+    .pt-table-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        color: var(--pt-text-main);
+    }
+
+    .pt-table-wrapper {
+        background: var(--pt-glass-bg);
+        border: 1px solid var(--pt-glass-border);
+        border-radius: var(--pt-radius);
+        overflow-x: auto;
+        box-shadow: var(--pt-card-shadow);
+    }
+
+    .pt-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    .pt-table th, .pt-table td {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--pt-glass-border);
+    }
+
+    .pt-table th {
+        background: rgba(0, 0, 0, 0.2);
+        font-weight: 600;
+        color: var(--pt-text-muted);
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+    }
+
+    .pt-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .pt-table tbody tr:hover {
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .pt-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .text-right {
+        text-align: right;
+    }
+
+    .pt-table-footer {
+        margin-top: 1rem;
+        font-size: 0.875rem;
+        color: var(--pt-text-muted);
+        text-align: center;
+        font-style: italic;
+    }
+
+    @keyframes rotation {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeInDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes zoomIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Staggered animation delays */
+    .pt-dashboard .pt-card:nth-child(1) { animation-delay: 0.1s; }
+    .pt-dashboard .pt-card:nth-child(2) { animation-delay: 0.2s; }
+    .pt-dashboard .pt-card:nth-child(3) { animation-delay: 0.3s; }
+    .pt-dashboard .pt-card:nth-child(4) { animation-delay: 0.4s; }
+    .pt-dashboard .pt-card:nth-child(5) { animation-delay: 0.5s; }
+    .pt-dashboard .pt-card:nth-child(6) { animation-delay: 0.6s; }
+    .pt-dashboard .pt-card:nth-child(7) { animation-delay: 0.7s; }
+</style>
+<div class="pt-wrapper-main">
+    <div class="pt-header">
+        <h1>Profit Tracker 2</h1>
+        <p>Real-time financial performance from payroll.xlsx.</p>
+    </div>
+
+    <div class="pt-controls">
+        <div class="pt-control-group">
+            <label for="startDate">Start Date</label>
+            <input type="date" id="startDate" class="pt-input" value="{{ start_date }}">
+        </div>
+        <div class="pt-control-group">
+            <label for="endDate">End Date</label>
+            <input type="date" id="endDate" class="pt-input" value="{{ end_date }}">
+        </div>
+        <button class="pt-btn" onclick="fetchData()">Calculate</button>
+    </div>
+
+    <div class="pt-loader" id="loader"></div>
+
+    <div id="dashboardContent" style="display: none;">
+        <div class="pt-dashboard">
+            <div class="pt-card total">
+                <div class="pt-card-title">Total Bill (Revenue)</div>
+                <div class="pt-card-value" id="valTotalBill">$0.00</div>
+                <div class="pt-card-percent">100%</div>
+            </div>
+            
+            <div class="pt-card expense">
+                <div class="pt-card-title">Gross Pay</div>
+                <div class="pt-card-value" id="valGrossPay">$0.00</div>
+                <div class="pt-card-percent" id="pctGrossPay">0%</div>
+            </div>
+
+            <div class="pt-card expense">
+                <div class="pt-card-title">MSP Fee</div>
+                <div class="pt-card-value" id="valMspFee">$0.00</div>
+                <div class="pt-card-percent" id="pctMspFee">0%</div>
+            </div>
+
+            <div class="pt-card expense">
+                <div class="pt-card-title">WC Fee</div>
+                <div class="pt-card-value" id="valWcFee">$0.00</div>
+                <div class="pt-card-percent" id="pctWcFee">0%</div>
+            </div>
+
+            <div class="pt-card expense">
+                <div class="pt-card-title">Payroll Tax</div>
+                <div class="pt-card-value" id="valPayrollTax">$0.00</div>
+                <div class="pt-card-percent" id="pctPayrollTax">0%</div>
+            </div>
+
+            <div class="pt-card expense">
+                <div class="pt-card-title">Other Work</div>
+                <div class="pt-card-value" id="valOtherWork">$0.00</div>
+                <div class="pt-card-percent" id="pctOtherWork">0%</div>
+            </div>
+
+            <div class="pt-card profit">
+                <div class="pt-card-title">Net Profit</div>
+                <div class="pt-card-value profit-val" id="valProfit">$0.00</div>
+                <div class="pt-card-percent" id="pctProfit" style="background: rgba(52, 211, 153, 0.2); color: var(--pt-success);">0%</div>
+            </div>
+        </div>
+
+        <div class="pt-breakdown">
+            <div class="pt-breakdown-title">Revenue Breakdown</div>
+            <div class="pt-progress-wrapper">
+                <div class="pt-progress-segment bg-gross" id="barGross" style="width: 0%" title="Gross Pay"></div>
+                <div class="pt-progress-segment bg-msp" id="barMsp" style="width: 0%" title="MSP Fee"></div>
+                <div class="pt-progress-segment bg-wc" id="barWc" style="width: 0%" title="WC Fee"></div>
+                <div class="pt-progress-segment bg-tax" id="barTax" style="width: 0%" title="Payroll Tax"></div>
+                <div class="pt-progress-segment bg-other" id="barOther" style="width: 0%" title="Other Work"></div>
+                <div class="pt-progress-segment bg-profit" id="barProfit" style="width: 0%" title="Profit"></div>
+            </div>
+            <div class="pt-legend">
+                <div class="pt-legend-item"><div class="pt-legend-dot bg-profit"></div> Profit</div>
+                <div class="pt-legend-item"><div class="pt-legend-dot bg-gross"></div> Gross Pay</div>
+                <div class="pt-legend-item"><div class="pt-legend-dot bg-msp"></div> MSP Fee</div>
+                <div class="pt-legend-item"><div class="pt-legend-dot bg-wc"></div> WC Fee</div>
+                <div class="pt-legend-item"><div class="pt-legend-dot bg-tax"></div> Payroll Tax</div>
+                <div class="pt-legend-item"><div class="pt-legend-dot bg-other"></div> Other Work</div>
+            </div>
+        </div>
+
+        <div class="pt-table-container">
+            <h2 class="pt-table-title">Client Breakdown</h2>
+            <div class="pt-table-wrapper">
+                <table class="pt-table">
+                    <thead>
+                        <tr>
+                            <th>Client Name</th>
+                            <th class="text-right">Total Bill</th>
+                            <th class="text-right">Gross Pay</th>
+                            <th class="text-right">MSP Fee</th>
+                            <th class="text-right">WC Fee</th>
+                            <th class="text-right">Payroll Tax</th>
+                            <th class="text-right">Profit</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientTableBody">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+            <p class="pt-table-footer">Note: "Other Work" payments are excluded from this breakdown as they are not tied to specific clients.</p>
+        </div>
+    </div>
+</div>
+</div>
+
+<script>
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD'
+        }).format(amount);
+    };
+
+    const formatPercent = (amount, total) => {
+        if (total === 0) return '0%';
+        return ((amount / total) * 100).toFixed(1) + '%';
+    };
+
+    const setContent = (id, value) => {
+        document.getElementById(id).innerText = value;
+    };
+
+    const setWidth = (id, percentStr) => {
+        document.getElementById(id).style.width = percentStr;
+    };
+
+    async function fetchData() {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+
+        if (!startDate || !endDate) {
+            alert("Please select both start and end dates.");
+            return;
+        }
+
+        document.getElementById('loader').style.display = 'block';
+        document.getElementById('dashboardContent').style.display = 'none';
+
+        try {
+            const response = await fetch('/profit-tracker-2/api/data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ start_date: startDate, end_date: endDate })
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to fetch data");
+            }
+
+            const data = await response.json();
+            const total = data.total_bill;
+
+            // Animate values
+            setContent('valTotalBill', formatCurrency(data.total_bill));
+            setContent('valGrossPay', formatCurrency(data.gross_pay));
+            setContent('valMspFee', formatCurrency(data.msp_fee));
+            setContent('valWcFee', formatCurrency(data.wc_fee));
+            setContent('valPayrollTax', formatCurrency(data.payroll_tax));
+            setContent('valOtherWork', formatCurrency(data.other_work));
+            setContent('valProfit', formatCurrency(data.profit));
+
+            const pctGross = formatPercent(data.gross_pay, total);
+            const pctMsp = formatPercent(data.msp_fee, total);
+            const pctWc = formatPercent(data.wc_fee, total);
+            const pctTax = formatPercent(data.payroll_tax, total);
+            const pctOther = formatPercent(data.other_work, total);
+            const pctProfit = formatPercent(data.profit, total);
+
+            setContent('pctGrossPay', pctGross);
+            setContent('pctMspFee', pctMsp);
+            setContent('pctWcFee', pctWc);
+            setContent('pctPayrollTax', pctTax);
+            setContent('pctOtherWork', pctOther);
+            setContent('pctProfit', pctProfit);
+
+            // Update Progress Bar after a slight delay for animation effect
+            setTimeout(() => {
+                setWidth('barGross', pctGross);
+                setWidth('barMsp', pctMsp);
+                setWidth('barWc', pctWc);
+                setWidth('barTax', pctTax);
+                setWidth('barOther', pctOther);
+                setWidth('barProfit', pctProfit);
+            }, 100);
+
+            // Populate Client Breakdown Table
+            const tbody = document.getElementById('clientTableBody');
+            tbody.innerHTML = '';
+            
+            if (data.client_breakdown && data.client_breakdown.length > 0) {
+                data.client_breakdown.forEach(client => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="font-medium text-white">${client.client_name}</td>
+                        <td class="text-right">${formatCurrency(client.total_bill)}</td>
+                        <td class="text-right text-blue-400">${formatCurrency(client.gross_pay)}</td>
+                        <td class="text-right text-pink-400">${formatCurrency(client.msp_fee)}</td>
+                        <td class="text-right text-amber-400">${formatCurrency(client.wc_fee)}</td>
+                        <td class="text-right text-red-400">${formatCurrency(client.payroll_tax)}</td>
+                        <td class="text-right font-bold ${client.profit >= 0 ? 'text-emerald-400' : 'text-red-500'}">${formatCurrency(client.profit)}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center text-gray-400 py-6">No client data found for this date range.</td></tr>`;
+            }
+
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('dashboardContent').style.display = 'block';
+
+        } catch (error) {
+            console.error("Error:", error);
+            alert("An error occurred while fetching the data.");
+            document.getElementById('loader').style.display = 'none';
+        }
+    }
+
+    // Load data on initial render
+    window.addEventListener('DOMContentLoaded', () => {
+        fetchData();
+    });
+</script>
+{% endblock %}

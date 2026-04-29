@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c ' *)",
+      "Bash(cp payroll.xlsx /tmp/payroll_check.xlsx)",
+      "Bash(python -m venv --help)",
+      "Bash(ls venv *)",
+      "Bash(ls .venv)",
+      "Bash(./venv/Scripts/python.exe -c ' *)",
+      "Bash(./.venv/Scripts/python.exe -c ' *)"
+    ]
+  }
+}
