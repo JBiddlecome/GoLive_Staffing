@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Client Profile Changes{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between flex-wrap gap-4">
+    <div>
+      <h1 class="text-3xl font-semibold tracking-tight text-gray-900">Client Profile Changes</h1>
+      <p class="mt-2 text-sm text-gray-600">Track daily changes to client profiles, venues, and late fee policies. A daily digest email is sent to jake@culinarystaffing.com.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <!-- Filter controls -->
+      <div class="relative">
+        <input type="text" id="search-input" placeholder="Search client or field…"
+          class="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none w-64 transition" />
+      </div>
+      <select id="section-filter"
+        class="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition cursor-pointer">
+        <option value="">All Sections</option>
+        <option value="Client">Client</option>
+        <option value="Venue">Venue</option>
+        <option value="Late Fees">Late Fees</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Stats strip -->
+  <div class="grid gap-4 sm:grid-cols-4" id="stats-strip">
+    <div class="rounded-2xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
+      <p class="text-xs uppercase tracking-wider text-gray-500 font-semibold">Total Changes</p>
+      <p class="mt-1 text-2xl font-bold text-gray-900" id="stat-total">—</p>
+    </div>
+    <div class="rounded-2xl border border-blue-100 bg-blue-50/60 px-5 py-4 shadow-sm">
+      <p class="text-xs uppercase tracking-wider text-blue-600 font-semibold">Client Fields</p>
+      <p class="mt-1 text-2xl font-bold text-blue-700" id="stat-client">—</p>
+    </div>
+    <div class="rounded-2xl border border-amber-100 bg-amber-50/60 px-5 py-4 shadow-sm">
+      <p class="text-xs uppercase tracking-wider text-amber-600 font-semibold">Venue Changes</p>
+      <p class="mt-1 text-2xl font-bold text-amber-700" id="stat-venue">—</p>
+    </div>
+    <div class="rounded-2xl border border-purple-100 bg-purple-50/60 px-5 py-4 shadow-sm">
+      <p class="text-xs uppercase tracking-wider text-purple-600 font-semibold">Late Fee Changes</p>
+      <p class="mt-1 text-2xl font-bold text-purple-700" id="stat-late">—</p>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200" id="changes-table">
+        <thead class="bg-gray-50">
+          <tr>
+            <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Timestamp</th>
+            <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Section</th>
+            <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Client</th>
+            <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Field</th>
+            <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Old Value</th>
+            <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">New Value</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200" id="changes-body">
+          <tr>
+            <td colspan="6" class="px-6 py-10 text-center text-sm text-gray-500">
+              <div class="flex justify-center items-center space-x-2">
+                <svg class="animate-spin h-5 w-5 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Loading changes…</span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+  .badge-client  { background-color: #dbeafe; color: #1e40af; }
+  .badge-venue   { background-color: #fef3c7; color: #92400e; }
+  .badge-late    { background-color: #ede9fe; color: #5b21b6; }
+  .val-old { color: #991b1b; text-decoration: line-through; }
+  .val-new { color: #065f46; font-weight: 600; }
+  #changes-table tbody tr { transition: background-color .15s ease; }
+</style>
+<script>
+  let allData = [];
+
+  function sectionBadge(section) {
+    const cls = section === 'Client' ? 'badge-client'
+              : section === 'Venue'  ? 'badge-venue'
+              : 'badge-late';
+    return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${cls}">${section}</span>`;
+  }
+
+  function escHtml(s) {
+    if (!s) return '';
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function renderTable(data) {
+    const tbody = document.getElementById('changes-body');
+    if (!data.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="px-6 py-10 text-center text-sm text-gray-500">
+            No client profile changes recorded yet. The monitor checks every 30 minutes.
+          </td>
+        </tr>`;
+      return;
+    }
+    tbody.innerHTML = data.map(item => {
+      const oldVal = item.old_display || item.old_value || '(empty)';
+      const newVal = item.new_display || item.new_value || '(empty)';
+      return `
+        <tr class="hover:bg-gray-50">
+          <td class="px-5 py-3.5 whitespace-nowrap text-sm text-gray-700">${escHtml(item.timestamp)}</td>
+          <td class="px-5 py-3.5 whitespace-nowrap text-sm">${sectionBadge(item.section)}</td>
+          <td class="px-5 py-3.5 whitespace-nowrap text-sm font-medium text-gray-900">${escHtml(item.client_name)}</td>
+          <td class="px-5 py-3.5 whitespace-nowrap text-sm text-gray-700">${escHtml(item.field_label || item.field)}</td>
+          <td class="px-5 py-3.5 text-sm val-old max-w-xs truncate" title="${escHtml(oldVal)}">${escHtml(oldVal)}</td>
+          <td class="px-5 py-3.5 text-sm val-new max-w-xs truncate" title="${escHtml(newVal)}">${escHtml(newVal)}</td>
+        </tr>`;
+    }).join('');
+  }
+
+  function updateStats(data) {
+    document.getElementById('stat-total').textContent = data.length;
+    document.getElementById('stat-client').textContent = data.filter(d => d.section === 'Client').length;
+    document.getElementById('stat-venue').textContent = data.filter(d => d.section === 'Venue').length;
+    document.getElementById('stat-late').textContent = data.filter(d => d.section === 'Late Fees').length;
+  }
+
+  function applyFilters() {
+    const q = document.getElementById('search-input').value.toLowerCase().trim();
+    const sec = document.getElementById('section-filter').value;
+    let filtered = allData;
+    if (sec) filtered = filtered.filter(d => d.section === sec);
+    if (q) filtered = filtered.filter(d =>
+      (d.client_name || '').toLowerCase().includes(q) ||
+      (d.field_label || d.field || '').toLowerCase().includes(q) ||
+      (d.old_display || '').toLowerCase().includes(q) ||
+      (d.new_display || '').toLowerCase().includes(q)
+    );
+    renderTable(filtered);
+    updateStats(filtered);
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    try {
+      const res = await fetch('/client-profile-changes/data');
+      if (!res.ok) throw new Error('Failed to fetch data');
+      const json = await res.json();
+      allData = json.data || [];
+      applyFilters();
+    } catch (err) {
+      console.error('Error fetching client profile changes:', err);
+      document.getElementById('changes-body').innerHTML = `
+        <tr>
+          <td colspan="6" class="px-6 py-10 text-center text-sm text-red-500">
+            Error loading data. Please try again later.
+          </td>
+        </tr>`;
+    }
+
+    document.getElementById('search-input').addEventListener('input', applyFilters);
+    document.getElementById('section-filter').addEventListener('change', applyFilters);
+  });
+</script>
+{% endblock %}
