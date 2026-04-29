@@ -88,9 +88,14 @@ async def get_profit_data(payload: ProfitPayload):
                 se.bill_rate,
                 se.rate AS pay_rate,
                 v.service_charge AS venue_service_charge,
-                wc.rate AS wc_rate,
                 m.rate AS msp_rate,
+                wc.rate AS wc_rate,
                 e.state AS event_state,
+                t.client_worked,
+                t.employee_worked,
+                s.start AS shift_start,
+                t.client_start,
+                t.employee_start,
                 {ts_select_str}
             FROM shift_employee se
             JOIN event e ON se.event_id = e.event_id
@@ -100,9 +105,13 @@ async def get_profit_data(payload: ProfitPayload):
             LEFT JOIN venue v ON e.venue_id = v.venue_id
             LEFT JOIN timesheet t ON se.shift_employee_id = t.shift_employee_id
             LEFT JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
+            LEFT JOIN shift s ON sp.shift_id = s.shift_id
             WHERE e.date >= :start_date AND e.date <= :end_date
-              AND se.confirmed = 1
-              AND se.cancel_reason = 0
+              AND (
+                  (se.confirmed = 1 AND se.cancel_reason = 0)
+                  OR t.client_min_bill = 1
+                  OR t.employee_min_pay = 1
+              )
             """
         )
 
@@ -157,66 +166,144 @@ async def get_profit_data(payload: ProfitPayload):
         use_sheet = str(row.get("use_sheet") or "").upper()
         c_sec = float(row["client_seconds"]) if pd.notna(row.get("client_seconds")) else 0.0
         e_sec = float(row["employee_seconds"]) if pd.notna(row.get("employee_seconds")) else 0.0
+
+        # Legacy getUsesBothSheets() = (use_sheet IS NULL)
+        # NULL -> client_seconds for billing, employee_seconds for pay (independently)
+        # CLIENT/EMPLOYEE -> resolve single seconds, used for both billing and pay
+        uses_both_sheets = (use_sheet == "")
+        if uses_both_sheets:
+            bill_seconds = c_sec
+            pay_seconds = e_sec
+        elif use_sheet == "EMPLOYEE":
+            bill_seconds = e_sec
+            pay_seconds = e_sec
+        else:  # CLIENT
+            bill_seconds = c_sec
+            pay_seconds = c_sec
+
+        c_hours = bill_seconds / 3600.0  # hours for billing
+        e_hours = pay_seconds / 3600.0   # hours for pay
+
+        c_worked = str(row.get("client_worked") or "").upper()
+        e_worked_raw = str(row.get("employee_worked") or "").upper()
+        c_min = row.get("client_min_bill")
+        e_min = row.get("employee_min_pay")
+        state = str(row["event_state"]).upper() if row["event_state"] else ""
+
+        # Note: The overtime JSON stores WEEKLY accumulated hours and is NOT used by
+        # ClientsAndEmployeesExportJob.php. That report always uses CA/NV threshold
+        # calculations for both pay and billing OT hours and standard rate multipliers.
         
-        if use_sheet == "EMPLOYEE":
-            reconciled_seconds = e_sec
-        elif use_sheet == "CLIENT":
-            reconciled_seconds = c_sec
+        # Late hours: legacy calculateLateSeconds(false) respects use_sheet
+        # use_sheet=EMPLOYEE -> employee late; CLIENT or NULL -> client late
+        shift_start = pd.to_datetime(row.get("shift_start")) if pd.notna(row.get("shift_start")) else None
+        c_late_hours = 0.0
+        if shift_start and pd.notna(row.get("client_start")):
+            c_actual = pd.to_datetime(row["client_start"])
+            if c_actual > shift_start:
+                c_late_hours = (c_actual - shift_start).total_seconds() / 3600.0
+        e_late_hours = 0.0
+        if shift_start and pd.notna(row.get("employee_start")):
+            e_actual = pd.to_datetime(row["employee_start"])
+            if e_actual > shift_start:
+                e_late_hours = (e_actual - shift_start).total_seconds() / 3600.0
+        # Single late_hours value used in both bill and pay reCalculateRegularHours
+        late_hours = e_late_hours if use_sheet == "EMPLOYEE" else c_late_hours
+
+        # ── CLIENT BILLING HOURS ──────────────────────────────────────────
+        if pd.notna(c_min) and float(c_min) > 0:
+            c_bill_reg = 4.0
+            if late_hours > 0 and c_hours < c_bill_reg:
+                c_bill_reg -= late_hours
+            elif c_hours > c_bill_reg:
+                c_bill_reg = c_hours
+            c_bill_reg = max(c_bill_reg, 2.0)
+            c_bill_reg = min(c_bill_reg, 4.0)
         else:
-            reconciled_seconds = c_sec
+            c_bill_reg = c_hours
 
-        base_hours = reconciled_seconds / 3600.0
+        c_non_worked = 0.0
+        e_worked = e_worked_raw
+        if e_worked in ("SENTHOME", "CANCELLED"):
+            c_non_worked = max(c_bill_reg - c_hours, 0.0)
+        c_worked_hours = c_bill_reg - c_non_worked  # actual worked billing hours
 
-        client_hours = base_hours
-        client_min = row.get("client_min_bill")
-        if pd.notna(client_min) and float(client_min) > 0 and client_hours > 0 and client_hours < 4.0:
-            client_hours = 4.0
-        
+        # CA rules always applied for billing OT/DT (matching ClientsAndEmployeesExportJob.php)
+        c_ot = c_dt = 0.0
+        if c_worked_hours > 12:
+            c_dt = c_worked_hours - 12
+            c_ot = 4.0
+            c_reg = 8.0
+        elif c_worked_hours > 8:
+            c_ot = c_worked_hours - 8
+            c_reg = 8.0
+        else:
+            c_reg = c_worked_hours
+
         client_no = row.get("client_no_bill")
         if pd.notna(client_no) and float(client_no) > 0:
-            client_hours = 0.0
+            c_reg = c_ot = c_dt = c_non_worked = 0.0
 
-        employee_hours = base_hours
-        emp_min = row.get("employee_min_pay")
-        if pd.notna(emp_min) and float(emp_min) > 0 and employee_hours > 0 and employee_hours < 4.0:
-            employee_hours = 4.0
-            
+        # ── EMPLOYEE PAY HOURS ────────────────────────────────────────────
+        if pd.notna(e_min) and float(e_min) > 0:
+            e_pay_reg = 4.0
+            if late_hours > 0 and e_hours < e_pay_reg:
+                e_pay_reg -= late_hours
+            elif e_hours > e_pay_reg:
+                e_pay_reg = e_hours
+            e_pay_reg = max(e_pay_reg, 2.0)
+            e_pay_reg = min(e_pay_reg, 4.0)
+        else:
+            e_pay_reg = e_hours
+
+        e_non_worked = 0.0
+        if e_worked in ("SENTHOME", "CANCELLED"):
+            e_non_worked = max(e_pay_reg - e_hours, 0.0)
+        e_worked_hours = e_pay_reg - e_non_worked
+
+        # CA/NV threshold rules always applied for pay OT/DT (matching ClientsAndEmployeesExportJob.php)
+        e_ot = e_dt = 0.0
+        if state in ("CA", "CALIFORNIA"):
+            if e_worked_hours > 12:
+                e_dt = e_worked_hours - 12
+                e_ot = 4.0
+                e_reg = 8.0
+            elif e_worked_hours > 8:
+                e_ot = e_worked_hours - 8
+                e_reg = 8.0
+            else:
+                e_reg = e_worked_hours
+        elif state in ("NV", "NEVADA"):
+            if e_worked_hours > 8:
+                e_ot = e_worked_hours - 8
+                e_reg = 8.0
+            else:
+                e_reg = e_worked_hours
+        else:
+            e_reg = e_worked_hours
+
         emp_no = row.get("employee_no_pay")
         if pd.notna(emp_no) and float(emp_no) > 0:
-            employee_hours = 0.0
-            
-        c_reg = c_ot = c_dt = 0.0
-        e_reg = e_ot = e_dt = 0.0
-        state = str(row["event_state"]).upper() if row["event_state"] else ""
-        
-        if state in ("CA", "CALIFORNIA"):
-            if client_hours > 12: c_dt = client_hours - 12; c_ot = 4.0; c_reg = 8.0
-            elif client_hours > 8: c_ot = client_hours - 8; c_reg = 8.0
-            else: c_reg = client_hours
-            
-            if employee_hours > 12: e_dt = employee_hours - 12; e_ot = 4.0; e_reg = 8.0
-            elif employee_hours > 8: e_ot = employee_hours - 8; e_reg = 8.0
-            else: e_reg = employee_hours
-        elif state in ("NV", "NEVADA"):
-            if client_hours > 8: c_ot = client_hours - 8; c_reg = 8.0
-            else: c_reg = client_hours
-            
-            if employee_hours > 8: e_ot = employee_hours - 8; e_reg = 8.0
-            else: e_reg = employee_hours
-        else:
-            c_reg = client_hours
-            e_reg = employee_hours
+            e_reg = e_ot = e_dt = e_non_worked = 0.0
 
         bill_rate = float(row["bill_rate"])
         pay_rate = float(row["pay_rate"])
         
+        # Standard rate multipliers (matching ClientsAndEmployeesExportJob.php lines 675-676, 511-512)
+        c_ot_rate = bill_rate * 1.5
+        c_dt_rate = bill_rate * 2.0
+        e_ot_rate = pay_rate * 1.5
+        e_dt_rate = pay_rate * 2.0
+        
         reg_bill = c_reg * bill_rate
-        ot_bill = c_ot * (bill_rate * 1.5)
-        dt_bill = c_dt * (bill_rate * 2.0)
+        ot_bill = c_ot * c_ot_rate
+        dt_bill = c_dt * c_dt_rate
+        non_worked_bill = c_non_worked * bill_rate
         
         reg_pay = e_reg * pay_rate
-        ot_pay = e_ot * (pay_rate * 1.5)
-        dt_pay = e_dt * (pay_rate * 2.0)
+        ot_pay = e_ot * e_ot_rate
+        dt_pay = e_dt * e_dt_rate
+        non_worked_pay = e_non_worked * pay_rate
 
         service_pct_c = float(row.get("client_service_charge") or 0)
         venue_flat = float(row.get("venue_service_charge") or 0)
@@ -241,13 +328,39 @@ async def get_profit_data(payload: ProfitPayload):
                     
         bonus_pay = float(row.get("bonus") or 0.0)
         
+        # c_worked already set above
+        if c_worked not in ("WORKED", "SENTHOME"):
+            service_amt_c = 0.0
+            meal_amt_c = 0.0
+            c_tips = 0.0
+            c_parking = 0.0
+            c_travel = 0.0
+        else:
+            c_tips = float(row.get("client_tips", 0))
+            c_parking = float(row.get("client_parking", 0))
+            c_travel = float(row.get("client_travel", 0))
+            
+        # e_worked already set above (e_worked = e_worked_raw)
+        if e_worked not in ("WORKED", "SENTHOME"):
+            service_amt_e = 0.0
+            meal_amt_e = 0.0
+            additional_pay = 0.0
+            bonus_pay = 0.0
+            e_tips = 0.0
+            e_parking = 0.0
+            e_travel = 0.0
+        else:
+            e_tips = float(row.get("employee_tips", 0))
+            e_parking = float(row.get("employee_parking", 0))
+            e_travel = float(row.get("employee_travel", 0))
+        
         total_bill = (
-            reg_bill + ot_bill + dt_bill + service_amt_c + meal_amt_c + 
-            float(row.get("client_tips", 0)) + float(row.get("client_parking", 0)) + float(row.get("client_travel", 0))
+            reg_bill + ot_bill + dt_bill + non_worked_bill + service_amt_c + meal_amt_c + 
+            c_tips + c_parking + c_travel
         )
         total_pay = (
-            reg_pay + ot_pay + dt_pay + service_amt_e + meal_amt_e + 
-            float(row.get("employee_tips", 0)) + float(row.get("employee_parking", 0)) + float(row.get("employee_travel", 0)) +
+            reg_pay + ot_pay + dt_pay + non_worked_pay + service_amt_e + meal_amt_e + 
+            e_tips + e_parking + e_travel +
             additional_pay + bonus_pay
         )
         
@@ -272,7 +385,7 @@ async def get_profit_data(payload: ProfitPayload):
     msp_fee_sum = float(calc_df["msp_fee"].sum())
     wc_fee_sum = float(calc_df["wc_fee"].sum())
     
-    payroll_tax = total_bill_sum * 0.10
+    payroll_tax = gross_pay_sum * 0.10
     
     profit = total_bill_sum - gross_pay_sum - msp_fee_sum - wc_fee_sum - payroll_tax - other_work_sum
     
@@ -283,7 +396,7 @@ async def get_profit_data(payload: ProfitPayload):
         c_pay = float(r["total_pay"])
         c_msp = float(r["msp_fee"])
         c_wc = float(r["wc_fee"])
-        c_tax = c_bill * 0.10
+        c_tax = c_pay * 0.10
         c_profit = c_bill - c_pay - c_msp - c_wc - c_tax
         client_breakdown.append({
             "client_name": r["client_name"],
