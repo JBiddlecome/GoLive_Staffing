@@ -94,6 +94,7 @@ async def get_profit_data(payload: ProfitPayload):
                 t.client_worked,
                 t.employee_worked,
                 s.start AS shift_start,
+                s.end AS shift_end,
                 t.client_start,
                 t.employee_start,
                 {ts_select_str}
@@ -107,10 +108,13 @@ async def get_profit_data(payload: ProfitPayload):
             LEFT JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
             LEFT JOIN shift s ON sp.shift_id = s.shift_id
             WHERE e.date >= :start_date AND e.date <= :end_date
+              AND se.deleted_at IS NULL
               AND (
                   (se.confirmed = 1 AND se.cancel_reason = 0)
-                  OR t.client_min_bill = 1
-                  OR t.employee_min_pay = 1
+                  OR se.shift_employee_id IN (
+                      SELECT shift_employee_id FROM timesheet
+                      WHERE client_min_bill = 1 OR employee_min_pay = 1
+                  )
               )
             """
         )
@@ -184,7 +188,21 @@ async def get_profit_data(payload: ProfitPayload):
         c_hours = bill_seconds / 3600.0  # hours for billing
         e_hours = pay_seconds / 3600.0   # hours for pay
 
-        c_worked = str(row.get("client_worked") or "").upper()
+        # Compute shift min billing hours (mirrors Shift::getMinBillingHours()).
+        # GoLive uses the shift duration (shift_end - shift_start) to derive a
+        # min-billing-hours floor of 4h (for shifts >= 4h) or 2h (for shorter ones).
+        # The hardcoded 4.0 was only correct for full-day shifts.
+        shift_start_raw = row.get("shift_start")
+        shift_end_raw   = row.get("shift_end")
+        if pd.notna(shift_start_raw) and pd.notna(shift_end_raw):
+            shift_dur_hours = (
+                pd.to_datetime(shift_end_raw) - pd.to_datetime(shift_start_raw)
+            ).total_seconds() / 3600.0
+            # Standard GoLive MinBillingHoursCalculator: >= 4h shift → 4h min; else 2h min
+            shift_min_bill_hours = 4.0 if shift_dur_hours >= 4.0 else 2.0
+        else:
+            shift_min_bill_hours = 4.0  # safe fallback
+
         e_worked_raw = str(row.get("employee_worked") or "").upper()
         c_min = row.get("client_min_bill")
         e_min = row.get("employee_min_pay")
@@ -212,13 +230,13 @@ async def get_profit_data(payload: ProfitPayload):
 
         # ── CLIENT BILLING HOURS ──────────────────────────────────────────
         if pd.notna(c_min) and float(c_min) > 0:
-            c_bill_reg = 4.0
+            c_bill_reg = shift_min_bill_hours  # use actual shift-based min (not hardcoded 4.0)
             if late_hours > 0 and c_hours < c_bill_reg:
                 c_bill_reg -= late_hours
             elif c_hours > c_bill_reg:
                 c_bill_reg = c_hours
             c_bill_reg = max(c_bill_reg, 2.0)
-            c_bill_reg = min(c_bill_reg, 4.0)
+            c_bill_reg = min(c_bill_reg, shift_min_bill_hours)
         else:
             c_bill_reg = c_hours
 
@@ -246,13 +264,13 @@ async def get_profit_data(payload: ProfitPayload):
 
         # ── EMPLOYEE PAY HOURS ────────────────────────────────────────────
         if pd.notna(e_min) and float(e_min) > 0:
-            e_pay_reg = 4.0
+            e_pay_reg = shift_min_bill_hours  # use actual shift-based min (not hardcoded 4.0)
             if late_hours > 0 and e_hours < e_pay_reg:
                 e_pay_reg -= late_hours
             elif e_hours > e_pay_reg:
                 e_pay_reg = e_hours
             e_pay_reg = max(e_pay_reg, 2.0)
-            e_pay_reg = min(e_pay_reg, 4.0)
+            e_pay_reg = min(e_pay_reg, shift_min_bill_hours)
         else:
             e_pay_reg = e_hours
 
@@ -315,8 +333,17 @@ async def get_profit_data(payload: ProfitPayload):
         meal_amt_c = bill_rate if float(row.get("client_no_break_penalty") or 0) > 0 else 0.0
         meal_amt_e = pay_rate if float(row.get("employee_no_break_penalty") or 0) > 0 else 0.0
         
+        # GoLive ShiftCalculation.php lines 260-266:
+        # bonus and additional pay are only added when BOTH client AND employee "worked"
+        # (i.e., client_worked AND employee_worked are WORKED or SENTHOME)
+        c_worked = str(row.get("client_worked") or "").upper()
+        both_worked = (
+            c_worked in ("WORKED", "SENTHOME")
+            and e_worked in ("WORKED", "SENTHOME")
+        )
+
         additional_pay = 0.0
-        if "date" in row and pd.notna(row["date"]):
+        if both_worked and "date" in row and pd.notna(row["date"]):
             row_date = pd.to_datetime(row["date"]).date()
             for rule in asp_rules:
                 r_start = pd.to_datetime(rule["start_date"]).date() if rule["start_date"] else None
@@ -325,10 +352,10 @@ async def get_profit_data(payload: ProfitPayload):
                 end_ok = (r_end is None) or (r_end >= row_date)
                 if start_ok and end_ok:
                     additional_pay += float(rule["rate"])
-                    
-        bonus_pay = float(row.get("bonus") or 0.0)
+
+        bonus_pay = float(row.get("bonus") or 0.0) if both_worked else 0.0
         
-        # c_worked already set above
+        # Use c_worked for client billing extras
         if c_worked not in ("WORKED", "SENTHOME"):
             service_amt_c = 0.0
             meal_amt_c = 0.0
@@ -339,7 +366,7 @@ async def get_profit_data(payload: ProfitPayload):
             c_tips = float(row.get("client_tips", 0))
             c_parking = float(row.get("client_parking", 0))
             c_travel = float(row.get("client_travel", 0))
-            
+
         # e_worked already set above (e_worked = e_worked_raw)
         if e_worked not in ("WORKED", "SENTHOME"):
             service_amt_e = 0.0
