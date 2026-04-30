@@ -39,12 +39,8 @@ async def client_profile_changes_page(request: Request):
 
 @router.get("/data")
 async def get_client_profile_changes():
-    """Run a fresh check against the DB, then return the full change log."""
-    from apps.client_profile_changes.scheduler import (
-        _ensure_initialized, run_check, get_changes_log,
-    )
-    _ensure_initialized()
-    run_check()
+    """Return the log of client profile changes."""
+    from apps.client_profile_changes.scheduler import get_changes_log
     changes = get_changes_log()
     return JSONResponse({"data": changes})
 

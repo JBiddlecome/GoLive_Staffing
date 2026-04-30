@@ -26,7 +26,7 @@ _state_file = _state_dir / "cpc_state.json"
 # In-memory state
 _client_cache = {}        # {client_id: {field: value, ...}}
 _venue_cache = {}         # {venue_id: {client_id, client_name, venue_name}}
-_late_fee_cache = {}      # {client_id: set of late_fee_policy_id}
+_late_fee_cache = {}      # {client_id: {policies: set(), client_name: str}}
 _changes_log = []         # list of change dicts
 _is_initialized = False
 _last_email_sent_date = None
@@ -60,7 +60,7 @@ _FIELD_LABELS = {
     "credit_card_authorization_date": "CC Authorization Date",
     "pay_notes": "Pay Notes",
     "discount": "Discount",
-    "discount_valid_date": "Discount Valid Date",
+    "discount_vaild_date": "Discount Valid Date",
     "markup": "Markup",
     "surcharge_deadline": "Surcharge Deadline",
     "exposure_limit": "Exposure Limit",
@@ -82,7 +82,7 @@ _CLIENT_FIELDS = [
     "separate_venue", "invoices_offset", "payment_type",
     "billing_type_id", "credit_card_expiration",
     "credit_card_authorization_date", "pay_notes", "discount",
-    "discount_valid_date", "markup", "surcharge_deadline",
+    "discount_vaild_date", "markup", "surcharge_deadline",
     "exposure_limit", "no_break_penalty",
 ]
 
@@ -108,7 +108,6 @@ def _display_val(field, raw_value):
 
     lookup_attr = _LOOKUP_FIELDS.get(field)
     if lookup_attr:
-        lookup = globals()[lookup_attr] if not lookup_attr.startswith("_P") else _PAYMENT_TYPE_LABELS
         if lookup_attr == "_msp_map":
             lookup = _msp_map
         elif lookup_attr == "_division_map":
@@ -119,6 +118,8 @@ def _display_val(field, raw_value):
             lookup = _billing_type_map
         elif lookup_attr == "_PAYMENT_TYPE_LABELS":
             lookup = _PAYMENT_TYPE_LABELS
+        else:
+            lookup = {}
 
         try:
             int_key = int(raw_value)
@@ -130,7 +131,7 @@ def _display_val(field, raw_value):
 
 
 # ---------------------------------------------------------------------------
-# State persistence
+# State persistence  (matches AR Contact Updates pattern)
 # ---------------------------------------------------------------------------
 def _load_state():
     if _state_file.exists():
@@ -153,7 +154,7 @@ def _save_state(client_cache, venue_cache, late_fee_cache, changes, last_email_s
     try:
         existing_cc, existing_vc, existing_lfc, existing_changes, existing_email_date = _load_state()
 
-        # Merge changes by unique key
+        # Merge changes by unique key to prevent duplicates
         merged = {
             f"{c.get('timestamp','')}_{c.get('client_name','')}_{c.get('field','')}_{c.get('section','')}"
             : c for c in existing_changes
@@ -184,11 +185,18 @@ def _save_state(client_cache, venue_cache, late_fee_cache, changes, last_email_s
         # Convert late_fee_cache sets to lists for JSON
         lfc_serialisable = {}
         for cid, val in late_fee_cache.items():
-            if isinstance(val, set):
+            if isinstance(val, dict):
+                policies = val.get("policies", set())
+                lfc_serialisable[str(cid)] = {
+                    "policies": list(policies) if isinstance(policies, set) else policies,
+                    "client_name": val.get("client_name", ""),
+                }
+            elif isinstance(val, set):
                 lfc_serialisable[str(cid)] = list(val)
             else:
                 lfc_serialisable[str(cid)] = val
 
+        # Atomic write
         temp = _state_file.with_suffix(".tmp")
         with open(temp, "w") as f:
             json.dump({
@@ -203,6 +211,8 @@ def _save_state(client_cache, venue_cache, late_fee_cache, changes, last_email_s
         return filtered
     except Exception as e:
         print(f"[Client Profile Changes] Error saving state: {e}")
+        import traceback
+        traceback.print_exc()
         return changes
 
 
@@ -264,7 +274,7 @@ def _fetch_clients():
 def _fetch_venues():
     """Return dict  {str(venue_id): {client_id, client_name, venue_name}}"""
     sql = text("""
-        SELECT v.id AS venue_id, v.client_id, v.name AS venue_name, c.name AS client_name
+        SELECT v.venue_id, v.client_id, v.name AS venue_name, c.name AS client_name
         FROM venue v
         JOIN client c ON v.client_id = c.client_id
         WHERE c.deleted_at IS NULL AND v.deleted_at IS NULL
@@ -288,7 +298,7 @@ def _fetch_venues():
 
 
 def _fetch_late_fees():
-    """Return dict  {str(client_id): set of late_fee_policy_id}"""
+    """Return dict  {str(client_id): {policies: set of int, client_name: str}}"""
     sql = text("""
         SELECT clf.client_id, clf.late_fee_policy_id, c.name AS client_name
         FROM client_late_fee clf
@@ -408,233 +418,186 @@ def _send_daily_email(changes: list[dict]):
 
 
 # ---------------------------------------------------------------------------
-# Initialise from disk (idempotent)
-# ---------------------------------------------------------------------------
-def _ensure_initialized():
-    """Restore caches from the JSON state file if not yet loaded."""
-    global _client_cache, _venue_cache, _late_fee_cache
-    global _changes_log, _is_initialized, _last_email_sent_date
-
-    if _is_initialized and _client_cache:
-        return  # already initialized with real data
-
-    loaded_cc, loaded_vc, loaded_lfc, loaded_changes, loaded_email_date = _load_state()
-
-    # Always restore changes and email date from disk
-    if loaded_changes:
-        _changes_log = loaded_changes
-    if loaded_email_date:
-        _last_email_sent_date = loaded_email_date
-
-    # Only mark fully initialized when we have a non-empty client cache
-    if loaded_cc:
-        _client_cache = loaded_cc
-        _venue_cache = loaded_vc or {}
-        _late_fee_cache = {}
-        for cid, val in loaded_lfc.items():
-            if isinstance(val, list):
-                _late_fee_cache[cid] = {"policies": set(val), "client_name": ""}
-            elif isinstance(val, dict):
-                _late_fee_cache[cid] = {"policies": set(val.get("policies", [])),
-                                        "client_name": val.get("client_name", "")}
-        _is_initialized = True
-        print(f"[Client Profile Changes] Loaded {len(_client_cache)} clients, "
-              f"{len(_venue_cache)} venues, {len(_changes_log)} changes from disk.")
-    else:
-        # State file exists but has no client data — treat as uninitialised
-        # so run_check() will do a fresh DB snapshot
-        _is_initialized = False
-        print("[Client Profile Changes] State file has no client data; will re-initialise from DB.")
-
-
-def _serialise_late_fee_cache(cache):
-    """Convert late_fee_cache (with sets) into a JSON-friendly dict."""
-    out = {}
-    for cid, val in cache.items():
-        if isinstance(val, dict):
-            out[cid] = {
-                "policies": list(val.get("policies", set())),
-                "client_name": val.get("client_name", ""),
-            }
-        else:
-            out[cid] = val
-    return out
-
-
-# ---------------------------------------------------------------------------
-# Core diff check  (synchronous — called from endpoint AND background loop)
-# ---------------------------------------------------------------------------
-def run_check():
-    """Fetch current DB state, diff against cache, record changes, persist.
-
-    Returns the list of NEW changes found in this check (may be empty).
-    Safe to call from any thread.
-    """
-    global _client_cache, _venue_cache, _late_fee_cache
-    global _changes_log, _is_initialized
-
-    _load_lookup_tables()
-
-    current_clients = _fetch_clients()
-    current_venues = _fetch_venues()
-    current_late_fees = _fetch_late_fees()
-
-    timestamp = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d %H:%M:%S")
-    new_changes = []
-
-    if current_clients is None:
-        print("[Client Profile Changes] DB fetch returned None — skipping check.")
-        return new_changes
-
-    print(f"[Client Profile Changes] run_check: "
-          f"is_initialized={_is_initialized}, "
-          f"cache_size={len(_client_cache)}, "
-          f"db_size={len(current_clients)}")
-
-    if not _is_initialized or not _client_cache:
-        # First successful fetch — snapshot the current state as baseline
-        _client_cache = current_clients
-        _venue_cache = current_venues or {}
-        _late_fee_cache = current_late_fees or {}
-        _is_initialized = True
-        print(f"[Client Profile Changes] Initialized with {len(_client_cache)} clients. "
-              "Next check will detect diffs.")
-        # Persist the initial snapshot so the next check can diff
-        _save_state(_client_cache, _venue_cache,
-                    _serialise_late_fee_cache(_late_fee_cache), _changes_log)
-        return new_changes
-
-    # ── Client field changes ──
-    for cid, current in current_clients.items():
-        cached = _client_cache.get(cid)
-        if cached is None:
-            continue  # new client, not a "change"
-        client_name = current.get("name") or cached.get("name") or f"Client #{cid}"
-        for field in _CLIENT_FIELDS:
-            old_val = cached.get(field)
-            new_val = current.get(field)
-            if old_val != new_val:
-                change = {
-                    "timestamp": timestamp,
-                    "section": "Client",
-                    "client_name": client_name,
-                    "field": field,
-                    "field_label": _FIELD_LABELS.get(field, field),
-                    "old_value": old_val,
-                    "new_value": new_val,
-                    "old_display": _display_val(field, old_val),
-                    "new_display": _display_val(field, new_val),
-                }
-                new_changes.append(change)
-                _changes_log.append(change)
-                print(f"[Client Profile Changes] {client_name}: "
-                      f"{_FIELD_LABELS.get(field, field)} "
-                      f"'{_display_val(field, old_val)}' → '{_display_val(field, new_val)}'")
-    _client_cache = current_clients
-
-    # ── Venue name changes ──
-    if current_venues is not None:
-        for vid, current_v in current_venues.items():
-            cached_v = _venue_cache.get(vid)
-            if cached_v is None:
-                continue
-            if cached_v.get("venue_name") != current_v.get("venue_name"):
-                change = {
-                    "timestamp": timestamp,
-                    "section": "Venue",
-                    "client_name": current_v["client_name"],
-                    "field": "venue_name",
-                    "field_label": "Venue Name",
-                    "old_value": cached_v.get("venue_name"),
-                    "new_value": current_v.get("venue_name"),
-                    "old_display": cached_v.get("venue_name") or "(empty)",
-                    "new_display": current_v.get("venue_name") or "(empty)",
-                }
-                new_changes.append(change)
-                _changes_log.append(change)
-                print(f"[Client Profile Changes] Venue change for "
-                      f"{current_v['client_name']}: "
-                      f"'{cached_v.get('venue_name')}' → '{current_v.get('venue_name')}'")
-        _venue_cache = current_venues
-
-    # ── Late fee policy changes ──
-    if current_late_fees is not None:
-        all_client_ids = set(list(_late_fee_cache.keys()) + list(current_late_fees.keys()))
-        for cid in all_client_ids:
-            old_entry = _late_fee_cache.get(cid, {"policies": set(), "client_name": ""})
-            new_entry = current_late_fees.get(cid, {"policies": set(), "client_name": ""})
-
-            old_policies = old_entry.get("policies", set())
-            new_policies = new_entry.get("policies", set())
-            if isinstance(old_policies, list):
-                old_policies = set(old_policies)
-            if isinstance(new_policies, list):
-                new_policies = set(new_policies)
-
-            if old_policies != new_policies:
-                client_name = new_entry.get("client_name") or old_entry.get("client_name") or f"Client #{cid}"
-                old_names = sorted([_late_fee_policy_map.get(pid, f"ID {pid}") for pid in old_policies])
-                new_names = sorted([_late_fee_policy_map.get(pid, f"ID {pid}") for pid in new_policies])
-                change = {
-                    "timestamp": timestamp,
-                    "section": "Late Fees",
-                    "client_name": client_name,
-                    "field": "late_fee_policies",
-                    "field_label": "Late Fee Policies",
-                    "old_value": ", ".join(old_names) if old_names else "(none)",
-                    "new_value": ", ".join(new_names) if new_names else "(none)",
-                    "old_display": ", ".join(old_names) if old_names else "(none)",
-                    "new_display": ", ".join(new_names) if new_names else "(none)",
-                }
-                new_changes.append(change)
-                _changes_log.append(change)
-                print(f"[Client Profile Changes] Late fee change for "
-                      f"{client_name}: {old_names} → {new_names}")
-        _late_fee_cache = current_late_fees
-
-    if new_changes:
-        _changes_log[:] = _save_state(
-            _client_cache, _venue_cache,
-            _serialise_late_fee_cache(_late_fee_cache),
-            _changes_log,
-        )
-
-    return new_changes
-
-
-# ---------------------------------------------------------------------------
-# Public accessor
+# Public accessor  (called by views.py /data endpoint)
 # ---------------------------------------------------------------------------
 def get_changes_log():
     return sorted(_changes_log, key=lambda x: x.get("timestamp", ""), reverse=True)
 
 
 # ---------------------------------------------------------------------------
-# Main monitoring loop
+# Main monitoring loop  (follows AR Contact Updates pattern)
 # ---------------------------------------------------------------------------
 async def client_profile_changes_monitoring_loop():
-    global _last_email_sent_date
+    global _client_cache, _venue_cache, _late_fee_cache
+    global _changes_log, _is_initialized, _last_email_sent_date
 
-    _ensure_initialized()
+    # Load initial state from disk
+    loaded_cc, loaded_vc, loaded_lfc, loaded_changes, loaded_email_date = _load_state()
+    if loaded_cc:
+        _client_cache = loaded_cc
+        _venue_cache = loaded_vc or {}
+        # Restore late_fee_cache from disk (convert lists back to sets)
+        _late_fee_cache = {}
+        for cid, val in loaded_lfc.items():
+            if isinstance(val, list):
+                _late_fee_cache[cid] = {"policies": set(val), "client_name": ""}
+            elif isinstance(val, dict):
+                _late_fee_cache[cid] = {
+                    "policies": set(val.get("policies", [])),
+                    "client_name": val.get("client_name", ""),
+                }
+        _changes_log = loaded_changes
+        if loaded_email_date:
+            _last_email_sent_date = loaded_email_date
+        _is_initialized = True
+        print(f"[Client Profile Changes] Loaded {len(_client_cache)} clients, "
+              f"{len(_venue_cache)} venues, {len(_changes_log)} changes from disk.")
+    elif loaded_changes:
+        # No cache but we have changes — restore changes so they're not lost
+        _changes_log = loaded_changes
+        if loaded_email_date:
+            _last_email_sent_date = loaded_email_date
+        print(f"[Client Profile Changes] Loaded {len(_changes_log)} changes from disk (no cache, will re-init).")
 
     # Stagger startup
     await asyncio.sleep(30)
-    print("[Client Profile Changes] Monitor started. "
-          f"initialized={_is_initialized}, cache_size={len(_client_cache)}")
+
+    print("[Client Profile Changes] Monitor started.")
 
     while True:
         try:
-            new = run_check()
-            print(f"[Client Profile Changes] Check complete. "
-                  f"new_changes={len(new)}, total={len(_changes_log)}, "
-                  f"cache_size={len(_client_cache)}")
+            # Load lookup tables for display values
+            _load_lookup_tables()
+
+            # Fetch current DB state
+            current_clients = _fetch_clients()
+            current_venues = _fetch_venues()
+            current_late_fees = _fetch_late_fees()
+
+            if current_clients is not None:
+                if not _is_initialized:
+                    # First load — populate cache without recording changes
+                    _client_cache = current_clients
+                    _venue_cache = current_venues or {}
+                    _late_fee_cache = current_late_fees or {}
+                    _is_initialized = True
+                    # Save baseline to disk so it survives restarts
+                    _save_state(
+                        _client_cache, _venue_cache,
+                        _late_fee_cache, _changes_log,
+                    )
+                    print(f"[Client Profile Changes] Initialized with {len(_client_cache)} clients, "
+                          f"{len(_venue_cache)} venues. Next check will detect diffs.")
+                else:
+                    # Diff against cache
+                    timestamp = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d %H:%M:%S")
+                    found_changes = False
+
+                    # ── Client field changes ──
+                    for cid, current in current_clients.items():
+                        cached = _client_cache.get(cid)
+                        if cached is None:
+                            continue  # new client, not a "change"
+                        client_name = current.get("name") or cached.get("name") or f"Client #{cid}"
+                        for field in _CLIENT_FIELDS:
+                            old_val = cached.get(field)
+                            new_val = current.get(field)
+                            if old_val != new_val:
+                                change = {
+                                    "timestamp": timestamp,
+                                    "section": "Client",
+                                    "client_name": client_name,
+                                    "field": field,
+                                    "field_label": _FIELD_LABELS.get(field, field),
+                                    "old_value": old_val,
+                                    "new_value": new_val,
+                                    "old_display": _display_val(field, old_val),
+                                    "new_display": _display_val(field, new_val),
+                                }
+                                _changes_log.append(change)
+                                found_changes = True
+                                print(f"[Client Profile Changes] {client_name}: "
+                                      f"{_FIELD_LABELS.get(field, field)} "
+                                      f"'{_display_val(field, old_val)}' → '{_display_val(field, new_val)}'")
+                    _client_cache = current_clients
+
+                    # ── Venue name changes ──
+                    if current_venues is not None:
+                        for vid, current_v in current_venues.items():
+                            cached_v = _venue_cache.get(vid)
+                            if cached_v is None:
+                                continue
+                            if cached_v.get("venue_name") != current_v.get("venue_name"):
+                                change = {
+                                    "timestamp": timestamp,
+                                    "section": "Venue",
+                                    "client_name": current_v["client_name"],
+                                    "field": "venue_name",
+                                    "field_label": "Venue Name",
+                                    "old_value": cached_v.get("venue_name"),
+                                    "new_value": current_v.get("venue_name"),
+                                    "old_display": cached_v.get("venue_name") or "(empty)",
+                                    "new_display": current_v.get("venue_name") or "(empty)",
+                                }
+                                _changes_log.append(change)
+                                found_changes = True
+                                print(f"[Client Profile Changes] Venue change for "
+                                      f"{current_v['client_name']}: "
+                                      f"'{cached_v.get('venue_name')}' → '{current_v.get('venue_name')}'")
+                        _venue_cache = current_venues
+
+                    # ── Late fee policy changes ──
+                    if current_late_fees is not None:
+                        all_client_ids = set(list(_late_fee_cache.keys()) + list(current_late_fees.keys()))
+                        for cid in all_client_ids:
+                            old_entry = _late_fee_cache.get(cid, {"policies": set(), "client_name": ""})
+                            new_entry = current_late_fees.get(cid, {"policies": set(), "client_name": ""})
+
+                            old_policies = old_entry.get("policies", set())
+                            new_policies = new_entry.get("policies", set())
+                            if isinstance(old_policies, list):
+                                old_policies = set(old_policies)
+                            if isinstance(new_policies, list):
+                                new_policies = set(new_policies)
+
+                            if old_policies != new_policies:
+                                client_name = new_entry.get("client_name") or old_entry.get("client_name") or f"Client #{cid}"
+                                old_names = sorted([_late_fee_policy_map.get(pid, f"ID {pid}") for pid in old_policies])
+                                new_names = sorted([_late_fee_policy_map.get(pid, f"ID {pid}") for pid in new_policies])
+                                change = {
+                                    "timestamp": timestamp,
+                                    "section": "Late Fees",
+                                    "client_name": client_name,
+                                    "field": "late_fee_policies",
+                                    "field_label": "Late Fee Policies",
+                                    "old_value": ", ".join(old_names) if old_names else "(none)",
+                                    "new_value": ", ".join(new_names) if new_names else "(none)",
+                                    "old_display": ", ".join(old_names) if old_names else "(none)",
+                                    "new_display": ", ".join(new_names) if new_names else "(none)",
+                                }
+                                _changes_log.append(change)
+                                found_changes = True
+                                print(f"[Client Profile Changes] Late fee change for "
+                                      f"{client_name}: {old_names} → {new_names}")
+                        _late_fee_cache = current_late_fees
+
+                    # Always save updated cache + any new changes
+                    if found_changes:
+                        _changes_log[:] = _save_state(
+                            _client_cache, _venue_cache,
+                            _late_fee_cache, _changes_log,
+                        )
+
+                    print(f"[Client Profile Changes] Check complete. "
+                          f"changes_found={found_changes}, total_changes={len(_changes_log)}, "
+                          f"cache_size={len(_client_cache)}")
+
         except Exception as e:
             print(f"[Client Profile Changes] Exception in loop: {e}")
             import traceback
             traceback.print_exc()
 
         # ── Daily email check ──
-        # Only attempt if we have a valid cache (i.e. DB was reachable)
         if _client_cache:
             try:
                 now_la = datetime.now(ZoneInfo("America/Los_Angeles"))
@@ -663,11 +626,10 @@ async def client_profile_changes_monitoring_loop():
                         _last_email_sent_date = today_str
                         _changes_log[:] = _save_state(
                             _client_cache, _venue_cache,
-                            _serialise_late_fee_cache(_late_fee_cache),
-                            _changes_log, _last_email_sent_date,
+                            _late_fee_cache, _changes_log, _last_email_sent_date,
                         )
             except Exception as e:
                 print(f"[Client Profile Changes] Error sending daily email: {e}")
 
-        # Background check every 30 minutes
-        await asyncio.sleep(1800)
+        # Check every 15 minutes (same as AR Contacts)
+        await asyncio.sleep(900)
