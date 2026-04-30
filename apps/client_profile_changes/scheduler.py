@@ -46,13 +46,26 @@ _PAYMENT_TYPE_LABELS = {
     2: "Invoice",
 }
 
+_SEPARATE_VENUE_MAP = {
+    0: "No",
+    1: "Invoice venues separately",
+    2: "Venues are separate customers",
+    3: "Invioce venues separately and by day",
+    4: "Venues are separate customers and separated by day",
+    5: "Invoice separately by PO number",
+}
+
+_NO_BREAK_PENALTY_MAP = {
+    1: "Enabled",
+    2: "Disabled",
+}
 # Human-readable labels for each tracked field
 _FIELD_LABELS = {
     "name": "Client Name",
     "msp_id": "MSP",
     "division_id": "Division",
     "net_terms_entry_id": "Net Terms",
-    "separate_venue": "Separate Venue",
+    "separate_venue": "Invoice Separation",
     "invoices_offset": "Invoices Offset",
     "payment_type": "Payment Type",
     "billing_type_id": "Billing Type",
@@ -64,7 +77,7 @@ _FIELD_LABELS = {
     "markup": "Markup",
     "surcharge_deadline": "Surcharge Deadline",
     "exposure_limit": "Exposure Limit",
-    "no_break_penalty": "No Break Penalty",
+    "no_break_penalty": "Break Penalties",
 }
 
 # Fields whose integer values should be resolved via lookup tables
@@ -74,6 +87,8 @@ _LOOKUP_FIELDS = {
     "net_terms_entry_id": "_net_terms_map",
     "billing_type_id": "_billing_type_map",
     "payment_type": "_PAYMENT_TYPE_LABELS",
+    "separate_venue": "_SEPARATE_VENUE_MAP",
+    "no_break_penalty": "_NO_BREAK_PENALTY_MAP",
 }
 
 # Client table columns to monitor
@@ -328,7 +343,7 @@ def _fetch_late_fees():
 # ---------------------------------------------------------------------------
 def _send_daily_email(changes: list[dict]):
     sender_email = "golive@culinarystaffing.com"
-    receiver_emails = ["jake@culinarystaffing.com"]
+    receiver_emails = ["jake@culinarystaffing.com", "accounting@culinarystaffing.com", "caleb@culinarystaffing.com"]
 
     import requests
 
