@@ -8,9 +8,20 @@ from sqlalchemy import text
 from apps.client_profile_changes.views import _engine
 
 # ---------------------------------------------------------------------------
-# Persistent state file
+# Persistent state file — use Render persistent disk when available
 # ---------------------------------------------------------------------------
-_state_file = Path("apps/client_profile_changes/cpc_state.json")
+_RENDER_DATA_DIR = Path("/opt/render/project/src/data")
+_LOCAL_STATE_PATH = Path("apps/client_profile_changes/cpc_state.json")
+
+if any(os.getenv(v) for v in ("RENDER", "RENDER_SERVICE_ID", "RENDER_EXTERNAL_URL")):
+    _state_dir = _RENDER_DATA_DIR
+elif _RENDER_DATA_DIR.exists():
+    _state_dir = _RENDER_DATA_DIR
+else:
+    _state_dir = _LOCAL_STATE_PATH.parent
+
+_state_dir.mkdir(parents=True, exist_ok=True)
+_state_file = _state_dir / "cpc_state.json"
 
 # In-memory state
 _client_cache = {}        # {client_id: {field: value, ...}}
