@@ -133,6 +133,10 @@ def _display_val(field, raw_value):
             lookup = _billing_type_map
         elif lookup_attr == "_PAYMENT_TYPE_LABELS":
             lookup = _PAYMENT_TYPE_LABELS
+        elif lookup_attr == "_SEPARATE_VENUE_MAP":
+            lookup = _SEPARATE_VENUE_MAP
+        elif lookup_attr == "_NO_BREAK_PENALTY_MAP":
+            lookup = _NO_BREAK_PENALTY_MAP
         else:
             lookup = {}
 
@@ -342,6 +346,12 @@ def _fetch_late_fees():
 # Email
 # ---------------------------------------------------------------------------
 def _send_daily_email(changes: list[dict]):
+    # Only send emails from the live Render server — skip on local dev machines
+    _is_render = any(os.getenv(v) for v in ("RENDER", "RENDER_SERVICE_ID", "RENDER_EXTERNAL_URL"))
+    if not _is_render:
+        print("[Client Profile Changes] Skipping daily email: not running on Render (local environment detected).")
+        return
+
     sender_email = "golive@culinarystaffing.com"
     receiver_emails = ["jake@culinarystaffing.com", "accounting@culinarystaffing.com", "caleb@culinarystaffing.com"]
 

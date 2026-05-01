@@ -225,3 +225,57 @@ async def undo_dan_sm():
         return JSONResponse({"error": str(e)}, status_code=500)
     finally:
         engine.dispose()
+
+@router.get("/count-sm-6170")
+async def get_sm_6170_count():
+    engine = _engine()
+    try:
+        sql = text("SELECT COUNT(*) as count FROM venue WHERE staffing_manager_id = 6170")
+        with engine.connect() as connection:
+            result = connection.execute(sql).fetchone()
+            return JSONResponse({"count": result[0]})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+    finally:
+        engine.dispose()
+
+@router.post("/update-sm-6170")
+async def update_sm_6170():
+    engine = _engine()
+    try:
+        check_sql = text("SELECT COUNT(*) as count FROM venue WHERE staffing_manager_id = 6170")
+        update_sql = text("UPDATE venue SET staffing_manager_id = 25929 WHERE staffing_manager_id = 6170")
+
+        with engine.begin() as connection:
+            count_result = connection.execute(check_sql).fetchone()
+            count_before = count_result[0]
+
+            if count_before == 0:
+                return JSONResponse({"message": "No venues found with Staffing Manager ID 6170.", "updated": 0})
+
+            result = connection.execute(update_sql)
+            return JSONResponse({
+                "message": f"Successfully updated {result.rowcount} venues to Staffing Manager 25929.",
+                "updated": result.rowcount
+            })
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+    finally:
+        engine.dispose()
+
+@router.post("/undo-sm-6170")
+async def undo_sm_6170():
+    engine = _engine()
+    try:
+        update_sql = text("UPDATE venue SET staffing_manager_id = 6170 WHERE staffing_manager_id = 25929")
+
+        with engine.begin() as connection:
+            result = connection.execute(update_sql)
+            return JSONResponse({
+                "message": f"Successfully reverted {result.rowcount} venues back to Staffing Manager 6170.",
+                "updated": result.rowcount
+            })
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+    finally:
+        engine.dispose()

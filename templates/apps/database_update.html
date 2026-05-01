@@ -278,15 +278,75 @@
             </div>
         </div>
 
-        <div class="group border-2 border-dashed border-gray-200 rounded-3xl p-8 flex flex-col items-center justify-center text-center space-y-4 opacity-50">
-            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        <!-- BLOCK: Venue - SM 6170 → 25929 -->
+        <div id="block-sm-6170" class="group bg-white rounded-3xl p-8 shadow-xl border border-emerald-100 hover:border-emerald-200 transition-all flex flex-col justify-between relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-10 transition-opacity">
+                <svg class="w-32 h-32 text-emerald-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                 </svg>
             </div>
-            <div>
-                <h3 class="font-bold text-gray-500">Future Update Block</h3>
-                <p class="text-sm text-gray-400 max-w-[200px] mt-1">Additional table update tools will be added here as needed.</p>
+
+            <div class="relative z-10 space-y-6">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-2xl font-bold text-gray-900">Venue - SM 6170 &rarr; 25929</h2>
+                    <span class="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold uppercase tracking-wider rounded-full border border-emerald-100">Live</span>
+                </div>
+
+                <div class="p-5 bg-emerald-50/50 rounded-2xl border border-emerald-100/50">
+                    <ul class="space-y-2 text-sm text-emerald-900/80">
+                        <li class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            Table: <span class="font-mono font-bold">venue</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            Field: <span class="font-mono font-bold">staffing_manager_id</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            Target: <span class="font-mono font-bold text-red-600">ID 6170</span> &rarr; <span class="font-mono font-bold text-emerald-600">25929</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="flex items-center gap-6 py-4 border-y border-gray-50">
+                    <div class="flex-1">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Matching Records</p>
+                        <div id="count-sm-6170" class="text-4xl font-extrabold text-gray-900 animate-pulse">
+                            Checking...
+                        </div>
+                    </div>
+                </div>
+
+                <div id="action-sm-6170" class="hidden space-y-4">
+                    <div class="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex gap-3">
+                        <svg class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                        </svg>
+                        <p class="text-xs text-amber-800 leading-relaxed font-medium">
+                            Confirming will update only the <code class="bg-amber-100/50 px-1 rounded">staffing_manager_id</code> field for every venue currently assigned to ID 6170.
+                        </p>
+                    </div>
+                    <button id="update-btn-sm-6170" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-emerald-200/50 flex items-center justify-center gap-3 active:scale-[0.98]">
+                        Update to 25929
+                    </button>
+                </div>
+
+                <div id="success-sm-6170" class="hidden space-y-4">
+                    <div class="bg-emerald-100 border border-emerald-200 rounded-2xl p-4 text-center">
+                        <p id="msg-sm-6170" class="text-emerald-800 text-sm font-bold"></p>
+                    </div>
+                    <button id="undo-btn-sm-6170" class="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all border border-gray-200 flex items-center justify-center gap-2 text-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                        </svg>
+                        Undo Change (25929 &rarr; 6170)
+                    </button>
+                </div>
+
+                <div id="none-sm-6170" class="hidden text-center py-4">
+                    <p class="text-gray-400 text-sm italic">No venues found matching Staffing Manager ID 6170.</p>
+                </div>
             </div>
         </div>
 
@@ -615,6 +675,101 @@
         danSMBlock.fetch();
         danSMBlock.btnEl.addEventListener('click', () => danSMBlock.update());
         danSMBlock.undoBtnEl.addEventListener('click', () => danSMBlock.undo());
+
+        // Venue - SM 6170 → 25929 Block Logic
+        const sm6170Block = {
+            countEl: document.getElementById('count-sm-6170'),
+            actionEl: document.getElementById('action-sm-6170'),
+            btnEl: document.getElementById('update-btn-sm-6170'),
+            successEl: document.getElementById('success-sm-6170'),
+            msgEl: document.getElementById('msg-sm-6170'),
+            noneEl: document.getElementById('none-sm-6170'),
+            undoBtnEl: document.getElementById('undo-btn-sm-6170'),
+
+            async fetch() {
+                try {
+                    const response = await fetch('/database-update/count-sm-6170');
+                    const data = await response.json();
+                    this.countEl.classList.remove('animate-pulse');
+
+                    if (data.error) {
+                        this.countEl.innerText = 'Error';
+                        this.countEl.classList.add('text-red-600');
+                        return;
+                    }
+
+                    const count = data.count;
+                    this.countEl.innerText = count;
+
+                    if (count > 0) {
+                        this.actionEl.classList.remove('hidden');
+                        this.noneEl.classList.add('hidden');
+                        this.successEl.classList.add('hidden');
+                    } else {
+                        this.noneEl.classList.remove('hidden');
+                        this.actionEl.classList.add('hidden');
+                    }
+                } catch (err) {
+                    this.countEl.innerText = 'Error';
+                }
+            },
+
+            async update() {
+                this.btnEl.disabled = true;
+                this.btnEl.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+
+                try {
+                    const response = await fetch('/database-update/update-sm-6170', { method: 'POST' });
+                    const data = await response.json();
+
+                    if (data.error) {
+                        alert('Update failed: ' + data.error);
+                        return;
+                    }
+
+                    this.actionEl.classList.add('hidden');
+                    this.successEl.classList.remove('hidden');
+                    this.msgEl.innerText = data.message;
+                    this.countEl.innerText = '0';
+                } catch (err) {
+                    alert('An error occurred.');
+                } finally {
+                    this.btnEl.disabled = false;
+                    this.btnEl.innerText = 'Update to 25929';
+                }
+            },
+
+            async undo() {
+                if (!confirm('Are you sure you want to revert all venues with Staffing Manager ID 25929 back to 6170?')) return;
+
+                this.undoBtnEl.disabled = true;
+                const originalHtml = this.undoBtnEl.innerHTML;
+                this.undoBtnEl.innerHTML = `<svg class="animate-spin h-4 w-4 text-gray-700" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Reverting...`;
+
+                try {
+                    const response = await fetch('/database-update/undo-sm-6170', { method: 'POST' });
+                    const data = await response.json();
+
+                    if (data.error) {
+                        alert('Undo failed: ' + data.error);
+                        return;
+                    }
+
+                    alert(data.message);
+                    this.fetch(); // Re-fetch to update state
+                } catch (err) {
+                    alert('An error occurred.');
+                } finally {
+                    this.undoBtnEl.disabled = false;
+                    this.undoBtnEl.innerHTML = originalHtml;
+                }
+            }
+        };
+
+        // Initialize SM 6170 Block
+        sm6170Block.fetch();
+        sm6170Block.btnEl.addEventListener('click', () => sm6170Block.update());
+        sm6170Block.undoBtnEl.addEventListener('click', () => sm6170Block.undo());
 
         // As more blocks are added, they will follow a similar pattern here
     });
