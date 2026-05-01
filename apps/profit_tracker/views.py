@@ -108,9 +108,8 @@ async def get_profit_data(payload: ProfitPayload):
             LEFT JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
             LEFT JOIN shift s ON sp.shift_id = s.shift_id
             WHERE e.date >= :start_date AND e.date <= :end_date
-              AND se.deleted_at IS NULL
               AND (
-                  (se.confirmed = 1 AND se.cancel_reason = 0)
+                  (se.deleted_at IS NULL AND se.confirmed = 1 AND se.cancel_reason = 0)
                   OR se.shift_employee_id IN (
                       SELECT shift_employee_id FROM timesheet
                       WHERE client_min_bill = 1 OR employee_min_pay = 1
@@ -188,19 +187,27 @@ async def get_profit_data(payload: ProfitPayload):
         c_hours = bill_seconds / 3600.0  # hours for billing
         e_hours = pay_seconds / 3600.0   # hours for pay
 
-        # Compute shift min billing hours (mirrors Shift::getMinBillingHours()).
-        # GoLive uses the shift duration (shift_end - shift_start) to derive a
-        # min-billing-hours floor of 4h (for shifts >= 4h) or 2h (for shorter ones).
-        # The hardcoded 4.0 was only correct for full-day shifts.
+        # Compute shift scheduling metrics (mirrors Shift::getWorkHours() and getMinBillingHours()).
+        # GoLive deducts a 0.5h meal break from the scheduled shift duration when the
+        # shift is > 5h (BaseMealBreakPolicy). getMinBillingHours() = getWorkHours() / 2.
+        # For SENTHOME, the minimum pay/bill floor is getMinBillingHours() (capped at 4h).
+        # For regular WORKED shifts, the standard floor is 4h (for shifts >= 4h) or 2h.
         shift_start_raw = row.get("shift_start")
         shift_end_raw   = row.get("shift_end")
         if pd.notna(shift_start_raw) and pd.notna(shift_end_raw):
             shift_dur_hours = (
                 pd.to_datetime(shift_end_raw) - pd.to_datetime(shift_start_raw)
             ).total_seconds() / 3600.0
+            # Apply meal break deduction: > 5h shift → subtract 0.5h (matches BaseMealBreakPolicy)
+            meal_break_deduction = 0.5 if shift_dur_hours > 5.0 else 0.0
+            shift_work_hours = shift_dur_hours - meal_break_deduction
+            # SENTHOME minimum = getMinBillingHours() = work_hours / 2, capped at 4h
+            shift_senthome_min_hours = min(shift_work_hours / 2.0, 4.0)
             # Standard GoLive MinBillingHoursCalculator: >= 4h shift → 4h min; else 2h min
             shift_min_bill_hours = 4.0 if shift_dur_hours >= 4.0 else 2.0
         else:
+            shift_work_hours = 4.0  # safe fallback
+            shift_senthome_min_hours = 2.0  # safe fallback (4.0 / 2)
             shift_min_bill_hours = 4.0  # safe fallback
 
         e_worked_raw = str(row.get("employee_worked") or "").upper()
@@ -229,8 +236,15 @@ async def get_profit_data(payload: ProfitPayload):
         late_hours = e_late_hours if use_sheet == "EMPLOYEE" else c_late_hours
 
         # ── CLIENT BILLING HOURS ──────────────────────────────────────────
+        # Billing only uses the minimum floor when client_min_bill is explicitly
+        # set on the timesheet (GoLive's manageSentHomeMinBillBy sets this flag).
+        # If client_min_bill is NOT set (e.g. this SENTHOME had no min bill check),
+        # billing uses actual worked hours — the SENTHOME non-worked portion is then
+        # derived from (c_bill_reg - c_hours) below. Do NOT apply senthome_min here
+        # unconditionally, as that would alter billing on timesheets where the client
+        # chose not to set the minimum bill flag.
         if pd.notna(c_min) and float(c_min) > 0:
-            c_bill_reg = shift_min_bill_hours  # use actual shift-based min (not hardcoded 4.0)
+            c_bill_reg = shift_min_bill_hours  # standard min floor (4h or 2h)
             if late_hours > 0 and c_hours < c_bill_reg:
                 c_bill_reg -= late_hours
             elif c_hours > c_bill_reg:
@@ -263,14 +277,27 @@ async def get_profit_data(payload: ProfitPayload):
             c_reg = c_ot = c_dt = c_non_worked = 0.0
 
         # ── EMPLOYEE PAY HOURS ────────────────────────────────────────────
-        if pd.notna(e_min) and float(e_min) > 0:
-            e_pay_reg = shift_min_bill_hours  # use actual shift-based min (not hardcoded 4.0)
+        # For SENTHOME, GoLive always applies the SENTHOME minimum (= shift work hours / 2,
+        # capped at 4h) regardless of whether employee_min_pay is set on the timesheet.
+        # This matches ClientsAndEmployeesExportJob.php lines 592-618:
+        #   if ($timesheet->employee_min_pay || SENTHOME && CA) → reg_hours = getMinBillingHours()
+        #   reg_hours = min(reg_hours, 4)   ← PHP hardcodes 4, but getMinBillingHours() already
+        #                                      does work_hours/2 which for short shifts < 8h
+        #                                      is always <= 4, so min(x,4) is the cap.
+        is_senthome = e_worked in ("SENTHOME",)
+        if is_senthome or (pd.notna(e_min) and float(e_min) > 0):
+            # Legacy PHP ClientsAndEmployeesExportJob uses $shift->getMinBillingHours()
+            # (= work_hours/2 capped at 4h) as the floor for ALL min-pay cases —
+            # both SENTHOME and employee_min_pay=1 (e.g. CANCELLED with min pay set).
+            # shift_senthome_min_hours already encodes min(work_hours/2, 4.0).
+            e_pay_reg_floor = shift_senthome_min_hours
+            e_pay_reg = e_pay_reg_floor
             if late_hours > 0 and e_hours < e_pay_reg:
                 e_pay_reg -= late_hours
             elif e_hours > e_pay_reg:
                 e_pay_reg = e_hours
             e_pay_reg = max(e_pay_reg, 2.0)
-            e_pay_reg = min(e_pay_reg, shift_min_bill_hours)
+            e_pay_reg = min(e_pay_reg, e_pay_reg_floor)
         else:
             e_pay_reg = e_hours
 
