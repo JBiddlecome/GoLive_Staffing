@@ -132,7 +132,7 @@ async def get_profit_data(payload: ProfitPayload):
             
             other_work_sql = text(
                 """
-                SELECT SUM(cost) as total_other_work
+                SELECT SUM(cost + (rate * (COALESCE(work_hours, 0) + COALESCE(non_work_hours, 0)))) as total_other_work
                 FROM employee_other_work
                 WHERE date >= :start_date AND date <= :end_date
                 """
