@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Email Forwarder{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between flex-wrap gap-4">
+    <div>
+      <h1 class="text-3xl font-semibold tracking-tight text-gray-900">Email Forwarder</h1>
+      <p class="mt-2 text-sm text-gray-600">
+        Automatically forwards <strong>dan.stone@</strong> and <strong>trina@</strong>
+        to <strong>staffingteam@culinarystaffing.com</strong> during scheduled hours.
+        Original emails remain in their inboxes.
+      </p>
+    </div>
+    <!-- Status badge -->
+    <div id="schedule-badge" class="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold border hidden">
+      <span id="schedule-dot" class="inline-block h-2.5 w-2.5 rounded-full"></span>
+      <span id="schedule-label"></span>
+    </div>
+  </div>
+
+  <!-- Toggle card -->
+  <div class="rounded-2xl border border-gray-200 bg-white shadow-sm p-6">
+    <div class="flex items-center justify-between gap-6 flex-wrap">
+      <div>
+        <h2 class="text-lg font-semibold text-gray-800">Forwarding Toggle</h2>
+        <p class="mt-1 text-sm text-gray-500" id="toggle-desc">Loading…</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="text-sm font-medium text-gray-500" id="toggle-off-label">Off</span>
+        <!-- Toggle switch -->
+        <button
+          id="toggle-btn"
+          role="switch"
+          aria-checked="false"
+          onclick="handleToggle()"
+          class="relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+          style="background-color: #d1d5db;"
+        >
+          <span
+            id="toggle-knob"
+            class="pointer-events-none inline-block h-7 w-7 rounded-full bg-white shadow-lg transform transition duration-200 ease-in-out translate-x-0"
+          ></span>
+        </button>
+        <span class="text-sm font-medium text-gray-500" id="toggle-on-label">On</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Schedule info card -->
+  <div class="rounded-2xl border border-gray-200 bg-white shadow-sm p-6">
+    <h2 class="text-base font-semibold text-gray-800 mb-4">Forwarding Schedule (PST)</h2>
+    <div class="grid gap-3 sm:grid-cols-2">
+      <div class="rounded-xl border border-blue-100 bg-blue-50/60 px-5 py-4">
+        <p class="text-xs font-semibold uppercase tracking-wider text-blue-600">Monday – Friday</p>
+        <p class="mt-1 text-xl font-bold text-blue-800">9:00 AM – 5:30 PM</p>
+      </div>
+      <div class="rounded-xl border border-purple-100 bg-purple-50/60 px-5 py-4">
+        <p class="text-xs font-semibold uppercase tracking-wider text-purple-600">Saturday &amp; Sunday</p>
+        <p class="mt-1 text-xl font-bold text-purple-800">All Day</p>
+      </div>
+    </div>
+    <div class="mt-4 grid gap-3 sm:grid-cols-2">
+      <div class="rounded-xl border border-gray-100 bg-gray-50 px-5 py-4">
+        <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Source Mailboxes</p>
+        <p class="mt-1 text-sm font-medium text-gray-800">dan.stone@culinarystaffing.com</p>
+        <p class="text-sm font-medium text-gray-800">trina@culinarystaffing.com</p>
+      </div>
+      <div class="rounded-xl border border-emerald-100 bg-emerald-50/60 px-5 py-4">
+        <p class="text-xs font-semibold uppercase tracking-wider text-emerald-600">Destination</p>
+        <p class="mt-1 text-sm font-medium text-emerald-800">staffingteam@culinarystaffing.com</p>
+        <p class="mt-2 text-xs text-emerald-600">Polls every 2 minutes • Originals kept in source inbox</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Activity log -->
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <h2 class="text-base font-semibold text-gray-800">Recent Forwarding Activity</h2>
+      <span class="text-xs text-gray-400" id="log-count"></span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-100">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Timestamp (PST)</th>
+            <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Source Mailbox</th>
+            <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Original Sender</th>
+            <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Subject</th>
+            <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-100" id="log-body">
+          <tr>
+            <td colspan="5" class="px-6 py-10 text-center text-sm text-gray-400">
+              <div class="flex justify-center items-center gap-2">
+                <svg class="animate-spin h-4 w-4 text-emerald-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Loading activity…
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+  #toggle-btn[aria-checked="true"]  { background-color: #10b981; }
+  #toggle-btn[aria-checked="false"] { background-color: #d1d5db; }
+  #toggle-btn[aria-checked="true"]  #toggle-knob { transform: translateX(1.5rem); }
+  #toggle-btn[aria-checked="false"] #toggle-knob { transform: translateX(0); }
+  #toggle-btn { transition: background-color 0.2s ease; }
+  #toggle-knob { transition: transform 0.2s ease; }
+</style>
+<script>
+  let _currentEnabled = true;
+  let _isSaving = false;
+
+  function esc(s) {
+    if (!s) return '';
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function setToggleUI(enabled) {
+    const btn = document.getElementById('toggle-btn');
+    const desc = document.getElementById('toggle-desc');
+    btn.setAttribute('aria-checked', enabled ? 'true' : 'false');
+    _currentEnabled = enabled;
+
+    if (enabled) {
+      desc.innerHTML = '<span class="text-emerald-600 font-semibold">Enabled</span> — Forwarder will run during scheduled hours.';
+    } else {
+      desc.innerHTML = '<span class="text-red-500 font-semibold">Disabled</span> — No emails will be forwarded regardless of schedule.';
+    }
+  }
+
+  function setScheduleBadge(withinSchedule, currentTime) {
+    const badge = document.getElementById('schedule-badge');
+    const dot   = document.getElementById('schedule-dot');
+    const label = document.getElementById('schedule-label');
+    badge.classList.remove('hidden');
+
+    if (withinSchedule) {
+      badge.className = 'flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold border border-emerald-200 bg-emerald-50 text-emerald-700';
+      dot.className   = 'inline-block h-2.5 w-2.5 rounded-full bg-emerald-500';
+      label.textContent = `In Schedule  ·  ${currentTime}`;
+    } else {
+      badge.className = 'flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold border border-gray-200 bg-gray-50 text-gray-500';
+      dot.className   = 'inline-block h-2.5 w-2.5 rounded-full bg-gray-400';
+      label.textContent = `Outside Schedule  ·  ${currentTime}`;
+    }
+  }
+
+  function renderLog(log) {
+    const tbody = document.getElementById('log-body');
+    const countEl = document.getElementById('log-count');
+    const reversed = [...log].reverse();  // newest first
+
+    countEl.textContent = `${reversed.length} event${reversed.length !== 1 ? 's' : ''}`;
+
+    if (!reversed.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" class="px-6 py-10 text-center text-sm text-gray-400">
+            No emails have been forwarded yet.
+          </td>
+        </tr>`;
+      return;
+    }
+
+    tbody.innerHTML = reversed.map(entry => `
+      <tr class="hover:bg-gray-50 transition-colors duration-100">
+        <td class="px-5 py-3.5 whitespace-nowrap text-sm text-gray-600">${esc(entry.timestamp)}</td>
+        <td class="px-5 py-3.5 whitespace-nowrap text-sm text-gray-700 font-medium">${esc(entry.source)}</td>
+        <td class="px-5 py-3.5 whitespace-nowrap text-sm text-gray-600">${esc(entry.from)}</td>
+        <td class="px-5 py-3.5 text-sm text-gray-700 max-w-xs truncate" title="${esc(entry.subject)}">${esc(entry.subject)}</td>
+        <td class="px-5 py-3.5 whitespace-nowrap">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+            ✓ Forwarded
+          </span>
+        </td>
+      </tr>`).join('');
+  }
+
+  async function loadStatus() {
+    try {
+      const res = await fetch('/email-forwarder/status');
+      if (!res.ok) throw new Error('status fetch failed');
+      const data = await res.json();
+      setToggleUI(data.enabled);
+      setScheduleBadge(data.within_schedule, data.current_time_pst);
+      renderLog(data.log || []);
+    } catch (err) {
+      console.error('[Email Forwarder] Failed to load status:', err);
+    }
+  }
+
+  async function handleToggle() {
+    if (_isSaving) return;
+    _isSaving = true;
+    const newState = !_currentEnabled;
+    setToggleUI(newState);  // optimistic UI
+
+    try {
+      const res = await fetch('/email-forwarder/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: newState }),
+      });
+      if (!res.ok) throw new Error('toggle failed');
+      const data = await res.json();
+      setToggleUI(data.enabled);
+    } catch (err) {
+      console.error('[Email Forwarder] Toggle error:', err);
+      setToggleUI(_currentEnabled);  // revert on failure
+    } finally {
+      _isSaving = false;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadStatus();
+    // Refresh status every 60 seconds
+    setInterval(loadStatus, 60000);
+  });
+</script>
+{% endblock %}

@@ -60,6 +60,7 @@ from apps.shift_risk_dashboard.views import router as shift_risk_dashboard_route
 from apps.profit_tracker.views import router as profit_tracker_router
 from apps.profit_tracker_2.views import router as profit_tracker_2_router
 from apps.client_profile_changes.views import router as client_profile_changes_router
+from apps.email_forwarder.views import router as email_forwarder_router
 from apps.auth.views import router as auth_router, get_current_user
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 
@@ -71,6 +72,7 @@ from apps.admin_dashboard.tracker import admin_tracking_loop
 from apps.position_requests.scheduler import position_requests_monitoring_loop
 from apps.ar_contact_updates.scheduler import ar_contacts_monitoring_loop
 from apps.client_profile_changes.scheduler import client_profile_changes_monitoring_loop
+from apps.email_forwarder.scheduler import email_forwarder_loop
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -80,6 +82,7 @@ async def lifespan(app: FastAPI):
     pr_task = asyncio.create_task(position_requests_monitoring_loop())
     ar_task = asyncio.create_task(ar_contacts_monitoring_loop())
     cpc_task = asyncio.create_task(client_profile_changes_monitoring_loop())
+    ef_task = asyncio.create_task(email_forwarder_loop())
     yield
     monitor_task.cancel()
     cc_monitor_task.cancel()
@@ -87,6 +90,7 @@ async def lifespan(app: FastAPI):
     pr_task.cancel()
     ar_task.cancel()
     cpc_task.cancel()
+    ef_task.cancel()
 
 app = FastAPI(title="GoLive Staffing — Tools", lifespan=lifespan)
 
@@ -376,6 +380,11 @@ app.include_router(
     client_profile_changes_router,
     prefix="/client-profile-changes",
     tags=["Client Profile Changes"],
+)
+app.include_router(
+    email_forwarder_router,
+    prefix="/email-forwarder",
+    tags=["Email Forwarder"],
 )
 
 # Redirect /sms_paraphraser to /sms-paraphraser for backward compatibility
