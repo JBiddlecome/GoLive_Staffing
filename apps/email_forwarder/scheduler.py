@@ -7,7 +7,7 @@ Polls dan.stone@culinarystaffing.com and trina@culinarystaffing.com every
 Forwarding is active when ALL of the following are true:
   1. The manual toggle is ON  (set via the Staffing Tools UI)
   2. The current PST time is within the forwarding schedule:
-       Mon–Fri  09:00 – 17:30
+       Mon–Fri  00:00 – 09:00 AND 17:30 – 23:59
        Sat–Sun  00:00 – 23:59  (all day)
 
 Emails are forwarded to staffingteam@culinarystaffing.com.
@@ -47,11 +47,6 @@ def _load_state() -> dict:
 
 def _save_state(state: dict) -> None:
     try:
-        # Only write to disk on Render; skip locally to keep the workspace clean
-        _is_render = any(os.getenv(v) for v in ("RENDER", "RENDER_SERVICE_ID", "RENDER_EXTERNAL_URL"))
-        if not _is_render:
-            return
-
         tmp = _STATE_FILE.with_suffix(".tmp")
         with open(tmp, "w") as f:
             json.dump(state, f, indent=2)
@@ -83,25 +78,28 @@ def get_log() -> list:
 PST = ZoneInfo("America/Los_Angeles")
 
 SCHEDULE = {
-    # weekday() -> (start_hour_min, end_hour_min) or None for all-day
-    0: ((9, 0),  (17, 30)),   # Monday
-    1: ((9, 0),  (17, 30)),   # Tuesday
-    2: ((9, 0),  (17, 30)),   # Wednesday
-    3: ((9, 0),  (17, 30)),   # Thursday
-    4: ((9, 0),  (17, 30)),   # Friday
-    5: None,                   # Saturday  – all day
-    6: None,                   # Sunday    – all day
+    # weekday() -> list of (start_hour_min, end_hour_min) or None for all-day
+    0: [((0, 0), (9, 0)), ((17, 30), (23, 59))],   # Monday
+    1: [((0, 0), (9, 0)), ((17, 30), (23, 59))],   # Tuesday
+    2: [((0, 0), (9, 0)), ((17, 30), (23, 59))],   # Wednesday
+    3: [((0, 0), (9, 0)), ((17, 30), (23, 59))],   # Thursday
+    4: [((0, 0), (9, 0)), ((17, 30), (23, 59))],   # Friday
+    5: None,                                      # Saturday – all day
+    6: None,                                      # Sunday – all day
 }
 
 
 def _is_within_schedule() -> bool:
     now = datetime.now(PST)
-    day_rule = SCHEDULE.get(now.weekday())
-    if day_rule is None:
+    day_rules = SCHEDULE.get(now.weekday())
+    if day_rules is None:
         return True  # all day
-    start, end = day_rule
+    
     now_hm = (now.hour, now.minute)
-    return start <= now_hm <= end
+    for start, end in day_rules:
+        if start <= now_hm <= end:
+            return True
+    return False
 
 
 # ---------------------------------------------------------------------------
