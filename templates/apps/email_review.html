@@ -444,6 +444,10 @@
                         <input type="text" id="sent_to" name="sent_to" class="form-input" placeholder="domain.com or user@">
                     </div>
                 </div>
+                <div class="form-group" style="margin-top: 1.5rem;">
+                    <label class="form-label">Custom AI Prompt (Optional)</label>
+                    <textarea id="custom_prompt" name="custom_prompt" class="form-input" rows="2" placeholder="e.g. Tell me how many times the greeting 'hey' is used rather than 'hello'. Leave blank for standard HR analysis."></textarea>
+                </div>
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary" id="searchBtn">
                         <span class="btn-text">Fetch Sent Emails</span>
@@ -510,6 +514,18 @@
                 
                 renderEmails(result.data);
                 
+                // Auto-run AI if custom prompt is provided
+                const customPrompt = document.getElementById('custom_prompt').value.trim();
+                if (customPrompt && result.data && result.data.length > 0) {
+                    // Slight delay to ensure DOM is fully ready, though synchronous render should be fine
+                    setTimeout(() => {
+                        const batchBtn = document.getElementById('batchAnalyzeBtn');
+                        if (batchBtn) {
+                            analyzeAllAI(batchBtn);
+                        }
+                    }, 10);
+                }
+                
             } catch (error) {
                 resultsArea.innerHTML = `
                     <div class="alert-info" style="background-color: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); border-left-color: var(--danger-color);">
@@ -552,8 +568,8 @@
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <h3 style="margin: 0; color: var(--text-primary);">${emails.length} Emails Found</h3>
                     <div style="display: flex; gap: 1rem;">
-                        <button class="btn btn-primary" onclick="analyzeAllAI(this)">
-                            <i class="fa-solid fa-robot"></i> Analyze All with AI
+                        <button class="btn btn-primary" id="batchAnalyzeBtn" onclick="analyzeAllAI(this)">
+                            <i class="fa-solid fa-robot"></i> Run AI Analysis
                             <div class="spinner" style="border-top-color: white;"></div>
                         </button>
                         <button class="btn btn-success" onclick="downloadAllPDF()">
@@ -562,7 +578,7 @@
                     </div>
                 </div>
                 <!-- Global AI Analysis Box -->
-                <div class="ai-analysis" id="globalAIAnalysis"></div>
+                <div class="ai-analysis" id="globalAIAnalysis" style="background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3);"></div>
             `;
             resultsArea.appendChild(globalActions);
             
@@ -626,6 +642,7 @@
             const aiCard = document.getElementById(`ai-${index}`);
             const contentBox = document.getElementById(`content-${index}`);
             const emailText = contentBox.innerText;
+            const customPrompt = document.getElementById('custom_prompt').value.trim();
             
             const spinner = btn.querySelector('.spinner');
             const icon = btn.querySelector('i');
@@ -633,12 +650,21 @@
             btn.disabled = true;
             spinner.style.display = 'inline-block';
             icon.style.display = 'none';
+            aiCard.style.display = 'none'; // reset
             
             try {
-                const response = await fetch('/email-review/analyze', {
+                let endpoint = '/email-review/analyze';
+                let payload = { email_text: emailText };
+                
+                if (customPrompt) {
+                    endpoint = '/email-review/custom_query';
+                    payload = { emails: [emailText], custom_prompt: customPrompt };
+                }
+
+                const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email_text: emailText })
+                    body: JSON.stringify(payload)
                 });
                 
                 const result = await response.json();
@@ -647,7 +673,11 @@
                     throw new Error(result.error || 'Failed to analyze');
                 }
                 
-                renderAnalysis(aiCard, result.analysis);
+                if (customPrompt) {
+                    renderCustomAnalysis(aiCard, result.answer);
+                } else {
+                    renderAnalysis(aiCard, result.analysis);
+                }
                 
             } catch (err) {
                 alert('Analysis Error: ' + err.message);
@@ -662,6 +692,7 @@
             if (!window.lastFetchedEmails || window.lastFetchedEmails.length === 0) return;
             
             const aiCard = document.getElementById('globalAIAnalysis');
+            const customPrompt = document.getElementById('custom_prompt').value.trim();
             const spinner = btn.querySelector('.spinner');
             const icon = btn.querySelector('i');
             
@@ -682,10 +713,18 @@
             aiCard.style.display = 'none'; // reset
             
             try {
-                const response = await fetch('/email-review/analyze_batch', {
+                let endpoint = '/email-review/analyze_batch';
+                let payload = { emails: allEmailTexts };
+                
+                if (customPrompt) {
+                    endpoint = '/email-review/custom_query';
+                    payload.custom_prompt = customPrompt;
+                }
+
+                const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ emails: allEmailTexts })
+                    body: JSON.stringify(payload)
                 });
                 
                 const result = await response.json();
@@ -694,15 +733,34 @@
                     throw new Error(result.error || 'Failed to analyze batch');
                 }
                 
-                renderAnalysis(aiCard, result.analysis, true);
+                if (customPrompt) {
+                    renderCustomAnalysis(aiCard, result.answer);
+                } else {
+                    renderAnalysis(aiCard, result.analysis, true);
+                }
                 
             } catch (err) {
-                alert('Batch Analysis Error: ' + err.message);
+                alert('Analysis Error: ' + err.message);
             } finally {
                 btn.disabled = false;
                 spinner.style.display = 'none';
                 icon.style.display = 'inline-block';
             }
+        }
+
+        function renderCustomAnalysis(container, answer) {
+            container.style.display = 'block';
+            container.style.background = 'rgba(59, 130, 246, 0.1)';
+            container.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+            
+            container.innerHTML = `
+                <div class="ai-header" style="color: var(--primary-color);">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Custom AI Query Result
+                </div>
+                <div style="padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px; font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap;">
+                    ${answer}
+                </div>
+            `;
         }
 
         function renderAnalysis(container, data, isBatch = false) {

@@ -7,14 +7,69 @@ from pathlib import Path
 from sqlalchemy import text
 from apps.ar_contact_updates.views import _engine
 
-# In-memory storage
+# In-memory storage (mirrors DB state)
 _ar_contacts_cache = {}  # {client_contact_id: {client_name, contact_name, contact_title, email}}
 _ar_contacts_changes = []  # List of change events
 _is_initialized = False
 _last_email_sent_date = None
 _ar_state_file = Path("apps/ar_contact_updates/ar_state.json")
 
+def _ensure_state_table():
+    """Ensure the persistent state table exists in the DB."""
+    engine = _engine()
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS golive_app_state (
+                    app_name VARCHAR(100) NOT NULL,
+                    state_key VARCHAR(100) NOT NULL,
+                    state_value LONGTEXT,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    PRIMARY KEY (app_name, state_key)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            """))
+    except Exception as e:
+        print(f"[AR Contacts] Error ensuring state table: {e}")
+    finally:
+        engine.dispose()
+
+def _get_db_state(key):
+    engine = _engine()
+    try:
+        with engine.begin() as conn:
+            res = conn.execute(text("SELECT state_value FROM golive_app_state WHERE app_name = 'ar_contact_updates' AND state_key = :key"), {"key": key}).fetchone()
+            return res[0] if res else None
+    except Exception as e:
+        return None
+    finally:
+        engine.dispose()
+
+def _set_db_state(key, value):
+    engine = _engine()
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("""
+                INSERT INTO golive_app_state (app_name, state_key, state_value)
+                VALUES ('ar_contact_updates', :key, :value)
+                ON DUPLICATE KEY UPDATE state_value = :value
+            """), {"key": key, "value": value})
+    except Exception as e:
+        print(f"[AR Contacts] Error setting db state: {e}")
+    finally:
+        engine.dispose()
+
 def load_ar_state():
+    # 1. Try Database first (for Render persistence)
+    try:
+        _ensure_state_table()
+        db_data = _get_db_state("full_state")
+        if db_data:
+            state = json.loads(db_data)
+            return state.get("cache", {}), state.get("changes", []), state.get("last_email_sent_date")
+    except Exception as e:
+        print(f"[AR Contacts] DB load failed, falling back to file: {e}")
+
+    # 2. Fallback to local file (for local dev or if DB fails)
     if _ar_state_file.exists():
         try:
             with open(_ar_state_file, "r") as f:
@@ -26,7 +81,7 @@ def load_ar_state():
 
 def save_ar_state(cache, changes, last_email_sent_date=None):
     try:
-        # Load existing first to merge changes from other workers
+        # Load existing first to merge changes (in case of multi-worker/restart overlap)
         existing_cache, existing_changes, existing_email_date = load_ar_state()
         
         # Merge changes by a unique key to prevent duplicates
@@ -60,20 +115,26 @@ def save_ar_state(cache, changes, last_email_sent_date=None):
         # Filter cache to remove any existing ACME Catering entries
         clean_cache = {cid: data for cid, data in cache.items() if "ACME Catering" not in data.get('client_name', '')}
 
-        # Only write to disk on Render; skip locally to keep the workspace clean
+        state_payload = {
+            "cache": clean_cache, 
+            "changes": filtered_changes,
+            "last_email_sent_date": final_email_date
+        }
+
+        # 1. Save to Database (Reliable on Render)
+        _set_db_state("full_state", json.dumps(state_payload))
+
+        # 2. Skip local file write on Render (to avoid clutter if persistent disk isn't used)
+        # But we still do it locally for debugging.
         _is_render = any(os.getenv(v) for v in ("RENDER", "RENDER_SERVICE_ID", "RENDER_EXTERNAL_URL"))
         if not _is_render:
-            return filtered_changes
-
-        # Atomic write
-        temp_file = _ar_state_file.with_suffix(".tmp")
-        with open(temp_file, "w") as f:
-            json.dump({
-                "cache": clean_cache, 
-                "changes": filtered_changes,
-                "last_email_sent_date": final_email_date
-            }, f)
-        temp_file.replace(_ar_state_file)
+            try:
+                temp_file = _ar_state_file.with_suffix(".tmp")
+                with open(temp_file, "w") as f:
+                    json.dump(state_payload, f)
+                temp_file.replace(_ar_state_file)
+            except Exception as e:
+                print(f"[AR Contacts] Local file save failed: {e}")
             
         return filtered_changes
     except Exception as e:
@@ -296,11 +357,12 @@ async def ar_contacts_monitoring_loop():
         # Check for weekly email
         try:
             now_la = datetime.now(ZoneInfo("America/Los_Angeles"))
-            # Monday is weekday() == 0
+            # Monday is weekday() == 0. Trigger only on Monday.
             if now_la.weekday() == 0 and now_la.hour >= 9:
                 today_str = now_la.strftime("%Y-%m-%d")
                 
-                # Check disk state again in case another worker already sent it
+                # Double-check DB state in case another worker/process already sent it
+                # We do this every loop on Monday morning.
                 _, _, disk_email_date = load_ar_state()
                 if disk_email_date == today_str:
                     _last_email_sent_date = today_str

@@ -243,3 +243,43 @@ async def analyze_batch_email(request: Request):
         
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+
+@router.post("/custom_query")
+async def custom_query(request: Request):
+    data = await request.json()
+    emails_data = data.get("emails", [])
+    custom_prompt = data.get("custom_prompt", "")
+    
+    if not emails_data:
+        return JSONResponse(status_code=400, content={"error": "No email text provided."})
+    if not custom_prompt:
+        return JSONResponse(status_code=400, content={"error": "No custom prompt provided."})
+        
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return JSONResponse(status_code=500, content={"error": "OpenAI API Key not configured."})
+        
+    combined_emails_text = "Here are the emails to analyze:\n\n"
+    for i, email_text in enumerate(emails_data):
+        combined_emails_text += f"---\nEmail {i+1}:\n{email_text}\n"
+    combined_emails_text += "\n---"
+
+    try:
+        client = openai.AsyncOpenAI(api_key=api_key)
+        
+        system_prompt = "You are a helpful assistant analyzing a batch of employee emails. Answer the user's specific query based only on the provided emails."
+        
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"User Query: {custom_prompt}\n\n{combined_emails_text}"}
+            ],
+            temperature=0.2
+        )
+        
+        answer = response.choices[0].message.content
+        return JSONResponse(content={"status": "success", "answer": answer})
+        
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
