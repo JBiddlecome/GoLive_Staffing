@@ -22,6 +22,10 @@ def _load_sent_records():
     return set()
 
 def _save_sent_records(records_set):
+    # Only write to disk on Render; skip locally to keep the workspace clean
+    _is_render = any(os.getenv(v) for v in ("RENDER", "RENDER_SERVICE_ID", "RENDER_EXTERNAL_URL"))
+    if not _is_render:
+        return
     with open(_sent_emails_file, "w") as f:
         json.dump(list(records_set), f)
 

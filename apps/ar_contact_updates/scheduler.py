@@ -42,6 +42,9 @@ def save_ar_state(cache, changes, last_email_sent_date=None):
         
         filtered_changes = []
         for c in all_changes:
+            # Skip records for ACME Catering (test client)
+            if "ACME Catering" in c.get('client_name', ''):
+                continue
             try:
                 ctime = datetime.strptime(c["timestamp"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=ZoneInfo("America/Los_Angeles"))
                 if ctime >= thirty_days_ago:
@@ -54,11 +57,19 @@ def save_ar_state(cache, changes, last_email_sent_date=None):
         
         final_email_date = last_email_sent_date or existing_email_date
 
+        # Filter cache to remove any existing ACME Catering entries
+        clean_cache = {cid: data for cid, data in cache.items() if "ACME Catering" not in data.get('client_name', '')}
+
+        # Only write to disk on Render; skip locally to keep the workspace clean
+        _is_render = any(os.getenv(v) for v in ("RENDER", "RENDER_SERVICE_ID", "RENDER_EXTERNAL_URL"))
+        if not _is_render:
+            return filtered_changes
+
         # Atomic write
         temp_file = _ar_state_file.with_suffix(".tmp")
         with open(temp_file, "w") as f:
             json.dump({
-                "cache": cache, 
+                "cache": clean_cache, 
                 "changes": filtered_changes,
                 "last_email_sent_date": final_email_date
             }, f)
@@ -70,6 +81,12 @@ def save_ar_state(cache, changes, last_email_sent_date=None):
         return changes
 
 def send_weekly_ar_email(changes: list[dict]):
+    # Only send emails from the live Render server — skip on local dev machines
+    _is_render = any(os.getenv(v) for v in ("RENDER", "RENDER_SERVICE_ID", "RENDER_EXTERNAL_URL"))
+    if not _is_render:
+        print("[AR Contacts] Skipping weekly email: not running on Render (local environment detected).")
+        return
+
     sender_email = "golive@culinarystaffing.com"
     receiver_emails = ["caleb@culinarystaffing.com", "jake@culinarystaffing.com"]
 
@@ -165,28 +182,31 @@ def send_weekly_ar_email(changes: list[dict]):
 def fetch_current_ar_contacts():
     engine = _engine()
     try:
-        sql = text("""
-            SELECT 
-                cc.client_contact_id,
-                c.name AS client_name,
-                cc.name AS contact_name,
-                cc.title AS contact_title,
-                cc.email
-            FROM client_contact cc
-            JOIN client c ON cc.client_id = c.client_id
-            WHERE cc.accounts_receivable = 1
-        """)
-        with engine.begin() as connection:
-            result = connection.execute(sql).mappings().all()
-            return {
-                str(r["client_contact_id"]): {
-                    "client_name": r["client_name"] or "N/A",
-                    "contact_name": r["contact_name"] or "N/A",
-                    "contact_title": r["contact_title"] or "N/A",
-                    "email": r["email"] or "N/A",
+            sql = text("""
+                SELECT 
+                    cc.client_contact_id,
+                    c.client_id,
+                    c.name AS client_name,
+                    cc.name AS contact_name,
+                    cc.title AS contact_title,
+                    cc.email
+                FROM client_contact cc
+                JOIN client c ON cc.client_id = c.client_id
+                WHERE cc.accounts_receivable = 1
+                  AND c.client_id != 63
+            """)
+            with engine.begin() as connection:
+                result = connection.execute(sql).mappings().all()
+                return {
+                    str(r["client_contact_id"]): {
+                        "client_id": r["client_id"],
+                        "client_name": r["client_name"] or "N/A",
+                        "contact_name": r["contact_name"] or "N/A",
+                        "contact_title": r["contact_title"] or "N/A",
+                        "email": r["email"] or "N/A",
+                    }
+                    for r in result
                 }
-                for r in result
-            }
     except Exception as e:
         print(f"[AR Contacts] Error fetching data: {e}")
         return None
@@ -250,6 +270,11 @@ async def ar_contacts_monitoring_loop():
                         
                     for cid in removed_ids:
                         contact = _ar_contacts_cache[cid]
+                        # Double-check skip for ACME Catering (if somehow still in cache)
+                        if "ACME Catering" in contact.get('client_name', ''):
+                            del _ar_contacts_cache[cid]
+                            continue
+
                         change = {
                             "timestamp": timestamp,
                             "action": "Removed",
