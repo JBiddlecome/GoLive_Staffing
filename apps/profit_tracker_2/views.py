@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+from typing import Optional
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -57,6 +58,7 @@ async def profit_tracker_2_page(request: Request):
 class ProfitPayload(BaseModel):
     start_date: str
     end_date: str
+    client_name: Optional[str] = None
 
 
 @router.post("/api/data")
@@ -146,3 +148,67 @@ async def get_profit_data(payload: ProfitPayload):
         "profit": round(profit, 2),
         "client_breakdown": client_breakdown,
     })
+
+
+@router.post("/api/weekly-client-data")
+async def get_weekly_client_data(payload: ProfitPayload):
+    if not payload.client_name:
+        raise HTTPException(status_code=400, detail="Client name is required.")
+
+    try:
+        start = pd.to_datetime(payload.start_date)
+        end = pd.to_datetime(payload.end_date)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid date format.")
+
+    df = _load_payroll()
+    
+    # Filter by client first
+    client_mask = df["Client"].astype("string").str.strip() == payload.client_name
+    df = df.loc[client_mask].copy()
+    
+    if df.empty:
+        return JSONResponse({"weeks": []})
+
+    # Filter by date range
+    mask = df["Date"].between(start, end, inclusive="both")
+    df = df.loc[mask].copy()
+    
+    if df.empty:
+        return JSONResponse({"weeks": []})
+
+    # Calculate additional columns
+    df["msp_fee"] = df["Total Bill"] * df["MSP rate"]
+    df["wc_fee"] = df["Total Bill"] * df["WC rate"]
+    
+    # Group by week (Monday-Sunday)
+    # W-SUN means week ending on Sunday. label='left' would label it by the Monday.
+    # However, to ensure it starts on Monday, we use 'W-SUN' and ensure our start/end dates align if needed, 
+    # but pandas resample handles the bins.
+    
+    # We want Monday labels.
+    df.set_index("Date", inplace=True)
+    weekly = df.resample("W-MON", label="left", closed="left")[["Total Bill", "Gross Pay", "msp_fee", "wc_fee"]].sum()
+    
+    weeks_data = []
+    for dt, r in weekly.iterrows():
+        c_bill = float(r["Total Bill"])
+        c_pay = float(r["Gross Pay"])
+        c_msp = float(r["msp_fee"])
+        c_wc = float(r["wc_fee"])
+        c_tax = c_pay * 0.10
+        c_profit = c_bill - c_pay - c_msp - c_wc - c_tax
+        c_profit_pct = (c_profit / c_bill * 100) if c_bill else 0.0
+        
+        weeks_data.append({
+            "week_start": dt.strftime("%Y-%m-%d"),
+            "total_bill": round(c_bill, 2),
+            "gross_pay": round(c_pay, 2),
+            "msp_fee": round(c_msp, 2),
+            "wc_fee": round(c_wc, 2),
+            "payroll_tax": round(c_tax, 2),
+            "profit": round(c_profit, 2),
+            "profit_pct": round(c_profit_pct, 1),
+        })
+
+    return JSONResponse({"weeks": weeks_data})

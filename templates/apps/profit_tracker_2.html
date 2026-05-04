@@ -344,35 +344,27 @@
         font-style: italic;
     }
 
-    @keyframes rotation {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+    .pt-chart-container {
+        margin-top: 2rem;
+        background: var(--pt-glass-bg);
+        border: 1px solid var(--pt-glass-border);
+        border-radius: var(--pt-radius);
+        padding: 1.5rem;
+        box-shadow: var(--pt-card-shadow);
+        animation: fadeInUp 0.8s ease-out 0.9s both;
     }
 
-    @keyframes fadeInDown {
-        from { opacity: 0; transform: translateY(-20px); }
-        to { opacity: 1; transform: translateY(0); }
+    select.pt-input {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 1.25rem;
+        padding-right: 2.5rem !important;
+        min-width: 200px;
     }
-
-    @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes zoomIn {
-        from { opacity: 0; transform: scale(0.95); }
-        to { opacity: 1; transform: scale(1); }
-    }
-
-    /* Staggered animation delays */
-    .pt-dashboard .pt-card:nth-child(1) { animation-delay: 0.1s; }
-    .pt-dashboard .pt-card:nth-child(2) { animation-delay: 0.2s; }
-    .pt-dashboard .pt-card:nth-child(3) { animation-delay: 0.3s; }
-    .pt-dashboard .pt-card:nth-child(4) { animation-delay: 0.4s; }
-    .pt-dashboard .pt-card:nth-child(5) { animation-delay: 0.5s; }
-    .pt-dashboard .pt-card:nth-child(6) { animation-delay: 0.6s; }
-    .pt-dashboard .pt-card:nth-child(7) { animation-delay: 0.7s; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <div class="pt-wrapper-main">
     <div class="pt-header">
         <h1>Profit Tracker 2</h1>
@@ -387,6 +379,12 @@
         <div class="pt-control-group">
             <label for="endDate">End Date</label>
             <input type="date" id="endDate" class="pt-input" value="{{ end_date }}">
+        </div>
+        <div class="pt-control-group">
+            <label for="clientSelect">Analyze Single Client</label>
+            <select id="clientSelect" class="pt-input" onchange="updateClientChart()">
+                <option value="">-- Select Client (Optional) --</option>
+            </select>
         </div>
         <button class="pt-btn" onclick="fetchData()">Calculate</button>
     </div>
@@ -458,6 +456,13 @@
             </div>
         </div>
 
+        <div class="pt-chart-container" id="clientChartSection" style="display: none;">
+            <div class="pt-breakdown-title" id="clientChartTitle">Weekly Performance</div>
+            <div style="height: 400px; position: relative;">
+                <canvas id="clientChart"></canvas>
+            </div>
+        </div>
+
         <div class="pt-table-container">
             <h2 class="pt-table-title">Client Breakdown</h2>
             <div class="pt-table-wrapper">
@@ -506,6 +511,8 @@
         document.getElementById(id).style.width = percentStr;
     };
 
+    let clientChartInstance = null;
+
     async function fetchData() {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
@@ -517,6 +524,7 @@
 
         document.getElementById('loader').style.display = 'block';
         document.getElementById('dashboardContent').style.display = 'none';
+        document.getElementById('clientChartSection').style.display = 'none';
 
         try {
             const response = await fetch('/profit-tracker-2/api/data', {
@@ -567,6 +575,23 @@
                 setWidth('barProfit', pctProfit);
             }, 100);
 
+            // Populate Client Select Dropdown
+            const clientSelect = document.getElementById('clientSelect');
+            const currentValue = clientSelect.value;
+            clientSelect.innerHTML = '<option value="">-- Select Client (Optional) --</option>';
+            
+            if (data.client_breakdown) {
+                data.client_breakdown.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.client_name;
+                    opt.textContent = c.client_name;
+                    clientSelect.appendChild(opt);
+                });
+                if (currentValue && data.client_breakdown.find(c => c.client_name === currentValue)) {
+                    clientSelect.value = currentValue;
+                }
+            }
+
             // Populate Client Breakdown Table
             const tbody = document.getElementById('clientTableBody');
             tbody.innerHTML = '';
@@ -575,6 +600,12 @@
                 data.client_breakdown.forEach(client => {
                     const tr = document.createElement('tr');
                     const pctColor = client.profit_pct >= 0 ? 'color: var(--pt-success)' : 'color: var(--pt-danger)';
+                    tr.style.cursor = 'pointer';
+                    tr.onclick = () => {
+                        document.getElementById('clientSelect').value = client.client_name;
+                        updateClientChart();
+                        window.scrollTo({ top: document.getElementById('clientChartSection').offsetTop - 100, behavior: 'smooth' });
+                    };
                     tr.innerHTML = `
                         <td class="font-medium text-white">${client.client_name}</td>
                         <td class="text-right">${formatCurrency(client.total_bill)}</td>
@@ -594,11 +625,167 @@
             document.getElementById('loader').style.display = 'none';
             document.getElementById('dashboardContent').style.display = 'block';
 
+            if (clientSelect.value) {
+                updateClientChart();
+            }
+
         } catch (error) {
             console.error("Error:", error);
             alert("An error occurred while fetching the data.");
             document.getElementById('loader').style.display = 'none';
         }
+    }
+
+    async function updateClientChart() {
+        const clientName = document.getElementById('clientSelect').value;
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+
+        if (!clientName) {
+            document.getElementById('clientChartSection').style.display = 'none';
+            return;
+        }
+
+        document.getElementById('clientChartTitle').innerText = `Weekly Performance: ${clientName}`;
+        document.getElementById('clientChartSection').style.display = 'block';
+
+        try {
+            const response = await fetch('/profit-tracker-2/api/weekly-client-data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    start_date: startDate, 
+                    end_date: endDate,
+                    client_name: clientName
+                })
+            });
+
+            const data = await response.json();
+            renderChart(data.weeks);
+        } catch (error) {
+            console.error("Error fetching weekly data:", error);
+        }
+    }
+
+    function renderChart(weeks) {
+        const ctx = document.getElementById('clientChart').getContext('2d');
+        
+        const labels = weeks.map(w => w.week_start);
+        const datasets = [
+            {
+                label: 'Total Bill',
+                data: weeks.map(w => w.total_bill),
+                borderColor: '#38bdf8',
+                backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                fill: true,
+                tension: 0.4
+            },
+            {
+                label: 'Gross Pay',
+                data: weeks.map(w => w.gross_pay),
+                borderColor: '#60a5fa',
+                tension: 0.4,
+                hidden: true
+            },
+            {
+                label: 'MSP Fee',
+                data: weeks.map(w => w.msp_fee),
+                borderColor: '#f472b6',
+                tension: 0.4,
+                hidden: true
+            },
+            {
+                label: 'WC Fee',
+                data: weeks.map(w => w.wc_fee),
+                borderColor: '#fbbf24',
+                tension: 0.4,
+                hidden: true
+            },
+            {
+                label: 'Payroll Tax',
+                data: weeks.map(w => w.payroll_tax),
+                borderColor: '#f87171',
+                tension: 0.4,
+                hidden: true
+            },
+            {
+                label: 'Net Profit',
+                data: weeks.map(w => w.profit),
+                borderColor: '#34d399',
+                backgroundColor: 'rgba(52, 211, 153, 0.1)',
+                fill: true,
+                tension: 0.4
+            },
+            {
+                label: 'Profit %',
+                data: weeks.map(w => w.profit_pct),
+                borderColor: '#fbbf24',
+                yAxisID: 'y1',
+                tension: 0.4,
+                borderDash: [5, 5]
+            }
+        ];
+
+        if (clientChartInstance) {
+            clientChartInstance.destroy();
+        }
+
+        clientChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: { labels, datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { 
+                            color: '#94a3b8',
+                            callback: value => formatCurrency(value)
+                        }
+                    },
+                    y1: {
+                        position: 'right',
+                        beginAtZero: true,
+                        grid: { display: false },
+                        ticks: { 
+                            color: '#fbbf24',
+                            callback: value => value + '%'
+                        }
+                    },
+                    x: {
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: '#94a3b8' }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: { color: '#f8fafc' }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) label += ': ';
+                                if (context.dataset.yAxisID === 'y1') {
+                                    label += context.parsed.y + '%';
+                                } else {
+                                    label += formatCurrency(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }
 
     // Load data on initial render
