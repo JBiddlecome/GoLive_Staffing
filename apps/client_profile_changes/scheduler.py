@@ -215,6 +215,11 @@ def _save_state(client_cache, venue_cache, late_fee_cache, changes, last_email_s
             else:
                 lfc_serialisable[str(cid)] = val
 
+        # Only write to disk on Render; skip locally to keep the workspace clean
+        _is_render = any(os.getenv(v) for v in ("RENDER", "RENDER_SERVICE_ID", "RENDER_EXTERNAL_URL"))
+        if not _is_render:
+            return filtered
+
         # Atomic write
         temp = _state_file.with_suffix(".tmp")
         with open(temp, "w") as f:

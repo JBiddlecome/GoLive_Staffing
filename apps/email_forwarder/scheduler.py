@@ -47,6 +47,11 @@ def _load_state() -> dict:
 
 def _save_state(state: dict) -> None:
     try:
+        # Only write to disk on Render; skip locally to keep the workspace clean
+        _is_render = any(os.getenv(v) for v in ("RENDER", "RENDER_SERVICE_ID", "RENDER_EXTERNAL_URL"))
+        if not _is_render:
+            return
+
         tmp = _STATE_FILE.with_suffix(".tmp")
         with open(tmp, "w") as f:
             json.dump(state, f, indent=2)
