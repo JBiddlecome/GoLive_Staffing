@@ -106,6 +106,35 @@ IGNORE_COLUMNS = COLUMN_DOCS["IGNORE_COLUMNS"]
 DATA_READY = False
 DATA_LOAD_ERROR: str | None = None
 
+# Tables excluded entirely — AI cannot query or know about these
+EXCLUDED_TABLES = {
+    # Security / system tables
+    "oauth_access_tokens", "oauth_authorization_codes", "oauth_clients",
+    "oauth_jwt", "oauth_public_keys", "oauth_refresh_tokens",
+    "oauth_scopes", "oauth_users", "session", "migration", "golive_app_state",
+    # Large / low-analytics-value tables excluded for performance
+    "onboard_forms", "event_document", "user_party", "publish",
+    "notification_seen", "employee_profile_updates", "notification_subscription",
+    "employee_uniform", "employee_certification", "debug_publishing",
+    "shift_position_tool", "shift_position_grooming_tool",
+    "shift_position_uniform", "notification_addressee", "mail_queue",
+    "notification", "publish_employee2", "push_notifications",
+    "publish_employee",
+}
+
+# Specific columns blocked per table — stripped before loading into DuckDB
+BLACKLIST = {
+    "employee": ["sex", "dob", "ssn"],
+}
+
+# Per-table SQL WHERE clauses or custom queries to limit loaded data.
+# Use {cols} as a placeholder for the safe column list.
+TABLE_FILTERS = {
+    "history_entry": "SELECT {cols} FROM `history_entry` WHERE `created_at` >= '2024-01-01'",
+    "event":         "SELECT {cols} FROM `event` WHERE `date` >= '2024-01-01'",
+    "timesheet":     "SELECT {cols} FROM `timesheet` ORDER BY `timesheet_id` DESC LIMIT 150000",
+}
+
 def load_data() -> int:
     total_loaded = 0
     engine = _get_staffing_engine()
