@@ -16,3 +16,5 @@ apps/msp_dashboard/msp_completed_shifts.json
 apps/credit_card_clients/cc_sent_emails.json
 apps/client_profile_changes/cpc_state.json
 apps/ar_contact_updates/ar_state.json
+scratch/monthly_client_breakdown.csv
+scratch/monthly_summary.csv

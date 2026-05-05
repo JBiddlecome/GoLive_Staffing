@@ -100,6 +100,7 @@ async def get_profit_data(payload: ProfitPayload):
                 sp.bonus,
                 c.name AS client_name,
                 COALESCE(m.name, '') AS msp_name,
+                c.payment_type,
                 se.bill_rate,
                 se.rate AS pay_rate,
                 v.service_charge AS venue_service_charge,
@@ -164,6 +165,7 @@ async def get_profit_data(payload: ProfitPayload):
             "gross_pay": 0,
             "msp_fee": 0,
             "wc_fee": 0,
+            "cc_fee": 0,
             "payroll_tax": 0,
             "other_work": 0,
             "profit": 0,
@@ -439,13 +441,18 @@ async def get_profit_data(payload: ProfitPayload):
         msp_fee = total_bill * msp_rate
         wc_fee = total_bill * wc_rate
 
+        # Credit card processing fee: 2.9% of total_bill for CC clients (payment_type=1)
+        payment_type = row.get("payment_type")
+        cc_fee = total_bill * 0.029 if (pd.notna(payment_type) and int(payment_type) == 1) else 0.0
+
         return pd.Series({
             "client_name": row["client_name"],
             "msp_name": row.get("msp_name", ""),
             "total_bill": total_bill,
             "total_pay": total_pay,
             "msp_fee": msp_fee,
-            "wc_fee": wc_fee
+            "wc_fee": wc_fee,
+            "cc_fee": cc_fee
         })
 
     calc_df = df.apply(process_row, axis=1)
@@ -454,10 +461,11 @@ async def get_profit_data(payload: ProfitPayload):
     gross_pay_sum = float(calc_df["total_pay"].sum())
     msp_fee_sum = float(calc_df["msp_fee"].sum())
     wc_fee_sum = float(calc_df["wc_fee"].sum())
+    cc_fee_sum = float(calc_df["cc_fee"].sum())
     
     payroll_tax = gross_pay_sum * 0.10
     
-    profit = total_bill_sum - gross_pay_sum - msp_fee_sum - wc_fee_sum - payroll_tax - other_work_sum
+    profit = total_bill_sum - gross_pay_sum - msp_fee_sum - wc_fee_sum - cc_fee_sum - payroll_tax - other_work_sum
     
     # Build a lookup: client_name -> msp_name (take first non-empty value)
     msp_lookup = {}
@@ -467,15 +475,16 @@ async def get_profit_data(payload: ProfitPayload):
         if cname not in msp_lookup or (not msp_lookup[cname] and mname):
             msp_lookup[cname] = mname if pd.notna(mname) else ""
 
-    client_group = calc_df.groupby("client_name")[["total_bill", "total_pay", "msp_fee", "wc_fee"]].sum().reset_index()
+    client_group = calc_df.groupby("client_name")[["total_bill", "total_pay", "msp_fee", "wc_fee", "cc_fee"]].sum().reset_index()
     client_breakdown = []
     for _, r in client_group.iterrows():
         c_bill = float(r["total_bill"])
         c_pay = float(r["total_pay"])
         c_msp = float(r["msp_fee"])
         c_wc = float(r["wc_fee"])
+        c_cc = float(r["cc_fee"])
         c_tax = c_pay * 0.10
-        c_profit = c_bill - c_pay - c_msp - c_wc - c_tax
+        c_profit = c_bill - c_pay - c_msp - c_wc - c_cc - c_tax
         client_breakdown.append({
             "client_name": r["client_name"],
             "msp_name": msp_lookup.get(r["client_name"], ""),
@@ -483,6 +492,7 @@ async def get_profit_data(payload: ProfitPayload):
             "gross_pay": round(c_pay, 2),
             "msp_fee": round(c_msp, 2),
             "wc_fee": round(c_wc, 2),
+            "cc_fee": round(c_cc, 2),
             "payroll_tax": round(c_tax, 2),
             "profit": round(c_profit, 2)
         })
@@ -494,6 +504,7 @@ async def get_profit_data(payload: ProfitPayload):
         "gross_pay": round(gross_pay_sum, 2),
         "msp_fee": round(msp_fee_sum, 2),
         "wc_fee": round(wc_fee_sum, 2),
+        "cc_fee": round(cc_fee_sum, 2),
         "payroll_tax": round(payroll_tax, 2),
         "other_work": round(other_work_sum, 2),
         "profit": round(profit, 2),
@@ -531,6 +542,7 @@ async def get_weekly_client_data(payload: ProfitPayload):
                 e.date,
                 sp.bonus,
                 c.name AS client_name,
+                c.payment_type,
                 se.bill_rate,
                 se.rate AS pay_rate,
                 v.service_charge AS venue_service_charge,
@@ -759,19 +771,24 @@ async def get_weekly_client_data(payload: ProfitPayload):
         msp_fee = total_bill * msp_rate
         wc_fee = total_bill * wc_rate
 
+        # Credit card processing fee: 2.9% of total_bill for CC clients (payment_type=1)
+        payment_type = row.get("payment_type")
+        cc_fee = total_bill * 0.029 if (pd.notna(payment_type) and int(payment_type) == 1) else 0.0
+
         return pd.Series({
             "date": row["date"],
             "total_bill": total_bill,
             "total_pay": total_pay,
             "msp_fee": msp_fee,
-            "wc_fee": wc_fee
+            "wc_fee": wc_fee,
+            "cc_fee": cc_fee
         })
 
     calc_df = df.apply(process_row, axis=1)
     calc_df["date"] = pd.to_datetime(calc_df["date"])
     calc_df.set_index("date", inplace=True)
     
-    weekly = calc_df.resample("W-MON", label="left", closed="left")[["total_bill", "total_pay", "msp_fee", "wc_fee"]].sum()
+    weekly = calc_df.resample("W-MON", label="left", closed="left")[["total_bill", "total_pay", "msp_fee", "wc_fee", "cc_fee"]].sum()
     
     weeks_data = []
     for dt, r in weekly.iterrows():
@@ -779,8 +796,9 @@ async def get_weekly_client_data(payload: ProfitPayload):
         c_pay = float(r["total_pay"])
         c_msp = float(r["msp_fee"])
         c_wc = float(r["wc_fee"])
+        c_cc = float(r["cc_fee"])
         c_tax = c_pay * 0.10
-        c_profit = c_bill - c_pay - c_msp - c_wc - c_tax
+        c_profit = c_bill - c_pay - c_msp - c_wc - c_cc - c_tax
         c_profit_pct = (c_profit / c_bill * 100) if c_bill else 0.0
         
         weeks_data.append({
@@ -789,6 +807,7 @@ async def get_weekly_client_data(payload: ProfitPayload):
             "gross_pay": round(c_pay, 2),
             "msp_fee": round(c_msp, 2),
             "wc_fee": round(c_wc, 2),
+            "cc_fee": round(c_cc, 2),
             "payroll_tax": round(c_tax, 2),
             "profit": round(c_profit, 2),
             "profit_pct": round(c_profit_pct, 1),
