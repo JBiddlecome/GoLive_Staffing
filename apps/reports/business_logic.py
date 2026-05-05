@@ -22,11 +22,14 @@ def _load_sections() -> dict[str, str]:
 
     text = _REF_PATH.read_text(encoding="utf-8")
     sections: dict[str, str] = {}
+    # Split on ## headers (level 2), keeping the header text
     parts = re.split(r'^(## \d+\.\s+.+)$', text, flags=re.MULTILINE)
 
+    # parts = [preamble, header1, body1, header2, body2, ...]
     for i in range(1, len(parts) - 1, 2):
         header = parts[i].strip()
         body = parts[i + 1].strip()
+        # Extract short key like "domain_overview" from "## 1. Domain Overview"
         m = re.match(r'## \d+\.\s+(.+)', header)
         if m:
             key = m.group(1).lower().replace(" ", "_").replace("&", "and")
@@ -40,6 +43,7 @@ _SECTIONS = _load_sections()
 
 # ─── Trigger map: which tables/keywords activate which sections ──────────────
 
+# Table-based triggers: if any of these tables appear, include the section
 _TABLE_TRIGGERS: dict[str, list[str]] = {
     "domain_overview": [
         "timesheet", "shift_employee", "shift_position", "shift",
@@ -87,6 +91,7 @@ _TABLE_TRIGGERS: dict[str, list[str]] = {
     ],
 }
 
+# Keyword triggers: if the user question contains these words, force-include section
 _KEYWORD_TRIGGERS: dict[str, list[str]] = {
     "minimum_pay_and_minimum_billing_rules": [
         "min pay", "minimum pay", "non-worked", "nonworked", "non worked",
@@ -111,7 +116,10 @@ _KEYWORD_TRIGGERS: dict[str, list[str]] = {
 
 
 def get_business_logic_prompt(tables_used: list[str], question: str = "") -> str:
-    """Returns relevant business logic sections for the given tables and question."""
+    """
+    Returns relevant business logic sections for the given tables and question.
+    Called by the Step B SQL generator to append domain knowledge.
+    """
     if not _SECTIONS:
         return ""
 
@@ -119,14 +127,17 @@ def get_business_logic_prompt(tables_used: list[str], question: str = "") -> str
     question_lower = question.lower()
     needed_keys: set[str] = set()
 
+    # 1. Table-based triggers
     for section_key, trigger_tables in _TABLE_TRIGGERS.items():
         if tables_set & set(trigger_tables):
             needed_keys.add(section_key)
 
+    # 2. Keyword-based triggers (force-include even if tables didn't trigger)
     for section_key, keywords in _KEYWORD_TRIGGERS.items():
         if any(kw in question_lower for kw in keywords):
             needed_keys.add(section_key)
 
+    # 3. Always include relationships and domain overview for any core table query
     core_tables = {"timesheet", "shift_employee", "shift_position", "shift",
                    "event", "client", "venue", "employee"}
     if tables_set & core_tables:
@@ -136,6 +147,7 @@ def get_business_logic_prompt(tables_used: list[str], question: str = "") -> str
     if not needed_keys:
         return ""
 
+    # Build prompt from matched sections, in document order
     parts = []
     for key in _SECTIONS:
         if key in needed_keys:
@@ -150,7 +162,10 @@ def get_business_logic_prompt(tables_used: list[str], question: str = "") -> str
 
 
 def get_planner_context() -> str:
-    """Returns a compact domain summary for the Step A planner prompt."""
+    """
+    Returns a compact domain summary for the Step A planner prompt.
+    Helps the planner pick the right tables for complex questions.
+    """
     parts = []
     for key in ("domain_overview", "entity_hierarchy_and_join_paths"):
         if key in _SECTIONS:
