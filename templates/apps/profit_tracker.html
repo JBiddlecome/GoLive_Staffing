@@ -254,6 +254,7 @@
     .bg-gross { background: #60a5fa; }
     .bg-msp { background: #f472b6; }
     .bg-wc { background: #fbbf24; }
+    .bg-cc { background: #a78bfa; }
     .bg-tax { background: #f87171; }
     .bg-other { background: #c084fc; }
 
@@ -486,6 +487,12 @@
             </div>
 
             <div class="pt-card expense">
+                <div class="pt-card-title">CC Fee (2.9%)</div>
+                <div class="pt-card-value" id="valCcFee">$0.00</div>
+                <div class="pt-card-percent" id="pctCcFee">0%</div>
+            </div>
+
+            <div class="pt-card expense">
                 <div class="pt-card-title">Payroll Tax</div>
                 <div class="pt-card-value" id="valPayrollTax">$0.00</div>
                 <div class="pt-card-percent" id="pctPayrollTax">0%</div>
@@ -510,6 +517,7 @@
                 <div class="pt-progress-segment bg-gross" id="barGross" style="width: 0%" title="Gross Pay"></div>
                 <div class="pt-progress-segment bg-msp" id="barMsp" style="width: 0%" title="MSP Fee"></div>
                 <div class="pt-progress-segment bg-wc" id="barWc" style="width: 0%" title="WC Fee"></div>
+                <div class="pt-progress-segment bg-cc" id="barCc" style="width: 0%" title="CC Fee"></div>
                 <div class="pt-progress-segment bg-tax" id="barTax" style="width: 0%" title="Payroll Tax"></div>
                 <div class="pt-progress-segment bg-other" id="barOther" style="width: 0%" title="Other Work"></div>
                 <div class="pt-progress-segment bg-profit" id="barProfit" style="width: 0%" title="Profit"></div>
@@ -519,6 +527,7 @@
                 <div class="pt-legend-item"><div class="pt-legend-dot bg-gross"></div> Gross Pay</div>
                 <div class="pt-legend-item"><div class="pt-legend-dot bg-msp"></div> MSP Fee</div>
                 <div class="pt-legend-item"><div class="pt-legend-dot bg-wc"></div> WC Fee</div>
+                <div class="pt-legend-item"><div class="pt-legend-dot bg-cc"></div> CC Fee</div>
                 <div class="pt-legend-item"><div class="pt-legend-dot bg-tax"></div> Payroll Tax</div>
                 <div class="pt-legend-item"><div class="pt-legend-dot bg-other"></div> Other Work</div>
             </div>
@@ -549,6 +558,7 @@
                             <th class="sortable text-right" data-key="gross_pay" onclick="sortTable('gross_pay')">Gross Pay</th>
                             <th class="sortable text-right" data-key="msp_fee" onclick="sortTable('msp_fee')">MSP Fee</th>
                             <th class="sortable text-right" data-key="wc_fee" onclick="sortTable('wc_fee')">WC Fee</th>
+                            <th class="sortable text-right" data-key="cc_fee" onclick="sortTable('cc_fee')">CC Fee</th>
                             <th class="sortable text-right" data-key="payroll_tax" onclick="sortTable('payroll_tax')">Payroll Tax</th>
                             <th class="sortable text-right" data-key="profit" onclick="sortTable('profit')">Profit</th>
                             <th class="sortable text-right" data-key="profit_pct" onclick="sortTable('profit_pct')">Profit %</th>
@@ -667,7 +677,7 @@
         tfoot.innerHTML = '';
 
         if (!list.length) {
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-gray-400 py-6">No client data found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center text-gray-400 py-6">No client data found.</td></tr>';
             return;
         }
 
@@ -688,6 +698,7 @@
                 <td class="text-right text-blue-400">${formatCurrency(client.gross_pay)}</td>
                 <td class="text-right text-pink-400">${formatCurrency(client.msp_fee)}</td>
                 <td class="text-right text-amber-400">${formatCurrency(client.wc_fee)}</td>
+                <td class="text-right" style="color: #a78bfa">${formatCurrency(client.cc_fee)}</td>
                 <td class="text-right text-red-400">${formatCurrency(client.payroll_tax)}</td>
                 <td class="text-right font-bold ${client.profit >= 0 ? 'text-emerald-400' : 'text-red-500'}">${formatCurrency(client.profit)}</td>
                 <td class="text-right font-bold" style="${pctColor}">${client.total_bill > 0 ? pp + '%' : '—'}</td>
@@ -697,7 +708,7 @@
 
         // Compute averages and totals
         const n = list.length;
-        const sums = { total_bill: 0, gross_pay: 0, msp_fee: 0, wc_fee: 0, payroll_tax: 0, profit: 0 };
+        const sums = { total_bill: 0, gross_pay: 0, msp_fee: 0, wc_fee: 0, cc_fee: 0, payroll_tax: 0, profit: 0 };
         list.forEach(c => { for (const k in sums) sums[k] += c[k]; });
         const avgProfitPct = sums.total_bill > 0 ? (sums.profit / sums.total_bill * 100).toFixed(1) : '0.0';
 
@@ -710,6 +721,7 @@
             <td class="text-right">${formatCurrency(sums.gross_pay / n)}</td>
             <td class="text-right">${formatCurrency(sums.msp_fee / n)}</td>
             <td class="text-right">${formatCurrency(sums.wc_fee / n)}</td>
+            <td class="text-right">${formatCurrency(sums.cc_fee / n)}</td>
             <td class="text-right">${formatCurrency(sums.payroll_tax / n)}</td>
             <td class="text-right">${formatCurrency(sums.profit / n)}</td>
             <td class="text-right">${avgProfitPct}%</td>
@@ -725,6 +737,7 @@
             <td class="text-right">${formatCurrency(sums.gross_pay)}</td>
             <td class="text-right">${formatCurrency(sums.msp_fee)}</td>
             <td class="text-right">${formatCurrency(sums.wc_fee)}</td>
+            <td class="text-right">${formatCurrency(sums.cc_fee)}</td>
             <td class="text-right">${formatCurrency(sums.payroll_tax)}</td>
             <td class="text-right">${formatCurrency(sums.profit)}</td>
             <td class="text-right">${avgProfitPct}%</td>
@@ -756,6 +769,7 @@
             setContent('valGrossPay', formatCurrency(data.gross_pay));
             setContent('valMspFee', formatCurrency(data.msp_fee));
             setContent('valWcFee', formatCurrency(data.wc_fee));
+            setContent('valCcFee', formatCurrency(data.cc_fee));
             setContent('valPayrollTax', formatCurrency(data.payroll_tax));
             setContent('valOtherWork', formatCurrency(data.other_work));
             setContent('valProfit', formatCurrency(data.profit));
@@ -763,6 +777,7 @@
             const pctGross = formatPercent(data.gross_pay, total);
             const pctMsp = formatPercent(data.msp_fee, total);
             const pctWc = formatPercent(data.wc_fee, total);
+            const pctCc = formatPercent(data.cc_fee, total);
             const pctTax = formatPercent(data.payroll_tax, total);
             const pctOther = formatPercent(data.other_work, total);
             const pctProfit = formatPercent(data.profit, total);
@@ -770,6 +785,7 @@
             setContent('pctGrossPay', pctGross);
             setContent('pctMspFee', pctMsp);
             setContent('pctWcFee', pctWc);
+            setContent('pctCcFee', pctCc);
             setContent('pctPayrollTax', pctTax);
             setContent('pctOtherWork', pctOther);
             setContent('pctProfit', pctProfit);
@@ -778,6 +794,7 @@
                 setWidth('barGross', pctGross);
                 setWidth('barMsp', pctMsp);
                 setWidth('barWc', pctWc);
+                setWidth('barCc', pctCc);
                 setWidth('barTax', pctTax);
                 setWidth('barOther', pctOther);
                 setWidth('barProfit', pctProfit);
