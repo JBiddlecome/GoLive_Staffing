@@ -1,0 +1,7899 @@
+{
+  "activation": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "token",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "type",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "related_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "data",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "additional_shift_pay": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "name",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "rate",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "start_date",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "end_date",
+      "type": "date",
+      "primary": false
+    }
+  ],
+  "attestation_question": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "question",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "first_shift",
+      "type": "tinyint(1)",
+      "primary": false
+    }
+  ],
+  "auth_assignment": [
+    {
+      "name": "item_name",
+      "type": "varchar(64)",
+      "primary": false
+    },
+    {
+      "name": "user_id",
+      "type": "varchar(64)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "auth_item": [
+    {
+      "name": "name",
+      "type": "varchar(64)",
+      "primary": false
+    },
+    {
+      "name": "type",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "description",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "rule_name",
+      "type": "varchar(64)",
+      "primary": false
+    },
+    {
+      "name": "data",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "updated_at",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "auth_item_child": [
+    {
+      "name": "parent",
+      "type": "varchar(64)",
+      "primary": false
+    },
+    {
+      "name": "child",
+      "type": "varchar(64)",
+      "primary": false
+    }
+  ],
+  "auth_rule": [
+    {
+      "name": "name",
+      "type": "varchar(64)",
+      "primary": false
+    },
+    {
+      "name": "data",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "updated_at",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "background": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "name",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "severity",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "deleted_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "deleted_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "billing_type": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "name",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "blocked_email": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "email",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_from",
+      "type": "varchar(255)",
+      "primary": false
+    }
+  ],
+  "calendar": [
+    {
+      "name": "calendar_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "start",
+      "type": "datetime",
+      "primary": false
+    },
+    {
+      "name": "end",
+      "type": "datetime",
+      "primary": false
+    }
+  ],
+  "certification": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "name",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "document_required",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "number_required",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "approval_required",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "can_expire",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "required",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "has_effective_date",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "has_max_allowed_months",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "minimum_days_of_hire",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "instructions",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "effective_date",
+      "type": "date",
+      "primary": true
+    },
+    {
+      "name": "reportable",
+      "type": "tinyint(3)",
+      "primary": true
+    },
+    {
+      "name": "issued_at_required",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "deleted_by",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "visible_when",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "set_it_on_profile",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "other_work_type_id",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "state",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "minimum_days_of_1st_shift",
+      "type": "int(11)",
+      "primary": true
+    }
+  ],
+  "client": [
+    {
+      "name": "client_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "staff_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "other_id",
+      "type": "varchar(45)",
+      "primary": true
+    },
+    {
+      "name": "sf_id",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "sf_user_id",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "name",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "address1",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "address2",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "address3",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "city",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "state",
+      "type": "varchar(45)",
+      "primary": true
+    },
+    {
+      "name": "zip",
+      "type": "varchar(45)",
+      "primary": true
+    },
+    {
+      "name": "phone",
+      "type": "varchar(24)",
+      "primary": true
+    },
+    {
+      "name": "fax",
+      "type": "varchar(24)",
+      "primary": true
+    },
+    {
+      "name": "contact",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "email",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "latitude",
+      "type": "varchar(20)",
+      "primary": true
+    },
+    {
+      "name": "longitude",
+      "type": "varchar(20)",
+      "primary": true
+    },
+    {
+      "name": "status",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "min_wage_id",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "workers_comp",
+      "type": "varchar(50)",
+      "primary": true
+    },
+    {
+      "name": "payment_type",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "cc_expiry_month",
+      "type": "varchar(2)",
+      "primary": true
+    },
+    {
+      "name": "cc_expiry_year",
+      "type": "varchar(4)",
+      "primary": true
+    },
+    {
+      "name": "pay_notes",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "wc_id",
+      "type": "int(100)",
+      "primary": true
+    },
+    {
+      "name": "invoiced",
+      "type": "tinyint(2)",
+      "primary": true
+    },
+    {
+      "name": "proceed",
+      "type": "tinyint(2)",
+      "primary": true
+    },
+    {
+      "name": "visible_tattoos_allow",
+      "type": "int(10)",
+      "primary": true
+    },
+    {
+      "name": "separate_venue",
+      "type": "tinyint(2)",
+      "primary": true
+    },
+    {
+      "name": "discount",
+      "type": "decimal(8,2)",
+      "primary": true
+    },
+    {
+      "name": "discount_vaild_date",
+      "type": "date",
+      "primary": true
+    },
+    {
+      "name": "date_created",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "c19_vaccine",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "deleted_by",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "invoice_name",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "payroll_hours_reminder_enabled",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "industry",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "industry_other",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "msa_expiration",
+      "type": "date",
+      "primary": true
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "msp_id",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "invoice_no",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "division_id",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "cancellation_deadline",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "invoices_offset",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "won_date",
+      "type": "date",
+      "primary": true
+    },
+    {
+      "name": "surcharge_deadline",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "sales_executive_id",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "auto_confirm",
+      "type": "tinyint(3)",
+      "primary": true
+    },
+    {
+      "name": "cancellation_deadline_pay",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "background",
+      "type": "tinyint(3)",
+      "primary": true
+    },
+    {
+      "name": "background_query_pending",
+      "type": "tinyint(3)",
+      "primary": true
+    },
+    {
+      "name": "net_terms_entry_id",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "bundle",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "no_break_penalty",
+      "type": "tinyint(3)",
+      "primary": true
+    },
+    {
+      "name": "credit_card_expiration",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "exposure_limit",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "credit_card_authorization_date",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "markup",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "billing_type_id",
+      "type": "int(11)",
+      "primary": true
+    }
+  ],
+  "client_background": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "background_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "client_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "client_certification": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "client_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "certification_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "client_contact": [
+    {
+      "name": "client_contact_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "client_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "sf_id",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "name",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "title",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "email",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "phone",
+      "type": "varchar(20)",
+      "primary": false
+    },
+    {
+      "name": "mobile",
+      "type": "varchar(20)",
+      "primary": false
+    },
+    {
+      "name": "office",
+      "type": "varchar(20)",
+      "primary": false
+    },
+    {
+      "name": "ext",
+      "type": "varchar(20)",
+      "primary": false
+    },
+    {
+      "name": "timesheet",
+      "type": "tinyint(4)",
+      "primary": false
+    },
+    {
+      "name": "invoicing",
+      "type": "tinyint(4)",
+      "primary": false
+    },
+    {
+      "name": "sort_order",
+      "type": "int(10) unsigned",
+      "primary": false
+    },
+    {
+      "name": "date_created",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "preferred_method",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "preferred",
+      "type": "tinyint(3)",
+      "primary": false
+    },
+    {
+      "name": "accounts_receivable",
+      "type": "tinyint(1)",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "phone_extension",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "mobile_extension",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "office_extension",
+      "type": "varchar(255)",
+      "primary": false
+    }
+  ],
+  "client_document": [
+    {
+      "name": "client_doc_id",
+      "type": "bigint(50)",
+      "primary": false
+    },
+    {
+      "name": "client_id",
+      "type": "bigint(50)",
+      "primary": false
+    },
+    {
+      "name": "user_id",
+      "type": "bigint(50)",
+      "primary": false
+    },
+    {
+      "name": "filename",
+      "type": "varchar(150)",
+      "primary": false
+    },
+    {
+      "name": "description",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "date_created",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "document_type_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "deleted_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "deleted_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "client_health_screening": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "client_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "venue_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "health_screening_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "effective_date",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "max_allowed_months",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "client_holiday": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "client_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "holiday_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "client_late_fee": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "client_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "late_fee_policy_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "client_multiplier": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "client_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "ot",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "dt",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "start_date",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "end_date",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "client_note": [
+    {
+      "name": "client_note_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "client_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "note",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "date",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "user_id",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "client_position": [
+    {
+      "name": "id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "client_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "del_group_id",
+      "type": "int(20)",
+      "primary": false
+    },
+    {
+      "name": "position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "del_standard_rate",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "del_tip_rate",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "del_pay_rate",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "del_bill_rate",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "del_surcharge",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "del_description",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "del_uniform_types",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "del_position_requirement",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "del_date_created",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "client_position_amount": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "client_position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "pay_rate",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "bill_rate",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "surcharge",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "note",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "start_date",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "end_date",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "client_position_certification": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "client_position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "del_client_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "del_position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "certification_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "client_position_grooming_tool": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "client_position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "del_client_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "del_position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "grooming_tool_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "client_position_tool": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "client_position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "del_client_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "del_position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "tool_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "client_position_uniform": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "client_position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "del_client_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "del_position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "uniform_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "client_purchase_order": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "client_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "venue_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "value",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "start_date",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "end_date",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "company_info": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "office_hours",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "user_guide_app",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "scheduling_event",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "call_out",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "attandance",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "backup_shift",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "meal_period",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "emergency_phone",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "uniform",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "reporting_hours",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "payroll",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "permanent_placement",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "food_handler",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "at_will_employment",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "final_note",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "pay_day",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "privacy",
+      "type": "text",
+      "primary": false
+    }
+  ],
+  "company_info_item": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "status",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "title",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "body",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "weight",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "interface",
+      "type": "varchar(255)",
+      "primary": false
+    }
+  ],
+  "county": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "state_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "name",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "date_created",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "user_created",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "date_updated",
+      "type": "timestamp",
+      "primary": false
+    }
+  ],
+  "debug_publishing": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "employee",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "publishing_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "shift_position_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "reason",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "datetime",
+      "primary": false
+    }
+  ],
+  "default_employee_position": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "eligible",
+      "type": "tinyint(1)",
+      "primary": false
+    }
+  ],
+  "del_group_rate": [
+    {
+      "name": "id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "group_id",
+      "type": "int(20)",
+      "primary": false
+    },
+    {
+      "name": "client_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "bill_rate",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "pay_rate",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "surcharge",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "date_created",
+      "type": "timestamp",
+      "primary": false
+    }
+  ],
+  "del_group_rate_amount": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "group_rate_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "pay_rate",
+      "type": "decimal(7,2)",
+      "primary": false
+    },
+    {
+      "name": "bill_rate",
+      "type": "decimal(7,2)",
+      "primary": false
+    },
+    {
+      "name": "surcharge",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "note",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "start_date",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "end_date",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "del_position_group": [
+    {
+      "name": "group_id",
+      "type": "int(20)",
+      "primary": false
+    },
+    {
+      "name": "group_name",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "date_created",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "deleted_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "deleted_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "del_position_move": [
+    {
+      "name": "position_move_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "client_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "group_id",
+      "type": "int(20)",
+      "primary": false
+    },
+    {
+      "name": "position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "old_group_id",
+      "type": "int(20)",
+      "primary": false
+    },
+    {
+      "name": "delete_status",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "date_created",
+      "type": "timestamp",
+      "primary": false
+    }
+  ],
+  "division": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "name",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "dnr": [
+    {
+      "name": "dnr_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "venue_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "date",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "reason_id",
+      "type": "int(100)",
+      "primary": false
+    },
+    {
+      "name": "other_reason",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "notes",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "bigint(50)",
+      "primary": false
+    },
+    {
+      "name": "client_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "notification_sent",
+      "type": "tinyint(3)",
+      "primary": false
+    }
+  ],
+  "document_type": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "reportable",
+      "type": "tinyint(3)",
+      "primary": false
+    },
+    {
+      "name": "label",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "type",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "visible_when",
+      "type": "text",
+      "primary": false
+    }
+  ],
+  "employee": [
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "first_name",
+      "type": "varchar(45)",
+      "primary": true
+    },
+    {
+      "name": "last_name",
+      "type": "varchar(45)",
+      "primary": true
+    },
+    {
+      "name": "email",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "start_date",
+      "type": "date",
+      "primary": true
+    },
+    {
+      "name": "payroll_id",
+      "type": "varchar(32)",
+      "primary": true
+    },
+    {
+      "name": "address1",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "address2",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "city",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "state",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "zip",
+      "type": "varchar(25)",
+      "primary": true
+    },
+    {
+      "name": "language",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "mobile",
+      "type": "varchar(25)",
+      "primary": true
+    },
+    {
+      "name": "home",
+      "type": "varchar(25)",
+      "primary": true
+    },
+    {
+      "name": "work",
+      "type": "varchar(25)",
+      "primary": true
+    },
+    {
+      "name": "status",
+      "type": "smallint(6)",
+      "primary": true
+    },
+    {
+      "name": "hr_status",
+      "type": "varchar(20)",
+      "primary": true
+    },
+    {
+      "name": "std_pay_rate",
+      "type": "decimal(5,2)",
+      "primary": true
+    },
+    {
+      "name": "photo",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "send_emails",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "flag",
+      "type": "tinyint(2)",
+      "primary": true
+    },
+    {
+      "name": "interview_notes",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "fhc",
+      "type": "varchar(150)",
+      "primary": true
+    },
+    {
+      "name": "fhc_expiry",
+      "type": "date",
+      "primary": true
+    },
+    {
+      "name": "latitude",
+      "type": "varchar(20)",
+      "primary": true
+    },
+    {
+      "name": "longitude",
+      "type": "varchar(20)",
+      "primary": true
+    },
+    {
+      "name": "restrict_to_exclusive",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "i9_completed",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "created_on",
+      "type": "datetime",
+      "primary": true
+    },
+    {
+      "name": "updated_on",
+      "type": "datetime",
+      "primary": true
+    },
+    {
+      "name": "orientation_schedule_date",
+      "type": "datetime",
+      "primary": true
+    },
+    {
+      "name": "orientation_complete_date",
+      "type": "date",
+      "primary": true
+    },
+    {
+      "name": "pp_mailing_list",
+      "type": "tinyint(4) unsigned",
+      "primary": true
+    },
+    {
+      "name": "uniforms_complete",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "uniforms_missing",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "howheard",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "expected_rate",
+      "type": "varchar(10)",
+      "primary": true
+    },
+    {
+      "name": "smartphone",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "transportation",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "trans_other",
+      "type": "varchar(50)",
+      "primary": true
+    },
+    {
+      "name": "referred_date",
+      "type": "date",
+      "primary": true
+    },
+    {
+      "name": "referred_by",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "interview_date",
+      "type": "date",
+      "primary": true
+    },
+    {
+      "name": "interviewer",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "apply_position",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "application_file",
+      "type": "varchar(150)",
+      "primary": true
+    },
+    {
+      "name": "worked_before",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "work_eligibility",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "applied_before",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "applied_date",
+      "type": "date",
+      "primary": true
+    },
+    {
+      "name": "currently_employed",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "contact_employer",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "provide_docs",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "hs_name",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "hs_study",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "hs_graduated",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "hs_degree",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "college_name",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "college_study",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "college_years",
+      "type": "varchar(45)",
+      "primary": true
+    },
+    {
+      "name": "college_graduated",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "college_degree",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "other_name",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "other_study",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "other_years",
+      "type": "varchar(45)",
+      "primary": true
+    },
+    {
+      "name": "other_graduated",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "other_degree",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "tips_certified",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "servsafe_certified",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "ca_fh_certificate",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "capable",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "accomodations",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "dob_month",
+      "type": "varchar(2)",
+      "primary": true
+    },
+    {
+      "name": "dob_day",
+      "type": "varchar(2)",
+      "primary": true
+    },
+    {
+      "name": "confidential",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "garnishment",
+      "type": "int(10)",
+      "primary": true
+    },
+    {
+      "name": "resume",
+      "type": "varchar(200)",
+      "primary": true
+    },
+    {
+      "name": "other_status",
+      "type": "int(50)",
+      "primary": true
+    },
+    {
+      "name": "background_date",
+      "type": "date",
+      "primary": true
+    },
+    {
+      "name": "county_id",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "c19_vaccine",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "deleted_by",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "start_date2",
+      "type": "date",
+      "primary": true
+    },
+    {
+      "name": "recruited_by",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "terminated_at",
+      "type": "datetime",
+      "primary": true
+    },
+    {
+      "name": "activated_at",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "background",
+      "type": "tinyint(3)",
+      "primary": true
+    },
+    {
+      "name": "background_query",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "created_from",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "work_area_address1",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "work_area_address2",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "work_area_city",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "work_area_state",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "work_area_zip",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "work_area_latitude",
+      "type": "varchar(20)",
+      "primary": true
+    },
+    {
+      "name": "work_area_longitude",
+      "type": "varchar(20)",
+      "primary": true
+    },
+    {
+      "name": "work_area_unit",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "work_area_distance",
+      "type": "float",
+      "primary": true
+    },
+    {
+      "name": "work_area_review",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "min_wage_id",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "region",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "status_reason",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "concierge_date",
+      "type": "date",
+      "primary": true
+    }
+  ],
+  "employee_application": [
+    {
+      "name": "employee_application_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "interview_date",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "interviewer",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "referred_by",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "referred_date",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "application_file",
+      "type": "varchar(150)",
+      "primary": false
+    },
+    {
+      "name": "date_created",
+      "type": "timestamp",
+      "primary": false
+    }
+  ],
+  "employee_available": [
+    {
+      "name": "employee_available_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "available",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "date",
+      "type": "date",
+      "primary": false
+    }
+  ],
+  "employee_background": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "background_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "employee_certification": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "certification_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "file",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "number",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "expires_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "approved_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "approved_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "issued_at",
+      "type": "date",
+      "primary": false
+    }
+  ],
+  "employee_clock_code": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "msp_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "code",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "employee_document": [
+    {
+      "name": "employee_document_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "filename",
+      "type": "varchar(150)",
+      "primary": false
+    },
+    {
+      "name": "description",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "datetime",
+      "type": "datetime",
+      "primary": false
+    },
+    {
+      "name": "user_id",
+      "type": "bigint(20)",
+      "primary": false
+    }
+  ],
+  "employee_experience": [
+    {
+      "name": "ee_id",
+      "type": "bigint(11)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "employer",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "address",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "phone",
+      "type": "varchar(45)",
+      "primary": false
+    },
+    {
+      "name": "title",
+      "type": "varchar(45)",
+      "primary": false
+    },
+    {
+      "name": "supervisor",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "whyleft",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "start",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "end",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "start_rate",
+      "type": "varchar(15)",
+      "primary": false
+    },
+    {
+      "name": "end_rate",
+      "type": "varchar(15)",
+      "primary": false
+    },
+    {
+      "name": "work_performed",
+      "type": "text",
+      "primary": false
+    }
+  ],
+  "employee_government": [
+    {
+      "name": "employee_document_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "filename",
+      "type": "varchar(150)",
+      "primary": false
+    },
+    {
+      "name": "description",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "datetime",
+      "type": "datetime",
+      "primary": false
+    },
+    {
+      "name": "user_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "document_type_id",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "employee_grooming_tool": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "grooming_tool_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "employee_health_screening": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "health_screening_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "date",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "approved_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "approved_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "file",
+      "type": "varchar(255)",
+      "primary": false
+    }
+  ],
+  "employee_language": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "language_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "date_created",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "user_created",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "date_updated",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "preferred",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "employee_note": [
+    {
+      "name": "employee_note_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "note",
+      "type": "longtext",
+      "primary": false
+    },
+    {
+      "name": "datetime",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "user_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "type",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "shift_employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    }
+  ],
+  "employee_other_work": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "other_work_type_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "work_hours",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "cost",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "notes",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "rate",
+      "type": "decimal(12,2)",
+      "primary": false
+    },
+    {
+      "name": "non_work_hours",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "date",
+      "type": "date",
+      "primary": false
+    }
+  ],
+  "employee_position": [
+    {
+      "name": "employee_position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "sub_type_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "level",
+      "type": "tinyint(4)",
+      "primary": false
+    },
+    {
+      "name": "rate",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "status",
+      "type": "tinyint(3)",
+      "primary": false
+    },
+    {
+      "name": "eligible",
+      "type": "tinyint(3)",
+      "primary": false
+    }
+  ],
+  "employee_profile_updates": [
+    {
+      "name": "id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "attribute_name",
+      "type": "varchar(200)",
+      "primary": false
+    },
+    {
+      "name": "old_value",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "new_value",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "updated_by",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "updated_on",
+      "type": "datetime",
+      "primary": false
+    }
+  ],
+  "employee_tool": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "tool_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "employee_uniform": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "uniform_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "event": [
+    {
+      "name": "event_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "client_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "venue_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "title",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "has_address",
+      "type": "tinyint(2)",
+      "primary": true
+    },
+    {
+      "name": "latitude",
+      "type": "varchar(20)",
+      "primary": true
+    },
+    {
+      "name": "longitude",
+      "type": "varchar(20)",
+      "primary": true
+    },
+    {
+      "name": "special_address",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "date",
+      "type": "date",
+      "primary": true
+    },
+    {
+      "name": "no_employees",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "emergency",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "travel_charge",
+      "type": "decimal(5,2)",
+      "primary": true
+    },
+    {
+      "name": "description",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "venue_details",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "admin_notes",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "directions",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "parking",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "parking_note",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "parking_reimbursement",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "check_in",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "background_requirements",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "document1",
+      "type": "varchar(150)",
+      "primary": true
+    },
+    {
+      "name": "document2",
+      "type": "varchar(150)",
+      "primary": true
+    },
+    {
+      "name": "document3",
+      "type": "varchar(150)",
+      "primary": true
+    },
+    {
+      "name": "description1",
+      "type": "varchar(150)",
+      "primary": true
+    },
+    {
+      "name": "description2",
+      "type": "varchar(150)",
+      "primary": true
+    },
+    {
+      "name": "description3",
+      "type": "varchar(150)",
+      "primary": true
+    },
+    {
+      "name": "invoice_label",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "verbal_timesheet",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "documents",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "timesheet_received",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "travel_pay",
+      "type": "decimal(5,2)",
+      "primary": true
+    },
+    {
+      "name": "staff_count_visible",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "county_id",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "address1",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "address2",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "state",
+      "type": "varchar(45)",
+      "primary": true
+    },
+    {
+      "name": "city",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "zip",
+      "type": "varchar(45)",
+      "primary": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "deleted_by",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "timeclock",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "timeclock_code_holder",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "clock_in_code",
+      "type": "varchar(10)",
+      "primary": true
+    },
+    {
+      "name": "clock_out_code",
+      "type": "varchar(10)",
+      "primary": true
+    },
+    {
+      "name": "timeclock_tolerance",
+      "type": "tinyint(3)",
+      "primary": true
+    },
+    {
+      "name": "timeclock_prestart_interval",
+      "type": "tinyint(3)",
+      "primary": true
+    },
+    {
+      "name": "timeclock_limit",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "purchase_order",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "no_break_penalty",
+      "type": "tinyint(3)",
+      "primary": true
+    },
+    {
+      "name": "stat_shifts_positions_count",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "stat_shifts_filled_confirmed_count",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "stat_shifts_filled_count",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "stat_filled_confirmed",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "stat_filled",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "stat_employees_confirmed_count",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "stat_employees_count",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "stat_waiting_for_employee_count",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "stat_waiting_for_admin_count",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "stat_shifts_published_count",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "stat_shifts_publish_scheduled_count",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "stat_shifts_count",
+      "type": "int(11)",
+      "primary": true
+    }
+  ],
+  "event_cancellation": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "type",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "minimum_bill",
+      "type": "tinyint(3)",
+      "primary": false
+    },
+    {
+      "name": "event_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "shift_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "minimum_pay",
+      "type": "tinyint(3)",
+      "primary": false
+    }
+  ],
+  "event_document": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "event_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "venue_document_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "filename",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "description",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "event_edits": [
+    {
+      "name": "id",
+      "type": "bigint(50)",
+      "primary": false
+    },
+    {
+      "name": "event_id",
+      "type": "bigint(50)",
+      "primary": false
+    },
+    {
+      "name": "new_data",
+      "type": "blob",
+      "primary": false
+    },
+    {
+      "name": "updated_by",
+      "type": "bigint(50)",
+      "primary": false
+    },
+    {
+      "name": "updated_on",
+      "type": "timestamp",
+      "primary": false
+    }
+  ],
+  "exclusive": [
+    {
+      "name": "exclusive_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "client_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "venue_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "reason",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "notes",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "date_created",
+      "type": "timestamp",
+      "primary": false
+    }
+  ],
+  "government_form": [
+    {
+      "name": "form_id",
+      "type": "int(100)",
+      "primary": false
+    },
+    {
+      "name": "form_type",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "date",
+      "type": "timestamp",
+      "primary": false
+    }
+  ],
+  "grooming_tool": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "name",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "deleted_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "deleted_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "health_screening": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "name",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "hiatus_employee": [
+    {
+      "name": "id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "reason_id",
+      "type": "int(200)",
+      "primary": false
+    },
+    {
+      "name": "added_by",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "date",
+      "type": "timestamp",
+      "primary": false
+    }
+  ],
+  "history_entry": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "related",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "related_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "model",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "model_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "changes",
+      "type": "mediumtext",
+      "primary": false
+    },
+    {
+      "name": "notes",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "keys",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "history_entry_notification": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "history_entry_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "history_entry_ids",
+      "type": "text",
+      "primary": false
+    }
+  ],
+  "holiday": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "name",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "date",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "job": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "name",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "data",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "queue_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "ended_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "status",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "params",
+      "type": "text",
+      "primary": false
+    }
+  ],
+  "language": [
+    {
+      "name": "language_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "language",
+      "type": "varchar(20)",
+      "primary": false
+    },
+    {
+      "name": "date_created",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "preferred",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "late_fee_policy": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "name",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "deleted_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "deleted_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "mail_queue": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "subject",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "datetime",
+      "primary": false
+    },
+    {
+      "name": "attempts",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "last_attempt_time",
+      "type": "datetime",
+      "primary": false
+    },
+    {
+      "name": "sent_time",
+      "type": "datetime",
+      "primary": false
+    },
+    {
+      "name": "time_to_send",
+      "type": "datetime",
+      "primary": false
+    },
+    {
+      "name": "swift_message",
+      "type": "longtext",
+      "primary": false
+    }
+  ],
+  "min_wage_rate": [
+    {
+      "name": "min_wage_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "description",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "default",
+      "type": "tinyint(4)",
+      "primary": false
+    }
+  ],
+  "min_wage_rate_amount": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "min_wage_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "rate",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "start_date",
+      "type": "datetime",
+      "primary": false
+    },
+    {
+      "name": "end_date",
+      "type": "datetime",
+      "primary": false
+    },
+    {
+      "name": "note",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "msp": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "name",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "rate",
+      "type": "decimal(8,4)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "penalty_formula",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "penalty_formula_multiplier",
+      "type": "decimal(8,4)",
+      "primary": false
+    }
+  ],
+  "net_terms_entry": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "net_terms",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "notification": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "title",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "type",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "body",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "data",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "severity",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "attachments",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "published_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "processed_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "push_notification",
+      "type": "tinyint(1)",
+      "primary": false
+    },
+    {
+      "name": "popup",
+      "type": "tinyint(1)",
+      "primary": false
+    },
+    {
+      "name": "email",
+      "type": "tinyint(1)",
+      "primary": false
+    },
+    {
+      "name": "global",
+      "type": "tinyint(1)",
+      "primary": false
+    },
+    {
+      "name": "archived",
+      "type": "tinyint(1)",
+      "primary": false
+    },
+    {
+      "name": "processing_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "history",
+      "type": "tinyint(3)",
+      "primary": false
+    },
+    {
+      "name": "long_body",
+      "type": "text",
+      "primary": false
+    }
+  ],
+  "notification_addressee": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "notification_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "user_id",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "notification_seen": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "notification_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "user_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    }
+  ],
+  "notification_seen_until": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "user_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "until",
+      "type": "timestamp",
+      "primary": false
+    }
+  ],
+  "notification_subscription": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "status",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "user_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "device_token",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "device_uuid",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "device_name",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "device_platform",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    }
+  ],
+  "onboard_forms": [
+    {
+      "name": "onboard_form_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "user_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "form_type",
+      "type": "tinyint(4)",
+      "primary": false
+    },
+    {
+      "name": "signature",
+      "type": "varchar(150)",
+      "primary": false
+    },
+    {
+      "name": "sign_type",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "first_name",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "last_name",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "address1",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "address2",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "city",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "state",
+      "type": "varchar(20)",
+      "primary": false
+    },
+    {
+      "name": "zip",
+      "type": "varchar(20)",
+      "primary": false
+    },
+    {
+      "name": "ssn",
+      "type": "varchar(20)",
+      "primary": false
+    },
+    {
+      "name": "marital_status",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "last_name_differ",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "middle_name",
+      "type": "varchar(200)",
+      "primary": false
+    },
+    {
+      "name": "other_last_name",
+      "type": "varchar(200)",
+      "primary": false
+    },
+    {
+      "name": "dob",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "email",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "telephone",
+      "type": "varchar(50)",
+      "primary": false
+    },
+    {
+      "name": "attest_form",
+      "type": "tinyint(4)",
+      "primary": false
+    },
+    {
+      "name": "uscis_number",
+      "type": "varchar(20)",
+      "primary": false
+    },
+    {
+      "name": "auth_work_expire_date",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "auth_form_type",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "foreign_passport_country",
+      "type": "varchar(50)",
+      "primary": false
+    },
+    {
+      "name": "preparer_check",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "preparer_first_name",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "preparer_last_name",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "preparer_address",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "preparer_city",
+      "type": "varchar(50)",
+      "primary": false
+    },
+    {
+      "name": "preparer_state",
+      "type": "varchar(20)",
+      "primary": false
+    },
+    {
+      "name": "preparer_zip",
+      "type": "varchar(20)",
+      "primary": false
+    },
+    {
+      "name": "ip_address",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "date_created",
+      "type": "datetime",
+      "primary": false
+    },
+    {
+      "name": "a_form",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "a_issuing_authority",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "a_document_number",
+      "type": "varchar(50)",
+      "primary": false
+    },
+    {
+      "name": "a_expriy_date",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "b_form",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "b_issuing_authority",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "b_document_number",
+      "type": "varchar(50)",
+      "primary": false
+    },
+    {
+      "name": "b_expriy_date",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "c_form",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "c_issuing_authority",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "c_document_number",
+      "type": "varchar(50)",
+      "primary": false
+    },
+    {
+      "name": "c_expriy_date",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "country",
+      "type": "varchar(200)",
+      "primary": false
+    },
+    {
+      "name": "swa_check",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "snap_check",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "unemployed_check",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "disability_armed_check",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "disability_unemployed_check",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "family_check",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "crime_check",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "crime_detail",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "resident_check",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "jobs_check",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "first_income",
+      "type": "decimal(8,2)",
+      "primary": false
+    },
+    {
+      "name": "second_income",
+      "type": "decimal(8,2)",
+      "primary": false
+    },
+    {
+      "name": "total_income",
+      "type": "decimal(8,2)",
+      "primary": false
+    },
+    {
+      "name": "other_income",
+      "type": "decimal(8,2)",
+      "primary": false
+    },
+    {
+      "name": "deduction",
+      "type": "decimal(8,2)",
+      "primary": false
+    },
+    {
+      "name": "extra_withholding",
+      "type": "decimal(8,2)",
+      "primary": false
+    },
+    {
+      "name": "allowances",
+      "type": "varchar(20)",
+      "primary": false
+    },
+    {
+      "name": "exempt",
+      "type": "varchar(200)",
+      "primary": false
+    },
+    {
+      "name": "job_title",
+      "type": "varchar(200)",
+      "primary": false
+    },
+    {
+      "name": "gender",
+      "type": "varchar(20)",
+      "primary": false
+    },
+    {
+      "name": "race",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "foodbuy_option_one",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "foodbuy_option_two",
+      "type": "tinyint(2)",
+      "primary": false
+    }
+  ],
+  "other_work_type": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "name",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "description",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "work_hours",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "rate",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "custom_rate",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "cost",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "cost_description",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "non_work_hours",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "deleted_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "deleted_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "parking": [
+    {
+      "name": "parking_id",
+      "type": "int(200)",
+      "primary": false
+    },
+    {
+      "name": "name",
+      "type": "varchar(255)",
+      "primary": false
+    }
+  ],
+  "payroll_note": [
+    {
+      "name": "payroll_note_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "shift_employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "payroll_note_type_id",
+      "type": "int(150)",
+      "primary": false
+    },
+    {
+      "name": "note",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "on_sheet",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "user_id",
+      "type": "bigint(255)",
+      "primary": false
+    },
+    {
+      "name": "date_created",
+      "type": "timestamp",
+      "primary": false
+    }
+  ],
+  "payroll_note_type": [
+    {
+      "name": "payroll_note_type_id",
+      "type": "int(150)",
+      "primary": false
+    },
+    {
+      "name": "type",
+      "type": "varchar(100)",
+      "primary": false
+    }
+  ],
+  "position": [
+    {
+      "name": "position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "group_id",
+      "type": "int(20)",
+      "primary": false
+    },
+    {
+      "name": "description",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "rate",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "uniform",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "tools",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "grooming_tools",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "deleted_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "deleted_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "visible_when",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "disable_timeclock_code",
+      "type": "tinyint(3)",
+      "primary": false
+    }
+  ],
+  "position_certification": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "certification_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "position_grooming_tool": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "grooming_tool_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "position_material": [
+    {
+      "name": "position_material_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "description",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "required",
+      "type": "tinyint(4)",
+      "primary": false
+    }
+  ],
+  "position_sub_type": [
+    {
+      "name": "sub_type_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "title",
+      "type": "varchar(100)",
+      "primary": false
+    }
+  ],
+  "position_tool": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "tool_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "position_uniform": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "uniform_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "preference": [
+    {
+      "name": "preferences_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "employee_submit_email",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "employee_change_email",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "employee_status_email",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "client_notification_email",
+      "type": "varchar(50)",
+      "primary": false
+    },
+    {
+      "name": "payroll_filter_date_range",
+      "type": "varchar(50)",
+      "primary": false
+    },
+    {
+      "name": "timesheet_notification_email",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "susp_notification_email",
+      "type": "varchar(50)",
+      "primary": false
+    },
+    {
+      "name": "dnr_notification_email",
+      "type": "varchar(50)",
+      "primary": false
+    },
+    {
+      "name": "hour_notification_email",
+      "type": "varchar(200)",
+      "primary": false
+    },
+    {
+      "name": "fh_expire_notification",
+      "type": "varchar(200)",
+      "primary": false
+    },
+    {
+      "name": "cc_expire_notification",
+      "type": "varchar(200)",
+      "primary": false
+    },
+    {
+      "name": "resign_notification_email",
+      "type": "varchar(200)",
+      "primary": false
+    },
+    {
+      "name": "inactive_thirty_notification",
+      "type": "varchar(150)",
+      "primary": false
+    },
+    {
+      "name": "inactive_sixsty_notification",
+      "type": "varchar(150)",
+      "primary": false
+    },
+    {
+      "name": "onboard_docs_email",
+      "type": "varchar(50)",
+      "primary": false
+    },
+    {
+      "name": "employee_photo_changed_email",
+      "type": "varchar(100)",
+      "primary": false
+    }
+  ],
+  "publish": [
+    {
+      "name": "id",
+      "type": "bigint(50)",
+      "primary": false
+    },
+    {
+      "name": "event_id",
+      "type": "bigint(50)",
+      "primary": false
+    },
+    {
+      "name": "shifts",
+      "type": "varchar(200)",
+      "primary": false
+    },
+    {
+      "name": "rules",
+      "type": "varchar(150)",
+      "primary": false
+    },
+    {
+      "name": "user_id",
+      "type": "bigint(50)",
+      "primary": false
+    },
+    {
+      "name": "date_created",
+      "type": "timestamp",
+      "primary": false
+    }
+  ],
+  "publishing": [
+    {
+      "name": "id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "client_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "event_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "gender",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "level",
+      "type": "tinyint(3)",
+      "primary": false
+    },
+    {
+      "name": "begin",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "processed",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "deleted_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "deleted_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "to",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "notify_resigned",
+      "type": "tinyint(1)",
+      "primary": false
+    },
+    {
+      "name": "employee_statuses",
+      "type": "text",
+      "primary": false
+    }
+  ],
+  "publishing_language": [
+    {
+      "name": "id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "publishing_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "language_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "publishing_shift": [
+    {
+      "name": "id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "publishing_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "shift_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "publish_employee": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "event_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "shift_position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "created_on",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "publishing_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "notify",
+      "type": "tinyint(3)",
+      "primary": false
+    },
+    {
+      "name": "notified_at",
+      "type": "datetime",
+      "primary": false
+    }
+  ],
+  "publish_employee2": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "event_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "shift_position_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_on",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "publishing_id",
+      "type": "bigint(20)",
+      "primary": false
+    }
+  ],
+  "push_notifications": [
+    {
+      "name": "id",
+      "type": "bigint(50)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(50)",
+      "primary": false
+    },
+    {
+      "name": "data",
+      "type": "blob",
+      "primary": false
+    },
+    {
+      "name": "date_created",
+      "type": "datetime",
+      "primary": false
+    }
+  ],
+  "queue": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "channel",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "job",
+      "type": "longblob",
+      "primary": false
+    },
+    {
+      "name": "pushed_at",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "ttr",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "delay",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "priority",
+      "type": "int(11) unsigned",
+      "primary": false
+    },
+    {
+      "name": "reserved_at",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "attempt",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "done_at",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "registration_position": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "description",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "registration_position_position": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "registration_position_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "position_id",
+      "type": "bigint(20)",
+      "primary": false
+    }
+  ],
+  "shift": [
+    {
+      "name": "shift_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "event_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "start",
+      "type": "datetime",
+      "primary": true
+    },
+    {
+      "name": "end",
+      "type": "datetime",
+      "primary": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "deleted_by",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "clock_in_code",
+      "type": "varchar(10)",
+      "primary": true
+    },
+    {
+      "name": "clock_out_code",
+      "type": "varchar(10)",
+      "primary": true
+    },
+    {
+      "name": "old_start",
+      "type": "datetime",
+      "primary": true
+    },
+    {
+      "name": "old_end",
+      "type": "datetime",
+      "primary": true
+    },
+    {
+      "name": "purchase_order",
+      "type": "varchar(255)",
+      "primary": true
+    }
+  ],
+  "shift_change_invite": [
+    {
+      "name": "shift_change_invite_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "shift_employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "shift_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "fragment",
+      "type": "varchar(45)",
+      "primary": false
+    },
+    {
+      "name": "accepted",
+      "type": "tinyint(4)",
+      "primary": false
+    }
+  ],
+  "shift_employee": [
+    {
+      "name": "shift_employee_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "shift_position_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "event_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "confirmed",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "bill_rate",
+      "type": "decimal(7,2)",
+      "primary": true
+    },
+    {
+      "name": "rate",
+      "type": "decimal(7,2)",
+      "primary": true
+    },
+    {
+      "name": "cancel_reason",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "employee_remove_date",
+      "type": "datetime",
+      "primary": true
+    },
+    {
+      "name": "employee_cancel_reason",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "emergency_rate",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "emergency_rate_amount",
+      "type": "decimal(5,2)",
+      "primary": true
+    },
+    {
+      "name": "cancel_notes",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "confirm_type",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "confirm_notes",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "confirmed_by",
+      "type": "bigint(50)",
+      "primary": true
+    },
+    {
+      "name": "request_by",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "approved_by",
+      "type": "bigint(50)",
+      "primary": true
+    },
+    {
+      "name": "remove_by",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "read_notification",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "daily_report_notes",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "overtime_type",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "overtime_paid_by",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "overtime_reason",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "overtime",
+      "type": "longtext",
+      "primary": true
+    },
+    {
+      "name": "hiatus",
+      "type": "tinyint(2)",
+      "primary": true
+    },
+    {
+      "name": "hiatus_reason",
+      "type": "int(50)",
+      "primary": true
+    },
+    {
+      "name": "shift_type",
+      "type": "tinyint(2)",
+      "primary": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "tech_restore_211222",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "attest_uniforms",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "confirmed_at",
+      "type": "datetime",
+      "primary": true
+    },
+    {
+      "name": "cancelled_in_deadline",
+      "type": "tinyint(3)",
+      "primary": true
+    },
+    {
+      "name": "clock_in_code",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "clock_out_code",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "cancelled_at",
+      "type": "datetime",
+      "primary": true
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "created_time",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "note_to_employee",
+      "type": "text",
+      "primary": true
+    }
+  ],
+  "shift_employee_certification": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "certification_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "shift_employee_document": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "shift_employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "filename",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "description",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "shift_position": [
+    {
+      "name": "shift_position_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "shift_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "position_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "additional_title",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "sub_type_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "gender",
+      "type": "tinyint(2)",
+      "primary": true
+    },
+    {
+      "name": "rate",
+      "type": "decimal(7,2)",
+      "primary": true
+    },
+    {
+      "name": "base_rate",
+      "type": "decimal(7,2)",
+      "primary": true
+    },
+    {
+      "name": "base_bill_rate",
+      "type": "decimal(7,2)",
+      "primary": true
+    },
+    {
+      "name": "bill_rate",
+      "type": "decimal(7,2)",
+      "primary": true
+    },
+    {
+      "name": "count",
+      "type": "int(10)",
+      "primary": true
+    },
+    {
+      "name": "backup",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "holiday_rate",
+      "type": "tinyint(2)",
+      "primary": true
+    },
+    {
+      "name": "surcharge",
+      "type": "tinyint(2)",
+      "primary": true
+    },
+    {
+      "name": "surcharge_value",
+      "type": "decimal(5,2)",
+      "primary": true
+    },
+    {
+      "name": "grooming_tools",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "uniform",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "tools",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "position_description",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "was_filled",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "filled",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "was_published",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "code",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "deleted_by",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "bonus",
+      "type": "decimal(5,2)",
+      "primary": true
+    },
+    {
+      "name": "clock_in_code",
+      "type": "varchar(10)",
+      "primary": true
+    },
+    {
+      "name": "clock_out_code",
+      "type": "varchar(10)",
+      "primary": true
+    },
+    {
+      "name": "miles_apply",
+      "type": "tinyint(3)",
+      "primary": true
+    }
+  ],
+  "shift_position_certification": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "shift_position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "certification_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "shift_position_grooming_tool": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "shift_position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "grooming_tool_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "shift_position_tool": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "shift_position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "tool_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "shift_position_uniform": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "shift_position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "uniform_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "sick_wage_employee": [
+    {
+      "name": "sick_wage_employee_id",
+      "type": "bigint(50)",
+      "primary": false
+    },
+    {
+      "name": "sick_wage_pay_id",
+      "type": "bigint(50)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(50)",
+      "primary": false
+    }
+  ],
+  "sick_wage_pay": [
+    {
+      "name": "sick_wage_pay_id",
+      "type": "bigint(50)",
+      "primary": false
+    },
+    {
+      "name": "wc_id",
+      "type": "int(100)",
+      "primary": false
+    },
+    {
+      "name": "date_range",
+      "type": "varchar(50)",
+      "primary": false
+    },
+    {
+      "name": "type",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "hours",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "pay_rate",
+      "type": "decimal(5,2)",
+      "primary": false
+    }
+  ],
+  "sms": [
+    {
+      "name": "sms_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "number",
+      "type": "varchar(16)",
+      "primary": false
+    },
+    {
+      "name": "message",
+      "type": "varchar(256)",
+      "primary": false
+    },
+    {
+      "name": "messageid",
+      "type": "varchar(32)",
+      "primary": false
+    },
+    {
+      "name": "sent",
+      "type": "datetime",
+      "primary": false
+    },
+    {
+      "name": "status",
+      "type": "varchar(16)",
+      "primary": false
+    },
+    {
+      "name": "inbound",
+      "type": "datetime",
+      "primary": false
+    },
+    {
+      "name": "inbound_message",
+      "type": "varchar(256)",
+      "primary": false
+    },
+    {
+      "name": "notes",
+      "type": "text",
+      "primary": false
+    }
+  ],
+  "staff": [
+    {
+      "name": "staff_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "first_name",
+      "type": "varchar(45)",
+      "primary": false
+    },
+    {
+      "name": "last_name",
+      "type": "varchar(45)",
+      "primary": false
+    },
+    {
+      "name": "status",
+      "type": "tinyint(4)",
+      "primary": false
+    }
+  ],
+  "state": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "name",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "date_created",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "user_created",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "date_updated",
+      "type": "timestamp",
+      "primary": false
+    }
+  ],
+  "status_reason": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "type",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "reason",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "parent_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "visible_when",
+      "type": "text",
+      "primary": false
+    }
+  ],
+  "system_notification_address": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "notification",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "email",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "options",
+      "type": "text",
+      "primary": false
+    }
+  ],
+  "task": [
+    {
+      "name": "task_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "created_on",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "complete",
+      "type": "tinyint(4)",
+      "primary": false
+    },
+    {
+      "name": "completed_on",
+      "type": "timestamp",
+      "primary": false
+    }
+  ],
+  "templates": [
+    {
+      "name": "template_id",
+      "type": "smallint(6)",
+      "primary": false
+    },
+    {
+      "name": "shift_invite_subject",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "shift_invite",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "shift_confirmation_subject",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "shift_confirmation",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "shift_change_subject",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "shift_change",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "shift_removed_subject",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "shift_removed",
+      "type": "text",
+      "primary": false
+    }
+  ],
+  "temporary_file": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "type",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "related_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "file_name",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "file_id",
+      "type": "varchar(255)",
+      "primary": false
+    }
+  ],
+  "timesheet": [
+    {
+      "name": "timesheet_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "event_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "shift_employee_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "employee_start",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "employee_end",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "employee_break_start",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "employee_break_end",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "employee_sec_break_start",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "employee_sec_break_end",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "employee_notes",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "employee_rating",
+      "type": "int(10)",
+      "primary": true
+    },
+    {
+      "name": "reimbursement_file",
+      "type": "varchar(250)",
+      "primary": true
+    },
+    {
+      "name": "employee_no_pay",
+      "type": "tinyint(2)",
+      "primary": true
+    },
+    {
+      "name": "employee_min_pay",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "employee_tips",
+      "type": "decimal(5,2)",
+      "primary": true
+    },
+    {
+      "name": "employee_parking",
+      "type": "decimal(5,2)",
+      "primary": true
+    },
+    {
+      "name": "employee_travel",
+      "type": "decimal(5,2)",
+      "primary": true
+    },
+    {
+      "name": "employee_service_charge",
+      "type": "decimal(5,2)",
+      "primary": true
+    },
+    {
+      "name": "employee_adjustment",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "employee_adjustment_notes",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "employee_no_break_penalty",
+      "type": "float",
+      "primary": true
+    },
+    {
+      "name": "employee_timesheet_upload",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "client_start",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "client_end",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "client_break_start",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "client_break_end",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "client_sec_break_start",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "client_sec_break_end",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "client_rating",
+      "type": "float",
+      "primary": true
+    },
+    {
+      "name": "client_no_bill",
+      "type": "tinyint(2)",
+      "primary": true
+    },
+    {
+      "name": "client_po",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "client_tips",
+      "type": "decimal(5,2)",
+      "primary": true
+    },
+    {
+      "name": "client_parking",
+      "type": "decimal(5,2)",
+      "primary": true
+    },
+    {
+      "name": "client_travel",
+      "type": "decimal(5,2)",
+      "primary": true
+    },
+    {
+      "name": "client_service_charge",
+      "type": "decimal(5,2)",
+      "primary": true
+    },
+    {
+      "name": "client_notes",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "client_min_bill",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "client_no_break_penalty",
+      "type": "float",
+      "primary": true
+    },
+    {
+      "name": "client_adjustment",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "client_adjustment_notes",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "employee_no_break_reason",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "employee_less_hours_reason",
+      "type": "int(10)",
+      "primary": true
+    },
+    {
+      "name": "employee_worked",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "client_worked",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "client_less_hours_reason",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "status",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "employee_no_sec_break_reason",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "client_no_break_reason",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "client_no_sec_break_reason",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "employee_submit_date",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "client_submit_date",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "client_seconds",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "employee_seconds",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "use_sheet",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "start_verified",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "end_verified",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "start_verified_at",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "end_verified_at",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "client_had_meal",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "employee_had_meal",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "client_had_sec_meal",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "employee_had_sec_meal",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "employee_travel_distance",
+      "type": "int(11)",
+      "primary": true
+    }
+  ],
+  "timesheet_close": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "from",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "to",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "timesheet_open": [
+    {
+      "name": "timesheet_open_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "event_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "user_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "open",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "updated",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "datetime",
+      "primary": false
+    },
+    {
+      "name": "updated_at",
+      "type": "datetime",
+      "primary": false
+    }
+  ],
+  "timesheet_sent": [
+    {
+      "name": "id",
+      "type": "bigint(50)",
+      "primary": false
+    },
+    {
+      "name": "event_id",
+      "type": "bigint(50)",
+      "primary": false
+    },
+    {
+      "name": "user_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "date_created",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "status",
+      "type": "tinyint(2)",
+      "primary": false
+    },
+    {
+      "name": "custom",
+      "type": "tinyint(1)",
+      "primary": false
+    },
+    {
+      "name": "roster",
+      "type": "tinyint(1)",
+      "primary": false
+    }
+  ],
+  "timesheet_upload": [
+    {
+      "name": "timesheet_upload_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "event_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "datetime",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "filename",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "notes",
+      "type": "text",
+      "primary": false
+    }
+  ],
+  "tool": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "name",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "deleted_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "deleted_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "touch": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "user_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "object",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "object_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "datetime",
+      "primary": false
+    },
+    {
+      "name": "updated_at",
+      "type": "datetime",
+      "primary": false
+    }
+  ],
+  "travel_rate": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "pay_rate",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "bill_rate",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "note",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "start_date",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "end_date",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "tutorial": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "status",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "title",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "content3",
+      "type": "mediumtext",
+      "primary": false
+    },
+    {
+      "name": "interface",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "categories",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "tags",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "popup",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "skippable",
+      "type": "tinyint(1)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "content",
+      "type": "mediumtext",
+      "primary": false
+    }
+  ],
+  "tutorial_seen": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "tutorial_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "user_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    }
+  ],
+  "uniform": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "name",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "deleted_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "deleted_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "images",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "questions",
+      "type": "text",
+      "primary": false
+    }
+  ],
+  "user": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "sf_id",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "username",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "auth_key",
+      "type": "varchar(32)",
+      "primary": true
+    },
+    {
+      "name": "password_hash",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "password_reset_token",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "email",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "phone",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "associated_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "role",
+      "type": "varchar(24)",
+      "primary": true
+    },
+    {
+      "name": "status",
+      "type": "smallint(6)",
+      "primary": true
+    },
+    {
+      "name": "created_at",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "updated_at",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "first_name",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "last_name",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "timezone",
+      "type": "varchar(45)",
+      "primary": true
+    },
+    {
+      "name": "verify_token",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "email_verified",
+      "type": "tinyint(2)",
+      "primary": true
+    },
+    {
+      "name": "password_hash2",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "group",
+      "type": "varchar(50)",
+      "primary": true
+    },
+    {
+      "name": "last_logged_in",
+      "type": "date",
+      "primary": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "deleted_by",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "settings",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "test",
+      "type": "tinyint(1)",
+      "primary": true
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "created_from",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "terms_accepted",
+      "type": "tinyint(1)",
+      "primary": true
+    }
+  ],
+  "user_device": [
+    {
+      "name": "id",
+      "type": "int(20)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "int(20)",
+      "primary": false
+    },
+    {
+      "name": "device_token",
+      "type": "varchar(500)",
+      "primary": false
+    },
+    {
+      "name": "role",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "platform",
+      "type": "varchar(100)",
+      "primary": false
+    }
+  ],
+  "user_party": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "user_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "_party_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "employee_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "client_id",
+      "type": "bigint(20)",
+      "primary": false
+    }
+  ],
+  "user_stat": [
+    {
+      "name": "user_id",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "venue": [
+    {
+      "name": "venue_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "client_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "sf_id",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "name",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "financed",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "send_timesheet",
+      "type": "tinyint(4)",
+      "primary": true
+    },
+    {
+      "name": "photo",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "address1",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "address2",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "phone",
+      "type": "varchar(20)",
+      "primary": true
+    },
+    {
+      "name": "state",
+      "type": "varchar(45)",
+      "primary": true
+    },
+    {
+      "name": "city",
+      "type": "varchar(100)",
+      "primary": true
+    },
+    {
+      "name": "zip",
+      "type": "varchar(45)",
+      "primary": true
+    },
+    {
+      "name": "latitude",
+      "type": "varchar(20)",
+      "primary": true
+    },
+    {
+      "name": "longitude",
+      "type": "varchar(20)",
+      "primary": true
+    },
+    {
+      "name": "admin_notes",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "venue_details",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "description",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "parking",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "parking_reimbursement",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "free_parking",
+      "type": "tinyint(2)",
+      "primary": true
+    },
+    {
+      "name": "check_in",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "background_requirements",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "uniform_requirements",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "directions",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "staffing_manager_id",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "sales_rep_id",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "parkings",
+      "type": "int(10)",
+      "primary": true
+    },
+    {
+      "name": "parking_note",
+      "type": "text",
+      "primary": true
+    },
+    {
+      "name": "parking_charge",
+      "type": "decimal(5,2)",
+      "primary": true
+    },
+    {
+      "name": "travel_charge",
+      "type": "decimal(5,2)",
+      "primary": true
+    },
+    {
+      "name": "travel_pay",
+      "type": "decimal(5,2)",
+      "primary": true
+    },
+    {
+      "name": "service_charge",
+      "type": "decimal(5,2)",
+      "primary": true
+    },
+    {
+      "name": "factored",
+      "type": "tinyint(2)",
+      "primary": true
+    },
+    {
+      "name": "venue_code",
+      "type": "varchar(50)",
+      "primary": true
+    },
+    {
+      "name": "county_id",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "deleted_by",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "invoice_name",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "status",
+      "type": "tinyint(3)",
+      "primary": true
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "timeclock",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "timeclock_code_holder",
+      "type": "varchar(255)",
+      "primary": true
+    },
+    {
+      "name": "timeclock_tolerance",
+      "type": "tinyint(3)",
+      "primary": true
+    },
+    {
+      "name": "timeclock_prestart_interval",
+      "type": "tinyint(3)",
+      "primary": true
+    },
+    {
+      "name": "timeclock_limit",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "min_wage_id",
+      "type": "int(11)",
+      "primary": true
+    }
+  ],
+  "venue_attestation_question": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "client_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "venue_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "attestation_question_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "venue_certification": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "client_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "venue_id",
+      "type": "bigint(20)",
+      "primary": true
+    },
+    {
+      "name": "certification_id",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": true
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": true
+    },
+    {
+      "name": "effective_date",
+      "type": "date",
+      "primary": true
+    },
+    {
+      "name": "max_allowed_months",
+      "type": "int(11)",
+      "primary": true
+    }
+  ],
+  "venue_contact": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "venue_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "client_contact_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "preferred",
+      "type": "tinyint(3)",
+      "primary": false
+    }
+  ],
+  "venue_document": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "venue_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "filename",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "description",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "deleted_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "deleted_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "document_type_id",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "venue_language": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "venue_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "language_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "date_created",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "user_created",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "date_updated",
+      "type": "timestamp",
+      "primary": false
+    }
+  ],
+  "venue_picture": [
+    {
+      "name": "venue_picture_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "venue_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "picture",
+      "type": "varchar(100)",
+      "primary": false
+    }
+  ],
+  "venue_position": [
+    {
+      "name": "venue_position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "venue_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "del_client_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "del_group_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "del_sub_type_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "del_gender",
+      "type": "varchar(20)",
+      "primary": false
+    },
+    {
+      "name": "del_rate",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "del_surcharge",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "del_bill_rate",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "del_exclusive",
+      "type": "tinyint(4)",
+      "primary": false
+    },
+    {
+      "name": "description",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "del_use_standard_rate",
+      "type": "tinyint(4)",
+      "primary": false
+    },
+    {
+      "name": "del_uniform_types",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "del_uniform",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "del_tools",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "del_grooming_tools",
+      "type": "text",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "venue_position_amount": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "venue_position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "pay_rate",
+      "type": "decimal(7,2)",
+      "primary": false
+    },
+    {
+      "name": "bill_rate",
+      "type": "decimal(7,2)",
+      "primary": false
+    },
+    {
+      "name": "surcharge",
+      "type": "decimal(5,2)",
+      "primary": false
+    },
+    {
+      "name": "note",
+      "type": "varchar(255)",
+      "primary": false
+    },
+    {
+      "name": "start_date",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "end_date",
+      "type": "date",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "venue_position_certification": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "venue_position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "certification_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "t503",
+      "type": "tinyint(1)",
+      "primary": false
+    }
+  ],
+  "venue_position_grooming_tool": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "venue_position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "grooming_tool_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "venue_position_tool": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "venue_position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "tool_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "venue_position_uniform": [
+    {
+      "name": "id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "venue_position_id",
+      "type": "bigint(20)",
+      "primary": false
+    },
+    {
+      "name": "uniform_id",
+      "type": "int(11)",
+      "primary": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "created_by",
+      "type": "int(11)",
+      "primary": false
+    }
+  ],
+  "wc_code": [
+    {
+      "name": "wc_id",
+      "type": "int(100)",
+      "primary": false
+    },
+    {
+      "name": "wc_code",
+      "type": "varchar(100)",
+      "primary": false
+    },
+    {
+      "name": "date_created",
+      "type": "timestamp",
+      "primary": false
+    },
+    {
+      "name": "rate",
+      "type": "decimal(8,4)",
+      "primary": false
+    },
+    {
+      "name": "state",
+      "type": "varchar(255)",
+      "primary": false
+    }
+  ]
+}
