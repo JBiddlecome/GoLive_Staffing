@@ -55,6 +55,18 @@ async def profit_tracker_page(request: Request):
         {"request": request, "start_date": today, "end_date": today}
     )
 
+@router.get("/api/msps")
+async def get_msps():
+    """Return all MSP names for the filter dropdown."""
+    engine = _engine()
+    try:
+        with engine.begin() as conn:
+            sql = text("SELECT id, name FROM msp WHERE id NOT IN (4, 8, 9, 12, 13, 21) ORDER BY name")
+            rows = conn.execute(sql).mappings().fetchall()
+            return [{"id": r["id"], "name": r["name"]} for r in rows]
+    finally:
+        engine.dispose()
+
 class ProfitPayload(BaseModel):
     start_date: str
     end_date: str
@@ -87,6 +99,7 @@ async def get_profit_data(payload: ProfitPayload):
                 e.date,
                 sp.bonus,
                 c.name AS client_name,
+                COALESCE(m.name, '') AS msp_name,
                 se.bill_rate,
                 se.rate AS pay_rate,
                 v.service_charge AS venue_service_charge,
@@ -428,6 +441,7 @@ async def get_profit_data(payload: ProfitPayload):
 
         return pd.Series({
             "client_name": row["client_name"],
+            "msp_name": row.get("msp_name", ""),
             "total_bill": total_bill,
             "total_pay": total_pay,
             "msp_fee": msp_fee,
@@ -445,6 +459,14 @@ async def get_profit_data(payload: ProfitPayload):
     
     profit = total_bill_sum - gross_pay_sum - msp_fee_sum - wc_fee_sum - payroll_tax - other_work_sum
     
+    # Build a lookup: client_name -> msp_name (take first non-empty value)
+    msp_lookup = {}
+    for _, row in calc_df.iterrows():
+        cname = row["client_name"]
+        mname = row.get("msp_name", "")
+        if cname not in msp_lookup or (not msp_lookup[cname] and mname):
+            msp_lookup[cname] = mname if pd.notna(mname) else ""
+
     client_group = calc_df.groupby("client_name")[["total_bill", "total_pay", "msp_fee", "wc_fee"]].sum().reset_index()
     client_breakdown = []
     for _, r in client_group.iterrows():
@@ -456,6 +478,7 @@ async def get_profit_data(payload: ProfitPayload):
         c_profit = c_bill - c_pay - c_msp - c_wc - c_tax
         client_breakdown.append({
             "client_name": r["client_name"],
+            "msp_name": msp_lookup.get(r["client_name"], ""),
             "total_bill": round(c_bill, 2),
             "gross_pay": round(c_pay, 2),
             "msp_fee": round(c_msp, 2),

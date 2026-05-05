@@ -17,6 +17,8 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
 
 from .schema_docs import COLUMN_DOCS
+import json as _json
+from .business_logic import get_business_logic_prompt, get_planner_context
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -75,42 +77,77 @@ IGNORE_COLUMNS = COLUMN_DOCS["IGNORE_COLUMNS"]
 DATA_READY = False
 DATA_LOAD_ERROR: str | None = None
 
+# Tables excluded entirely — AI cannot query or know about these
+EXCLUDED_TABLES = {
+    # Security / system tables
+    "oauth_access_tokens", "oauth_authorization_codes", "oauth_clients",
+    "oauth_jwt", "oauth_public_keys", "oauth_refresh_tokens",
+    "oauth_scopes", "oauth_users", "session", "migration", "golive_app_state",
+    # Large / low-analytics-value tables excluded for performance
+    "onboard_forms", "event_document", "user_party", "publish",
+    "notification_seen", "employee_profile_updates", "notification_subscription",
+    "employee_uniform", "employee_certification", "debug_publishing",
+    "shift_position_tool", "shift_position_grooming_tool",
+    "shift_position_uniform", "notification_addressee", "mail_queue",
+    "notification", "publish_employee2", "push_notifications",
+    "publish_employee",
+}
+
+# Specific columns blocked per table — stripped before loading into DuckDB
+BLACKLIST = {
+    "employee": ["sex", "dob", "ssn"],
+}
+
+# Per-table SQL WHERE clauses or custom queries to limit loaded data.
+# Use {cols} as a placeholder for the safe column list.
+TABLE_FILTERS = {
+    "history_entry": "SELECT {cols} FROM `history_entry` WHERE `created_at` >= '2024-01-01'",
+    "event":         "SELECT {cols} FROM `event` WHERE `date` >= '2024-01-01'",
+    "timesheet":     "SELECT {cols} FROM `timesheet` ORDER BY `timesheet_id` DESC LIMIT 150000",
+}
+
 def load_data() -> int:
-    df: pd.DataFrame | None = None
-    db_error: Exception | None = None
+    """Dynamically load all MariaDB tables into DuckDB for AI querying."""
+    total_loaded = 0
+    engine = _get_staffing_engine()
+    try:
+        with engine.begin() as connection:
+            db_name = os.getenv("REPORTABLE_DB_NAME") or os.getenv("DB_NAME", "cstaffing_live")
+            result = connection.execute(text(
+                "SELECT TABLE_NAME FROM information_schema.TABLES "
+                "WHERE TABLE_SCHEMA = :db AND TABLE_TYPE = 'BASE TABLE' "
+                "ORDER BY TABLE_NAME"
+            ), {"db": db_name})
+            all_tables = [row[0] for row in result]
 
-    if DATABASE_URL:
-        url = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1) if DATABASE_URL.startswith("postgresql://") else DATABASE_URL
-        engine = create_engine(url)
-        try:
-            with engine.begin() as connection:
-                df = pd.read_sql(text(f"SELECT * FROM {DATA_TABLE_NAME}"), connection)
-        except Exception as exc:
-            db_error = exc
-        finally:
-            engine.dispose()
+            for table in all_tables:
+                if table in EXCLUDED_TABLES:
+                    continue
+                try:
+                    cols_res = connection.execute(text(f"DESCRIBE `{table}`")).fetchall()
+                    cols = [row[0] for row in cols_res]
+                    if table in BLACKLIST:
+                        cols = [c for c in cols if c not in BLACKLIST[table]]
+                    cols_str = ", ".join([f"`{c}`" for c in cols])
 
-    if df is None:
-        try:
-            candidates = (DATA_DIR / "Payroll 2.csv", DATA_DIR / "payroll.csv", DATA_DIR / "payroll.xlsx")
-            for path in candidates:
-                if not path.exists(): continue
-                df = pd.read_csv(path) if path.suffix.lower() == ".csv" else pd.read_excel(path)
-                break
-        except Exception as exc:
-            if db_error: raise RuntimeError(f"Unable to load data: {db_error}")
-            raise
+                    # Use a filtered query if one is defined, otherwise SELECT all
+                    if table in TABLE_FILTERS:
+                        query = TABLE_FILTERS[table].format(cols=cols_str)
+                    else:
+                        query = f"SELECT {cols_str} FROM `{table}`"
 
-    if df is not None:
-        DB.register("raw_df", df)
-        DB.execute("""
-            CREATE OR REPLACE TABLE shifts AS
-            SELECT *, (COALESCE("First Name", '') || ' ' || COALESCE("Last Name", '')) AS "Employee Name",
-            (COALESCE("Reg H (e)", 0) + COALESCE("OT H (e)", 0) + COALESCE("DT H (e)", 0)) AS "Hours Worked"
-            FROM raw_df
-        """)
-        return DB.execute("SELECT COUNT(*) FROM shifts").fetchone()[0]
-    return 0
+                    df = pd.read_sql(text(query), connection)
+                    DB.register(f"raw_{table}", df)
+                    DB.execute(f"CREATE OR REPLACE TABLE {table} AS SELECT * FROM raw_{table}")
+                    count = DB.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+                    total_loaded += count
+                    print(f"  [{table}] {count} rows loaded")
+                except Exception as e:
+                    print(f"  WARN: Could not load table '{table}': {e}")
+    finally:
+        engine.dispose()
+    print(f"Data load complete. {total_loaded} total rows across all tables.")
+    return total_loaded
 
 def ensure_data_loaded():
     global DATA_READY, DATA_LOAD_ERROR
@@ -118,16 +155,157 @@ def ensure_data_loaded():
         try: load_data(); DATA_READY = True
         except Exception as exc: DATA_LOAD_ERROR = str(exc); raise
 
-schema_text = "\n".join(f"- {col}: {desc}" for col, desc in COLUMN_DOCS.items() if col not in ("IGNORE_COLUMNS", "RULES"))
-rules_text = COLUMN_DOCS["RULES"]
-SYSTEM_SQL = f"You are an expert DuckDB SQL generator... Table: shifts\nColumns:\n{schema_text}\nRules:\n{rules_text}"
+# ── Dynamic schema helpers (introspect DuckDB at runtime) ────────────────────
 
-def generate_sql(question: str) -> str:
+def _schema_table_list() -> str:
+    """Return a compact table-name + column-name listing for the planner prompt."""
+    tables = DB.execute(
+        "SELECT table_name FROM information_schema.tables WHERE table_schema='main' ORDER BY table_name"
+    ).fetchall()
+    lines = []
+    for (tbl,) in tables:
+        cols = DB.execute(
+            f"SELECT column_name FROM information_schema.columns WHERE table_name='{tbl}' ORDER BY ordinal_position"
+        ).fetchall()
+        col_names = ", ".join(c[0] for c in cols)
+        lines.append(f"{tbl}: {col_names}")
+    return "\n".join(lines)
+
+
+def _schema_for_tables(tables: list[str]) -> str:
+    """Return a detailed schema block for only the requested tables."""
+    all_tables = {r[0] for r in DB.execute(
+        "SELECT table_name FROM information_schema.tables WHERE table_schema='main'"
+    ).fetchall()}
+    lines = []
+    for table in tables:
+        if table not in all_tables:
+            continue
+        cols = DB.execute(
+            f"SELECT column_name, data_type FROM information_schema.columns "
+            f"WHERE table_name='{table}' ORDER BY ordinal_position"
+        ).fetchall()
+        col_detail = ", ".join(f"{c[0]} ({c[1]})" for c in cols)
+        lines.append(f"Table `{table}`:\n  Columns: {col_detail}")
+    return "\n\n".join(lines)
+
+
+# ── Step A: Planner — pick which tables are needed ───────────────────────────
+SYSTEM_PLANNER = """\
+You are a database query planner for a staffing company's MySQL database (queried via DuckDB).
+Given a natural-language question, identify ONLY the table names needed to answer it.
+
+Respond with a JSON object with a single key "tables" containing an array of table name strings.
+Example: {"tables": ["client", "event", "timesheet"]}
+
+Use the table catalog below to guide your selection:
+"""
+
+def plan_tables(question: str) -> list[str]:
+    """Step A: Ask the AI which tables are needed."""
+    catalog = _schema_table_list()
+    planner_ctx = get_planner_context()
+    prompt = SYSTEM_PLANNER + "\n" + catalog + planner_ctx
     response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[{"role": "system", "content": SYSTEM_SQL}, {"role": "user", "content": question}]
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": f"Question: {question}\n\nReturn a JSON object with a single key \"tables\" containing an array of table names needed."}
+        ],
+        temperature=0,
     )
-    return response.choices[0].message.content.strip()
+    import re
+    raw = response.choices[0].message.content.strip()
+    try:
+        parsed = _json.loads(raw)
+        tables = parsed.get("tables", [])
+        if isinstance(tables, list):
+            return [t for t in tables if isinstance(t, str)]
+    except Exception:
+        pass
+    return re.findall(r'"([a-z_]+)"', raw)
+
+
+# ── Step B: Generator — write SQL against the chosen tables ──────────────────
+SYSTEM_GENERATOR_BASE = """\
+You are an expert DuckDB SQL generator for a staffing and payroll system.
+
+Database relationship guide:
+- client → event (client.client_id = event.client_id)
+- event → shift (event.event_id = shift.event_id)
+- shift → shift_position (shift.shift_id = shift_position.shift_id)
+- shift_position → shift_employee (shift_position.shift_position_id = shift_employee.shift_position_id)
+- shift_employee → timesheet (shift_employee.shift_employee_id = timesheet.shift_employee_id)
+- shift_employee → employee (shift_employee.employee_id = employee.employee_id)
+- event → venue (event.venue_id = venue.venue_id)
+- client → venue (venue.client_id = client.client_id)
+
+FINANCIAL CALCULATION RULES (MUST follow for any revenue/pay/billing question):
+- "Revenue" or "total bill" = hours × bill_rate. It is NEVER a single column.
+  Approximate formula: SUM(COALESCE(t.client_seconds, 0) / 3600.0 * se.bill_rate)
+  where t = timesheet, se = shift_employee. bill_rate is on shift_employee, NOT shift_position.
+- "Pay" or "gross pay" = hours × pay_rate: SUM(COALESCE(t.employee_seconds, 0) / 3600.0 * se.rate)
+- timesheet.client_service_charge is a PERCENTAGE (0-100), NOT a dollar amount. Never SUM it as revenue.
+- timesheet.employee_service_charge is a PERCENTAGE, NOT a dollar amount.
+- For confirmed active employees: shift_employee.cancel_reason = 0 AND shift_employee.deleted_at IS NULL
+- For billing/pay queries, also include min-pay timesheets:
+  OR (timesheet.client_min_bill = 1 OR timesheet.employee_min_pay = 1)
+
+DATE FILTERING:
+- ALWAYS filter by event.date (DATE type) for time-range questions, NOT timesheet.client_start.
+- Example: WHERE event.date >= '2026-04-01' AND event.date < '2026-05-01'
+
+CRITICAL RULES:
+- **Schema fidelity**: ONLY reference columns that appear in the "Available schemas" section below.
+  Do NOT invent, guess, or assume column names. If a column is not listed in the schema, do NOT use it.
+- If a table's schema includes a `deleted_at` column, add `AND table.deleted_at IS NULL` to filter
+  soft-deleted rows. If the table does NOT have a `deleted_at` column, do NOT add that filter.
+- Output ONLY a raw SQL SELECT statement — no markdown, no code fences, no explanation.
+- Always use DuckDB syntax (use double-quoted identifiers for reserved words if needed).
+- DuckDB is strict: every non-aggregated column in SELECT must appear in GROUP BY.
+  Example: SELECT c.client_id, c.name, SUM(...) → GROUP BY c.client_id, c.name
+- For name fields, use CONCAT(employee.first_name, ' ', employee.last_name).
+- For date filtering, use CURRENT_DATE, date arithmetic, or CAST to date.
+- Limit result sets to 500 rows unless the user asks for all.
+- Never use INSERT, UPDATE, DELETE, DROP, CREATE, or any mutation statement.
+
+Available schemas (only the tables you need):
+"""
+
+def generate_sql(question: str, tables: list[str] = None) -> str:
+    """Step B: Generate SQL given the question and which tables to use."""
+    if tables is None:
+        tables = plan_tables(question)
+    schema_block = _schema_for_tables(tables)
+    biz_logic = get_business_logic_prompt(tables, question)
+    system_prompt = SYSTEM_GENERATOR_BASE + "\n" + schema_block + biz_logic
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": question}
+        ],
+        temperature=0,
+    )
+    sql = response.choices[0].message.content.strip()
+    import re
+    sql = re.sub(r'^```(?:sql)?\s*', '', sql, flags=re.IGNORECASE)
+    sql = re.sub(r'\s*```$', '', sql)
+    return sql.strip()
+
+
+# ── SQL Safety Guard ─────────────────────────────────────────────────────────
+def _is_safe_sql(sql: str) -> bool:
+    """Only allow SELECT statements. Block all mutation keywords."""
+    import re
+    cleaned = re.sub(r'--.*', '', sql)
+    cleaned = re.sub(r'/\*.*?\*/', '', cleaned, flags=re.DOTALL)
+    cleaned = cleaned.strip().upper()
+    forbidden = re.compile(
+        r'\b(INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|REPLACE|EXEC|EXECUTE|CALL|MERGE)\b'
+    )
+    return cleaned.startswith('SELECT') and not forbidden.search(cleaned)
 
 # --- Common API Routes ---
 @router.get("/api/clients")
@@ -381,10 +559,25 @@ async def api_ask(payload: AskRequest):
     try: await run_in_threadpool(ensure_data_loaded)
     except Exception as exc: raise HTTPException(status_code=500, detail=f"Data load failed: {exc}")
 
-    sql = await run_in_threadpool(generate_sql, question)
+    # Step A: Plan which tables are needed
+    tables = await run_in_threadpool(plan_tables, question)
+    # Step B: Generate SQL using schema + business logic for those tables
+    sql = await run_in_threadpool(generate_sql, question, tables)
     result = await run_in_threadpool(run_sql, sql)
     answer = await run_in_threadpool(explain_result, question, sql, result)
-    return JSONResponse({"answer": answer, "sql": sql})
+
+    # Safely serialize — DuckDB Timestamp objects are not JSON-serializable
+    import datetime as _dt
+    def _json_safe(obj):
+        if isinstance(obj, (_dt.datetime, _dt.date, _dt.time)):
+            return obj.isoformat()
+        if hasattr(obj, 'isoformat'):          # covers pd.Timestamp, duckdb Timestamp
+            return obj.isoformat()
+        raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
+    return JSONResponse(
+        content=_json.loads(_json.dumps({"answer": answer, "sql": sql, "tables_used": tables}, default=_json_safe))
+    )
 
 # --- Client Fill Rates Routes ---
 @router.get("/client-fill-rates", response_class=HTMLResponse)

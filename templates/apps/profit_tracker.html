@@ -363,6 +363,66 @@
         padding-right: 2.5rem !important;
         min-width: 200px;
     }
+
+    /* Sortable table headers */
+    .pt-table th.sortable {
+        cursor: pointer;
+        user-select: none;
+        position: relative;
+        padding-right: 2rem;
+        transition: color 0.2s ease;
+    }
+    .pt-table th.sortable:hover {
+        color: var(--pt-accent);
+    }
+    .pt-table th.sortable::after {
+        content: '⇅';
+        position: absolute;
+        right: 0.5rem;
+        opacity: 0.3;
+        font-size: 0.85rem;
+    }
+    .pt-table th.sortable.sort-asc::after {
+        content: '▲';
+        opacity: 0.9;
+        color: var(--pt-accent);
+    }
+    .pt-table th.sortable.sort-desc::after {
+        content: '▼';
+        opacity: 0.9;
+        color: var(--pt-accent);
+    }
+
+    /* Averages / Totals rows */
+    .pt-table tfoot td {
+        padding: 0.75rem 1.5rem;
+        border-top: 2px solid var(--pt-glass-border);
+        font-weight: 600;
+    }
+    .pt-table tfoot tr.avg-row td {
+        background: rgba(56, 189, 248, 0.06);
+        color: var(--pt-accent);
+        font-size: 0.9rem;
+    }
+    .pt-table tfoot tr.totals-row td {
+        background: rgba(52, 211, 153, 0.08);
+        color: var(--pt-success);
+        font-size: 0.95rem;
+        font-weight: 700;
+    }
+
+    /* MSP filter row */
+    .pt-filter-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    .pt-filter-row label {
+        color: var(--pt-text-muted);
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <div class="pt-wrapper-main">
@@ -379,6 +439,14 @@
         <div class="pt-control-group">
             <label for="endDate">End Date</label>
             <input type="date" id="endDate" class="pt-input" value="{{ end_date }}">
+        </div>
+        <div class="pt-control-group">
+            <label for="mspFilter">MSP Filter</label>
+            <select id="mspFilter" class="pt-input">
+                <option value="all">All Clients</option>
+                <option value="has_msp">Has MSP</option>
+                <option value="no_msp">No MSP</option>
+            </select>
         </div>
         <div class="pt-control-group">
             <label for="clientSelect">Analyze Single Client</label>
@@ -465,23 +533,33 @@
 
         <div class="pt-table-container">
             <h2 class="pt-table-title">Client Breakdown</h2>
+            <div class="pt-filter-row">
+                <label for="mspSpecificFilter">Filter by MSP:</label>
+                <select id="mspSpecificFilter" class="pt-input" style="min-width:220px" onchange="applyMspFilter()">
+                    <option value="">-- All MSPs --</option>
+                </select>
+            </div>
             <div class="pt-table-wrapper">
-                <table class="pt-table">
+                <table class="pt-table" id="clientTable">
                     <thead>
                         <tr>
-                            <th>Client Name</th>
-                            <th class="text-right">Total Bill</th>
-                            <th class="text-right">Gross Pay</th>
-                            <th class="text-right">MSP Fee</th>
-                            <th class="text-right">WC Fee</th>
-                            <th class="text-right">Payroll Tax</th>
-                            <th class="text-right">Profit</th>
-                            <th class="text-right">Profit %</th>
+                            <th class="sortable" data-key="client_name" onclick="sortTable('client_name')">Client Name</th>
+                            <th class="sortable text-right" data-key="msp_name" onclick="sortTable('msp_name')">MSP</th>
+                            <th class="sortable text-right" data-key="total_bill" onclick="sortTable('total_bill')">Total Bill</th>
+                            <th class="sortable text-right" data-key="gross_pay" onclick="sortTable('gross_pay')">Gross Pay</th>
+                            <th class="sortable text-right" data-key="msp_fee" onclick="sortTable('msp_fee')">MSP Fee</th>
+                            <th class="sortable text-right" data-key="wc_fee" onclick="sortTable('wc_fee')">WC Fee</th>
+                            <th class="sortable text-right" data-key="payroll_tax" onclick="sortTable('payroll_tax')">Payroll Tax</th>
+                            <th class="sortable text-right" data-key="profit" onclick="sortTable('profit')">Profit</th>
+                            <th class="sortable text-right" data-key="profit_pct" onclick="sortTable('profit_pct')">Profit %</th>
                         </tr>
                     </thead>
                     <tbody id="clientTableBody">
                         <!-- Populated via JS -->
                     </tbody>
+                    <tfoot id="clientTableFoot">
+                        <!-- Averages & Totals rows populated via JS -->
+                    </tfoot>
                 </table>
             </div>
             <p class="pt-table-footer">Note: "Other Work" payments are excluded from this breakdown as they are not tied to specific clients.</p>
@@ -492,35 +570,172 @@
 
 <script>
     const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD'
-        }).format(amount);
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
     };
-
     const formatPercent = (amount, total) => {
         if (total === 0) return '0%';
         return ((amount / total) * 100).toFixed(1) + '%';
     };
-
-    const setContent = (id, value) => {
-        document.getElementById(id).innerText = value;
-    };
-
-    const setWidth = (id, percentStr) => {
-        document.getElementById(id).style.width = percentStr;
-    };
+    const setContent = (id, value) => { document.getElementById(id).innerText = value; };
+    const setWidth = (id, percentStr) => { document.getElementById(id).style.width = percentStr; };
 
     let clientChartInstance = null;
+    let allClientBreakdown = []; // raw data from API
+    let currentSortKey = 'total_bill';
+    let currentSortDir = 'desc';
+
+    // ── MSP list loader ──
+    async function loadMspList() {
+        try {
+            const res = await fetch('/profit-tracker/api/msps');
+            const msps = await res.json();
+            const sel = document.getElementById('mspFilter');
+            // Keep the first 3 static options, add specific MSP names
+            msps.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = 'msp:' + m.name;
+                opt.textContent = m.name;
+                sel.appendChild(opt);
+            });
+        } catch(e) { console.warn('Could not load MSP list', e); }
+    }
+
+    // ── Filter helpers ──
+    function getFilteredBreakdown() {
+        const mspFilter = document.getElementById('mspFilter').value;
+        const mspSpecific = document.getElementById('mspSpecificFilter').value;
+        let list = allClientBreakdown;
+
+        if (mspFilter === 'has_msp') {
+            list = list.filter(c => c.msp_name && c.msp_name.length > 0);
+        } else if (mspFilter === 'no_msp') {
+            list = list.filter(c => !c.msp_name || c.msp_name.length === 0);
+        } else if (mspFilter.startsWith('msp:')) {
+            const name = mspFilter.substring(4);
+            list = list.filter(c => c.msp_name === name);
+        }
+
+        if (mspSpecific) {
+            list = list.filter(c => c.msp_name === mspSpecific);
+        }
+        return list;
+    }
+
+    function applyMspFilter() { renderClientTable(); }
+
+    // ── Sorting ──
+    function sortTable(key) {
+        if (currentSortKey === key) {
+            currentSortDir = currentSortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentSortKey = key;
+            currentSortDir = (key === 'client_name' || key === 'msp_name') ? 'asc' : 'desc';
+        }
+        // Update header classes
+        document.querySelectorAll('#clientTable th.sortable').forEach(th => {
+            th.classList.remove('sort-asc', 'sort-desc');
+            if (th.dataset.key === key) {
+                th.classList.add(currentSortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+            }
+        });
+        renderClientTable();
+    }
+
+    // ── Table rendering with averages & totals ──
+    function renderClientTable() {
+        let list = getFilteredBreakdown();
+
+        // Add profit_pct to each item for sorting
+        list = list.map(c => ({
+            ...c,
+            profit_pct: c.total_bill > 0 ? (c.profit / c.total_bill) * 100 : 0
+        }));
+
+        // Sort
+        list.sort((a, b) => {
+            let va = a[currentSortKey], vb = b[currentSortKey];
+            if (typeof va === 'string') va = va.toLowerCase();
+            if (typeof vb === 'string') vb = vb.toLowerCase();
+            if (va < vb) return currentSortDir === 'asc' ? -1 : 1;
+            if (va > vb) return currentSortDir === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        const tbody = document.getElementById('clientTableBody');
+        const tfoot = document.getElementById('clientTableFoot');
+        tbody.innerHTML = '';
+        tfoot.innerHTML = '';
+
+        if (!list.length) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-gray-400 py-6">No client data found.</td></tr>';
+            return;
+        }
+
+        list.forEach(client => {
+            const tr = document.createElement('tr');
+            tr.style.cursor = 'pointer';
+            tr.onclick = () => {
+                document.getElementById('clientSelect').value = client.client_name;
+                updateClientChart();
+                window.scrollTo({ top: document.getElementById('clientChartSection').offsetTop - 100, behavior: 'smooth' });
+            };
+            const pp = client.profit_pct.toFixed(1);
+            const pctColor = pp >= 0 ? 'color: var(--pt-success)' : 'color: var(--pt-danger)';
+            tr.innerHTML = `
+                <td class="font-medium text-white">${client.client_name}</td>
+                <td class="text-right" style="color:${client.msp_name ? '#f472b6' : 'var(--pt-text-muted)'}">${client.msp_name || '—'}</td>
+                <td class="text-right">${formatCurrency(client.total_bill)}</td>
+                <td class="text-right text-blue-400">${formatCurrency(client.gross_pay)}</td>
+                <td class="text-right text-pink-400">${formatCurrency(client.msp_fee)}</td>
+                <td class="text-right text-amber-400">${formatCurrency(client.wc_fee)}</td>
+                <td class="text-right text-red-400">${formatCurrency(client.payroll_tax)}</td>
+                <td class="text-right font-bold ${client.profit >= 0 ? 'text-emerald-400' : 'text-red-500'}">${formatCurrency(client.profit)}</td>
+                <td class="text-right font-bold" style="${pctColor}">${client.total_bill > 0 ? pp + '%' : '—'}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // Compute averages and totals
+        const n = list.length;
+        const sums = { total_bill: 0, gross_pay: 0, msp_fee: 0, wc_fee: 0, payroll_tax: 0, profit: 0 };
+        list.forEach(c => { for (const k in sums) sums[k] += c[k]; });
+        const avgProfitPct = sums.total_bill > 0 ? (sums.profit / sums.total_bill * 100).toFixed(1) : '0.0';
+
+        // Averages row
+        const avgTr = document.createElement('tr');
+        avgTr.className = 'avg-row';
+        avgTr.innerHTML = `
+            <td>Average (${n} clients)</td><td></td>
+            <td class="text-right">${formatCurrency(sums.total_bill / n)}</td>
+            <td class="text-right">${formatCurrency(sums.gross_pay / n)}</td>
+            <td class="text-right">${formatCurrency(sums.msp_fee / n)}</td>
+            <td class="text-right">${formatCurrency(sums.wc_fee / n)}</td>
+            <td class="text-right">${formatCurrency(sums.payroll_tax / n)}</td>
+            <td class="text-right">${formatCurrency(sums.profit / n)}</td>
+            <td class="text-right">${avgProfitPct}%</td>
+        `;
+        tfoot.appendChild(avgTr);
+
+        // Totals row
+        const totTr = document.createElement('tr');
+        totTr.className = 'totals-row';
+        totTr.innerHTML = `
+            <td>Totals</td><td></td>
+            <td class="text-right">${formatCurrency(sums.total_bill)}</td>
+            <td class="text-right">${formatCurrency(sums.gross_pay)}</td>
+            <td class="text-right">${formatCurrency(sums.msp_fee)}</td>
+            <td class="text-right">${formatCurrency(sums.wc_fee)}</td>
+            <td class="text-right">${formatCurrency(sums.payroll_tax)}</td>
+            <td class="text-right">${formatCurrency(sums.profit)}</td>
+            <td class="text-right">${avgProfitPct}%</td>
+        `;
+        tfoot.appendChild(totTr);
+    }
 
     async function fetchData() {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
-
-        if (!startDate || !endDate) {
-            alert("Please select both start and end dates.");
-            return;
-        }
+        if (!startDate || !endDate) { alert("Please select both start and end dates."); return; }
 
         document.getElementById('loader').style.display = 'block';
         document.getElementById('dashboardContent').style.display = 'none';
@@ -529,20 +744,14 @@
         try {
             const response = await fetch('/profit-tracker/api/data', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ start_date: startDate, end_date: endDate })
             });
-
-            if (!response.ok) {
-                throw new Error("Failed to fetch data");
-            }
+            if (!response.ok) throw new Error("Failed to fetch data");
 
             const data = await response.json();
             const total = data.total_bill;
 
-            // Animate values
             setContent('valTotalBill', formatCurrency(data.total_bill));
             setContent('valGrossPay', formatCurrency(data.gross_pay));
             setContent('valMspFee', formatCurrency(data.msp_fee));
@@ -565,7 +774,6 @@
             setContent('pctOtherWork', pctOther);
             setContent('pctProfit', pctProfit);
 
-            // Update Progress Bar after a slight delay for animation effect
             setTimeout(() => {
                 setWidth('barGross', pctGross);
                 setWidth('barMsp', pctMsp);
@@ -575,11 +783,10 @@
                 setWidth('barProfit', pctProfit);
             }, 100);
 
-            // Populate Client Select Dropdown
+            // Client select dropdown
             const clientSelect = document.getElementById('clientSelect');
             const currentValue = clientSelect.value;
             clientSelect.innerHTML = '<option value="">-- Select Client (Optional) --</option>';
-            
             if (data.client_breakdown) {
                 data.client_breakdown.forEach(c => {
                     const opt = document.createElement('option');
@@ -592,44 +799,25 @@
                 }
             }
 
-            // Populate Client Breakdown Table
-            const tbody = document.getElementById('clientTableBody');
-            tbody.innerHTML = '';
-            
-            if (data.client_breakdown && data.client_breakdown.length > 0) {
-                data.client_breakdown.forEach(client => {
-                    const tr = document.createElement('tr');
-                    tr.style.cursor = 'pointer';
-                    tr.onclick = () => {
-                        document.getElementById('clientSelect').value = client.client_name;
-                        updateClientChart();
-                        window.scrollTo({ top: document.getElementById('clientChartSection').offsetTop - 100, behavior: 'smooth' });
-                    };
-                    const profit_pct = client.total_bill > 0 ? ((client.profit / client.total_bill) * 100).toFixed(1) : '0';
-                    const pctColor = profit_pct >= 0 ? 'color: var(--pt-success)' : 'color: var(--pt-danger)';
+            // Populate MSP-specific filter dropdown
+            const mspNames = [...new Set((data.client_breakdown || []).map(c => c.msp_name).filter(Boolean))].sort();
+            const mspSpecSel = document.getElementById('mspSpecificFilter');
+            mspSpecSel.innerHTML = '<option value="">-- All MSPs --</option>';
+            mspNames.forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                mspSpecSel.appendChild(opt);
+            });
 
-                    tr.innerHTML = `
-                        <td class="font-medium text-white">${client.client_name}</td>
-                        <td class="text-right">${formatCurrency(client.total_bill)}</td>
-                        <td class="text-right text-blue-400">${formatCurrency(client.gross_pay)}</td>
-                        <td class="text-right text-pink-400">${formatCurrency(client.msp_fee)}</td>
-                        <td class="text-right text-amber-400">${formatCurrency(client.wc_fee)}</td>
-                        <td class="text-right text-red-400">${formatCurrency(client.payroll_tax)}</td>
-                        <td class="text-right font-bold ${client.profit >= 0 ? 'text-emerald-400' : 'text-red-500'}">${ formatCurrency(client.profit)}</td>
-                        <td class="text-right font-bold" style="${pctColor}">${client.total_bill > 0 ? profit_pct + '%' : '—'}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            } else {
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-gray-400 py-6">No client data found for this date range.</td></tr>`;
-            }
+            // Store and render table
+            allClientBreakdown = data.client_breakdown || [];
+            renderClientTable();
 
             document.getElementById('loader').style.display = 'none';
             document.getElementById('dashboardContent').style.display = 'block';
 
-            if (clientSelect.value) {
-                updateClientChart();
-            }
+            if (clientSelect.value) updateClientChart();
 
         } catch (error) {
             console.error("Error:", error);
@@ -638,161 +826,60 @@
         }
     }
 
+    // Listen for MSP filter change to re-render
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('mspFilter').addEventListener('change', () => renderClientTable());
+    });
+
     async function updateClientChart() {
         const clientName = document.getElementById('clientSelect').value;
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
-
-        if (!clientName) {
-            document.getElementById('clientChartSection').style.display = 'none';
-            return;
-        }
-
+        if (!clientName) { document.getElementById('clientChartSection').style.display = 'none'; return; }
         document.getElementById('clientChartTitle').innerText = `Weekly Performance: ${clientName}`;
         document.getElementById('clientChartSection').style.display = 'block';
-
         try {
             const response = await fetch('/profit-tracker/api/weekly-client-data', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ 
-                    start_date: startDate, 
-                    end_date: endDate,
-                    client_name: clientName
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ start_date: startDate, end_date: endDate, client_name: clientName })
             });
-
             const data = await response.json();
             renderChart(data.weeks);
-        } catch (error) {
-            console.error("Error fetching weekly data:", error);
-        }
+        } catch (error) { console.error("Error fetching weekly data:", error); }
     }
 
     function renderChart(weeks) {
         const ctx = document.getElementById('clientChart').getContext('2d');
-        
         const labels = weeks.map(w => w.week_start);
         const datasets = [
-            {
-                label: 'Total Bill',
-                data: weeks.map(w => w.total_bill),
-                borderColor: '#38bdf8',
-                backgroundColor: 'rgba(56, 189, 248, 0.1)',
-                fill: true,
-                tension: 0.4
-            },
-            {
-                label: 'Gross Pay',
-                data: weeks.map(w => w.gross_pay),
-                borderColor: '#60a5fa',
-                tension: 0.4,
-                hidden: true
-            },
-            {
-                label: 'MSP Fee',
-                data: weeks.map(w => w.msp_fee),
-                borderColor: '#f472b6',
-                tension: 0.4,
-                hidden: true
-            },
-            {
-                label: 'WC Fee',
-                data: weeks.map(w => w.wc_fee),
-                borderColor: '#fbbf24',
-                tension: 0.4,
-                hidden: true
-            },
-            {
-                label: 'Payroll Tax',
-                data: weeks.map(w => w.payroll_tax),
-                borderColor: '#f87171',
-                tension: 0.4,
-                hidden: true
-            },
-            {
-                label: 'Net Profit',
-                data: weeks.map(w => w.profit),
-                borderColor: '#34d399',
-                backgroundColor: 'rgba(52, 211, 153, 0.1)',
-                fill: true,
-                tension: 0.4
-            },
-            {
-                label: 'Profit %',
-                data: weeks.map(w => w.profit_pct),
-                borderColor: '#fbbf24',
-                yAxisID: 'y1',
-                tension: 0.4,
-                borderDash: [5, 5]
-            }
+            { label: 'Total Bill', data: weeks.map(w => w.total_bill), borderColor: '#38bdf8', backgroundColor: 'rgba(56, 189, 248, 0.1)', fill: true, tension: 0.4 },
+            { label: 'Gross Pay', data: weeks.map(w => w.gross_pay), borderColor: '#60a5fa', tension: 0.4, hidden: true },
+            { label: 'MSP Fee', data: weeks.map(w => w.msp_fee), borderColor: '#f472b6', tension: 0.4, hidden: true },
+            { label: 'WC Fee', data: weeks.map(w => w.wc_fee), borderColor: '#fbbf24', tension: 0.4, hidden: true },
+            { label: 'Payroll Tax', data: weeks.map(w => w.payroll_tax), borderColor: '#f87171', tension: 0.4, hidden: true },
+            { label: 'Net Profit', data: weeks.map(w => w.profit), borderColor: '#34d399', backgroundColor: 'rgba(52, 211, 153, 0.1)', fill: true, tension: 0.4 },
+            { label: 'Profit %', data: weeks.map(w => w.profit_pct), borderColor: '#fbbf24', yAxisID: 'y1', tension: 0.4, borderDash: [5, 5] }
         ];
-
-        if (clientChartInstance) {
-            clientChartInstance.destroy();
-        }
-
+        if (clientChartInstance) clientChartInstance.destroy();
         clientChartInstance = new Chart(ctx, {
-            type: 'line',
-            data: { labels, datasets },
+            type: 'line', data: { labels, datasets },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false,
-                },
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
                 scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: 'rgba(255,255,255,0.05)' },
-                        ticks: { 
-                            color: '#94a3b8',
-                            callback: value => formatCurrency(value)
-                        }
-                    },
-                    y1: {
-                        position: 'right',
-                        beginAtZero: true,
-                        grid: { display: false },
-                        ticks: { 
-                            color: '#fbbf24',
-                            callback: value => value + '%'
-                        }
-                    },
-                    x: {
-                        grid: { color: 'rgba(255,255,255,0.05)' },
-                        ticks: { color: '#94a3b8' }
-                    }
+                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', callback: v => formatCurrency(v) } },
+                    y1: { position: 'right', beginAtZero: true, grid: { display: false }, ticks: { color: '#fbbf24', callback: v => v + '%' } },
+                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
                 },
                 plugins: {
-                    legend: {
-                        labels: { color: '#f8fafc' }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) label += ': ';
-                                if (context.dataset.yAxisID === 'y1') {
-                                    label += context.parsed.y + '%';
-                                } else {
-                                    label += formatCurrency(context.parsed.y);
-                                }
-                                return label;
-                            }
-                        }
-                    }
+                    legend: { labels: { color: '#f8fafc' } },
+                    tooltip: { callbacks: { label: function(ctx) { let l = ctx.dataset.label || ''; if (l) l += ': '; l += ctx.dataset.yAxisID === 'y1' ? ctx.parsed.y + '%' : formatCurrency(ctx.parsed.y); return l; } } }
                 }
             }
         });
     }
 
-    // Load data on initial render
-    window.addEventListener('DOMContentLoaded', () => {
-        fetchData();
-    });
+    window.addEventListener('DOMContentLoaded', () => { loadMspList(); fetchData(); });
 </script>
 {% endblock %}
