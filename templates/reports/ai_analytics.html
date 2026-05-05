@@ -1,134 +1,625 @@
 {% extends "base.html" %}
 {% block title %}AI Analytics — GoLive Staffing{% endblock %}
 {% block content %}
-<div class="max-w-5xl mx-auto space-y-8">
-  <div class="rounded-3xl bg-white shadow-lg border border-emerald-100 overflow-hidden">
-    <div class="bg-gradient-to-r from-emerald-600 to-emerald-500 px-8 py-6 text-white">
-      <div class="flex items-center gap-4 mb-2">
-        <a href="/reports" class="text-emerald-100 hover:text-white transition">← Back to Hub</a>
-      </div>
-      <p class="uppercase text-sm font-semibold tracking-[0.2em] text-emerald-100">Analytics</p>
-      <h1 class="brand-serif text-4xl font-semibold leading-tight">AI-powered staffing analytics</h1>
-      <p class="mt-2 text-emerald-50/90 max-w-3xl">
-        Ask questions about employee hours, client revenue, pay rates, and more.
-      </p>
-    </div>
-
-    <div class="p-8 space-y-6">
-      <form id="ask-form" class="space-y-4">
-        <label class="block text-sm font-semibold text-gray-700" for="question">Question</label>
-        <div class="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
-          <input
-            id="question"
-            name="question"
-            type="text"
-            placeholder="e.g. Which clients generated the most revenue last month?"
-            class="flex-1 rounded-2xl border border-emerald-200 px-4 py-3 shadow-sm focus:border-emerald-500 focus:ring focus:ring-emerald-200"
-            required
-          />
-          <button
-            type="submit"
-            class="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 font-semibold text-white shadow-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-          >
-            <span id="submit-label">Ask</span>
-            <span id="loading-indicator" class="hidden animate-spin">⟳</span>
-          </button>
-        </div>
-      </form>
-
-      <div class="flex flex-wrap gap-3 text-sm">
-        <p class="font-semibold text-gray-700">Quick prompts:</p>
-        <button class="chip" data-question="Total billable revenue by client for the last 30 days">Revenue by client</button>
-        <button class="chip" data-question="Average pay rate and hours worked per employee">Average pay & hours</button>
-        <button class="chip" data-question="Top 10 employees by total hours worked year to date">Top employees by hours</button>
-        <button class="chip" data-question="Overtime hours and gross pay by county">OT and pay by county</button>
-      </div>
-
-      <div id="error" class="hidden rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-800"></div>
-
-      <div id="results" class="hidden space-y-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-4">
-        <div class="flex items-center gap-2 text-sm font-semibold text-emerald-800">
-          <span class="text-lg">✅</span>
-          <span>Answer</span>
-        </div>
-        <p id="answer" class="text-gray-800 whitespace-pre-line"></p>
-        <div class="rounded-xl border border-emerald-200 bg-white px-4 py-3 text-xs text-gray-700">
-          <p class="font-semibold text-emerald-700">SQL generated</p>
-          <pre id="sql" class="mt-1 whitespace-pre-wrap"></pre>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
 <style>
-  .chip {
-    display: inline-flex;
+  /* ── Layout ─────────────────────────────────────────────────────────── */
+  .ai-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 1.25rem;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .ai-layout { grid-template-columns: 1fr; }
+    .ai-sidebar { display: none; }
+  }
+
+  /* ── Sidebar ─────────────────────────────────────────────────────────── */
+  .ai-sidebar {
+    background: #fff;
+    border: 1px solid #d1fae5;
+    border-radius: 1rem;
+    overflow: hidden;
+    position: sticky;
+    top: 1.25rem;
+    max-height: calc(100vh - 4rem);
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar-head {
+    background: linear-gradient(135deg, #065f46, #059669);
+    color: #fff;
+    padding: 0.85rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .sidebar-search {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid #d1fae5;
+    flex-shrink: 0;
+  }
+  .sidebar-search input {
+    width: 100%;
+    border: 1px solid #a7f3d0;
+    border-radius: 0.5rem;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.78rem;
+    outline: none;
+    box-sizing: border-box;
+  }
+  .sidebar-search input:focus { border-color: #059669; }
+  .sidebar-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 0.25rem 0;
+  }
+  .sidebar-table-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.35rem 1rem;
+    cursor: pointer;
+    transition: background 120ms;
+    gap: 0.5rem;
+  }
+  .sidebar-table-item:hover { background: #ecfdf5; }
+  .sidebar-table-item.primary-table .tname { font-weight: 700; color: #065f46; }
+  .tname { font-size: 0.78rem; color: #374151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tcols { font-size: 0.7rem; color: #9ca3af; flex-shrink: 0; }
+  .primary-badge {
+    font-size: 0.6rem;
+    font-weight: 700;
+    background: #d1fae5;
+    color: #065f46;
+    border-radius: 4px;
+    padding: 1px 4px;
+    flex-shrink: 0;
+  }
+
+  /* ── Main Panel ──────────────────────────────────────────────────────── */
+  .ai-main { display: flex; flex-direction: column; gap: 1rem; }
+
+  /* ── Header card ─────────────────────────────────────────────────────── */
+  .ai-header-card {
+    background: linear-gradient(135deg, #064e3b 0%, #059669 100%);
+    border-radius: 1.25rem;
+    padding: 1.75rem 2rem;
+    color: #fff;
+  }
+  .ai-header-card h1 { font-size: 1.6rem; font-weight: 800; margin: 0 0 0.35rem; }
+  .ai-header-card p { margin: 0; opacity: 0.85; font-size: 0.92rem; }
+
+  /* ── Ask card ────────────────────────────────────────────────────────── */
+  .ask-card {
+    background: #fff;
+    border: 1px solid #d1fae5;
+    border-radius: 1rem;
+    padding: 1.25rem 1.5rem;
+  }
+  .ask-input-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+  }
+  .ask-input-row textarea {
+    flex: 1;
+    border: 2px solid #a7f3d0;
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    resize: none;
+    min-height: 52px;
+    max-height: 120px;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 150ms;
+    line-height: 1.5;
+  }
+  .ask-input-row textarea:focus { border-color: #059669; }
+  .ask-btn {
+    background: linear-gradient(135deg, #065f46, #059669);
+    color: #fff;
+    border: none;
+    border-radius: 0.75rem;
+    padding: 0.7rem 1.4rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
     align-items: center;
     gap: 0.5rem;
-    border-radius: 9999px;
+    white-space: nowrap;
+    transition: opacity 150ms, transform 150ms;
+    height: 52px;
+  }
+  .ask-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+  .ask-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  /* ── Chip prompts ────────────────────────────────────────────────────── */
+  .chips-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+  .chip {
     border: 1px solid #a7f3d0;
-    background: #ecfdf3;
-    padding: 0.35rem 0.75rem;
+    background: #f0fdf4;
+    color: #065f46;
+    border-radius: 9999px;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.76rem;
     font-weight: 600;
-    color: #047857;
-    transition: background 150ms ease, transform 150ms ease;
+    cursor: pointer;
+    transition: background 120ms, transform 120ms;
   }
-  .chip:hover {
-    background: #d1fae5;
-    transform: translateY(-1px);
+  .chip:hover { background: #d1fae5; transform: translateY(-1px); }
+
+  /* ── Status pills ────────────────────────────────────────────────────── */
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
   }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.75rem;
+  }
+  .pill-table { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+  .pill-rows  { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+  .pill-warn  { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+
+  /* ── Answer card ─────────────────────────────────────────────────────── */
+  .answer-card {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 1rem;
+    padding: 1.25rem 1.5rem;
+  }
+  .answer-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #059669;
+    margin-bottom: 0.5rem;
+  }
+  #answer-text {
+    font-size: 0.95rem;
+    color: #1f2937;
+    line-height: 1.7;
+    white-space: pre-line;
+  }
+
+  /* ── Data table ──────────────────────────────────────────────────────── */
+  .data-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 1rem;
+    overflow: hidden;
+  }
+  .data-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f9fafb;
+    gap: 0.75rem;
+  }
+  .data-card-head-left { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .table-scroll { overflow-x: auto; max-height: 380px; overflow-y: auto; }
+  #results-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+  #results-table th {
+    background: #f3f4f6;
+    padding: 0.55rem 0.75rem;
+    text-align: left;
+    font-weight: 700;
+    color: #374151;
+    position: sticky;
+    top: 0;
+    white-space: nowrap;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  #results-table td {
+    padding: 0.45rem 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+    color: #4b5563;
+    white-space: nowrap;
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #results-table tr:hover td { background: #f9fafb; }
+
+  /* ── SQL viewer ──────────────────────────────────────────────────────── */
+  .sql-card {
+    background: #1e293b;
+    border-radius: 1rem;
+    overflow: hidden;
+  }
+  .sql-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 1rem;
+    background: #0f172a;
+  }
+  .sql-head span { font-size: 0.72rem; font-weight: 700; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
+  .copy-btn {
+    background: #334155;
+    color: #94a3b8;
+    border: none;
+    border-radius: 0.35rem;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: background 120ms, color 120ms;
+  }
+  .copy-btn:hover { background: #475569; color: #e2e8f0; }
+  #sql-content {
+    padding: 1rem 1.25rem;
+    font-family: 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 0.8rem;
+    color: #7dd3fc;
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin: 0;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+
+  /* ── Download btn ────────────────────────────────────────────────────── */
+  .dl-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.85rem;
+    background: #059669;
+    color: #fff;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    transition: opacity 120ms;
+  }
+  .dl-btn:hover { opacity: 0.85; }
+
+  /* ── Error box ───────────────────────────────────────────────────────── */
+  .error-box {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 0.75rem;
+    padding: 0.9rem 1.1rem;
+    color: #b91c1c;
+    font-size: 0.88rem;
+  }
+
+  /* ── Loading pulse ───────────────────────────────────────────────────── */
+  .thinking-box {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.1rem 1.4rem;
+    background: #fff;
+    border: 1px solid #d1fae5;
+    border-radius: 1rem;
+    font-size: 0.88rem;
+    color: #065f46;
+    font-weight: 600;
+  }
+  .dots span {
+    display: inline-block;
+    width: 7px; height: 7px;
+    background: #059669;
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+  .dots span:nth-child(2) { animation-delay: 0.2s; }
+  .dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-6px); }
+  }
+
+  .hidden { display: none !important; }
 </style>
 
-<script>
-  const form = document.getElementById('ask-form');
-  const questionInput = document.getElementById('question');
-  const errorBox = document.getElementById('error');
-  const resultsBox = document.getElementById('results');
-  const answerEl = document.getElementById('answer');
-  const sqlEl = document.getElementById('sql');
-  const loading = document.getElementById('loading-indicator');
-  const submitLabel = document.getElementById('submit-label');
-  const chips = document.querySelectorAll('.chip');
+<div class="max-w-7xl mx-auto">
+  <!-- Page header -->
+  <div class="ai-header-card mb-4">
+    <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;opacity:0.75;margin-bottom:0.35rem;">
+      <a href="/reports" style="color:inherit;text-decoration:none;opacity:0.8;">Reports</a> › AI Analytics
+    </div>
+    <h1>AI-Powered Data Analytics</h1>
+    <p>Ask any question about staffing, employees, clients, events, timesheets, and more. The AI queries your live database and explains the results.</p>
+  </div>
 
-  chips.forEach((chip) => {
-    chip.addEventListener('click', () => {
-      questionInput.value = chip.dataset.question;
-      questionInput.focus();
+  <div class="ai-layout">
+    <!-- ── Sidebar: Table Browser ── -->
+    <aside class="ai-sidebar">
+      <div class="sidebar-head">📦 Available Tables <span id="table-count" style="opacity:0.7;font-weight:400"></span></div>
+      <div class="sidebar-search">
+        <input id="sidebar-search" type="text" placeholder="Filter tables…" autocomplete="off" />
+      </div>
+      <div class="sidebar-list" id="sidebar-list">
+        <div style="padding:1rem;font-size:0.8rem;color:#9ca3af;">Loading tables…</div>
+      </div>
+    </aside>
+
+    <!-- ── Main Content ── -->
+    <div class="ai-main">
+
+      <!-- Ask card -->
+      <div class="ask-card">
+        <label style="display:block;font-size:0.8rem;font-weight:700;color:#374151;margin-bottom:0.6rem;">Ask a question about your data</label>
+        <div class="ask-input-row">
+          <textarea
+            id="question"
+            placeholder="e.g. Which clients had the most shifts last month? Who are the top 10 employees by hours worked this year?"
+            rows="2"
+          ></textarea>
+          <button id="ask-btn" class="ask-btn" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2 11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            <span id="ask-label">Ask</span>
+          </button>
+        </div>
+
+        <!-- Quick prompts -->
+        <div class="chips-row">
+          <button class="chip" data-q="Which clients generated the most revenue in the last 90 days?">Top clients by revenue</button>
+          <button class="chip" data-q="Who are the top 10 employees by total hours worked this year?">Top employees by hours</button>
+          <button class="chip" data-q="What is the average fill rate per client over the last 6 months?">Fill rate by client</button>
+          <button class="chip" data-q="How many shifts were cancelled in the last 30 days, grouped by client?">Cancellations by client</button>
+          <button class="chip" data-q="Which venues had events with the highest no-show rates?">Venue no-show rates</button>
+          <button class="chip" data-q="Show me employees who have certifications expiring in the next 60 days">Expiring certifications</button>
+        </div>
+      </div>
+
+      <!-- Thinking indicator -->
+      <div id="thinking-box" class="thinking-box hidden">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <span id="thinking-label">Analyzing your question…</span>
+      </div>
+
+      <!-- Error box -->
+      <div id="error-box" class="error-box hidden"></div>
+
+      <!-- Answer card -->
+      <div id="answer-card" class="answer-card hidden">
+        <div class="answer-label">✦ AI Insight</div>
+        <div id="answer-text"></div>
+      </div>
+
+      <!-- Results meta + download -->
+      <div id="results-meta" class="status-row hidden">
+        <span class="pill pill-rows" id="row-count-pill"></span>
+        <span id="tables-used-pills"></span>
+        <span id="has-more-pill" class="pill pill-warn hidden">Showing first 500 rows</span>
+        <a href="/reports/api/ai-analytics/download" id="dl-btn" class="dl-btn" target="_blank">
+          ⬇ Download Excel
+        </a>
+      </div>
+
+      <!-- Data table -->
+      <div id="data-card" class="data-card hidden">
+        <div class="table-scroll">
+          <table id="results-table">
+            <thead id="results-thead"></thead>
+            <tbody id="results-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SQL viewer -->
+      <div id="sql-card" class="sql-card hidden">
+        <div class="sql-head">
+          <span>Generated SQL</span>
+          <button class="copy-btn" id="copy-sql-btn">Copy</button>
+        </div>
+        <pre id="sql-content"></pre>
+      </div>
+
+    </div><!-- /.ai-main -->
+  </div><!-- /.ai-layout -->
+</div>
+
+<script>
+// ── DOM refs ────────────────────────────────────────────────────────────────
+const questionEl   = document.getElementById('question');
+const askBtn       = document.getElementById('ask-btn');
+const askLabel     = document.getElementById('ask-label');
+const thinkingBox  = document.getElementById('thinking-box');
+const thinkingLbl  = document.getElementById('thinking-label');
+const errorBox     = document.getElementById('error-box');
+const answerCard   = document.getElementById('answer-card');
+const answerText   = document.getElementById('answer-text');
+const resultsMeta  = document.getElementById('results-meta');
+const rowCountPill = document.getElementById('row-count-pill');
+const tablesPills  = document.getElementById('tables-used-pills');
+const hasMorePill  = document.getElementById('has-more-pill');
+const dataCard     = document.getElementById('data-card');
+const thead        = document.getElementById('results-thead');
+const tbody        = document.getElementById('results-tbody');
+const sqlCard      = document.getElementById('sql-card');
+const sqlContent   = document.getElementById('sql-content');
+const copySqlBtn   = document.getElementById('copy-sql-btn');
+const sidebarList  = document.getElementById('sidebar-list');
+const sidebarSearch = document.getElementById('sidebar-search');
+const tableCount   = document.getElementById('table-count');
+
+// ── Sidebar: load tables ────────────────────────────────────────────────────
+let allTables = [];
+async function loadSidebar() {
+  try {
+    const res = await fetch('/reports/api/ai-analytics/schema');
+    allTables = await res.json();
+    // Sort: primary first, then alphabetical
+    allTables.sort((a, b) => {
+      if (a.primary !== b.primary) return b.primary - a.primary;
+      return a.table.localeCompare(b.table);
+    });
+    tableCount.textContent = `(${allTables.length})`;
+    renderSidebar(allTables);
+  } catch (e) {
+    sidebarList.innerHTML = '<div style="padding:1rem;font-size:0.78rem;color:#9ca3af;">Could not load schema.</div>';
+  }
+}
+
+function renderSidebar(tables) {
+  if (!tables.length) {
+    sidebarList.innerHTML = '<div style="padding:1rem;font-size:0.78rem;color:#9ca3af;">No tables match.</div>';
+    return;
+  }
+  sidebarList.innerHTML = tables.map(t => `
+    <div class="sidebar-table-item ${t.primary ? 'primary-table' : ''}" data-table="${t.table}" title="Click to add to question">
+      <span class="tname">${t.table}</span>
+      <span style="display:flex;align-items:center;gap:0.3rem">
+        ${t.primary ? '<span class="primary-badge">KEY</span>' : ''}
+        <span class="tcols">${t.columns}c</span>
+      </span>
+    </div>
+  `).join('');
+
+  sidebarList.querySelectorAll('.sidebar-table-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const tbl = el.dataset.table;
+      const cur = questionEl.value.trim();
+      if (!cur) {
+        questionEl.value = `Show me data from the ${tbl} table`;
+      } else {
+        questionEl.value = cur + ` (using the ${tbl} table)`;
+      }
+      questionEl.focus();
     });
   });
+}
 
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const question = questionInput.value.trim();
-    if (!question) return;
+sidebarSearch.addEventListener('input', () => {
+  const q = sidebarSearch.value.toLowerCase();
+  renderSidebar(q ? allTables.filter(t => t.table.includes(q)) : allTables);
+});
 
-    resultsBox.classList.add('hidden');
-    errorBox.classList.add('hidden');
-    submitLabel.textContent = 'Thinking...';
-    loading.classList.remove('hidden');
+loadSidebar();
 
-    try {
-      const response = await fetch('/reports/api/ask', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question }),
-      });
-      if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.detail || 'Unable to fetch results');
-      }
-      const data = await response.json();
-      answerEl.textContent = data.answer;
-      sqlEl.textContent = data.sql;
-      resultsBox.classList.remove('hidden');
-    } catch (err) {
-      errorBox.textContent = err.message;
-      errorBox.classList.remove('hidden');
-    } finally {
-      submitLabel.textContent = 'Ask';
-      loading.classList.add('hidden');
-    }
+// ── Quick chips ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    questionEl.value = chip.dataset.q;
+    questionEl.focus();
   });
+});
+
+// ── Auto-resize textarea ────────────────────────────────────────────────────
+questionEl.addEventListener('input', () => {
+  questionEl.style.height = 'auto';
+  questionEl.style.height = Math.min(questionEl.scrollHeight, 120) + 'px';
+});
+
+// ── Submit on Ctrl/Cmd + Enter ──────────────────────────────────────────────
+questionEl.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') askBtn.click();
+});
+
+// ── Copy SQL ────────────────────────────────────────────────────────────────
+copySqlBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText(sqlContent.textContent).then(() => {
+    copySqlBtn.textContent = 'Copied!';
+    setTimeout(() => copySqlBtn.textContent = 'Copy', 2000);
+  });
+});
+
+// ── Hide previous results ───────────────────────────────────────────────────
+function clearResults() {
+  errorBox.classList.add('hidden');
+  answerCard.classList.add('hidden');
+  resultsMeta.classList.add('hidden');
+  dataCard.classList.add('hidden');
+  sqlCard.classList.add('hidden');
+  hasMorePill.classList.add('hidden');
+}
+
+// ── Ask ─────────────────────────────────────────────────────────────────────
+askBtn.addEventListener('click', async () => {
+  const question = questionEl.value.trim();
+  if (!question) { questionEl.focus(); return; }
+
+  clearResults();
+  askBtn.disabled = true;
+  askLabel.textContent = 'Thinking…';
+  thinkingBox.classList.remove('hidden');
+  thinkingLbl.textContent = 'Planning which tables to query…';
+
+  try {
+    // Slight delay so the UI updates the label before fetch
+    await new Promise(r => setTimeout(r, 50));
+    thinkingLbl.textContent = 'Generating SQL and running query…';
+
+    const res = await fetch('/reports/api/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question }),
+    });
+
+    thinkingLbl.textContent = 'Synthesizing answer…';
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Unknown error' }));
+      throw new Error(err.detail || 'Request failed');
+    }
+
+    const data = await res.json();
+
+    // ── Answer ──
+    answerText.textContent = data.answer;
+    answerCard.classList.remove('hidden');
+
+    // ── Meta row ──
+    rowCountPill.textContent = `${(data.row_count || 0).toLocaleString()} row${data.row_count !== 1 ? 's' : ''}`;
+    tablesPills.innerHTML = (data.tables_used || [])
+      .map(t => `<span class="pill pill-table">📋 ${t}</span>`)
+      .join('');
+    if (data.has_more) hasMorePill.classList.remove('hidden');
+    resultsMeta.classList.remove('hidden');
+
+    // ── Data table ──
+    if (data.columns && data.columns.length) {
+      thead.innerHTML = '<tr>' + data.columns.map(c => `<th>${c}</th>`).join('') + '</tr>';
+      tbody.innerHTML = data.rows.map(row =>
+        '<tr>' + data.columns.map(c => {
+          const v = row[c];
+          const display = v === null || v === undefined ? '<span style="color:#d1d5db">—</span>' : String(v);
+          return `<td title="${String(v ?? '')}">${display}</td>`;
+        }).join('') + '</tr>'
+      ).join('');
+      dataCard.classList.remove('hidden');
+    }
+
+    // ── SQL ──
+    sqlContent.textContent = data.sql || '';
+    sqlCard.classList.remove('hidden');
+
+  } catch (err) {
+    errorBox.textContent = '⚠ ' + err.message;
+    errorBox.classList.remove('hidden');
+  } finally {
+    thinkingBox.classList.add('hidden');
+    askBtn.disabled = false;
+    askLabel.textContent = 'Ask';
+  }
+});
 </script>
+
 {% endblock %}
