@@ -10,6 +10,7 @@ import docx
 import io
 import os
 import openai
+from apps.position_requests.scheduler import ai_analyze as scheduler_ai_analyze
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -112,30 +113,16 @@ async def analyze_request(
     
     resume_text = await extract_text_from_url(resume_url) if resume_url else "No resume attached."
     
-    combined_text = f"User provided experience:\n{experience_text}\n\nResume text:\n{resume_text}"
-    prompt = f"""
-The candidate is applying for the following requested positions: {requested_positions}
-
-Here is the candidate's experience information:
-{combined_text}
-
-Analyze the candidate's experience and determine if they are qualified for the requested positions. Give a clear, concise summary of your findings.
-"""
-    try:
-        client = openai.AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        response = await client.chat.completions.create(
-            model="gpt-4o",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=400
-        )
-        ai_analysis = response.choices[0].message.content
-    except Exception as e:
-        ai_analysis = f"AI Analysis Error: {str(e)}"
+    status, ai_analysis, approved_positions = await scheduler_ai_analyze(
+        resume_text, experience_text, requested_positions
+    )
 
     return JSONResponse({
         "status": "success",
         "resume_text": resume_text,
-        "ai_analysis": ai_analysis
+        "ai_analysis": ai_analysis,
+        "eval_status": status,
+        "approved_positions": approved_positions,
     })
 
 def send_position_added_email(employee_email: str, first_name: str, added_positions: list):
