@@ -61,6 +61,7 @@ from apps.profit_tracker.views import router as profit_tracker_router
 from apps.profit_tracker_2.views import router as profit_tracker_2_router
 from apps.client_profile_changes.views import router as client_profile_changes_router
 from apps.email_forwarder.views import router as email_forwarder_router
+from apps.bill_rate_calculator.views import router as bill_rate_calculator_router
 from apps.auth.views import router as auth_router, get_current_user
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 
@@ -385,6 +386,11 @@ app.include_router(
     email_forwarder_router,
     prefix="/email-forwarder",
     tags=["Email Forwarder"],
+)
+app.include_router(
+    bill_rate_calculator_router,
+    prefix="/bill-rate-calculator",
+    tags=["Bill Rate Calculator"],
 )
 
 # Redirect /sms_paraphraser to /sms-paraphraser for backward compatibility
