@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import os
 import re
 import random
@@ -11,6 +12,164 @@ import docx
 import io
 import openai
 from sqlalchemy import create_engine, text
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Structured system prompt — mirrors Resume Analyzer qualification rules
+# ---------------------------------------------------------------------------
+POSITION_SYSTEM_PROMPT = """
+You are a resume screener for a hospitality staffing agency.
+The user will send you a resume (as text or transcribed from a PDF/Word doc/image)
+together with self-reported experience text.
+Your job is to decide how qualified the candidate is for specific hospitality positions.
+Count experience at fine-dining or equivalent venues normally, but treat fast-food
+experience differently (see updated rules below).
+
+Target positions
+
+Evaluate the candidate for these positions:
+
+Cook
+Prep Cook
+Dishwasher
+Utility
+Server
+Host
+Runner
+Busser
+Bartender
+Barback
+Cashier
+Pastry
+Baker
+Sushi
+Concessions
+Barista
+Valet
+
+Venue rules (VERY IMPORTANT)
+
+Fast-food experience no longer disqualifies a candidate. Instead:
+
+— Fast food or clearly quick-service chains (e.g., McDonald's, Burger King, Wendy's,
+  Taco Bell, KFC, In-N-Out, Chick-fil-A, similar chains) DO qualify,
+  BUT ONLY for Level 1 and ONLY if the role performed directly matches one of the
+  target positions.
+
+Examples:
+• A McDonald's Cashier → qualifies for the Cashier position at Level 1.
+• A Wendy's Cook → qualifies for the Cook position at Level 1.
+• A Taco Bell Crew Member with cashier duties → qualifies for Cashier Level 1.
+• A fast-food Shift Lead → does NOT qualify unless duties explicitly match one of the
+  listed roles.
+
+Fast-food experience should never count toward Level 2 or Level 3.
+
+For Level 2 or Level 3 qualification:
+Count only experience at fine dining or equivalent hospitality venues, such as:
+— Hotels, resorts, country clubs
+— Upscale restaurants, steakhouses, chef-driven or white-tablecloth concepts
+— Banquet/catering companies, convention centers, stadiums, arenas, large event venues
+— Corporate/contract dining for companies, universities, hospitals, etc., when clearly
+  hospitality-related.
+
+If a venue type is unclear and could reasonably be hospitality (e.g., "Italian
+restaurant" without branding), you may count it with reduced confidence.
+
+Ignore non-hospitality jobs entirely (admin, warehouse, rideshare, retail, etc.).
+
+Experience rules
+
+For each position, you must:
+1. Examine the entire work history and identify matching roles.
+2. Estimate total time (in years) spent in those roles.
+
+Experience categorization:
+• Level 1: less than 2 years combined qualifying experience.
+  — All fast-food experience ALWAYS counts as Level 1.
+• Level 2: 2 to 5 years combined qualifying experience at non-fast-food venues.
+• Level 3: more than 5 years qualifying experience at non-fast-food venues.
+
+If the candidate has only fast-food experience for a role, assign Level 1
+(never "no_experience").
+
+If they have neither qualifying nor fast-food experience, assign "no_experience".
+
+When estimating experience:
+— Use job dates when available.
+— Estimate approximate duration when missing.
+— Avoid double counting overlapping jobs.
+
+Output format
+
+Return your result as valid JSON only, using this schema:
+{
+  "candidate_summary": {
+    "hospitality_experience_overview": "",
+    "total_hospitality_years_estimate": 0.0,
+    "notable_venues": [],
+    "notes_on_fast_food_or_non_qualifying_experience": ""
+  },
+  "positions": {
+    "cook":        { "status": "no_experience | level_1 | level_2 | level_3", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
+    "prep_cook":   { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
+    "dishwasher":  { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
+    "utility":     { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
+    "server":      { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
+    "host":        { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
+    "runner":      { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
+    "busser":      { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
+    "bartender":   { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
+    "barback":     { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
+    "cashier":     { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
+    "pastry":      { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
+    "baker":       { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
+    "sushi":       { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
+    "concessions": { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
+    "barista":     { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
+    "valet":       { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] }
+  }
+}
+
+Confidence must be between 0.0 and 1.0.
+
+In the reasons field, briefly explain:
+— which roles and venues you counted,
+— if fast-food experience was used to assign Level 1,
+— why any other roles were excluded.
+
+Do not include any text outside of the JSON.
+"""
+
+# Maps AI level strings → numeric tier
+LEVEL_MAP = {
+    "no_experience": 0,
+    "level_1": 1,
+    "level_2": 2,
+    "level_3": 3,
+}
+
+# Maps position keys from AI JSON → base position name used in database
+POSITION_KEY_TO_NAME = {
+    "cook": "Cook",
+    "prep_cook": "Prep Cook",
+    "dishwasher": "Dishwasher",
+    "utility": "Utility",
+    "server": "Server",
+    "host": "Host",
+    "runner": "Runner",
+    "busser": "Busser",
+    "bartender": "Bartender",
+    "barback": "Barback",
+    "cashier": "Cashier",
+    "pastry": "Pastry",
+    "baker": "Baker",
+    "sushi": "Sushi",
+    "concessions": "Concessions",
+    "barista": "Barista",
+    "valet": "Valet",
+}
 from sqlalchemy.engine import URL
 
 DATA_FILE = Path("data/position_requests.json")
@@ -102,27 +261,176 @@ async def extract_text_from_url(url: str) -> str:
     except Exception as e:
         return f"Error extracting resume text: {str(e)}"
 
+def _parse_requested_positions(raw: str) -> list[tuple[str, int]]:
+    """Parse requested positions string into list of (base_name, level) tuples.
+
+    Handles formats like:
+      "Bartender 2, Cook 1"  →  [("Bartender", 2), ("Cook", 1)]
+      "Bartender, Cook"      →  [("Bartender", 0), ("Cook", 0)]  (level 0 = any)
+    """
+    results = []
+    # Split on comma, newline, or semicolons
+    parts = re.split(r"[,;\n]+", raw)
+    for part in parts:
+        part = part.strip()
+        if not part:
+            continue
+        # Try to extract trailing level number: "Bartender 2" → ("Bartender", 2)
+        m = re.match(r"^(.+?)\s+(\d)$", part)
+        if m:
+            results.append((m.group(1).strip(), int(m.group(2))))
+        else:
+            results.append((part.strip(), 0))
+    return results
+
+
+def _match_position_key(name: str) -> str | None:
+    """Fuzzy-match a requested position name to an AI JSON key."""
+    name_lower = name.lower().strip()
+    # Direct key match
+    if name_lower.replace(" ", "_") in POSITION_KEY_TO_NAME:
+        return name_lower.replace(" ", "_")
+    # Match against base names
+    for key, base in POSITION_KEY_TO_NAME.items():
+        if name_lower == base.lower():
+            return key
+        # Partial / starts-with
+        if base.lower().startswith(name_lower) or name_lower.startswith(base.lower()):
+            return key
+    return None
+
+
+def _evaluate_positions_against_levels(
+    ai_positions: dict, requested_positions: str
+) -> tuple[str, str, list[str]]:
+    """Compare AI-determined levels against requested position levels.
+
+    Returns (status, explanation_text, approved_position_names).
+    """
+    parsed = _parse_requested_positions(requested_positions)
+    if not parsed:
+        return "Consider", "Could not parse any requested positions.", []
+
+    approved = []
+    denied = []
+    details = []
+
+    for req_name, req_level in parsed:
+        key = _match_position_key(req_name)
+        if not key:
+            details.append(f"• {req_name}: could not match to a known position.")
+            denied.append(req_name)
+            continue
+
+        pos_data = ai_positions.get(key, {})
+        ai_status = pos_data.get("status", "no_experience")
+        ai_level = LEVEL_MAP.get(ai_status, 0)
+        est_years = pos_data.get("estimated_years", 0)
+        reasons = pos_data.get("reasons", [])
+        base_name = POSITION_KEY_TO_NAME.get(key, req_name)
+
+        # If no level was specified in the request, approve at whatever level they qualify for
+        if req_level == 0:
+            if ai_level >= 1:
+                label = f"{base_name} {ai_level}"
+                approved.append(label)
+                details.append(
+                    f"✅ {req_name} → Qualified at Level {ai_level} "
+                    f"({est_years:.1f} yrs). {'; '.join(reasons)}"
+                )
+            else:
+                denied.append(req_name)
+                details.append(
+                    f"❌ {req_name} → No qualifying experience found. "
+                    f"{'; '.join(reasons)}"
+                )
+        else:
+            # Specific level requested — candidate must meet or exceed it
+            if ai_level >= req_level:
+                label = f"{base_name} {req_level}"
+                approved.append(label)
+                details.append(
+                    f"✅ {req_name} {req_level} → Qualified (AI Level {ai_level}, "
+                    f"{est_years:.1f} yrs). {'; '.join(reasons)}"
+                )
+            else:
+                denied.append(f"{req_name} {req_level}")
+                qualified_label = f"Level {ai_level}" if ai_level > 0 else "no experience"
+                details.append(
+                    f"❌ {req_name} {req_level} → NOT qualified. "
+                    f"Only qualifies at {qualified_label} "
+                    f"({est_years:.1f} yrs). {'; '.join(reasons)}"
+                )
+
+    detail_text = "\n".join(details)
+
+    if denied and not approved:
+        status = "Not Approved"
+    elif denied and approved:
+        status = "Consider"
+        detail_text = (
+            f"Approved: {', '.join(approved)}\n"
+            f"Denied: {', '.join(denied)}\n\n"
+            + detail_text
+        )
+    else:
+        status = "Approved"
+
+    return status, detail_text, approved
+
+
 async def ai_analyze(resume_text, experience_text, requested_positions):
+    """Run structured AI analysis and return (status, analysis_text, approved_positions)."""
     combined_text = f"User provided experience:\n{experience_text}\n\nResume text:\n{resume_text}"
-    prompt = f"""
-The candidate is applying for the following requested positions: {requested_positions}
-
-Here is the candidate's experience information:
-{combined_text}
-
-Analyze the candidate's experience and determine if they are qualified for the requested positions. Give a clear, concise summary of your findings.
-Start your response with either "APPROVED" or "NOT APPROVED" on the very first line, followed by your explanation.
-"""
+    user_msg = (
+        f"Resume and experience information for evaluation. "
+        f"Return only the JSON schema provided.\n\n{combined_text}"
+    )
     try:
         client = openai.AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         response = await client.chat.completions.create(
-            model="gpt-4o",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=400
+            model="gpt-4.1-mini",
+            messages=[
+                {"role": "system", "content": POSITION_SYSTEM_PROMPT},
+                {"role": "user", "content": user_msg},
+            ],
+            response_format={"type": "json_object"},
         )
-        return response.choices[0].message.content
+        content = response.choices[0].message.content or ""
+        parsed = json.loads(content)
+    except json.JSONDecodeError:
+        logger.warning("AI response was not valid JSON — falling back to Consider")
+        return "Consider", f"AI returned non-JSON response:\n{content}", []
     except Exception as e:
-        return f"AI Analysis Error: {str(e)}"
+        return "Consider", f"AI Analysis Error: {str(e)}", []
+
+    ai_positions = parsed.get("positions", {})
+    summary = parsed.get("candidate_summary", {})
+
+    status, detail_text, approved = _evaluate_positions_against_levels(
+        ai_positions, requested_positions
+    )
+
+    # Prepend candidate overview
+    overview = summary.get("hospitality_experience_overview", "")
+    total_yrs = summary.get("total_hospitality_years_estimate", 0)
+    venues = summary.get("notable_venues", [])
+    ff_notes = summary.get("notes_on_fast_food_or_non_qualifying_experience", "")
+
+    header = (
+        f"Candidate Overview:\n"
+        f"  Total hospitality experience: ~{total_yrs:.1f} years\n"
+    )
+    if venues:
+        header += f"  Notable venues: {', '.join(venues)}\n"
+    if overview:
+        header += f"  {overview}\n"
+    if ff_notes:
+        header += f"  Fast-food notes: {ff_notes}\n"
+    header += "\nPosition Evaluation:\n"
+
+    full_analysis = header + detail_text
+    return status, full_analysis, approved
 
 async def evaluate_candidate(phone, resume_url, experience_text, requested_positions):
     engine = _engine()
@@ -191,15 +499,7 @@ async def evaluate_candidate(phone, resume_url, experience_text, requested_posit
         engine.dispose()
         
     resume_text = await extract_text_from_url(resume_url) if resume_url else "No resume attached."
-    analysis_text = await ai_analyze(resume_text, experience_text, requested_positions)
-    
-    if analysis_text.strip().upper().startswith("APPROVED"):
-        status = "Approved"
-    elif analysis_text.strip().upper().startswith("NOT APPROVED"):
-        status = "Not Approved"
-    else:
-        status = "Consider"
-        
+    status, analysis_text, _ = await ai_analyze(resume_text, experience_text, requested_positions)
     return status, analysis_text
 
 async def fetch_submissions():
