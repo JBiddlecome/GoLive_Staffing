@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+{% block title %}GoLive Staffing — Bill Rate Calculator{% endblock %}
+{% block content %}
+<div class="space-y-12">
+  <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400 text-white shadow-2xl">
+    <div class="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_30%,white,transparent_30%)]"></div>
+    <div class="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-white/10 blur-3xl"></div>
+    <div class="relative px-8 py-10 lg:px-12 lg:py-14">
+      <div class="space-y-4">
+        <p class="uppercase tracking-[0.25em] text-sm font-semibold text-emerald-50">Sales Tools</p>
+        <h1 class="brand-serif text-4xl md:text-5xl font-semibold leading-tight">Bill Rate Calculator</h1>
+        <p class="text-emerald-50/90 text-lg max-w-2xl">
+          Determine estimated weekly profit based on bill rate, markup, shifts, and applied fees.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <div class="grid gap-8 lg:grid-cols-2">
+    <!-- Input Form -->
+    <div class="space-y-6">
+      <div class="rounded-3xl border border-emerald-100 bg-white shadow-lg p-6 lg:p-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-6">Calculator Inputs</h2>
+        
+        <form id="calculator-form" class="space-y-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="space-y-2">
+              <label for="bill-rate" class="block text-sm font-semibold text-gray-700">Bill Rate ($/hr)</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">$</span>
+                <input type="number" id="bill-rate" step="0.01" value="40.00" class="block w-full pl-8 pr-4 py-3 rounded-xl border-gray-200 bg-gray-50 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500 transition-colors" required>
+              </div>
+            </div>
+            
+            <div class="space-y-2">
+              <label for="markup" class="block text-sm font-semibold text-gray-700">Markup (e.g. 1.6)</label>
+              <input type="number" id="markup" step="0.01" value="1.6" class="block w-full px-4 py-3 rounded-xl border-gray-200 bg-gray-50 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500 transition-colors" required>
+            </div>
+          </div>
+          
+          <div class="space-y-2">
+            <label for="pay-rate" class="block text-sm font-semibold text-gray-700">Calculated Pay Rate</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">$</span>
+              <input type="text" id="pay-rate" class="block w-full pl-8 pr-4 py-3 rounded-xl border-gray-200 bg-emerald-50 text-emerald-900 font-medium" readonly>
+            </div>
+            <p class="text-xs text-gray-500">Bill Rate ÷ Markup</p>
+          </div>
+
+          <div class="space-y-2 pt-2 border-t border-gray-100">
+            <label for="shifts" class="block text-sm font-semibold text-gray-700">Predicted Shifts per Week</label>
+            <input type="number" id="shifts" value="5" min="0" class="block w-full px-4 py-3 rounded-xl border-gray-200 bg-gray-50 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500 transition-colors" required>
+            <p class="text-xs text-gray-500">Calculations assume 8 hours per shift.</p>
+          </div>
+
+          <div class="space-y-2 pt-2 border-t border-gray-100">
+            <label for="msp" class="block text-sm font-semibold text-gray-700">MSP (Optional)</label>
+            <select id="msp" class="block w-full px-4 py-3 rounded-xl border-gray-200 bg-gray-50 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500 transition-colors">
+              <option value="" data-rate="0">None</option>
+              <!-- Populated by JS -->
+            </select>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="space-y-2">
+              <label for="payment-method" class="block text-sm font-semibold text-gray-700">Payment Method</label>
+              <select id="payment-method" class="block w-full px-4 py-3 rounded-xl border-gray-200 bg-gray-50 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500 transition-colors">
+                <option value="invoice">Invoice</option>
+                <option value="credit_card">Credit Card (2.9% fee)</option>
+              </select>
+            </div>
+
+            <div class="space-y-2">
+              <label for="billing-type" class="block text-sm font-semibold text-gray-700">Billing Type</label>
+              <select id="billing-type" class="block w-full px-4 py-3 rounded-xl border-gray-200 bg-gray-50 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500 transition-colors">
+                <option value="none">None</option>
+                <option value="action_capital">Action Capital (2.93% fee)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label for="wc-fee" class="block text-sm font-semibold text-gray-700">Workers Comp / Business Type</label>
+            <select id="wc-fee" class="block w-full px-4 py-3 rounded-xl border-gray-200 bg-gray-50 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500 transition-colors">
+              <option value="" data-rate="0">Select a business type...</option>
+              <!-- Populated by JS -->
+            </select>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Results Breakdown -->
+    <div class="space-y-6">
+      <div class="rounded-3xl border border-emerald-100 bg-white shadow-lg p-6 lg:p-8 flex flex-col h-full">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-6">Financial Breakdown (Weekly)</h2>
+        
+        <div class="flex-grow space-y-4">
+          <div class="flex justify-between items-center py-3 border-b border-gray-100">
+            <span class="text-gray-600 font-medium">Total Weekly Hours</span>
+            <span id="res-hours" class="font-semibold text-gray-900">40</span>
+          </div>
+          
+          <div class="flex justify-between items-center py-3 border-b border-gray-100">
+            <span class="text-gray-600 font-medium">Total Bill (Revenue)</span>
+            <span id="res-total-bill" class="font-semibold text-emerald-700 text-lg">$0.00</span>
+          </div>
+
+          <div class="flex justify-between items-center py-3 border-b border-gray-100">
+            <span class="text-gray-600 font-medium">Gross Pay</span>
+            <span id="res-gross-pay" class="font-semibold text-red-600">-$0.00</span>
+          </div>
+
+          <div class="flex justify-between items-center py-3 border-b border-gray-100">
+            <span class="text-gray-600 font-medium">Payroll Tax (10% of Gross)</span>
+            <span id="res-payroll-tax" class="font-semibold text-red-600">-$0.00</span>
+          </div>
+
+          <div class="flex justify-between items-center py-3 border-b border-gray-100">
+            <span class="text-gray-600 font-medium">MSP Fee</span>
+            <span id="res-msp-fee" class="font-semibold text-red-600">-$0.00</span>
+          </div>
+
+          <div class="flex justify-between items-center py-3 border-b border-gray-100">
+            <span class="text-gray-600 font-medium">Workers Comp Fee</span>
+            <span id="res-wc-fee" class="font-semibold text-red-600">-$0.00</span>
+          </div>
+
+          <div class="flex justify-between items-center py-3 border-b border-gray-100">
+            <span class="text-gray-600 font-medium">Credit Card Fee</span>
+            <span id="res-cc-fee" class="font-semibold text-red-600">-$0.00</span>
+          </div>
+
+          <div class="flex justify-between items-center py-3 border-b border-gray-100">
+            <span class="text-gray-600 font-medium">Billing Type Fee</span>
+            <span id="res-bt-fee" class="font-semibold text-red-600">-$0.00</span>
+          </div>
+        </div>
+
+        <div class="mt-8 rounded-2xl bg-emerald-50 p-6 border border-emerald-100">
+          <div class="flex justify-between items-end mb-2">
+            <span class="text-emerald-800 font-semibold text-lg">Net Profit</span>
+            <span id="res-net-profit" class="text-3xl font-bold text-emerald-700">$0.00</span>
+          </div>
+          <div class="w-full bg-emerald-200 rounded-full h-3 mt-4 overflow-hidden">
+            <div id="res-profit-bar" class="bg-emerald-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+          <div class="flex justify-between items-center mt-2">
+            <span class="text-sm text-emerald-700">Profit Margin</span>
+            <span id="res-profit-margin" class="font-bold text-emerald-800">0.0%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    // DOM Elements
+    const billRateInput = document.getElementById('bill-rate');
+    const markupInput = document.getElementById('markup');
+    const payRateInput = document.getElementById('pay-rate');
+    const shiftsInput = document.getElementById('shifts');
+    const mspSelect = document.getElementById('msp');
+    const paymentMethodSelect = document.getElementById('payment-method');
+    const billingTypeSelect = document.getElementById('billing-type');
+    const wcFeeSelect = document.getElementById('wc-fee');
+    const formInputs = [billRateInput, markupInput, shiftsInput, mspSelect, paymentMethodSelect, billingTypeSelect, wcFeeSelect];
+
+    // Format currency
+    const formatCurrency = (value) => {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+    };
+
+    // Load MSPs and WC Codes
+    try {
+      const [mspRes, wcRes] = await Promise.all([
+        fetch('/bill-rate-calculator/api/msps'),
+        fetch('/bill-rate-calculator/api/wc_codes')
+      ]);
+
+      if (mspRes.ok) {
+        const msps = await mspRes.json();
+        msps.forEach(msp => {
+          const option = document.createElement('option');
+          option.value = msp.id;
+          option.textContent = `${msp.name} (${(msp.rate * 100).toFixed(2)}%)`;
+          option.dataset.rate = msp.rate;
+          mspSelect.appendChild(option);
+        });
+      }
+
+      if (wcRes.ok) {
+        const wcCodes = await wcRes.json();
+        wcCodes.forEach(wc => {
+          const option = document.createElement('option');
+          option.value = wc.id;
+          option.textContent = `${wc.name} (${(wc.rate * 100).toFixed(2)}%)`;
+          option.dataset.rate = wc.rate;
+          wcFeeSelect.appendChild(option);
+        });
+      }
+    } catch (error) {
+      console.error('Error loading API data:', error);
+    }
+
+    // Calculate Function
+    const calculate = () => {
+      const billRate = parseFloat(billRateInput.value) || 0;
+      const markup = parseFloat(markupInput.value) || 1;
+      const shifts = parseInt(shiftsInput.value) || 0;
+      
+      const payRate = billRate / markup;
+      payRateInput.value = payRate.toFixed(2);
+
+      const hours = shifts * 8;
+      const totalBill = billRate * hours;
+      const grossPay = payRate * hours;
+      const payrollTax = grossPay * 0.10;
+
+      // Fees
+      const mspRate = parseFloat(mspSelect.options[mspSelect.selectedIndex]?.dataset.rate || 0);
+      const mspFee = totalBill * mspRate;
+
+      const ccFee = paymentMethodSelect.value === 'credit_card' ? totalBill * 0.029 : 0;
+      const btFee = billingTypeSelect.value === 'action_capital' ? totalBill * 0.0293 : 0;
+      
+      const wcRate = parseFloat(wcFeeSelect.options[wcFeeSelect.selectedIndex]?.dataset.rate || 0);
+      const wcFee = totalBill * wcRate;
+
+      const totalDeductions = grossPay + payrollTax + mspFee + wcFee + ccFee + btFee;
+      const netProfit = totalBill - totalDeductions;
+      const profitMargin = totalBill > 0 ? (netProfit / totalBill) * 100 : 0;
+
+      // Update UI
+      document.getElementById('res-hours').textContent = hours;
+      document.getElementById('res-total-bill').textContent = formatCurrency(totalBill);
+      document.getElementById('res-gross-pay').textContent = `-${formatCurrency(grossPay)}`;
+      document.getElementById('res-payroll-tax').textContent = `-${formatCurrency(payrollTax)}`;
+      document.getElementById('res-msp-fee').textContent = `-${formatCurrency(mspFee)}`;
+      document.getElementById('res-wc-fee').textContent = `-${formatCurrency(wcFee)}`;
+      document.getElementById('res-cc-fee').textContent = `-${formatCurrency(ccFee)}`;
+      document.getElementById('res-bt-fee').textContent = `-${formatCurrency(btFee)}`;
+      
+      document.getElementById('res-net-profit').textContent = formatCurrency(netProfit);
+      document.getElementById('res-profit-margin').textContent = `${profitMargin.toFixed(2)}%`;
+
+      // Update bar width
+      const bar = document.getElementById('res-profit-bar');
+      const boundedMargin = Math.max(0, Math.min(100, profitMargin));
+      bar.style.width = `${boundedMargin}%`;
+      
+      if (profitMargin < 0) {
+        bar.classList.remove('bg-emerald-500');
+        bar.classList.add('bg-red-500');
+        document.getElementById('res-net-profit').classList.replace('text-emerald-700', 'text-red-600');
+      } else {
+        bar.classList.remove('bg-red-500');
+        bar.classList.add('bg-emerald-500');
+        document.getElementById('res-net-profit').classList.replace('text-red-600', 'text-emerald-700');
+      }
+    };
+
+    // Attach listeners
+    formInputs.forEach(input => {
+      input.addEventListener('input', calculate);
+      input.addEventListener('change', calculate);
+    });
+
+    // Initial calc
+    calculate();
+  });
+</script>
+{% endblock %}
