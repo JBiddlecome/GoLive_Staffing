@@ -278,7 +278,7 @@
             </div>
         </div>
 
-        <!-- BLOCK: Venue - SM 6170 → 25929 -->
+        <!-- BLOCK: Venue - SM 6170 → 1803 -->
         <div id="block-sm-6170" class="group bg-white rounded-3xl p-8 shadow-xl border border-emerald-100 hover:border-emerald-200 transition-all flex flex-col justify-between relative overflow-hidden">
             <div class="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-10 transition-opacity">
                 <svg class="w-32 h-32 text-emerald-600" fill="currentColor" viewBox="0 0 24 24">
@@ -288,7 +288,7 @@
 
             <div class="relative z-10 space-y-6">
                 <div class="flex items-center justify-between">
-                    <h2 class="text-2xl font-bold text-gray-900">Venue - SM 6170 &rarr; 25929</h2>
+                    <h2 class="text-2xl font-bold text-gray-900">Venue - SM 6170 &rarr; 1803</h2>
                     <span class="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold uppercase tracking-wider rounded-full border border-emerald-100">Live</span>
                 </div>
 
@@ -304,7 +304,7 @@
                         </li>
                         <li class="flex items-center gap-2">
                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            Target: <span class="font-mono font-bold text-red-600">ID 6170</span> &rarr; <span class="font-mono font-bold text-emerald-600">25929</span>
+                            Target: <span class="font-mono font-bold text-red-600">ID 6170</span> &rarr; <span class="font-mono font-bold text-emerald-600">1803</span>
                         </li>
                     </ul>
                 </div>
@@ -328,7 +328,7 @@
                         </p>
                     </div>
                     <button id="update-btn-sm-6170" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-emerald-200/50 flex items-center justify-center gap-3 active:scale-[0.98]">
-                        Update to 25929
+                        Update to 1803
                     </button>
                 </div>
 
@@ -340,12 +340,77 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                         </svg>
-                        Undo Change (25929 &rarr; 6170)
+                        Undo Change (1803 &rarr; 6170)
                     </button>
                 </div>
 
                 <div id="none-sm-6170" class="hidden text-center py-4">
                     <p class="text-gray-400 text-sm italic">No venues found matching Staffing Manager ID 6170.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- BLOCK: Venue - SM 6170 Excel Update -->
+        <div id="block-sm-6170-excel" class="group bg-white rounded-3xl p-8 shadow-xl border border-blue-100 hover:border-blue-200 transition-all flex flex-col justify-between relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-10 transition-opacity">
+                <svg class="w-32 h-32 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                </svg>
+            </div>
+
+            <div class="relative z-10 space-y-6">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-2xl font-bold text-gray-900">Venue - SM 6170 (Excel List)</h2>
+                    <span class="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold uppercase tracking-wider rounded-full border border-blue-100">Pending</span>
+                </div>
+
+                <div class="p-5 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+                    <ul class="space-y-2 text-sm text-blue-900/80">
+                        <li class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                            Target: <span class="font-mono font-bold text-red-600">ID 6170</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                            Scope: <span class="font-bold">Only venues listed in May 6 Excel file</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="flex items-center gap-6 py-4 border-y border-gray-50">
+                    <div class="flex-1">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Eligible Venues</p>
+                        <div id="count-sm-6170-excel" class="text-4xl font-extrabold text-gray-900 animate-pulse">
+                            Checking...
+                        </div>
+                    </div>
+                </div>
+
+                <div id="action-sm-6170-excel" class="hidden space-y-4">
+                    <div class="space-y-2">
+                        <label for="new_staffing_manager_id" class="block text-sm font-bold text-gray-700">New Staffing Manager ID</label>
+                        <input type="number" id="new_staffing_manager_id" placeholder="Enter ID (e.g. 1803)" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono">
+                    </div>
+                    
+                    <button id="update-btn-sm-6170-excel" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-200/50 flex items-center justify-center gap-3 active:scale-[0.98]">
+                        Update Venues
+                    </button>
+                </div>
+
+                <div id="success-sm-6170-excel" class="hidden space-y-4">
+                    <div class="bg-blue-100 border border-blue-200 rounded-2xl p-4 text-center">
+                        <p id="msg-sm-6170-excel" class="text-blue-800 text-sm font-bold"></p>
+                    </div>
+                    <button id="undo-btn-sm-6170-excel" class="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all border border-gray-200 flex items-center justify-center gap-2 text-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                        </svg>
+                        Undo Change
+                    </button>
+                </div>
+
+                <div id="none-sm-6170-excel" class="hidden text-center py-4">
+                    <p class="text-gray-400 text-sm italic">No eligible venues found matching the Excel list and ID 6170.</p>
                 </div>
             </div>
         </div>
@@ -735,12 +800,12 @@
                     alert('An error occurred.');
                 } finally {
                     this.btnEl.disabled = false;
-                    this.btnEl.innerText = 'Update to 25929';
+                    this.btnEl.innerText = 'Update to 1803';
                 }
             },
 
             async undo() {
-                if (!confirm('Are you sure you want to revert all venues with Staffing Manager ID 25929 back to 6170?')) return;
+                if (!confirm('Are you sure you want to revert all venues with Staffing Manager ID 1803 back to 6170?')) return;
 
                 this.undoBtnEl.disabled = true;
                 const originalHtml = this.undoBtnEl.innerHTML;
@@ -770,6 +835,128 @@
         sm6170Block.fetch();
         sm6170Block.btnEl.addEventListener('click', () => sm6170Block.update());
         sm6170Block.undoBtnEl.addEventListener('click', () => sm6170Block.undo());
+
+        // Venue - SM 6170 Excel Block Logic
+        const sm6170ExcelBlock = {
+            countEl: document.getElementById('count-sm-6170-excel'),
+            actionEl: document.getElementById('action-sm-6170-excel'),
+            btnEl: document.getElementById('update-btn-sm-6170-excel'),
+            successEl: document.getElementById('success-sm-6170-excel'),
+            msgEl: document.getElementById('msg-sm-6170-excel'),
+            noneEl: document.getElementById('none-sm-6170-excel'),
+            undoBtnEl: document.getElementById('undo-btn-sm-6170-excel'),
+            inputIdEl: document.getElementById('new_staffing_manager_id'),
+            lastUpdatedId: null,
+
+            async fetch() {
+                try {
+                    const response = await fetch('/database-update/count-sm-6170-excel');
+                    const data = await response.json();
+                    this.countEl.classList.remove('animate-pulse');
+
+                    if (data.error) {
+                        this.countEl.innerText = 'Error';
+                        this.countEl.classList.add('text-red-600');
+                        return;
+                    }
+
+                    const count = data.count;
+                    this.countEl.innerText = count;
+
+                    if (count > 0) {
+                        this.actionEl.classList.remove('hidden');
+                        this.noneEl.classList.add('hidden');
+                        this.successEl.classList.add('hidden');
+                    } else {
+                        this.noneEl.classList.remove('hidden');
+                        this.actionEl.classList.add('hidden');
+                    }
+                } catch (err) {
+                    this.countEl.innerText = 'Error';
+                }
+            },
+
+            async update() {
+                const newId = this.inputIdEl.value.trim();
+                if (!newId) {
+                    alert('Please enter the new Staffing Manager ID.');
+                    return;
+                }
+
+                if (!confirm(`Are you sure you want to update all eligible venues from the Excel list to Staffing Manager ID ${newId}?`)) return;
+
+                this.btnEl.disabled = true;
+                this.btnEl.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+
+                try {
+                    const formData = new FormData();
+                    formData.append('new_staffing_manager_id', newId);
+
+                    const response = await fetch('/database-update/update-sm-6170-excel', { 
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+
+                    if (data.error) {
+                        alert('Update failed: ' + data.error);
+                        return;
+                    }
+
+                    this.actionEl.classList.add('hidden');
+                    this.successEl.classList.remove('hidden');
+                    this.msgEl.innerText = data.message;
+                    this.countEl.innerText = '0';
+                    this.lastUpdatedId = data.new_id;
+                    this.undoBtnEl.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg> Undo Change (${this.lastUpdatedId} &rarr; 6170)`;
+                } catch (err) {
+                    alert('An error occurred.');
+                } finally {
+                    this.btnEl.disabled = false;
+                    this.btnEl.innerText = 'Update Venues';
+                }
+            },
+
+            async undo() {
+                if (!this.lastUpdatedId) return;
+                
+                if (!confirm(`Are you sure you want to revert all venues updated to Staffing Manager ID ${this.lastUpdatedId} back to 6170?`)) return;
+
+                this.undoBtnEl.disabled = true;
+                const originalHtml = this.undoBtnEl.innerHTML;
+                this.undoBtnEl.innerHTML = `<svg class="animate-spin h-4 w-4 text-gray-700" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Reverting...`;
+
+                try {
+                    const formData = new FormData();
+                    formData.append('revert_from_id', this.lastUpdatedId);
+
+                    const response = await fetch('/database-update/undo-sm-6170-excel', { 
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+
+                    if (data.error) {
+                        alert('Undo failed: ' + data.error);
+                        return;
+                    }
+
+                    alert(data.message);
+                    this.lastUpdatedId = null;
+                    this.fetch(); // Re-fetch to update state
+                } catch (err) {
+                    alert('An error occurred.');
+                } finally {
+                    this.undoBtnEl.disabled = false;
+                    this.undoBtnEl.innerHTML = originalHtml;
+                }
+            }
+        };
+
+        // Initialize SM 6170 Excel Block
+        sm6170ExcelBlock.fetch();
+        sm6170ExcelBlock.btnEl.addEventListener('click', () => sm6170ExcelBlock.update());
+        sm6170ExcelBlock.undoBtnEl.addEventListener('click', () => sm6170ExcelBlock.undo());
 
         // As more blocks are added, they will follow a similar pattern here
     });
