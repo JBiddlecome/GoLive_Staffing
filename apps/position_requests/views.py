@@ -318,3 +318,136 @@ async def add_position(
         return JSONResponse({"status": "error", "message": f"Database error: {str(e)}"}, status_code=500)
     finally:
         engine.dispose()
+
+def send_position_denied_email(employee_email: str, first_name: str, requested_positions: list):
+    sender_email = "golive@culinarystaffing.com"
+    
+    import requests
+    tenant_id = os.getenv("O365_TENANT_ID")
+    client_id = os.getenv("O365_CLIENT_ID")
+    client_secret = os.getenv("O365_CLIENT_SECRET")
+    
+    if not all([tenant_id, client_id, client_secret, employee_email]):
+        print("Skipping email: Microsoft 365 OAuth credentials missing or employee email is empty.")
+        return False
+        
+    token_url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
+    token_data = {
+        "grant_type": "client_credentials",
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "scope": "https://graph.microsoft.com/.default"
+    }
+    
+    try:
+        r = requests.post(token_url, data=token_data)
+        r.raise_for_status()
+        access_token = r.json().get("access_token")
+    except Exception as e:
+        print(f"Failed to authenticate with Microsoft Graph: {e}")
+        return False
+
+    subject = "Update on Your Position Request"
+    
+    html_body = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #047857;">Position Request Update</h2>
+        <p>Hi {first_name},</p>
+        <p>Thank you for submitting your position request. Unfortunately, you have not been approved for the following position(s) based on the uploaded resume and experience:</p>
+        <ul>
+    """
+    for p in requested_positions:
+        html_body += f"<li><strong>{p}</strong></li>"
+        
+    html_body += f"""
+        </ul>
+        <p>If you feel this is in error, or if you have additional experience not reflected on your current resume, please update your resume and try again.</p>
+        <p>Best regards,<br>The Culinary Staffing Team</p>
+      </body>
+    </html>
+    """
+    
+    email_msg = {
+        "message": {
+            "subject": subject,
+            "body": {
+                "contentType": "HTML",
+                "content": html_body
+            },
+            "toRecipients": [
+                {"emailAddress": {"address": employee_email}}
+            ]
+        },
+        "saveToSentItems": "true"
+    }
+
+    send_url = f"https://graph.microsoft.com/v1.0/users/{sender_email}/sendMail"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    
+    try:
+        send_res = requests.post(send_url, headers=headers, json=email_msg)
+        send_res.raise_for_status()
+        return True
+    except Exception as e:
+        print(f"Failed to send email via MS Graph: {e}")
+        return False
+
+@router.post("/deny-position")
+async def deny_position(
+    request: Request,
+    phone: str = Form(...),
+    positions: str = Form(...)
+):
+    clean_phone = re.sub(r'\D', '', phone)
+    if len(clean_phone) > 10:
+        clean_phone = clean_phone[-10:]
+        
+    if not clean_phone or len(clean_phone) < 10:
+        return JSONResponse({"status": "error", "message": "No valid 10-digit phone number provided."}, status_code=400)
+        
+    engine = _engine()
+    try:
+        with engine.connect() as conn:
+            emp_sql = text("""
+                SELECT employee_id, first_name, email 
+                FROM employee 
+                WHERE REPLACE(REPLACE(REPLACE(REPLACE(mobile, ' ', ''), '-', ''), '(', ''), ')', '') LIKE :phone
+                   OR REPLACE(REPLACE(REPLACE(REPLACE(home, ' ', ''), '-', ''), '(', ''), ')', '') LIKE :phone
+                   OR REPLACE(REPLACE(REPLACE(REPLACE(work, ' ', ''), '-', ''), '(', ''), ')', '') LIKE :phone
+                LIMIT 1
+            """)
+            emp_res = conn.execute(emp_sql, {"phone": f"%{clean_phone}%"}).fetchone()
+            
+            if not emp_res:
+                return JSONResponse({"status": "error", "message": "Employee not found in database."}, status_code=404)
+                
+            first_name = emp_res[1] or "Employee"
+            employee_email = emp_res[2]
+            
+            position_names = [p.strip() for p in positions.split(",") if p.strip()]
+            if not position_names:
+                position_names = [p.strip() for p in positions.split("\\n") if p.strip()]
+            if not position_names:
+                 position_names = [positions.strip()]
+
+            msg = f"Successfully processed denial for positions: {', '.join(position_names)}"
+            
+            email_sent = False
+            if employee_email:
+                email_sent = send_position_denied_email(employee_email, first_name, position_names)
+                if email_sent:
+                    msg += ". Notification email sent."
+                else:
+                    msg += ". Failed to send email."
+            else:
+                msg += ". No email address found for employee."
+                
+            return JSONResponse({"status": "success", "message": msg})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": f"Database error: {str(e)}"}, status_code=500)
+    finally:
+        engine.dispose()
