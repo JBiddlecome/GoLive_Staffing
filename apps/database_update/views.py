@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from typing import Any
+import pandas as pd
 
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -244,7 +245,7 @@ async def update_sm_6170():
     engine = _engine()
     try:
         check_sql = text("SELECT COUNT(*) as count FROM venue WHERE staffing_manager_id = 6170")
-        update_sql = text("UPDATE venue SET staffing_manager_id = 25929 WHERE staffing_manager_id = 6170")
+        update_sql = text("UPDATE venue SET staffing_manager_id = 1803 WHERE staffing_manager_id = 6170")
 
         with engine.begin() as connection:
             count_result = connection.execute(check_sql).fetchone()
@@ -255,7 +256,7 @@ async def update_sm_6170():
 
             result = connection.execute(update_sql)
             return JSONResponse({
-                "message": f"Successfully updated {result.rowcount} venues to Staffing Manager 25929.",
+                "message": f"Successfully updated {result.rowcount} venues to Staffing Manager 1803.",
                 "updated": result.rowcount
             })
     except Exception as e:
@@ -267,10 +268,103 @@ async def update_sm_6170():
 async def undo_sm_6170():
     engine = _engine()
     try:
-        update_sql = text("UPDATE venue SET staffing_manager_id = 6170 WHERE staffing_manager_id = 25929")
+        update_sql = text("UPDATE venue SET staffing_manager_id = 6170 WHERE staffing_manager_id = 1803")
 
         with engine.begin() as connection:
             result = connection.execute(update_sql)
+            return JSONResponse({
+                "message": f"Successfully reverted {result.rowcount} venues back to Staffing Manager 6170.",
+                "updated": result.rowcount
+            })
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+    finally:
+        engine.dispose()
+
+@router.get("/count-sm-6170-excel")
+async def get_sm_6170_excel_count():
+    engine = _engine()
+    try:
+        df = pd.read_excel("Venue Staffing Manager Report - May 6.xlsx")
+        target_venues = df[df['staffing_manager_id'] == 6170]['venue_id'].dropna().astype(int).tolist()
+        
+        if not target_venues:
+            return JSONResponse({"count": 0})
+            
+        placeholders = ','.join([str(v) for v in target_venues])
+        sql = text(f"SELECT COUNT(*) as count FROM venue WHERE staffing_manager_id = 6170 AND venue_id IN ({placeholders})")
+        
+        with engine.connect() as connection:
+            result = connection.execute(sql).fetchone()
+            return JSONResponse({"count": result[0]})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+    finally:
+        engine.dispose()
+
+@router.post("/update-sm-6170-excel")
+async def update_sm_6170_excel(request: Request):
+    engine = _engine()
+    try:
+        form_data = await request.form()
+        new_id_str = form_data.get('new_staffing_manager_id')
+        if not new_id_str:
+            return JSONResponse({"error": "New Staffing Manager ID is required."}, status_code=400)
+            
+        new_id = int(new_id_str)
+        
+        df = pd.read_excel("Venue Staffing Manager Report - May 6.xlsx")
+        target_venues = df[df['staffing_manager_id'] == 6170]['venue_id'].dropna().astype(int).tolist()
+        
+        if not target_venues:
+            return JSONResponse({"message": "No target venues found in the spreadsheet.", "updated": 0})
+            
+        placeholders = ','.join([str(v) for v in target_venues])
+        
+        check_sql = text(f"SELECT COUNT(*) as count FROM venue WHERE staffing_manager_id = 6170 AND venue_id IN ({placeholders})")
+        update_sql = text(f"UPDATE venue SET staffing_manager_id = :new_id WHERE staffing_manager_id = 6170 AND venue_id IN ({placeholders})")
+        
+        with engine.begin() as connection:
+            count_result = connection.execute(check_sql).fetchone()
+            count_before = count_result[0]
+            
+            if count_before == 0:
+                return JSONResponse({"message": "No matching venues currently have Staffing Manager ID 6170.", "updated": 0})
+                
+            result = connection.execute(update_sql, {"new_id": new_id})
+            return JSONResponse({
+                "message": f"Successfully updated {result.rowcount} venues to Staffing Manager {new_id}.",
+                "updated": result.rowcount,
+                "new_id": new_id
+            })
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+    finally:
+        engine.dispose()
+
+@router.post("/undo-sm-6170-excel")
+async def undo_sm_6170_excel(request: Request):
+    engine = _engine()
+    try:
+        form_data = await request.form()
+        revert_from_id_str = form_data.get('revert_from_id')
+        if not revert_from_id_str:
+            return JSONResponse({"error": "Revert From ID is required."}, status_code=400)
+            
+        revert_from_id = int(revert_from_id_str)
+        
+        df = pd.read_excel("Venue Staffing Manager Report - May 6.xlsx")
+        target_venues = df[df['staffing_manager_id'] == 6170]['venue_id'].dropna().astype(int).tolist()
+        
+        if not target_venues:
+            return JSONResponse({"message": "No target venues found in the spreadsheet.", "updated": 0})
+            
+        placeholders = ','.join([str(v) for v in target_venues])
+        
+        update_sql = text(f"UPDATE venue SET staffing_manager_id = 6170 WHERE staffing_manager_id = :revert_from_id AND venue_id IN ({placeholders})")
+        
+        with engine.begin() as connection:
+            result = connection.execute(update_sql, {"revert_from_id": revert_from_id})
             return JSONResponse({
                 "message": f"Successfully reverted {result.rowcount} venues back to Staffing Manager 6170.",
                 "updated": result.rowcount
