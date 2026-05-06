@@ -255,6 +255,7 @@
     .bg-msp { background: #f472b6; }
     .bg-wc { background: #fbbf24; }
     .bg-cc { background: #a78bfa; }
+    .bg-bt { background: #fb923c; }
     .bg-tax { background: #f87171; }
     .bg-other { background: #c084fc; }
 
@@ -297,13 +298,16 @@
         background: var(--pt-glass-bg);
         border: 1px solid var(--pt-glass-border);
         border-radius: var(--pt-radius);
-        overflow-x: auto;
+        overflow: auto;
+        max-height: 70vh;
         box-shadow: var(--pt-card-shadow);
+        position: relative;
     }
 
     .pt-table {
         width: 100%;
-        border-collapse: collapse;
+        border-collapse: separate;
+        border-spacing: 0;
         text-align: left;
     }
 
@@ -312,8 +316,14 @@
         border-bottom: 1px solid var(--pt-glass-border);
     }
 
+    .pt-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
     .pt-table th {
-        background: rgba(0, 0, 0, 0.2);
+        background: #0f172a;
         font-weight: 600;
         color: var(--pt-text-muted);
         text-transform: uppercase;
@@ -424,6 +434,71 @@
         font-size: 0.875rem;
         font-weight: 500;
     }
+
+    /* Column visibility dropdown */
+    .pt-col-toggle-wrap {
+        position: relative;
+        display: inline-block;
+    }
+    .pt-col-toggle-btn {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid var(--pt-glass-border);
+        color: var(--pt-text-muted);
+        padding: 0.6rem 1.2rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: all 0.25s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-family: inherit;
+    }
+    .pt-col-toggle-btn:hover {
+        border-color: var(--pt-accent);
+        color: var(--pt-accent);
+    }
+    .pt-col-toggle-btn svg {
+        width: 16px; height: 16px;
+    }
+    .pt-col-dropdown {
+        display: none;
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        background: rgba(15, 23, 42, 0.97);
+        border: 1px solid var(--pt-glass-border);
+        border-radius: 10px;
+        padding: 0.75rem 0;
+        min-width: 220px;
+        z-index: 50;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+        backdrop-filter: blur(16px);
+    }
+    .pt-col-dropdown.open {
+        display: block;
+        animation: fadeInDown 0.2s ease-out;
+    }
+    .pt-col-dropdown label {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.45rem 1rem;
+        cursor: pointer;
+        font-size: 0.825rem;
+        color: var(--pt-text-muted);
+        transition: background 0.15s ease, color 0.15s ease;
+    }
+    .pt-col-dropdown label:hover {
+        background: rgba(56, 189, 248, 0.08);
+        color: var(--pt-text-main);
+    }
+    .pt-col-dropdown input[type="checkbox"] {
+        accent-color: var(--pt-accent);
+        width: 15px; height: 15px;
+        cursor: pointer;
+    }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <div class="pt-wrapper-main">
@@ -493,6 +568,12 @@
             </div>
 
             <div class="pt-card expense">
+                <div class="pt-card-title">Billing Type Fee (2.93%)</div>
+                <div class="pt-card-value" id="valBtFee">$0.00</div>
+                <div class="pt-card-percent" id="pctBtFee">0%</div>
+            </div>
+
+            <div class="pt-card expense">
                 <div class="pt-card-title">Payroll Tax</div>
                 <div class="pt-card-value" id="valPayrollTax">$0.00</div>
                 <div class="pt-card-percent" id="pctPayrollTax">0%</div>
@@ -518,6 +599,7 @@
                 <div class="pt-progress-segment bg-msp" id="barMsp" style="width: 0%" title="MSP Fee"></div>
                 <div class="pt-progress-segment bg-wc" id="barWc" style="width: 0%" title="WC Fee"></div>
                 <div class="pt-progress-segment bg-cc" id="barCc" style="width: 0%" title="CC Fee"></div>
+                <div class="pt-progress-segment bg-bt" id="barBt" style="width: 0%" title="Billing Type Fee"></div>
                 <div class="pt-progress-segment bg-tax" id="barTax" style="width: 0%" title="Payroll Tax"></div>
                 <div class="pt-progress-segment bg-other" id="barOther" style="width: 0%" title="Other Work"></div>
                 <div class="pt-progress-segment bg-profit" id="barProfit" style="width: 0%" title="Profit"></div>
@@ -528,6 +610,7 @@
                 <div class="pt-legend-item"><div class="pt-legend-dot bg-msp"></div> MSP Fee</div>
                 <div class="pt-legend-item"><div class="pt-legend-dot bg-wc"></div> WC Fee</div>
                 <div class="pt-legend-item"><div class="pt-legend-dot bg-cc"></div> CC Fee</div>
+                <div class="pt-legend-item"><div class="pt-legend-dot bg-bt"></div> Billing Type Fee</div>
                 <div class="pt-legend-item"><div class="pt-legend-dot bg-tax"></div> Payroll Tax</div>
                 <div class="pt-legend-item"><div class="pt-legend-dot bg-other"></div> Other Work</div>
             </div>
@@ -547,21 +630,32 @@
                 <select id="mspSpecificFilter" class="pt-input" style="min-width:220px" onchange="applyMspFilter()">
                     <option value="">-- All MSPs --</option>
                 </select>
+
+                <div class="pt-col-toggle-wrap">
+                    <button class="pt-col-toggle-btn" id="colToggleBtn" type="button" onclick="toggleColDropdown()">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                        </svg>
+                        Columns
+                    </button>
+                    <div class="pt-col-dropdown" id="colDropdown"></div>
+                </div>
             </div>
             <div class="pt-table-wrapper">
                 <table class="pt-table" id="clientTable">
                     <thead>
-                        <tr>
-                            <th class="sortable" data-key="client_name" onclick="sortTable('client_name')">Client Name</th>
-                            <th class="sortable text-right" data-key="msp_name" onclick="sortTable('msp_name')">MSP</th>
-                            <th class="sortable text-right" data-key="total_bill" onclick="sortTable('total_bill')">Total Bill</th>
-                            <th class="sortable text-right" data-key="gross_pay" onclick="sortTable('gross_pay')">Gross Pay</th>
-                            <th class="sortable text-right" data-key="msp_fee" onclick="sortTable('msp_fee')">MSP Fee</th>
-                            <th class="sortable text-right" data-key="wc_fee" onclick="sortTable('wc_fee')">WC Fee</th>
-                            <th class="sortable text-right" data-key="cc_fee" onclick="sortTable('cc_fee')">CC Fee</th>
-                            <th class="sortable text-right" data-key="payroll_tax" onclick="sortTable('payroll_tax')">Payroll Tax</th>
-                            <th class="sortable text-right" data-key="profit" onclick="sortTable('profit')">Profit</th>
-                            <th class="sortable text-right" data-key="profit_pct" onclick="sortTable('profit_pct')">Profit %</th>
+                        <tr id="clientTableHead">
+                            <th class="sortable" data-key="client_name" data-col="client_name" onclick="sortTable('client_name')">Client Name</th>
+                            <th class="sortable text-right" data-key="msp_name" data-col="msp_name" onclick="sortTable('msp_name')">MSP</th>
+                            <th class="sortable text-right" data-key="total_bill" data-col="total_bill" onclick="sortTable('total_bill')">Total Bill</th>
+                            <th class="sortable text-right" data-key="gross_pay" data-col="gross_pay" onclick="sortTable('gross_pay')">Gross Pay</th>
+                            <th class="sortable text-right" data-key="msp_fee" data-col="msp_fee" onclick="sortTable('msp_fee')">MSP Fee</th>
+                            <th class="sortable text-right" data-key="wc_fee" data-col="wc_fee" onclick="sortTable('wc_fee')">WC Fee</th>
+                            <th class="sortable text-right" data-key="cc_fee" data-col="cc_fee" onclick="sortTable('cc_fee')">CC Fee</th>
+                            <th class="sortable text-right" data-key="bt_fee" data-col="bt_fee" onclick="sortTable('bt_fee')">BT Fee</th>
+                            <th class="sortable text-right" data-key="payroll_tax" data-col="payroll_tax" onclick="sortTable('payroll_tax')">Payroll Tax</th>
+                            <th class="sortable text-right" data-key="profit" data-col="profit" onclick="sortTable('profit')">Profit</th>
+                            <th class="sortable text-right" data-key="profit_pct" data-col="profit_pct" onclick="sortTable('profit_pct')">Profit %</th>
                         </tr>
                     </thead>
                     <tbody id="clientTableBody">
@@ -573,6 +667,19 @@
                 </table>
             </div>
             <p class="pt-table-footer">Note: "Other Work" payments are excluded from this breakdown as they are not tied to specific clients.</p>
+        </div>
+
+        <div style="margin-top: 2.5rem; background: rgba(251, 191, 36, 0.06); border: 1px solid rgba(251, 191, 36, 0.2); border-radius: var(--pt-radius); padding: 1.5rem 2rem; animation: fadeInUp 0.8s ease-out 1s both;">
+            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                <a href="/profit-tracker-2" style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--pt-warning); font-weight: 600; text-decoration: none; font-size: 1rem; transition: color 0.2s ease;" onmouseover="this.style.color='#fcd34d'" onmouseout="this.style.color='var(--pt-warning)'">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                    Open Profit Tracker 2
+                </a>
+            </div>
+            <p style="margin-top: 0.75rem; color: var(--pt-text-muted); font-size: 0.85rem; line-height: 1.5; max-width: 800px;">
+                <span style="color: var(--pt-warning); font-weight: 600;">Disclaimer:</span>
+                Profit Tracker 2 utilizes a final report version of Total Bill and Gross Pay. This version is slower and limited to 2024 to current. It is not to be used for large date ranges.
+            </p>
         </div>
     </div>
 </div>
@@ -593,6 +700,62 @@
     let allClientBreakdown = []; // raw data from API
     let currentSortKey = 'total_bill';
     let currentSortDir = 'desc';
+
+    // ── Column visibility ──
+    const ALL_COLUMNS = [
+        { key: 'client_name', label: 'Client Name', default: true },
+        { key: 'msp_name', label: 'MSP', default: true },
+        { key: 'total_bill', label: 'Total Bill', default: true },
+        { key: 'gross_pay', label: 'Gross Pay', default: true },
+        { key: 'msp_fee', label: 'MSP Fee', default: true },
+        { key: 'wc_fee', label: 'WC Fee', default: true },
+        { key: 'cc_fee', label: 'CC Fee', default: true },
+        { key: 'bt_fee', label: 'BT Fee', default: true },
+        { key: 'payroll_tax', label: 'Payroll Tax', default: true },
+        { key: 'profit', label: 'Profit', default: true },
+        { key: 'profit_pct', label: 'Profit %', default: true }
+    ];
+    let visibleColumns = new Set(ALL_COLUMNS.map(c => c.key));
+
+    function buildColDropdown() {
+        const dd = document.getElementById('colDropdown');
+        dd.innerHTML = '';
+        ALL_COLUMNS.forEach(col => {
+            const lbl = document.createElement('label');
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.checked = visibleColumns.has(col.key);
+            cb.addEventListener('change', () => {
+                if (cb.checked) visibleColumns.add(col.key);
+                else visibleColumns.delete(col.key);
+                applyColumnVisibility();
+                renderClientTable();
+            });
+            lbl.appendChild(cb);
+            lbl.appendChild(document.createTextNode(col.label));
+            dd.appendChild(lbl);
+        });
+    }
+
+    function toggleColDropdown() {
+        const dd = document.getElementById('colDropdown');
+        dd.classList.toggle('open');
+    }
+
+    // Close dropdown on outside click
+    document.addEventListener('click', (e) => {
+        const wrap = document.querySelector('.pt-col-toggle-wrap');
+        if (wrap && !wrap.contains(e.target)) {
+            document.getElementById('colDropdown').classList.remove('open');
+        }
+    });
+
+    function applyColumnVisibility() {
+        // Toggle header visibility
+        document.querySelectorAll('#clientTableHead th[data-col]').forEach(th => {
+            th.style.display = visibleColumns.has(th.dataset.col) ? '' : 'none';
+        });
+    }
 
     // ── MSP list loader ──
     async function loadMspList() {
@@ -677,7 +840,7 @@
         tfoot.innerHTML = '';
 
         if (!list.length) {
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center text-gray-400 py-6">No client data found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="11" class="text-center text-gray-400 py-6">No client data found.</td></tr>';
             return;
         }
 
@@ -691,57 +854,62 @@
             };
             const pp = client.profit_pct.toFixed(1);
             const pctColor = pp >= 0 ? 'color: var(--pt-success)' : 'color: var(--pt-danger)';
-            tr.innerHTML = `
-                <td class="font-medium text-white">${client.client_name}</td>
-                <td class="text-right" style="color:${client.msp_name ? '#f472b6' : 'var(--pt-text-muted)'}">${client.msp_name || '—'}</td>
-                <td class="text-right">${formatCurrency(client.total_bill)}</td>
-                <td class="text-right text-blue-400">${formatCurrency(client.gross_pay)}</td>
-                <td class="text-right text-pink-400">${formatCurrency(client.msp_fee)}</td>
-                <td class="text-right text-amber-400">${formatCurrency(client.wc_fee)}</td>
-                <td class="text-right" style="color: #a78bfa">${formatCurrency(client.cc_fee)}</td>
-                <td class="text-right text-red-400">${formatCurrency(client.payroll_tax)}</td>
-                <td class="text-right font-bold ${client.profit >= 0 ? 'text-emerald-400' : 'text-red-500'}">${formatCurrency(client.profit)}</td>
-                <td class="text-right font-bold" style="${pctColor}">${client.total_bill > 0 ? pp + '%' : '—'}</td>
-            `;
+
+            const cells = [
+                { key: 'client_name', html: `<td class="font-medium text-white" data-col="client_name">${client.client_name}</td>` },
+                { key: 'msp_name', html: `<td class="text-right" data-col="msp_name" style="color:${client.msp_name ? '#f472b6' : 'var(--pt-text-muted)'}">${client.msp_name || '—'}</td>` },
+                { key: 'total_bill', html: `<td class="text-right" data-col="total_bill">${formatCurrency(client.total_bill)}</td>` },
+                { key: 'gross_pay', html: `<td class="text-right text-blue-400" data-col="gross_pay">${formatCurrency(client.gross_pay)}</td>` },
+                { key: 'msp_fee', html: `<td class="text-right text-pink-400" data-col="msp_fee">${formatCurrency(client.msp_fee)}</td>` },
+                { key: 'wc_fee', html: `<td class="text-right text-amber-400" data-col="wc_fee">${formatCurrency(client.wc_fee)}</td>` },
+                { key: 'cc_fee', html: `<td class="text-right" style="color: #a78bfa" data-col="cc_fee">${formatCurrency(client.cc_fee)}</td>` },
+                { key: 'bt_fee', html: `<td class="text-right" style="color: #fb923c" data-col="bt_fee">${formatCurrency(client.bt_fee)}</td>` },
+                { key: 'payroll_tax', html: `<td class="text-right text-red-400" data-col="payroll_tax">${formatCurrency(client.payroll_tax)}</td>` },
+                { key: 'profit', html: `<td class="text-right font-bold ${client.profit >= 0 ? 'text-emerald-400' : 'text-red-500'}" data-col="profit">${formatCurrency(client.profit)}</td>` },
+                { key: 'profit_pct', html: `<td class="text-right font-bold" style="${pctColor}" data-col="profit_pct">${client.total_bill > 0 ? pp + '%' : '—'}</td>` }
+            ];
+            tr.innerHTML = cells.filter(c => visibleColumns.has(c.key)).map(c => c.html).join('');
             tbody.appendChild(tr);
         });
 
+
+
         // Compute averages and totals
         const n = list.length;
-        const sums = { total_bill: 0, gross_pay: 0, msp_fee: 0, wc_fee: 0, cc_fee: 0, payroll_tax: 0, profit: 0 };
+        const sums = { total_bill: 0, gross_pay: 0, msp_fee: 0, wc_fee: 0, cc_fee: 0, bt_fee: 0, payroll_tax: 0, profit: 0 };
         list.forEach(c => { for (const k in sums) sums[k] += c[k]; });
         const avgProfitPct = sums.total_bill > 0 ? (sums.profit / sums.total_bill * 100).toFixed(1) : '0.0';
 
+        // Build cell arrays with column visibility
+        function makeFootCells(labelText, valuesObj, pctVal) {
+            const cells = [
+                { key: 'client_name', html: `<td>${labelText}</td>` },
+                { key: 'msp_name', html: `<td></td>` },
+                { key: 'total_bill', html: `<td class="text-right">${formatCurrency(valuesObj.total_bill)}</td>` },
+                { key: 'gross_pay', html: `<td class="text-right">${formatCurrency(valuesObj.gross_pay)}</td>` },
+                { key: 'msp_fee', html: `<td class="text-right">${formatCurrency(valuesObj.msp_fee)}</td>` },
+                { key: 'wc_fee', html: `<td class="text-right">${formatCurrency(valuesObj.wc_fee)}</td>` },
+                { key: 'cc_fee', html: `<td class="text-right">${formatCurrency(valuesObj.cc_fee)}</td>` },
+                { key: 'bt_fee', html: `<td class="text-right">${formatCurrency(valuesObj.bt_fee)}</td>` },
+                { key: 'payroll_tax', html: `<td class="text-right">${formatCurrency(valuesObj.payroll_tax)}</td>` },
+                { key: 'profit', html: `<td class="text-right">${formatCurrency(valuesObj.profit)}</td>` },
+                { key: 'profit_pct', html: `<td class="text-right">${pctVal}%</td>` }
+            ];
+            return cells.filter(c => visibleColumns.has(c.key)).map(c => c.html).join('');
+        }
+
         // Averages row
+        const avgVals = {};
+        for (const k in sums) avgVals[k] = sums[k] / n;
         const avgTr = document.createElement('tr');
         avgTr.className = 'avg-row';
-        avgTr.innerHTML = `
-            <td>Average (${n} clients)</td><td></td>
-            <td class="text-right">${formatCurrency(sums.total_bill / n)}</td>
-            <td class="text-right">${formatCurrency(sums.gross_pay / n)}</td>
-            <td class="text-right">${formatCurrency(sums.msp_fee / n)}</td>
-            <td class="text-right">${formatCurrency(sums.wc_fee / n)}</td>
-            <td class="text-right">${formatCurrency(sums.cc_fee / n)}</td>
-            <td class="text-right">${formatCurrency(sums.payroll_tax / n)}</td>
-            <td class="text-right">${formatCurrency(sums.profit / n)}</td>
-            <td class="text-right">${avgProfitPct}%</td>
-        `;
+        avgTr.innerHTML = makeFootCells(`Average (${n} clients)`, avgVals, avgProfitPct);
         tfoot.appendChild(avgTr);
 
         // Totals row
         const totTr = document.createElement('tr');
         totTr.className = 'totals-row';
-        totTr.innerHTML = `
-            <td>Totals</td><td></td>
-            <td class="text-right">${formatCurrency(sums.total_bill)}</td>
-            <td class="text-right">${formatCurrency(sums.gross_pay)}</td>
-            <td class="text-right">${formatCurrency(sums.msp_fee)}</td>
-            <td class="text-right">${formatCurrency(sums.wc_fee)}</td>
-            <td class="text-right">${formatCurrency(sums.cc_fee)}</td>
-            <td class="text-right">${formatCurrency(sums.payroll_tax)}</td>
-            <td class="text-right">${formatCurrency(sums.profit)}</td>
-            <td class="text-right">${avgProfitPct}%</td>
-        `;
+        totTr.innerHTML = makeFootCells('Totals', sums, avgProfitPct);
         tfoot.appendChild(totTr);
     }
 
@@ -770,6 +938,7 @@
             setContent('valMspFee', formatCurrency(data.msp_fee));
             setContent('valWcFee', formatCurrency(data.wc_fee));
             setContent('valCcFee', formatCurrency(data.cc_fee));
+            setContent('valBtFee', formatCurrency(data.bt_fee));
             setContent('valPayrollTax', formatCurrency(data.payroll_tax));
             setContent('valOtherWork', formatCurrency(data.other_work));
             setContent('valProfit', formatCurrency(data.profit));
@@ -778,6 +947,7 @@
             const pctMsp = formatPercent(data.msp_fee, total);
             const pctWc = formatPercent(data.wc_fee, total);
             const pctCc = formatPercent(data.cc_fee, total);
+            const pctBt = formatPercent(data.bt_fee, total);
             const pctTax = formatPercent(data.payroll_tax, total);
             const pctOther = formatPercent(data.other_work, total);
             const pctProfit = formatPercent(data.profit, total);
@@ -786,6 +956,7 @@
             setContent('pctMspFee', pctMsp);
             setContent('pctWcFee', pctWc);
             setContent('pctCcFee', pctCc);
+            setContent('pctBtFee', pctBt);
             setContent('pctPayrollTax', pctTax);
             setContent('pctOtherWork', pctOther);
             setContent('pctProfit', pctProfit);
@@ -795,6 +966,7 @@
                 setWidth('barMsp', pctMsp);
                 setWidth('barWc', pctWc);
                 setWidth('barCc', pctCc);
+                setWidth('barBt', pctBt);
                 setWidth('barTax', pctTax);
                 setWidth('barOther', pctOther);
                 setWidth('barProfit', pctProfit);
@@ -897,6 +1069,6 @@
         });
     }
 
-    window.addEventListener('DOMContentLoaded', () => { loadMspList(); fetchData(); });
+    window.addEventListener('DOMContentLoaded', () => { buildColDropdown(); loadMspList(); fetchData(); });
 </script>
 {% endblock %}
