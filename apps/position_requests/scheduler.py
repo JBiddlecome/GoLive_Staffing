@@ -47,6 +47,7 @@ Sushi
 Concessions
 Barista
 Valet
+Event Supervisor
 
 Venue rules (VERY IMPORTANT)
 
@@ -78,6 +79,9 @@ If a venue type is unclear and could reasonably be hospitality (e.g., "Italian
 restaurant" without branding), you may count it with reduced confidence.
 
 Ignore non-hospitality jobs entirely (admin, warehouse, rideshare, retail, etc.).
+
+Special rule for Event Supervisor:
+— This position requires a minimum of 3 years of management or supervisory experience in the hotel, food & beverage, or hospital industry.
 
 Experience rules
 
@@ -128,7 +132,8 @@ Return your result as valid JSON only, using this schema:
     "sushi":       { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
     "concessions": { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
     "barista":     { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
-    "valet":       { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] }
+    "valet":       { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
+    "event_supervisor": { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] }
   }
 }
 
@@ -169,6 +174,7 @@ POSITION_KEY_TO_NAME = {
     "concessions": "Concessions",
     "barista": "Barista",
     "valet": "Valet",
+    "event_supervisor": "Event Supervisor",
 }
 from sqlalchemy.engine import URL
 
@@ -535,12 +541,15 @@ async def fetch_submissions():
 
         records = load_records()
         
-        reprocess_flag = Path("data/reprocess_positions_v1.flag")
-        if not reprocess_flag.exists():
+        reprocess_flag = Path("data/reprocess_event_supervisor.flag")
+        _is_render = any(os.getenv(v) for v in ("RENDER", "RENDER_SERVICE_ID", "RENDER_EXTERNAL_URL"))
+        
+        if _is_render and not reprocess_flag.exists():
             reprocess_flag.parent.mkdir(parents=True, exist_ok=True)
             reprocess_flag.write_text("done")
             for r in records:
-                r["status"] = "Pending"
+                if "Event Supervisor" in r.get("positions", ""):
+                    r["status"] = "Pending"
             save_records(records)
 
         existing_ids = {r.get("message_id") for r in records if r.get("message_id")}
