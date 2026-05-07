@@ -18,3 +18,4 @@ apps/client_profile_changes/cpc_state.json
 apps/ar_contact_updates/ar_state.json
 scratch/monthly_client_breakdown.csv
 scratch/monthly_summary.csv
+data/*.flag
