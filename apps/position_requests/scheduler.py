@@ -534,6 +534,15 @@ async def fetch_submissions():
             return
 
         records = load_records()
+        
+        reprocess_flag = Path("data/reprocess_positions_v1.flag")
+        if not reprocess_flag.exists():
+            reprocess_flag.parent.mkdir(parents=True, exist_ok=True)
+            reprocess_flag.write_text("done")
+            for r in records:
+                r["status"] = "Pending"
+            save_records(records)
+
         existing_ids = {r.get("message_id") for r in records if r.get("message_id")}
         added = False
 
@@ -623,6 +632,8 @@ async def fetch_submissions():
                     record["status"] = status
                     record["ai_analysis"] = ai_analysis
                     added = True
+                    save_records(records)
+                    await asyncio.sleep(2)  # Process one at a time and yield to event loop
                 except Exception as e:
                     print("Error during backfill in fetch_submissions:", str(e))
             

@@ -415,6 +415,60 @@
             </div>
         </div>
 
+        <!-- BLOCK: Staffing Manager & Sales Rep Update -->
+        <div id="block-staffing-update" class="group bg-white rounded-3xl p-8 shadow-xl border border-purple-100 hover:border-purple-200 transition-all flex flex-col justify-between relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-10 transition-opacity">
+                <svg class="w-32 h-32 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                </svg>
+            </div>
+
+            <div class="relative z-10 space-y-6">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-2xl font-bold text-gray-900">Staffing Manager & Sales Rep Update</h2>
+                    <span class="px-3 py-1 bg-purple-50 text-purple-700 text-xs font-bold uppercase tracking-wider rounded-full border border-purple-100">Pending</span>
+                </div>
+
+                <div class="p-5 bg-purple-50/50 rounded-2xl border border-purple-100/50">
+                    <ul class="space-y-2 text-sm text-purple-900/80">
+                        <li class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                            Target: <span class="font-mono font-bold">staffing_manager_id, sales_rep_id</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                            Scope: <span class="font-bold">Venues listed in staffing_manager_update.xlsx</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="flex items-center gap-6 py-4 border-y border-gray-50">
+                    <div class="flex-1">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Eligible Venues</p>
+                        <div id="count-staffing-update" class="text-4xl font-extrabold text-gray-900 animate-pulse">
+                            Checking...
+                        </div>
+                    </div>
+                </div>
+
+                <div id="action-staffing-update" class="hidden space-y-4">
+                    <button id="update-btn-staffing-update" class="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-purple-200/50 flex items-center justify-center gap-3 active:scale-[0.98]">
+                        Update Venues
+                    </button>
+                </div>
+
+                <div id="success-staffing-update" class="hidden space-y-4">
+                    <div class="bg-purple-100 border border-purple-200 rounded-2xl p-4 text-center">
+                        <p id="msg-staffing-update" class="text-purple-800 text-sm font-bold"></p>
+                    </div>
+                </div>
+
+                <div id="none-staffing-update" class="hidden text-center py-4">
+                    <p class="text-gray-400 text-sm italic">No eligible venues found in the Excel list.</p>
+                </div>
+            </div>
+        </div>
+
     </div>
 </section>
 
@@ -957,6 +1011,77 @@
         sm6170ExcelBlock.fetch();
         sm6170ExcelBlock.btnEl.addEventListener('click', () => sm6170ExcelBlock.update());
         sm6170ExcelBlock.undoBtnEl.addEventListener('click', () => sm6170ExcelBlock.undo());
+
+        // Staffing Manager & Sales Rep Update Block Logic
+        const staffingUpdateBlock = {
+            countEl: document.getElementById('count-staffing-update'),
+            actionEl: document.getElementById('action-staffing-update'),
+            btnEl: document.getElementById('update-btn-staffing-update'),
+            successEl: document.getElementById('success-staffing-update'),
+            msgEl: document.getElementById('msg-staffing-update'),
+            noneEl: document.getElementById('none-staffing-update'),
+
+            async fetch() {
+                try {
+                    const response = await fetch('/database-update/count-staffing-update');
+                    const data = await response.json();
+                    this.countEl.classList.remove('animate-pulse');
+
+                    if (data.error) {
+                        this.countEl.innerText = 'Error';
+                        this.countEl.classList.add('text-red-600');
+                        return;
+                    }
+
+                    const count = data.count;
+                    this.countEl.innerText = count;
+
+                    if (count > 0) {
+                        this.actionEl.classList.remove('hidden');
+                        this.noneEl.classList.add('hidden');
+                        this.successEl.classList.add('hidden');
+                    } else {
+                        this.noneEl.classList.remove('hidden');
+                        this.actionEl.classList.add('hidden');
+                    }
+                } catch (err) {
+                    this.countEl.innerText = 'Error';
+                }
+            },
+
+            async update() {
+                if (!confirm(`Are you sure you want to update the venues based on the spreadsheet?`)) return;
+
+                this.btnEl.disabled = true;
+                this.btnEl.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+
+                try {
+                    const response = await fetch('/database-update/update-staffing-update', { 
+                        method: 'POST'
+                    });
+                    const data = await response.json();
+
+                    if (data.error) {
+                        alert('Update failed: ' + data.error);
+                        return;
+                    }
+
+                    this.actionEl.classList.add('hidden');
+                    this.successEl.classList.remove('hidden');
+                    this.msgEl.innerText = data.message;
+                    this.countEl.innerText = '0';
+                } catch (err) {
+                    alert('An error occurred.');
+                } finally {
+                    this.btnEl.disabled = false;
+                    this.btnEl.innerText = 'Update Venues';
+                }
+            }
+        };
+
+        // Initialize Staffing Update Block
+        staffingUpdateBlock.fetch();
+        staffingUpdateBlock.btnEl.addEventListener('click', () => staffingUpdateBlock.update());
 
         // As more blocks are added, they will follow a similar pattern here
     });
