@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import shutil
+import tempfile
 from typing import Any
 import pandas as pd
 
@@ -373,3 +375,52 @@ async def undo_sm_6170_excel(request: Request):
         return JSONResponse({"error": str(e)}, status_code=500)
     finally:
         engine.dispose()
+
+@router.get("/count-staffing-update")
+async def get_staffing_update_count():
+    try:
+        temp_fd, temp_path = tempfile.mkstemp(suffix='.xlsx')
+        os.close(temp_fd)
+        shutil.copy2("staffing_manager_update.xlsx", temp_path)
+        try:
+            df = pd.read_excel(temp_path)
+            count = len(df.dropna(subset=['venue_id', 'updated_staffing_manager_id', 'updated_sales_rep_id']))
+            return JSONResponse({"count": count})
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+@router.post("/update-staffing-update")
+async def update_staffing_update():
+    engine = _engine()
+    try:
+        temp_fd, temp_path = tempfile.mkstemp(suffix='.xlsx')
+        os.close(temp_fd)
+        shutil.copy2("staffing_manager_update.xlsx", temp_path)
+        
+        try:
+            df = pd.read_excel(temp_path)
+            df = df.dropna(subset=['venue_id', 'updated_staffing_manager_id', 'updated_sales_rep_id'])
+            updated_count = 0
+            with engine.begin() as connection:
+                for index, row in df.iterrows():
+                    venue_id = int(row['venue_id'])
+                    sm_id = int(row['updated_staffing_manager_id'])
+                    sr_id = int(row['updated_sales_rep_id'])
+                    sql = text("UPDATE venue SET staffing_manager_id = :sm_id, sales_rep_id = :sr_id WHERE venue_id = :v_id")
+                    result = connection.execute(sql, {"sm_id": sm_id, "sr_id": sr_id, "v_id": venue_id})
+                    updated_count += result.rowcount
+            return JSONResponse({
+                "message": f"Successfully updated {updated_count} venues based on the spreadsheet.",
+                "updated": updated_count
+            })
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+    finally:
+        engine.dispose()
+
