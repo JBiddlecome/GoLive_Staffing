@@ -41,6 +41,7 @@ Sushi
 Concessions
 Barista
 Valet
+Event Supervisor
 
 Venue rules (VERY IMPORTANT)
 
@@ -67,6 +68,9 @@ Count only experience at fine dining or equivalent hospitality venues, such as:
 If a venue type is unclear and could reasonably be hospitality (e.g., “Italian restaurant” without branding), you may count it with reduced confidence.
 
 Ignore non-hospitality jobs entirely (admin, warehouse, rideshare, retail, etc.).
+
+Special rule for Event Supervisor:
+— This position requires a minimum of 3 years of management or supervisory experience in the hotel, food & beverage, or hospital industry.
 
 Experience rules
 
@@ -197,6 +201,12 @@ Return your result as valid JSON only, using this schema:
       "reasons": []
     },
     "valet": {
+      "status": "no_experience | level_1 | level_2 | level_3",
+      "estimated_years": 0.0,
+      "confidence": 0.0,
+      "reasons": []
+    },
+    "event_supervisor": {
       "status": "no_experience | level_1 | level_2 | level_3",
       "estimated_years": 0.0,
       "confidence": 0.0,
