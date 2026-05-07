@@ -395,7 +395,7 @@ async def ai_analyze(resume_text, experience_text, requested_positions):
     try:
         client = openai.AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         response = await client.chat.completions.create(
-            model="gpt-4.1-mini",
+            model=os.getenv("OPENAI_MODEL_AUTOMATION", "gpt-4.1-nano"),
             messages=[
                 {"role": "system", "content": POSITION_SYSTEM_PROMPT},
                 {"role": "user", "content": user_msg},

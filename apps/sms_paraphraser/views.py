@@ -223,7 +223,7 @@ async def paraphrase_event(payload: ParaphraseRequest) -> JSONResponse:
     try:
         client = _get_openai_client()
         response = client.chat.completions.create(
-            model="gpt-4o-mini", # Requested model
+            model=os.getenv("OPENAI_MODEL_AUTOMATION", "gpt-4.1-nano"), # Requested model
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}

@@ -168,7 +168,7 @@ async def analyze_email(request: Request):
         """
         
         response = await client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=os.getenv("OPENAI_MODEL_AUTOMATION", "gpt-4.1-nano"),
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": system_prompt},
@@ -226,7 +226,7 @@ async def analyze_batch_email(request: Request):
         """
         
         response = await client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=os.getenv("OPENAI_MODEL_AUTOMATION", "gpt-4.1-nano"),
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": system_prompt},
@@ -270,7 +270,7 @@ async def custom_query(request: Request):
         system_prompt = "You are a helpful assistant analyzing a batch of employee emails. Answer the user's specific query based only on the provided emails."
         
         response = await client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=os.getenv("OPENAI_MODEL_AUTOMATION", "gpt-4.1-nano"),
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"User Query: {custom_prompt}\n\n{combined_emails_text}"}

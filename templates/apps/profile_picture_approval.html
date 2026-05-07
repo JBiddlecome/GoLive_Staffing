@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}GoLive Staffing — Profile Picture Approval{% endblock %}
+{% block main_class %}w-full px-4 py-8{% endblock %}
+
+{% block content %}
+<div class="px-4 sm:px-6 lg:px-8 w-full py-8">
+  <div class="sm:flex sm:items-center">
+    <div class="sm:flex-auto border-b border-gray-200 pb-5">
+      <h1 class="text-3xl font-semibold leading-tight text-emerald-800 brand-serif">Profile Picture Approval</h1>
+      <p class="mt-2 text-sm text-gray-700">Review pending profile picture uploads. Use AI to pre-screen for guidelines, then approve or deny.</p>
+    </div>
+  </div>
+
+  <div class="mt-8">
+    {% if not pending_photos %}
+    <div class="text-center py-12 bg-white rounded-lg border border-gray-200 shadow-sm">
+      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+      <h3 class="mt-2 text-sm font-semibold text-gray-900">No pending pictures</h3>
+      <p class="mt-1 text-sm text-gray-500">All caught up! There are no employee profile pictures awaiting approval.</p>
+    </div>
+    {% else %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {% for photo in pending_photos %}
+      <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col photo-card" data-employee-id="{{ photo.employee_id }}">
+        <div class="relative pb-[100%] bg-gray-100">
+          <img src="{{ photo.photo_url }}" alt="Profile Picture" class="absolute inset-0 w-full h-full object-cover">
+        </div>
+        <div class="p-4 flex-1 flex flex-col">
+          <h3 class="text-lg font-semibold text-gray-900 truncate">{{ photo.first_name }} {{ photo.last_name }}</h3>
+          <p class="text-sm text-gray-500 truncate mb-4">{{ photo.email }}</p>
+          
+          <div class="ai-result mb-4 text-sm hidden p-3 rounded-md bg-gray-50 border border-gray-100">
+            <div class="font-medium mb-1 ai-status"></div>
+            <div class="text-gray-600 text-xs ai-reasoning"></div>
+          </div>
+
+          <div class="mt-auto space-y-2">
+            <button type="button" class="analyze-btn w-full inline-flex justify-center items-center gap-x-1.5 rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors" data-url="{{ photo.photo_url }}">
+              <svg class="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+              </svg>
+              Analyze with AI
+            </button>
+            <div class="flex gap-2">
+              <button type="button" class="approve-btn flex-1 inline-flex justify-center items-center gap-x-1.5 rounded-md bg-emerald-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 transition-colors" data-employee-id="{{ photo.employee_id }}" data-file-name="{{ photo.file_name }}" data-first-name="{{ photo.first_name }}" data-email="{{ photo.email }}">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                Approve
+              </button>
+              <button type="button" class="deny-btn flex-1 inline-flex justify-center items-center gap-x-1.5 rounded-md bg-red-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 transition-colors" data-employee-id="{{ photo.employee_id }}" data-file-name="{{ photo.file_name }}" data-first-name="{{ photo.first_name }}" data-email="{{ photo.email }}">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Deny
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // AI Analyze
+  const analyzeButtons = document.querySelectorAll('.analyze-btn');
+  analyzeButtons.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const card = btn.closest('.photo-card');
+      const url = btn.dataset.url;
+      const resultDiv = card.querySelector('.ai-result');
+      const statusDiv = card.querySelector('.ai-status');
+      const reasoningDiv = card.querySelector('.ai-reasoning');
+      
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = 'Analyzing...';
+      btn.disabled = true;
+      resultDiv.classList.add('hidden');
+      
+      const formData = new FormData();
+      formData.append('photo_url', url);
+      
+      try {
+        const response = await fetch('/profile-picture-approval/analyze', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await response.json();
+        
+        if (response.ok && data.status === 'success') {
+          const analysis = data.ai_analysis;
+          resultDiv.classList.remove('hidden');
+          statusDiv.innerText = analysis.status;
+          if (analysis.status === 'Approved') {
+            statusDiv.className = 'font-medium mb-1 ai-status text-emerald-700';
+            resultDiv.className = 'ai-result mb-4 text-sm p-3 rounded-md bg-emerald-50 border border-emerald-100';
+          } else {
+            statusDiv.className = 'font-medium mb-1 ai-status text-red-700';
+            resultDiv.className = 'ai-result mb-4 text-sm p-3 rounded-md bg-red-50 border border-red-100';
+          }
+          reasoningDiv.innerText = analysis.reasoning;
+        } else {
+          alert('Error analyzing photo: ' + (data.message || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Failed to connect to server.');
+        console.error(err);
+      } finally {
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+      }
+    });
+  });
+
+  // Approve
+  const approveButtons = document.querySelectorAll('.approve-btn');
+  approveButtons.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Are you sure you want to approve this photo?')) return;
+      
+      const card = btn.closest('.photo-card');
+      const formData = new FormData();
+      formData.append('employee_id', btn.dataset.employeeId);
+      formData.append('file_name', btn.dataset.fileName);
+      formData.append('first_name', btn.dataset.firstName);
+      formData.append('email', btn.dataset.email);
+      
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = 'Approving...';
+      btn.disabled = true;
+      
+      try {
+        const response = await fetch('/profile-picture-approval/approve', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await response.json();
+        
+        if (response.ok && data.status === 'success') {
+          card.style.opacity = '0';
+          setTimeout(() => card.remove(), 300);
+        } else {
+          alert('Error approving photo: ' + (data.message || 'Unknown error'));
+          btn.innerHTML = originalHtml;
+          btn.disabled = false;
+        }
+      } catch (err) {
+        alert('Failed to connect to server.');
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+        console.error(err);
+      }
+    });
+  });
+
+  // Deny
+  const denyButtons = document.querySelectorAll('.deny-btn');
+  denyButtons.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Are you sure you want to deny this photo?')) return;
+      
+      const card = btn.closest('.photo-card');
+      const formData = new FormData();
+      formData.append('employee_id', btn.dataset.employeeId);
+      formData.append('file_name', btn.dataset.fileName);
+      formData.append('first_name', btn.dataset.firstName);
+      formData.append('email', btn.dataset.email);
+      
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = 'Denying...';
+      btn.disabled = true;
+      
+      try {
+        const response = await fetch('/profile-picture-approval/deny', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await response.json();
+        
+        if (response.ok && data.status === 'success') {
+          card.style.opacity = '0';
+          setTimeout(() => card.remove(), 300);
+        } else {
+          alert('Error denying photo: ' + (data.message || 'Unknown error'));
+          btn.innerHTML = originalHtml;
+          btn.disabled = false;
+        }
+      } catch (err) {
+        alert('Failed to connect to server.');
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+        console.error(err);
+      }
+    });
+  });
+});
+</script>
+{% endblock %}
