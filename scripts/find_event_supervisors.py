@@ -12,8 +12,12 @@ from sqlalchemy import create_engine, text
 import openai
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables
+env_path = r"C:\Users\jakeb\OneDrive\Documents\GitHub\golive-staffing-tools.env"
+if os.path.exists(env_path):
+    load_dotenv(env_path)
+else:
+    load_dotenv()
 
 # ---------------------------------------------------------
 # Configuration
@@ -123,7 +127,7 @@ async def evaluate_supervisor(resume_text: str) -> dict:
     try:
         client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
         response = await client.chat.completions.create(
-            model="gpt-4.1-mini",  # Using your preferred model
+            model=os.getenv("OPENAI_MODEL_AUTOMATION", "gpt-4.1-nano"),  # Using your preferred model
             messages=[
                 {"role": "system", "content": SUPERVISOR_PROMPT},
                 {"role": "user", "content": f"Resume Text:\n\n{resume_text[:15000]}"} # Limit tokens

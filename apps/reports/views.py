@@ -237,7 +237,7 @@ def plan_tables(question: str) -> list[str]:
     planner_ctx = get_planner_context()
     prompt = SYSTEM_PLANNER + "\n" + catalog + planner_ctx
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model=os.getenv("OPENAI_MODEL_AUTOMATION", "gpt-4.1-nano"),
         response_format={"type": "json_object"},
         messages=[
             {"role": "system", "content": prompt},
@@ -294,7 +294,7 @@ def generate_sql(question: str, tables: list[str]) -> str:
     biz_logic = get_business_logic_prompt(tables, question)
     system_prompt = SYSTEM_GENERATOR_BASE + "\n" + schema_block + biz_logic
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model=os.getenv("OPENAI_MODEL_PRODUCTION", "gpt-5.4-mini"),
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": question}
@@ -602,7 +602,7 @@ def explain_result(
         )
 
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model=os.getenv("OPENAI_MODEL_AUTOMATION", "gpt-4.1-nano"),
         messages=[
             {"role": "system", "content": SYSTEM_EXPLAIN},
             {"role": "user", "content": content},

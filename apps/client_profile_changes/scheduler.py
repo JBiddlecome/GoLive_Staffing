@@ -358,7 +358,7 @@ def _send_daily_email(changes: list[dict]):
         return
 
     sender_email = "golive@culinarystaffing.com"
-    receiver_emails = ["jake@culinarystaffing.com", "accounting@culinarystaffing.com", "caleb@culinarystaffing.com"]
+    receiver_emails = ["jake@culinarystaffing.com", "accounting@culinarystaffing.com", "caleb@culinarystaffing.com", "dan.stone@culinarystaffing.com"]
 
     import requests
 

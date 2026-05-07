@@ -266,7 +266,7 @@ async def analyze_resume(
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4.1-mini",
+            model=os.getenv("OPENAI_MODEL_AUTOMATION", "gpt-4.1-nano"),
             messages=ai_payload,
             response_format={"type": "json_object"},
         )
