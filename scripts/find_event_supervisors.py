@@ -45,7 +45,6 @@ def _get_db_url():
         if rds_host and (not tunnel_port or str(port) != tunnel_port):
             host = rds_host
 
-    # Escape password if needed (pymysql handles basic auth in URL, but safer to use sqlalchemy.engine.URL if complex)
     from sqlalchemy.engine import URL
     return URL.create(
         drivername="mysql+pymysql",
@@ -59,29 +58,34 @@ def _get_db_url():
 # ---------------------------------------------------------
 # AI Prompt
 # ---------------------------------------------------------
-SUPERVISOR_PROMPT = """
+EVALUATION_PROMPT = """
 You are an expert hospitality recruiter.
 You will receive the text extracted from a candidate's resume.
-Your sole job is to determine if this candidate has explicit experience as an "Event Supervisor", "Banquet Captain", "Catering Manager", "Front of House Manager", or equivalent leadership/supervisory role in a hospitality or events setting.
+Your task is to determine if this candidate qualifies for the specified Level 2 positions: {roles_to_evaluate}.
 
-Rules:
-1. Being a standard "Server", "Bartender", or "Cook" does NOT qualify. They must have held a role where they were actively managing, supervising, or leading an event team.
-2. Fast food shift-lead experience does NOT qualify. It must be in event, banquet, or restaurant leadership.
-3. Look for keywords like "Supervisor", "Captain", "Manager", "Lead", "Director".
+Rules for Qualification (based on Level 2 requirements):
+1. Fast-food or quick-service chain experience (e.g., McDonald's, Taco Bell) does NOT count toward qualification.
+2. Qualifying experience must be at fine dining, hotels, upscale restaurants, catering companies, or equivalent venues.
+3. The candidate must have at least 2 years of qualifying experience in a matching role to be approved for a Level 2 position.
+
+Position Specifics:
+- "Cook 2" (Line Cook Level 2): Requires 2+ years of intermediate line cook experience at qualifying venues.
+- "Prep Cook 2" (Prep Cook Level 2): Requires 2+ years of prep cook experience at qualifying venues.
+- "Server 2" (Server Level 2): Requires 2+ years of serving experience at qualifying venues.
 
 Return your response as a valid JSON object with the following schema:
-{
-  "qualifies": true | false,
-  "relevant_titles": ["Captain", "Event Supervisor", ...],
+{{
+  "qualifies_cook_2": true | false | null,
+  "qualifies_prep_cook_2": true | false | null,
+  "qualifies_server_2": true | false | null,
   "years_of_experience": 0.0,
-  "reasoning": "Brief explanation of why they do or do not qualify based on their experience."
-}
+  "reasoning": "Brief explanation detailing the qualifying venues, fast-food exclusions, and how years of experience were calculated."
+}}
+Note: Set 'qualifies_...' to null if you were NOT asked to evaluate that specific role.
 """
 
 async def extract_resume_text(filename: str) -> str:
     """Download the resume from S3 and extract text."""
-    # Since the S3 bucket is configured for 'public-read' in your Yii2 app,
-    # we can try accessing it directly via HTTP. If it's private, you'll need boto3.
     safe_filename = quote(filename)
     url = f"https://{S3_BUCKET}.s3.{S3_REGION}.amazonaws.com/{S3_PREFIX}{safe_filename}"
     
@@ -119,18 +123,19 @@ async def extract_resume_text(filename: str) -> str:
         return f"Error downloading/extracting resume: {str(e)}"
 
 
-async def evaluate_supervisor(resume_text: str) -> dict:
-    """Pass the resume text to OpenAI to check for supervisor experience."""
+async def evaluate_candidate(resume_text: str, roles_to_evaluate: list) -> dict:
+    """Pass the resume text to OpenAI to check for experience."""
     if "Error" in resume_text:
-        return {"qualifies": False, "reasoning": resume_text, "relevant_titles": [], "years_of_experience": 0}
+        return {"qualifies_cook_2": False, "qualifies_prep_cook_2": False, "qualifies_server_2": False, "reasoning": resume_text, "years_of_experience": 0}
         
     try:
         client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
+        prompt = EVALUATION_PROMPT.format(roles_to_evaluate=", ".join(roles_to_evaluate))
         response = await client.chat.completions.create(
-            model=os.getenv("OPENAI_MODEL_AUTOMATION", "gpt-4.1-nano"),  # Using your preferred model
+            model=os.getenv("OPENAI_MODEL_AUTOMATION", "gpt-4.1-nano"),
             messages=[
-                {"role": "system", "content": SUPERVISOR_PROMPT},
-                {"role": "user", "content": f"Resume Text:\n\n{resume_text[:15000]}"} # Limit tokens
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": f"Resume Text:\n\n{resume_text[:15000]}"}
             ],
             response_format={"type": "json_object"},
             temperature=0.2
@@ -139,21 +144,24 @@ async def evaluate_supervisor(resume_text: str) -> dict:
         return json.loads(content)
         
     except Exception as e:
-        return {"qualifies": False, "reasoning": f"AI Error: {str(e)}", "relevant_titles": [], "years_of_experience": 0}
+        return {"qualifies_cook_2": False, "qualifies_prep_cook_2": False, "qualifies_server_2": False, "reasoning": f"AI Error: {str(e)}", "years_of_experience": 0}
 
 
 async def main():
     print("Connecting to database...")
     engine = create_engine(_get_db_url())
     
-    # Query all active employees with a resume
+    # Query all active employees with a resume, including their positions
     query = text("""
-        SELECT employee_id, first_name, last_name, email, mobile, resume
-        FROM employee
-        WHERE status = 1 
-          AND resume IS NOT NULL 
-          AND resume != ''
-          AND deleted_at IS NULL
+        SELECT e.employee_id, e.first_name, e.last_name, e.email, e.mobile, e.resume,
+               GROUP_CONCAT(ep.position_id) as positions
+        FROM employee e
+        LEFT JOIN employee_position ep ON e.employee_id = ep.employee_id AND ep.status = 1
+        WHERE e.status = 1 
+          AND e.resume IS NOT NULL 
+          AND e.resume != ''
+          AND e.deleted_at IS NULL
+        GROUP BY e.employee_id
     """)
     
     with engine.connect() as conn:
@@ -163,27 +171,66 @@ async def main():
     
     results = []
     
-    # Process sequentially to avoid rate-limiting OpenAI or network spikes
-    # You can change this to asyncio.gather if you want to run batches in parallel
     for i, emp in enumerate(active_employees):
-        emp_id, first, last, email, mobile, resume_file = emp
-        print(f"[{i+1}/{len(active_employees)}] Analyzing {first} {last}...")
+        emp_id, first, last, email, mobile, resume_file, positions = emp
+        print(f"[{i+1}/{len(active_employees)}] Checking {first} {last}...")
         
+        positions_str = str(positions) if positions else ""
+        positions_list = positions_str.split(",")
+        has_cook2 = "102" in positions_list
+        has_prep2 = "110" in positions_list
+        has_server2 = "115" in positions_list
+
+        check_cook2 = not has_cook2
+        check_prep2 = not has_prep2
+        check_server2 = not has_server2
+
+        if not check_cook2 and not check_prep2 and not check_server2:
+            print("  --> Skipping. Already has Cook 2, Prep Cook 2, and Server 2.")
+            continue
+
+        roles_to_evaluate = []
+        if check_cook2:
+            roles_to_evaluate.append("Cook 2")
+        if check_prep2:
+            roles_to_evaluate.append("Prep Cook 2")
+        if check_server2:
+            roles_to_evaluate.append("Server 2")
+            
+        print(f"  --> Need to evaluate for: {', '.join(roles_to_evaluate)}")
+
         # 1. Download and extract text
         text_content = await extract_resume_text(resume_file)
         
         # 2. Evaluate with AI
-        evaluation = await evaluate_supervisor(text_content)
+        evaluation = await evaluate_candidate(text_content, roles_to_evaluate)
         
-        # 3. Only keep those who qualify to keep the final list clean
-        if evaluation.get("qualifies") is True:
-            print(f"  --> 🎉 QUALIFIED: {', '.join(evaluation.get('relevant_titles', []))}")
+        # 3. Process results
+        qual_cook2 = evaluation.get("qualifies_cook_2")
+        qual_prep2 = evaluation.get("qualifies_prep_cook_2")
+        qual_server2 = evaluation.get("qualifies_server_2")
+        
+        is_qualified = (qual_cook2 is True) or (qual_prep2 is True) or (qual_server2 is True)
+        
+        if is_qualified:
+            qualified_for = []
+            if qual_cook2 is True:
+                qualified_for.append("Cook 2")
+            if qual_prep2 is True:
+                qualified_for.append("Prep Cook 2")
+            if qual_server2 is True:
+                qualified_for.append("Server 2")
+                
+            print(f"  --> 🎉 QUALIFIED: {', '.join(qualified_for)}")
             results.append({
                 "Employee ID": emp_id,
                 "Name": f"{first} {last}",
                 "Email": email,
                 "Phone": mobile,
-                "Relevant Titles": ", ".join(evaluation.get("relevant_titles", [])),
+                "Currently Has Cook 2": "Yes" if has_cook2 else "No",
+                "Currently Has Prep Cook 2": "Yes" if has_prep2 else "No",
+                "Currently Has Server 2": "Yes" if has_server2 else "No",
+                "Newly Qualified For": ", ".join(qualified_for),
                 "Years Experience": evaluation.get("years_of_experience", 0),
                 "AI Reasoning": evaluation.get("reasoning", ""),
                 "Resume Link": f"https://{S3_BUCKET}.s3.{S3_REGION}.amazonaws.com/{S3_PREFIX}{quote(resume_file)}"
@@ -194,12 +241,12 @@ async def main():
     # Save results to a CSV/Excel file
     if results:
         df = pd.DataFrame(results)
-        output_file = "event_supervisors_report.xlsx"
+        output_file = "candidates_report.xlsx"
         df.to_excel(output_file, index=False)
-        print(f"\n✅ Analysis complete! Found {len(results)} qualified candidates.")
+        print(f"\n✅ Analysis complete! Found {len(results)} new qualified candidates.")
         print(f"Results saved to {output_file}")
     else:
-        print("\nAnalysis complete. No qualified Event Supervisors found.")
+        print("\nAnalysis complete. No new qualified candidates found.")
 
 
 if __name__ == "__main__":
@@ -207,7 +254,7 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except Exception as e:
-        print("\\nAn error occurred:")
+        print("\nAn error occurred:")
         traceback.print_exc()
     finally:
-        input("\\nPress Enter to exit...")
+        input("\nPress Enter to exit...")
