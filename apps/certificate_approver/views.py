@@ -1,0 +1,349 @@
+from fastapi import APIRouter, Request, Form
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
+from sqlalchemy import text
+import boto3
+import os
+import openai
+import json
+import requests
+import fitz
+import base64
+from datetime import datetime
+from apps.position_requests.scheduler import _engine  # Re-use DB connection logic
+
+router = APIRouter()
+templates = Jinja2Templates(directory="templates")
+
+S3_BUCKET = os.getenv("S3_BUCKET", "web-application-files")
+S3_REGION = os.getenv("S3_REGION", "us-east-1")
+
+def get_s3_client():
+    return boto3.client(
+        's3',
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+        region_name=S3_REGION
+    )
+
+def get_pending_certificates():
+    engine = _engine()
+    pending = []
+    try:
+        with engine.connect() as conn:
+            query = text("""
+                SELECT ec.id, ec.employee_id, ec.certification_id, c.name as cert_type_name,
+                       ec.file, ec.number, ec.issued_at, ec.expires_at, 
+                       e.first_name, e.last_name, e.email 
+                FROM employee_certification ec
+                JOIN employee e ON ec.employee_id = e.employee_id
+                JOIN certification c ON ec.certification_id = c.id
+                WHERE ec.approved_at IS NULL AND ec.file IS NOT NULL AND e.email NOT LIKE '%[DELETED]%'
+            """)
+            res = conn.execute(query).fetchall()
+            for row in res:
+                file_name = row.file
+                import urllib.parse
+                safe_file_name = urllib.parse.quote(file_name)
+                cert_url = f"https://{S3_BUCKET}.s3.{S3_REGION}.amazonaws.com/employee/certification/{safe_file_name}"
+                pending.append({
+                    "id": row.id,
+                    "employee_id": row.employee_id,
+                    "cert_type_id": row.certification_id,
+                    "cert_type_name": row.cert_type_name,
+                    "file_name": file_name,
+                    "number": row.number,
+                    "issued_at": str(row.issued_at) if row.issued_at else None,
+                    "expires_at": str(row.expires_at) if row.expires_at else None,
+                    "first_name": row.first_name or "Unknown",
+                    "last_name": row.last_name or "",
+                    "email": row.email,
+                    "cert_url": cert_url
+                })
+    except Exception as e:
+        print(f"Error fetching pending certificates: {e}")
+    finally:
+        engine.dispose()
+    return pending
+
+@router.get("", response_class=HTMLResponse)
+async def certificate_approver_page(request: Request):
+    from apps.certificate_approver.scheduler import get_auto_approve_enabled
+    
+    user = request.session.get("user")
+    pending = get_pending_certificates()
+        
+    context = {
+        "request": request,
+        "user": user,
+        "pending_certificates": pending,
+        "auto_approve_enabled": get_auto_approve_enabled()
+    }
+    return templates.TemplateResponse("apps/certificate_approver.html", context)
+
+@router.post("/api/toggle-auto-approve")
+async def toggle_auto_approve(request: Request):
+    from apps.certificate_approver.scheduler import get_auto_approve_enabled, set_auto_approve_enabled
+    data = await request.json()
+    enabled = data.get("enabled", False)
+    set_auto_approve_enabled(enabled)
+    return JSONResponse({"status": "success", "enabled": get_auto_approve_enabled()})
+
+def get_ai_prompt():
+    prompt_path = os.path.join(os.getcwd(), "certificate_approval.md")
+    try:
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            return f.read()
+    except Exception as e:
+        print("Error reading certificate_approval.md:", e)
+        return "You are an expert certificate verifier."
+
+async def analyze_certificate_ai(cert_url: str, cert_type_id: int, cert_type_name: str, 
+                                 issued_at: str, expires_at: str, number: str, file_name: str):
+    try:
+        prompt = get_ai_prompt()
+        
+        system_content = "You are a certificate verification assistant for GoLive! Staffing. Follow the rules in the provided specification."
+        
+        user_message_text = f"""
+Here is the specification document:
+{prompt}
+
+We are evaluating the following uploaded document:
+cert_type_id: {cert_type_id}
+cert_type_name: {cert_type_name}
+File Name: {file_name}
+Claimed Issue Date: {issued_at or datetime.now().strftime('%Y-%m-%d')}
+Claimed Expiration Date: {expires_at or 'N/A'}
+Claimed Number: {number or 'N/A'}
+
+Please verify the FIRST attached image (The User Submission) according to the rules for this cert_type_id.
+"""
+        
+        content = [
+            {"type": "text", "text": user_message_text},
+            {"type": "text", "text": "--- START OF USER SUBMISSION ---"}
+        ]
+
+        if cert_url.lower().split('?')[0].endswith('.pdf'):
+            try:
+                pdf_res = requests.get(cert_url)
+                if pdf_res.status_code == 200:
+                    doc = fitz.open(stream=pdf_res.content, filetype="pdf")
+                    for page_num, page in enumerate(doc):
+                        pix = page.get_pixmap(dpi=100)
+                        b64 = base64.b64encode(pix.tobytes("png")).decode('utf-8')
+                        content.append({"type": "text", "text": f"Page {page_num + 1}:"})
+                        content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}})
+            except Exception as e:
+                print("Failed to parse PDF user submission:", e)
+        else:
+            content.append({"type": "image_url", "image_url": {"url": cert_url}})
+            
+        content.append({"type": "text", "text": "--- END OF USER SUBMISSION ---"})
+        
+        # Check for baseline image
+        baseline_dir = os.path.join(os.getcwd(), "apps", "certificate_approver", "baselines", str(cert_type_id))
+        if os.path.exists(baseline_dir):
+            files = [f for f in os.listdir(baseline_dir) if os.path.isfile(os.path.join(baseline_dir, f))]
+            if files:
+                baseline_path = os.path.join(baseline_dir, files[0])
+                content.append({"type": "text", "text": "For your reference, here is an example of what the valid document should look like (baseline):"})
+                content.append({"type": "text", "text": "--- START OF BASELINE REFERENCE ---"})
+                
+                if files[0].lower().endswith('.pdf'):
+                    try:
+                        doc = fitz.open(baseline_path)
+                        for page_num, page in enumerate(doc):
+                            pix = page.get_pixmap(dpi=100)
+                            b64 = base64.b64encode(pix.tobytes("png")).decode('utf-8')
+                            content.append({"type": "text", "text": f"Baseline Page {page_num + 1}:"})
+                            content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}})
+                    except Exception as e:
+                        print("Failed to parse PDF baseline:", e)
+                else:
+                    with open(baseline_path, "rb") as bf:
+                        base64_image = base64.b64encode(bf.read()).decode('utf-8')
+                    ext = files[0].split('.')[-1].lower()
+                    mime_type = f"image/{ext}" if ext in ['png', 'jpg', 'jpeg'] else "image/png"
+                    content.append({"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{base64_image}"}})
+                
+                content.append({"type": "text", "text": "--- END OF BASELINE REFERENCE ---"})
+
+        client = openai.AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        response = await client.chat.completions.create(
+            model=os.getenv("OPENAI_MODEL_PRODUCTION", "gpt-4o"),
+            messages=[
+                {"role": "system", "content": system_content},
+                {"role": "user", "content": content}
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.1
+        )
+        resp_text = response.choices[0].message.content or "{}"
+        result = json.loads(resp_text)
+        return {"status": "success", "ai_analysis": result}
+    except Exception as e:
+        return {"status": "error", "message": f"AI Error: {str(e)}"}
+
+@router.post("/analyze")
+async def analyze_cert(
+    request: Request, 
+    cert_url: str = Form(...),
+    cert_type_id: int = Form(...),
+    cert_type_name: str = Form(""),
+    issued_at: str = Form(""),
+    expires_at: str = Form(""),
+    number: str = Form(""),
+    file_name: str = Form(...)
+):
+    result = await analyze_certificate_ai(cert_url, cert_type_id, cert_type_name, issued_at, expires_at, number, file_name)
+    if result["status"] == "success":
+        return JSONResponse(result)
+    else:
+        return JSONResponse(result, status_code=500)
+
+def send_notification_email(employee_email: str, first_name: str, status: str, cert_type_name: str, reason: str = ""):
+    sender_email = "golive@culinarystaffing.com"
+    tenant_id = os.getenv("O365_TENANT_ID")
+    client_id = os.getenv("O365_CLIENT_ID")
+    client_secret = os.getenv("O365_CLIENT_SECRET")
+    
+    if not all([tenant_id, client_id, client_secret, employee_email]):
+        print("Skipping email: Microsoft 365 OAuth credentials missing or employee email is empty.")
+        return False
+        
+    token_url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
+    token_data = {
+        "grant_type": "client_credentials",
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "scope": "https://graph.microsoft.com/.default"
+    }
+    
+    try:
+        r = requests.post(token_url, data=token_data)
+        r.raise_for_status()
+        access_token = r.json().get("access_token")
+    except Exception as e:
+        print(f"Failed to authenticate with Microsoft Graph: {e}")
+        return False
+
+    if status == "Approved":
+        subject = f"Certificate Approved: {cert_type_name}"
+        body_text = f"Hi {first_name},<br><br>Good news! Your uploaded certificate for <b>{cert_type_name}</b> has been approved and is now active on your account."
+    else:
+        subject = f"Certificate Declined: {cert_type_name}"
+        body_text = f"Hi {first_name},<br><br>Unfortunately, your uploaded certificate for <b>{cert_type_name}</b> was declined.<br><br><b>Reason:</b> {reason}<br><br>Please review and upload a valid document."
+
+    html_body = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #047857;">Certificate Update</h2>
+        <p>{body_text}</p>
+        <p>Best regards,<br>The Culinary Staffing Team</p>
+      </body>
+    </html>
+    """
+    
+    email_msg = {
+        "message": {
+            "subject": subject,
+            "body": {
+                "contentType": "HTML",
+                "content": html_body
+            },
+            "toRecipients": [
+                {"emailAddress": {"address": employee_email}}
+            ]
+        },
+        "saveToSentItems": "true"
+    }
+
+    send_url = f"https://graph.microsoft.com/v1.0/users/{sender_email}/sendMail"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    
+    try:
+        send_res = requests.post(send_url, headers=headers, json=email_msg)
+        send_res.raise_for_status()
+        return True
+    except Exception as e:
+        print(f"Failed to send email via MS Graph: {e}")
+        return False
+
+def approve_cert_action(record_id: int, first_name: str, email: str, cert_type_name: str):
+    try:
+        engine = _engine()
+        try:
+            with engine.begin() as conn:
+                update_sql = text("UPDATE employee_certification SET approved_at = NOW(), approved_by = 1 WHERE id = :record_id")
+                conn.execute(update_sql, {"record_id": record_id})
+        finally:
+            engine.dispose()
+            
+        if email:
+            send_notification_email(email, first_name, "Approved", cert_type_name)
+            
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
+@router.post("/approve")
+async def approve_cert(
+    request: Request,
+    record_id: int = Form(...),
+    first_name: str = Form(""),
+    email: str = Form(""),
+    cert_type_name: str = Form("")
+):
+    success, err = approve_cert_action(record_id, first_name, email, cert_type_name)
+    if success:
+        return JSONResponse({"status": "success"})
+    else:
+        return JSONResponse({"status": "error", "message": err}, status_code=500)
+
+def deny_cert_action(record_id: int, file_name: str, first_name: str, email: str, cert_type_name: str, reason: str):
+    try:
+        s3 = get_s3_client()
+        
+        # 1. Delete S3 object
+        try:
+            s3.delete_object(Bucket=S3_BUCKET, Key=f'employee/certification/{file_name}')
+        except Exception as e:
+            print(f"Error deleting from S3: {e}")
+            
+        # 2. Delete from DB
+        engine = _engine()
+        try:
+            with engine.begin() as conn:
+                delete_sql = text("DELETE FROM employee_certification WHERE id = :record_id")
+                conn.execute(delete_sql, {"record_id": record_id})
+        finally:
+            engine.dispose()
+            
+        # 3. Send Email
+        if email:
+            send_notification_email(email, first_name, "Denied", cert_type_name, reason)
+            
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
+@router.post("/deny")
+async def deny_cert(
+    request: Request,
+    record_id: int = Form(...),
+    file_name: str = Form(...),
+    first_name: str = Form(""),
+    email: str = Form(""),
+    cert_type_name: str = Form(""),
+    reason: str = Form("")
+):
+    success, err = deny_cert_action(record_id, file_name, first_name, email, cert_type_name, reason)
+    if success:
+        return JSONResponse({"status": "success"})
+    else:
+        return JSONResponse({"status": "error", "message": err}, status_code=500)

@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}GoLive Staffing — Certificate Approver{% endblock %}
+{% block main_class %}w-full px-4 py-8{% endblock %}
+
+{% block content %}
+<div class="px-4 sm:px-6 lg:px-8 w-full py-8">
+  <div class="sm:flex sm:items-center justify-between border-b border-gray-200 pb-5">
+    <div class="sm:flex-auto">
+      <h1 class="text-3xl font-semibold leading-tight text-emerald-800 brand-serif">Certificate Approver</h1>
+      <p class="mt-2 text-sm text-gray-700">Review pending employee certificates. Use AI to verify against SOP guidelines, then manually approve or deny.</p>
+    </div>
+  </div>
+
+  <div class="mt-8">
+    {% if not pending_certificates %}
+    <div class="text-center py-12 bg-white rounded-lg border border-gray-200 shadow-sm">
+      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+      <h3 class="mt-2 text-sm font-semibold text-gray-900">No pending certificates</h3>
+      <p class="mt-1 text-sm text-gray-500">All caught up! There are no employee certificates awaiting approval.</p>
+    </div>
+    {% else %}
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      {% for cert in pending_certificates %}
+      <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col cert-card" data-record-id="{{ cert.id }}">
+        
+        <div class="h-64 bg-gray-100 flex items-center justify-center border-b border-gray-200 relative overflow-hidden group">
+          {% if cert.file_name.lower().endswith('.pdf') %}
+            <iframe src="https://docs.google.com/gview?url={{ cert.cert_url | urlencode }}&embedded=true" class="w-full h-full border-0"></iframe>
+          {% else %}
+            <a href="{{ cert.cert_url }}" target="_blank" class="w-full h-full block">
+                <img src="{{ cert.cert_url }}" alt="Certificate" class="w-full h-full object-contain">
+            </a>
+          {% endif %}
+        </div>
+
+        <div class="p-4 flex-1 flex flex-col">
+          <div class="mb-3">
+            <h3 class="text-lg font-semibold text-gray-900">{{ cert.first_name }} {{ cert.last_name }}</h3>
+            <p class="text-sm font-medium text-emerald-700">{{ cert.cert_type_name }}</p>
+            <p class="text-xs text-gray-500">{{ cert.email }}</p>
+          </div>
+
+          <div class="text-sm text-gray-700 mb-4 grid grid-cols-2 gap-y-2">
+            <div><span class="font-semibold text-gray-500">Issued:</span> {{ cert.issued_at or 'N/A' }}</div>
+            <div><span class="font-semibold text-gray-500">Expires:</span> {{ cert.expires_at or 'N/A' }}</div>
+            <div class="col-span-2"><span class="font-semibold text-gray-500">Number:</span> {{ cert.number or 'N/A' }}</div>
+          </div>
+          
+          <div class="ai-result mb-4 text-sm hidden p-3 rounded-md border text-left overflow-y-auto max-h-48">
+            <div class="font-semibold mb-1 ai-status"></div>
+            <div class="text-xs text-gray-600 mb-2 font-medium">Confidence: <span class="ai-confidence"></span></div>
+            <ul class="text-xs text-gray-600 list-disc pl-4 space-y-1 ai-reasons"></ul>
+            <div class="mt-2 text-xs italic text-gray-500 ai-notes"></div>
+          </div>
+
+          <div class="mt-auto space-y-2">
+            <button type="button" class="analyze-btn w-full inline-flex justify-center items-center gap-x-1.5 rounded-md bg-white px-2.5 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors" data-url="{{ cert.cert_url }}" data-cert-type-id="{{ cert.cert_type_id }}" data-cert-type-name="{{ cert.cert_type_name }}" data-issued-at="{{ cert.issued_at }}" data-expires-at="{{ cert.expires_at }}" data-number="{{ cert.number }}" data-file-name="{{ cert.file_name }}">
+              <svg class="h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+              </svg>
+              Analyze with AI
+            </button>
+            <div class="flex gap-2">
+              <button type="button" class="approve-btn flex-1 inline-flex justify-center items-center gap-x-1.5 rounded-md bg-emerald-600 px-2.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 transition-colors" data-record-id="{{ cert.id }}" data-first-name="{{ cert.first_name }}" data-email="{{ cert.email }}" data-cert-type-name="{{ cert.cert_type_name }}">
+                Approve
+              </button>
+              <button type="button" class="deny-btn flex-1 inline-flex justify-center items-center gap-x-1.5 rounded-md bg-red-600 px-2.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 transition-colors" data-record-id="{{ cert.id }}" data-file-name="{{ cert.file_name }}" data-first-name="{{ cert.first_name }}" data-email="{{ cert.email }}" data-cert-type-name="{{ cert.cert_type_name }}">
+                Deny
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+  // AI Analyze
+  const analyzeButtons = document.querySelectorAll('.analyze-btn');
+  analyzeButtons.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const card = btn.closest('.cert-card');
+      const resultDiv = card.querySelector('.ai-result');
+      const statusDiv = card.querySelector('.ai-status');
+      const confidenceDiv = card.querySelector('.ai-confidence');
+      const reasonsList = card.querySelector('.ai-reasons');
+      const notesDiv = card.querySelector('.ai-notes');
+      
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = 'Analyzing...';
+      btn.disabled = true;
+      resultDiv.classList.add('hidden');
+      
+      const formData = new FormData();
+      formData.append('cert_url', btn.dataset.url);
+      formData.append('cert_type_id', btn.dataset.certTypeId);
+      formData.append('cert_type_name', btn.dataset.certTypeName);
+      formData.append('issued_at', btn.dataset.issuedAt !== 'None' ? btn.dataset.issuedAt : '');
+      formData.append('expires_at', btn.dataset.expiresAt !== 'None' ? btn.dataset.expiresAt : '');
+      formData.append('number', btn.dataset.number !== 'None' ? btn.dataset.number : '');
+      formData.append('file_name', btn.dataset.fileName);
+      
+      try {
+        const response = await fetch('/certificate-approver/analyze', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await response.json();
+        
+        if (response.ok && data.status === 'success') {
+          const analysis = data.ai_analysis;
+          resultDiv.classList.remove('hidden');
+          
+          statusDiv.innerText = analysis.decision;
+          confidenceDiv.innerText = (analysis.confidence || 'unknown').toUpperCase();
+          
+          if (analysis.decision === 'APPROVE') {
+            statusDiv.className = 'font-semibold mb-1 ai-status text-emerald-700';
+            resultDiv.className = 'ai-result mb-4 text-sm p-3 rounded-md bg-emerald-50 border border-emerald-200 text-left overflow-y-auto max-h-48';
+          } else if (analysis.decision === 'DECLINE') {
+            statusDiv.className = 'font-semibold mb-1 ai-status text-red-700';
+            resultDiv.className = 'ai-result mb-4 text-sm p-3 rounded-md bg-red-50 border border-red-200 text-left overflow-y-auto max-h-48';
+          } else {
+            statusDiv.className = 'font-semibold mb-1 ai-status text-yellow-700';
+            resultDiv.className = 'ai-result mb-4 text-sm p-3 rounded-md bg-yellow-50 border border-yellow-200 text-left overflow-y-auto max-h-48';
+          }
+          
+          reasonsList.innerHTML = '';
+          if (analysis.reasons && analysis.reasons.length > 0) {
+              analysis.reasons.forEach(r => {
+                  const li = document.createElement('li');
+                  li.innerText = r;
+                  reasonsList.appendChild(li);
+              });
+          }
+          notesDiv.innerText = analysis.notes || '';
+          
+        } else {
+          alert('Error analyzing certificate: ' + (data.message || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Failed to connect to server.');
+        console.error(err);
+      } finally {
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+      }
+    });
+  });
+
+  // Approve
+  const approveButtons = document.querySelectorAll('.approve-btn');
+  approveButtons.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Are you sure you want to approve this certificate?')) return;
+      
+      const card = btn.closest('.cert-card');
+      const formData = new FormData();
+      formData.append('record_id', btn.dataset.recordId);
+      formData.append('first_name', btn.dataset.firstName);
+      formData.append('email', btn.dataset.email);
+      formData.append('cert_type_name', btn.dataset.certTypeName);
+      
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = 'Approving...';
+      btn.disabled = true;
+      
+      try {
+        const response = await fetch('/certificate-approver/approve', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await response.json();
+        
+        if (response.ok && data.status === 'success') {
+          card.style.opacity = '0';
+          setTimeout(() => card.remove(), 300);
+        } else {
+          alert('Error approving: ' + (data.message || 'Unknown error'));
+          btn.innerHTML = originalHtml;
+          btn.disabled = false;
+        }
+      } catch (err) {
+        alert('Failed to connect to server.');
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+        console.error(err);
+      }
+    });
+  });
+
+  // Deny
+  const denyButtons = document.querySelectorAll('.deny-btn');
+  denyButtons.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const reason = prompt('Please enter the reason for denial (this will be emailed to the employee):');
+      if (reason === null) return; // User cancelled
+      if (reason.trim() === '') {
+          alert('A reason is required to deny a certificate.');
+          return;
+      }
+      
+      const card = btn.closest('.cert-card');
+      const formData = new FormData();
+      formData.append('record_id', btn.dataset.recordId);
+      formData.append('file_name', btn.dataset.fileName);
+      formData.append('first_name', btn.dataset.firstName);
+      formData.append('email', btn.dataset.email);
+      formData.append('cert_type_name', btn.dataset.certTypeName);
+      formData.append('reason', reason);
+      
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = 'Denying...';
+      btn.disabled = true;
+      
+      try {
+        const response = await fetch('/certificate-approver/deny', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await response.json();
+        
+        if (response.ok && data.status === 'success') {
+          card.style.opacity = '0';
+          setTimeout(() => card.remove(), 300);
+        } else {
+          alert('Error denying: ' + (data.message || 'Unknown error'));
+          btn.innerHTML = originalHtml;
+          btn.disabled = false;
+        }
+      } catch (err) {
+        alert('Failed to connect to server.');
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+        console.error(err);
+      }
+    });
+  });
+});
+</script>
+{% endblock %}
