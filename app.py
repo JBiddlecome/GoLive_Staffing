@@ -64,6 +64,7 @@ from apps.email_forwarder.views import router as email_forwarder_router
 from apps.bill_rate_calculator.views import router as bill_rate_calculator_router
 from apps.profile_picture_approval.views import router as profile_picture_approval_router
 from apps.certificate_approver.views import router as certificate_approver_router
+from apps.similar_client_report.views import router as similar_client_report_router
 from apps.auth.views import router as auth_router, get_current_user
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 
@@ -405,6 +406,11 @@ app.include_router(
     certificate_approver_router,
     prefix="/certificate-approver",
     tags=["Certificate Approver"],
+)
+app.include_router(
+    similar_client_report_router,
+    prefix="/similar-client-report",
+    tags=["Similar Client Report"],
 )
 
 # Redirect /sms_paraphraser to /sms-paraphraser for backward compatibility
