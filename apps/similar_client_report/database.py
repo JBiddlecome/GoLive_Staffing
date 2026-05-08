@@ -9,54 +9,27 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
 
 # ---------------------------------------------------------------------------
-# Industry taxonomy (from business_taxonomy.md)
+# Industry enum values (must match client.industry column exactly)
 # ---------------------------------------------------------------------------
 
 INDUSTRY_CATEGORIES = [
-    "Corporate Dining / Workplace",
-    "Education",
-    "Healthcare / Senior Living",
-    "Hospitality",
-    "Events",
-    "Food & Beverage",
-    "Entertainment & Media",
-    "Nonprofit / Social Services",
-    "Residential / Facilities",
-    "Retail / Commercial",
-    "Arts / Culture / Recreation",
-    "Religious / Institutional",
-    "Staffing / Partners",
-    "Private Clubs",
-    "Other",
+    "CASINO",
+    "CATERING_COMPANY",
+    "CLUB",
+    "CONVENTION",
+    "CORPORATE_DINING",
+    "ENTERTAINMENT_STUDIO",
+    "HEALTHCARE",
+    "HOTEL",
+    "OTHER",
+    "PRIVATE_EVENT",
+    "PRODUCTION",
+    "REHABILITATION",
+    "RESTAURANT",
+    "SCHOOL",
+    "SENIOR_ASSISTED_LIVING",
+    "STADIUM",
 ]
-
-_TAXONOMY_KEYWORDS: dict[str, list[str]] = {
-    "Corporate Dining / Workplace": ["corporate dining", "corporate", "workplace", "office", "workspace", "coworking", "management compan"],
-    "Education": ["school", "university", "college", "education", "campus", "k-12", "k12", "academy"],
-    "Healthcare / Senior Living": ["healthcare", "hospital", "senior", "assisted living", "rehabilitation", "rehab", "medical", "health care", "skilled nursing"],
-    "Hospitality": ["hotel", "resort", "hospitality", "motel", "inn", "lodge"],
-    "Events": ["event venue", "event coordinator", "event planner", "private event", "nightclub", "winery", "convention center", "banquet", "event space"],
-    "Food & Beverage": ["restaurant", "cafe", "food truck", "catering", "ghost kitchen", "meal prep", "cafeteria", "dining", "bistro", "bakery", "bar "],
-    "Entertainment & Media": ["stadium", "arena", "concession", "entertainment", "production", "media", "podcast", "marketing", "casino", "theatre", "theater", "music venue", "film"],
-    "Nonprofit / Social Services": ["nonprofit", "non-profit", "social service", "job assistance", "career center", "apprenticeship", "community", "foundation", "charity"],
-    "Residential / Facilities": ["apartment", "private residence", "senior center", "facilities management", "facility"],
-    "Retail / Commercial": ["retail", "manufacturing", "commercial", "store", "shop", "warehouse"],
-    "Arts / Culture / Recreation": ["museum", "art gallery", "camp", "farm", "garden", "recreation", "cultural", "zoo", "aquarium"],
-    "Religious / Institutional": ["religious", "temple", "church", "mosque", "synagogue", "parish", "diocese"],
-    "Staffing / Partners": ["staffing", "referral", "partner", "agency", "temp "],
-    "Private Clubs": ["private club", "country club", "yacht club", "athletic club", "tennis club", "golf club", "club"],
-}
-
-
-def normalize_industry(raw: str) -> str:
-    if not raw or not raw.strip():
-        return "Other"
-    s = raw.lower().strip()
-    for category, keywords in _TAXONOMY_KEYWORDS.items():
-        for kw in keywords:
-            if kw in s:
-                return category
-    return raw.strip().title()
 
 
 # ---------------------------------------------------------------------------
@@ -183,15 +156,6 @@ _QUERY = text("""
 """)
 
 
-def _word_overlap(a: str, b: str) -> float:
-    stop = {"the", "a", "an", "of", "and", "or", "inc", "llc", "ltd", "corp", "co"}
-    wa = set(a.lower().split()) - stop
-    wb = set(b.lower().split()) - stop
-    if not wa or not wb:
-        return 0.0
-    return len(wa & wb) / max(len(wa), len(wb))
-
-
 def fetch_similar_clients(
     industry: str,
     msp_id: str | None,
@@ -207,55 +171,31 @@ def fetch_similar_clients(
     if df.empty:
         return []
 
-    target_industry = normalize_industry(industry)
-
     rows = []
     for _, row in df.iterrows():
-        raw_ind = row.get("industry") or row.get("industry_other") or ""
-        client_industry = normalize_industry(str(raw_ind))
+        client_industry = (row.get("industry") or "").strip()
         score = 0.0
 
-        # --- Industry (primary, up to 50 pts) ---
-        if client_industry == target_industry:
-            score += 50.0
-        else:
-            # Partial credit for related broad groups
-            _related = {
-                "Food & Beverage": {"Hospitality", "Events", "Corporate Dining / Workplace"},
-                "Events": {"Hospitality", "Food & Beverage", "Entertainment & Media"},
-                "Hospitality": {"Events", "Food & Beverage"},
-                "Healthcare / Senior Living": {"Nonprofit / Social Services", "Residential / Facilities"},
-                "Corporate Dining / Workplace": {"Food & Beverage", "Events"},
-            }
-            if target_industry in _related and client_industry in _related[target_industry]:
-                score += 15.0
+        # 1. Industry — exact DB enum match (dominant weight)
+        if client_industry == industry:
+            score += 10000.0
 
-        # --- MSP match (up to 20 pts) ---
+        # 2. MSP match
         if msp_id and str(row.get("msp_id") or "") == str(msp_id):
-            score += 20.0
+            score += 1000.0
 
-        # --- Name similarity (up to 10 pts) ---
-        if client_name:
-            score += _word_overlap(client_name, str(row.get("client_name") or "")) * 10.0
-
-        # --- Activity (up to 15 pts) — prefers active clients ---
+        # 3. Shifts in last year (up to 100 pts, linear then capped)
         shifts = int(row.get("shifts_last_year") or 0)
-        if shifts > 0:
-            score += min(15.0, math.log(shifts + 1) * 4)
+        score += min(shifts, 100)
 
-        # --- Location proximity (up to 5 pts bonus) ---
+        # 4. Location proximity (up to 10 pts)
         miles: float | None = None
         client_lat = row.get("latitude")
         client_lon = row.get("longitude")
         if lat is not None and lon is not None and client_lat and client_lon:
             try:
                 miles = _haversine_miles(lat, lon, float(client_lat), float(client_lon))
-                if miles < 5:
-                    score += 5.0
-                elif miles < 15:
-                    score += 3.0
-                elif miles < 30:
-                    score += 1.0
+                score += max(0.0, 10.0 - miles / 10.0)
             except (ValueError, TypeError):
                 miles = None
 
@@ -264,7 +204,7 @@ def fetch_similar_clients(
 
         rows.append({
             "client_name": row.get("client_name"),
-            "industry": client_industry,
+            "industry": client_industry or (row.get("industry_other") or ""),
             "msp": row.get("msp_name") or "No MSP",
             "shifts_last_year": shifts,
             "last_shift_date": last_shift_str,

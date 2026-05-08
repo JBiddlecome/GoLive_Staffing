@@ -21,6 +21,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const countNum      = document.getElementById('count-num');
 
   // -------------------------------------------------------------------------
+  // Format DB enum value for display: "CATERING_COMPANY" → "Catering Company"
+  // -------------------------------------------------------------------------
+  function formatIndustry(val) {
+    if (!val) return '—';
+    return val
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  // -------------------------------------------------------------------------
   // Load options (MSPs + industries)
   // -------------------------------------------------------------------------
   async function loadOptions() {
@@ -30,8 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       data.industries.forEach(ind => {
         const opt = document.createElement('option');
-        opt.value = ind;
-        opt.textContent = ind;
+        opt.value = ind;               // raw DB enum sent to backend
+        opt.textContent = formatIndustry(ind);  // human-readable label
         industryEl.appendChild(opt);
       });
 
@@ -129,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </td>
         <td class="px-6 py-4">
           <span class="inline-block px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-100">
-            ${r.industry || '—'}
+            ${formatIndustry(r.industry)}
           </span>
         </td>
         <td class="px-6 py-4 text-gray-700">${r.msp || '—'}</td>
