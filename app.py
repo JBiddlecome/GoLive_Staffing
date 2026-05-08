@@ -63,6 +63,7 @@ from apps.client_profile_changes.views import router as client_profile_changes_r
 from apps.email_forwarder.views import router as email_forwarder_router
 from apps.bill_rate_calculator.views import router as bill_rate_calculator_router
 from apps.profile_picture_approval.views import router as profile_picture_approval_router
+from apps.certificate_approver.views import router as certificate_approver_router
 from apps.auth.views import router as auth_router, get_current_user
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 
@@ -75,6 +76,7 @@ from apps.position_requests.scheduler import position_requests_monitoring_loop
 from apps.ar_contact_updates.scheduler import ar_contacts_monitoring_loop
 from apps.client_profile_changes.scheduler import client_profile_changes_monitoring_loop
 from apps.email_forwarder.scheduler import email_forwarder_loop
+from apps.profile_picture_approval.scheduler import profile_picture_approval_loop
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -85,6 +87,7 @@ async def lifespan(app: FastAPI):
     ar_task = asyncio.create_task(ar_contacts_monitoring_loop())
     cpc_task = asyncio.create_task(client_profile_changes_monitoring_loop())
     ef_task = asyncio.create_task(email_forwarder_loop())
+    ppa_task = asyncio.create_task(profile_picture_approval_loop())
     yield
     monitor_task.cancel()
     cc_monitor_task.cancel()
@@ -397,6 +400,11 @@ app.include_router(
     profile_picture_approval_router,
     prefix="/profile-picture-approval",
     tags=["Profile Picture Approval"],
+)
+app.include_router(
+    certificate_approver_router,
+    prefix="/certificate-approver",
+    tags=["Certificate Approver"],
 )
 
 # Redirect /sms_paraphraser to /sms-paraphraser for backward compatibility

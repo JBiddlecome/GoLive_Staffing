@@ -24,9 +24,7 @@ def get_s3_client():
         region_name=S3_REGION
     )
 
-@router.get("", response_class=HTMLResponse)
-async def profile_picture_approval_page(request: Request):
-    user = request.session.get("user")
+def get_pending_photos():
     engine = _engine()
     pending_photos = []
     try:
@@ -35,7 +33,7 @@ async def profile_picture_approval_page(request: Request):
                 SELECT t.related_id as employee_id, t.file_name, e.first_name, e.last_name, e.email 
                 FROM temporary_file t
                 JOIN employee e ON t.related_id = e.employee_id
-                WHERE t.type = 'EMPLOYEE_PHOTO'
+                WHERE t.type = 'EMPLOYEE_PHOTO' AND t.file_name NOT LIKE '%[DELETED]%'
             """)
             res = conn.execute(query).fetchall()
             for row in res:
@@ -53,37 +51,59 @@ async def profile_picture_approval_page(request: Request):
         print(f"Error fetching pending photos: {e}")
     finally:
         engine.dispose()
+    return pending_photos
+
+@router.get("", response_class=HTMLResponse)
+async def profile_picture_approval_page(request: Request):
+    from apps.profile_picture_approval.scheduler import get_auto_approve_enabled
+    
+    user = request.session.get("user")
+    pending_photos = get_pending_photos()
         
     context = {
         "request": request,
         "user": user,
-        "pending_photos": pending_photos
+        "pending_photos": pending_photos,
+        "auto_approve_enabled": get_auto_approve_enabled()
     }
     return templates.TemplateResponse("apps/profile_picture_approval.html", context)
 
-AI_PROMPT = """
-You are an expert profile picture reviewer.
-Determine if this profile photo is approved or denied based on the following rules:
-- It must be a real photo with no filters.
-- There must be only one person in the photo.
-- The person must be facing forward.
-- The person's face must not be covered (no sunglasses, no hats, etc.).
-- There should be no rude or racist gestures.
-- The picture must be close up like a passport photo (not far away).
+@router.post("/api/toggle-auto-approve")
+async def toggle_auto_approve(request: Request):
+    from apps.profile_picture_approval.scheduler import get_auto_approve_enabled, set_auto_approve_enabled
+    
+    data = await request.json()
+    enabled = data.get("enabled", False)
+    set_auto_approve_enabled(enabled)
+    return JSONResponse({"status": "success", "enabled": get_auto_approve_enabled()})
 
-Return your response as a valid JSON object with the following schema:
+AI_PROMPT = """
+You are an expert Image Content Moderator. Your task is to evaluate a user's uploaded profile picture for suitability based on strict criteria.
+
+Evaluation Criteria:
+Face Position: The person must be facing forward. Side profiles or obscured views are not allowed.
+Clarity & Distance: The face must be close to the camera and in focus.
+No Accessories: No sunglasses, hats that obscure the face, or masks. Glasses are acceptable as long as they are not dark sunglasses.
+No Filters: No "beauty" filters, AR ears/noses, or heavy digital distortions.
+Safety & Ethics: Strictly reject any photo containing:
+Nudity or suggestive content.
+Hate symbols or racist imagery (e.g., swastikas, white supremacist symbols).
+Rude or offensive gestures (e.g., middle fingers).
+Violence or weapons.
+
+Output Format: Provide a JSON response with the following keys:
 {
-  "status": "Approved" | "Denied",
-  "reasoning": "Brief explanation of why it was approved or denied based on the rules."
+  "suitable": true | false,
+  "reason": "A concise, polite explanation if suitable is false (e.g., 'Please remove your sunglasses')",
+  "confidence": 0.95
 }
 """
 
-@router.post("/analyze")
-async def analyze_photo(request: Request, photo_url: str = Form(...)):
+async def analyze_photo_ai(photo_url: str):
     try:
         client = openai.AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         response = await client.chat.completions.create(
-            model=os.getenv("OPENAI_MODEL_PRODUCTION", "gpt-4o"), # Use production vision model
+            model=os.getenv("OPENAI_MODEL_PRODUCTION", "gpt-4o"),
             messages=[
                 {
                     "role": "user",
@@ -98,9 +118,17 @@ async def analyze_photo(request: Request, photo_url: str = Form(...)):
         )
         content = response.choices[0].message.content or "{}"
         result = json.loads(content)
-        return JSONResponse({"status": "success", "ai_analysis": result})
+        return {"status": "success", "ai_analysis": result}
     except Exception as e:
-        return JSONResponse({"status": "error", "message": f"AI Error: {str(e)}"}, status_code=500)
+        return {"status": "error", "message": f"AI Error: {str(e)}"}
+
+@router.post("/analyze")
+async def analyze_photo(request: Request, photo_url: str = Form(...)):
+    result = await analyze_photo_ai(photo_url)
+    if result["status"] == "success":
+        return JSONResponse(result)
+    else:
+        return JSONResponse(result, status_code=500)
 
 def send_notification_email(employee_email: str, first_name: str, status: str):
     sender_email = "golive@culinarystaffing.com"
@@ -173,14 +201,7 @@ def send_notification_email(employee_email: str, first_name: str, status: str):
         print(f"Failed to send email via MS Graph: {e}")
         return False
 
-@router.post("/approve")
-async def approve_photo(
-    request: Request,
-    employee_id: int = Form(...),
-    file_name: str = Form(...),
-    first_name: str = Form(""),
-    email: str = Form("")
-):
+def approve_photo_action(employee_id: int, file_name: str, first_name: str, email: str):
     try:
         s3 = get_s3_client()
         
@@ -189,39 +210,46 @@ async def approve_photo(
         new_key = f'employee/photo/{file_name}'
         
         try:
-            s3.copy_object(Bucket=S3_BUCKET, CopySource=copy_source, Key=new_key)
+            s3.copy_object(Bucket=S3_BUCKET, CopySource=copy_source, Key=new_key, ACL='public-read')
             s3.delete_object(Bucket=S3_BUCKET, Key=f'temporary/{file_name}')
         except Exception as e:
-            return JSONResponse({"status": "error", "message": f"S3 Error: {str(e)}"}, status_code=500)
+            return False, f"S3 Error: {str(e)}"
             
         # 2. Update DB
         engine = _engine()
-        with engine.begin() as conn:
-            update_sql = text("UPDATE employee SET photo = :file_name WHERE employee_id = :employee_id")
-            conn.execute(update_sql, {"file_name": file_name, "employee_id": employee_id})
-            
-            delete_sql = text("DELETE FROM temporary_file WHERE type = 'EMPLOYEE_PHOTO' AND related_id = :employee_id")
-            conn.execute(delete_sql, {"employee_id": employee_id})
+        try:
+            with engine.begin() as conn:
+                update_sql = text("UPDATE employee SET photo = :file_name WHERE employee_id = :employee_id")
+                conn.execute(update_sql, {"file_name": file_name, "employee_id": employee_id})
+                
+                delete_sql = text("DELETE FROM temporary_file WHERE type = 'EMPLOYEE_PHOTO' AND related_id = :employee_id")
+                conn.execute(delete_sql, {"employee_id": employee_id})
+        finally:
+            engine.dispose()
             
         # 3. Send Email
         if email:
             send_notification_email(email, first_name, "Approved")
             
-        return JSONResponse({"status": "success"})
+        return True, ""
     except Exception as e:
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
-    finally:
-        if 'engine' in locals():
-            engine.dispose()
+        return False, str(e)
 
-@router.post("/deny")
-async def deny_photo(
+@router.post("/approve")
+async def approve_photo(
     request: Request,
     employee_id: int = Form(...),
     file_name: str = Form(...),
     first_name: str = Form(""),
     email: str = Form("")
 ):
+    success, err = approve_photo_action(employee_id, file_name, first_name, email)
+    if success:
+        return JSONResponse({"status": "success"})
+    else:
+        return JSONResponse({"status": "error", "message": err}, status_code=500)
+
+def deny_photo_action(employee_id: int, file_name: str, first_name: str, email: str):
     try:
         s3 = get_s3_client()
         
@@ -233,17 +261,31 @@ async def deny_photo(
             
         # 2. Delete from DB
         engine = _engine()
-        with engine.begin() as conn:
-            delete_sql = text("DELETE FROM temporary_file WHERE type = 'EMPLOYEE_PHOTO' AND related_id = :employee_id")
-            conn.execute(delete_sql, {"employee_id": employee_id})
+        try:
+            with engine.begin() as conn:
+                delete_sql = text("DELETE FROM temporary_file WHERE type = 'EMPLOYEE_PHOTO' AND related_id = :employee_id")
+                conn.execute(delete_sql, {"employee_id": employee_id})
+        finally:
+            engine.dispose()
             
         # 3. Send Email
         if email:
             send_notification_email(email, first_name, "Denied")
             
-        return JSONResponse({"status": "success"})
+        return True, ""
     except Exception as e:
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
-    finally:
-        if 'engine' in locals():
-            engine.dispose()
+        return False, str(e)
+
+@router.post("/deny")
+async def deny_photo(
+    request: Request,
+    employee_id: int = Form(...),
+    file_name: str = Form(...),
+    first_name: str = Form(""),
+    email: str = Form("")
+):
+    success, err = deny_photo_action(employee_id, file_name, first_name, email)
+    if success:
+        return JSONResponse({"status": "success"})
+    else:
+        return JSONResponse({"status": "error", "message": err}, status_code=500)

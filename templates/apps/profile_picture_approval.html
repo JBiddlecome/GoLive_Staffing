@@ -5,10 +5,16 @@
 
 {% block content %}
 <div class="px-4 sm:px-6 lg:px-8 w-full py-8">
-  <div class="sm:flex sm:items-center">
-    <div class="sm:flex-auto border-b border-gray-200 pb-5">
+  <div class="sm:flex sm:items-center justify-between border-b border-gray-200 pb-5">
+    <div class="sm:flex-auto">
       <h1 class="text-3xl font-semibold leading-tight text-emerald-800 brand-serif">Profile Picture Approval</h1>
       <p class="mt-2 text-sm text-gray-700">Review pending profile picture uploads. Use AI to pre-screen for guidelines, then approve or deny.</p>
+    </div>
+    <div class="mt-4 sm:mt-0 flex items-center gap-3">
+      <span class="text-sm font-medium text-gray-700" id="auto-approve-label">Auto-Approve using AI</span>
+      <button type="button" id="auto-approve-toggle" class="{% if auto_approve_enabled %}bg-emerald-600{% else %}bg-gray-200{% endif %} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2" role="switch" aria-checked="{{ auto_approve_enabled|lower }}" aria-labelledby="auto-approve-label">
+        <span aria-hidden="true" class="{% if auto_approve_enabled %}translate-x-5{% else %}translate-x-0{% endif %} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+      </button>
     </div>
   </div>
 
@@ -71,6 +77,59 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+  // Auto-Approve Toggle
+  const toggleBtn = document.getElementById('auto-approve-toggle');
+  const toggleKnob = toggleBtn.querySelector('span');
+
+  toggleBtn.addEventListener('click', async () => {
+    const isCurrentlyEnabled = toggleBtn.getAttribute('aria-checked') === 'true';
+    const newState = !isCurrentlyEnabled;
+    
+    // Optimistic UI update
+    toggleBtn.setAttribute('aria-checked', newState);
+    if (newState) {
+      toggleBtn.classList.remove('bg-gray-200');
+      toggleBtn.classList.add('bg-emerald-600');
+      toggleKnob.classList.remove('translate-x-0');
+      toggleKnob.classList.add('translate-x-5');
+    } else {
+      toggleBtn.classList.remove('bg-emerald-600');
+      toggleBtn.classList.add('bg-gray-200');
+      toggleKnob.classList.remove('translate-x-5');
+      toggleKnob.classList.add('translate-x-0');
+    }
+
+    try {
+      const response = await fetch('/profile-picture-approval/api/toggle-auto-approve', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ enabled: newState })
+      });
+      const data = await response.json();
+      if (!response.ok || data.status !== 'success') {
+        throw new Error(data.message || 'Unknown error');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update auto-approve setting.');
+      // Revert UI on failure
+      toggleBtn.setAttribute('aria-checked', isCurrentlyEnabled);
+      if (isCurrentlyEnabled) {
+        toggleBtn.classList.remove('bg-gray-200');
+        toggleBtn.classList.add('bg-emerald-600');
+        toggleKnob.classList.remove('translate-x-0');
+        toggleKnob.classList.add('translate-x-5');
+      } else {
+        toggleBtn.classList.remove('bg-emerald-600');
+        toggleBtn.classList.add('bg-gray-200');
+        toggleKnob.classList.remove('translate-x-5');
+        toggleKnob.classList.add('translate-x-0');
+      }
+    }
+  });
+
   // AI Analyze
   const analyzeButtons = document.querySelectorAll('.analyze-btn');
   analyzeButtons.forEach(btn => {
@@ -99,15 +158,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (response.ok && data.status === 'success') {
           const analysis = data.ai_analysis;
           resultDiv.classList.remove('hidden');
-          statusDiv.innerText = analysis.status;
-          if (analysis.status === 'Approved') {
+          statusDiv.innerText = analysis.suitable ? 'Approved' : 'Denied';
+          if (analysis.suitable) {
             statusDiv.className = 'font-medium mb-1 ai-status text-emerald-700';
             resultDiv.className = 'ai-result mb-4 text-sm p-3 rounded-md bg-emerald-50 border border-emerald-100';
           } else {
             statusDiv.className = 'font-medium mb-1 ai-status text-red-700';
             resultDiv.className = 'ai-result mb-4 text-sm p-3 rounded-md bg-red-50 border border-red-100';
           }
-          reasoningDiv.innerText = analysis.reasoning;
+          reasoningDiv.innerText = analysis.reason;
         } else {
           alert('Error analyzing photo: ' + (data.message || 'Unknown error'));
         }
