@@ -105,6 +105,86 @@
             <p class="text-xs text-gray-400">Optional — clients on the same MSP score higher</p>
           </div>
 
+          <!-- Collapsible Advanced Weights Section -->
+          <div class="border-t border-gray-100 pt-4">
+            <button
+              type="button"
+              id="weights-toggle"
+              class="w-full flex items-center justify-between text-sm font-semibold text-gray-700 hover:text-emerald-600 transition-colors focus:outline-none"
+            >
+              <span>Advanced Matching Weights</span>
+              <svg id="weights-toggle-icon" class="h-4 w-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            <div id="weights-panel" class="hidden mt-4 space-y-4">
+              <div class="space-y-1">
+                <div class="flex justify-between text-xs font-semibold text-gray-600">
+                  <label for="weight-industry">Industry Match Weight</label>
+                  <span id="weight-industry-val" class="font-bold text-emerald-600">10,000</span>
+                </div>
+                <input
+                  type="range"
+                  id="weight-industry"
+                  min="0"
+                  max="20000"
+                  step="500"
+                  value="10000"
+                  class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <div class="flex justify-between text-xs font-semibold text-gray-600">
+                  <label for="weight-msp">MSP Match Weight</label>
+                  <span id="weight-msp-val" class="font-bold text-emerald-600">1,000</span>
+                </div>
+                <input
+                  type="range"
+                  id="weight-msp"
+                  min="0"
+                  max="5000"
+                  step="100"
+                  value="1000"
+                  class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <div class="flex justify-between text-xs font-semibold text-gray-600">
+                  <label for="weight-shifts">Activity Weight (per shift)</label>
+                  <span id="weight-shifts-val" class="font-bold text-emerald-600">1.0</span>
+                </div>
+                <input
+                  type="range"
+                  id="weight-shifts"
+                  min="0"
+                  max="10"
+                  step="0.5"
+                  value="1.0"
+                  class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <div class="flex justify-between text-xs font-semibold text-gray-600">
+                  <label for="weight-proximity">Proximity Weight (max 10)</label>
+                  <span id="weight-proximity-val" class="font-bold text-emerald-600">1.0</span>
+                </div>
+                <input
+                  type="range"
+                  id="weight-proximity"
+                  min="0"
+                  max="10"
+                  step="0.5"
+                  value="1.0"
+                  class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                />
+              </div>
+            </div>
+          </div>
+
           <button
             type="submit"
             id="search-btn"
@@ -134,10 +214,6 @@
           <li class="flex items-start gap-2">
             <span class="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 mt-1.5"></span>
             <span><strong>MSP</strong> — clients on the same MSP receive a scoring bonus</span>
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 mt-1.5"></span>
-            <span><strong>Name similarity</strong> — shared keywords between names boost relevance</span>
           </li>
           <li class="flex items-start gap-2">
             <span class="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 mt-1.5"></span>
@@ -191,6 +267,7 @@
                 <th class="px-6 py-3 text-right font-semibold">Shifts (1 yr)</th>
                 <th class="px-6 py-3 text-left font-semibold">Last Shift</th>
                 <th class="px-6 py-3 text-right font-semibold">Miles Away</th>
+                <th class="px-6 py-3 text-right font-semibold text-emerald-700">Match Score</th>
               </tr>
             </thead>
             <tbody id="results-body" class="divide-y divide-gray-100">

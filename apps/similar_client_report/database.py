@@ -162,6 +162,10 @@ def fetch_similar_clients(
     client_name: str,
     lat: float | None,
     lon: float | None,
+    weight_industry: float = 10000.0,
+    weight_msp: float = 1000.0,
+    weight_shifts: float = 1.0,
+    weight_proximity: float = 1.0,
 ) -> list[dict]:
     engine = _engine()
     with engine.connect() as conn:
@@ -178,15 +182,15 @@ def fetch_similar_clients(
 
         # 1. Industry — exact DB enum match (dominant weight)
         if client_industry == industry:
-            score += 10000.0
+            score += weight_industry
 
         # 2. MSP match
         if msp_id and str(row.get("msp_id") or "") == str(msp_id):
-            score += 1000.0
+            score += weight_msp
 
         # 3. Shifts in last year (up to 100 pts, linear then capped)
         shifts = int(row.get("shifts_last_year") or 0)
-        score += min(shifts, 100)
+        score += weight_shifts * min(shifts, 100)
 
         # 4. Location proximity (up to 10 pts)
         miles: float | None = None
@@ -195,7 +199,7 @@ def fetch_similar_clients(
         if lat is not None and lon is not None and client_lat and client_lon:
             try:
                 miles = _haversine_miles(lat, lon, float(client_lat), float(client_lon))
-                score += max(0.0, 10.0 - miles / 10.0)
+                score += weight_proximity * max(0.0, 10.0 - miles / 10.0)
             except (ValueError, TypeError):
                 miles = None
 
@@ -211,12 +215,10 @@ def fetch_similar_clients(
             "miles": round(miles, 1) if miles is not None else None,
             "city": row.get("city") or "",
             "state": row.get("state") or "",
-            "_score": score,
+            "score": round(score, 1),
         })
 
-    rows.sort(key=lambda x: x["_score"], reverse=True)
-    for r in rows:
-        del r["_score"]
+    rows.sort(key=lambda x: x["score"], reverse=True)
     return rows[:10]
 
 
@@ -234,5 +236,20 @@ async def get_similar_clients_async(
     client_name: str,
     lat: float | None,
     lon: float | None,
+    weight_industry: float = 10000.0,
+    weight_msp: float = 1000.0,
+    weight_shifts: float = 1.0,
+    weight_proximity: float = 1.0,
 ) -> list[dict]:
-    return await run_in_threadpool(fetch_similar_clients, industry, msp_id, client_name, lat, lon)
+    return await run_in_threadpool(
+        fetch_similar_clients,
+        industry,
+        msp_id,
+        client_name,
+        lat,
+        lon,
+        weight_industry,
+        weight_msp,
+        weight_shifts,
+        weight_proximity,
+    )
