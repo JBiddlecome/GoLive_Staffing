@@ -21,6 +21,44 @@ document.addEventListener('DOMContentLoaded', () => {
   const countNum      = document.getElementById('count-num');
 
   // -------------------------------------------------------------------------
+  // Weights Toggle & Sliders
+  // -------------------------------------------------------------------------
+  const weightsToggle = document.getElementById('weights-toggle');
+  const weightsPanel = document.getElementById('weights-panel');
+  const weightsToggleIcon = document.getElementById('weights-toggle-icon');
+
+  const weightIndustry = document.getElementById('weight-industry');
+  const weightIndustryVal = document.getElementById('weight-industry-val');
+  const weightMsp = document.getElementById('weight-msp');
+  const weightMspVal = document.getElementById('weight-msp-val');
+  const weightShifts = document.getElementById('weight-shifts');
+  const weightShiftsVal = document.getElementById('weight-shifts-val');
+  const weightProximity = document.getElementById('weight-proximity');
+  const weightProximityVal = document.getElementById('weight-proximity-val');
+
+  weightsToggle.addEventListener('click', () => {
+    const isHidden = weightsPanel.classList.contains('hidden');
+    weightsPanel.classList.toggle('hidden', !isHidden);
+    weightsToggleIcon.classList.toggle('rotate-180', isHidden);
+  });
+
+  weightIndustry.addEventListener('input', () => {
+    weightIndustryVal.textContent = Number(weightIndustry.value).toLocaleString('en-US');
+  });
+
+  weightMsp.addEventListener('input', () => {
+    weightMspVal.textContent = Number(weightMsp.value).toLocaleString('en-US');
+  });
+
+  weightShifts.addEventListener('input', () => {
+    weightShiftsVal.textContent = Number(weightShifts.value).toFixed(1);
+  });
+
+  weightProximity.addEventListener('input', () => {
+    weightProximityVal.textContent = Number(weightProximity.value).toFixed(1);
+  });
+
+  // -------------------------------------------------------------------------
   // Format DB enum value for display: "CATERING_COMPANY" → "Catering Company"
   // -------------------------------------------------------------------------
   function formatIndustry(val) {
@@ -78,6 +116,12 @@ document.addEventListener('DOMContentLoaded', () => {
     geocodeAlert.classList.remove('hidden');
   }
 
+  // Handle key validation for score sorting and display
+  function formatScore(score) {
+    if (score === null || score === undefined) return '0.0';
+    return Number(score).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  }
+
   function showError(msg) {
     errorMsg.textContent = msg;
     errorAlert.classList.remove('hidden');
@@ -107,6 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Handle plural/singular and empty values for miles
   function formatMiles(miles) {
     if (miles === null || miles === undefined) return '—';
     return miles.toLocaleString('en-US', { maximumFractionDigits: 1 }) + ' mi';
@@ -147,6 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="px-6 py-4 text-right">${shiftBadge(r.shifts_last_year || 0)}</td>
         <td class="px-6 py-4 text-gray-600">${formatDate(r.last_shift_date)}</td>
         <td class="px-6 py-4 text-right text-gray-600">${formatMiles(r.miles)}</td>
+        <td class="px-6 py-4 text-right font-bold text-emerald-600">${formatScore(r.score)}</td>
       `;
       resultsBody.appendChild(tr);
     });
@@ -176,6 +222,10 @@ document.addEventListener('DOMContentLoaded', () => {
           industry,
           location: locationEl.value.trim(),
           msp_id: mspEl.value || null,
+          weight_industry: parseFloat(weightIndustry.value),
+          weight_msp: parseFloat(weightMsp.value),
+          weight_shifts: parseFloat(weightShifts.value),
+          weight_proximity: parseFloat(weightProximity.value),
         }),
       });
 
