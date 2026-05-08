@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}Similar Client Report — GoLive Staffing{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+
+  <!-- Hero Banner -->
+  <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400 text-white shadow-2xl">
+    <div class="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_30%,white,transparent_30%)]"></div>
+    <div class="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-white/10 blur-3xl"></div>
+    <div class="relative px-8 py-10 lg:px-12 lg:py-14">
+      <div class="space-y-4">
+        <p class="uppercase tracking-[0.25em] text-sm font-semibold text-emerald-50">Sales Tools</p>
+        <h1 class="brand-serif text-4xl md:text-5xl font-semibold leading-tight">Similar Client Report</h1>
+        <p class="text-emerald-50/90 text-lg max-w-2xl">
+          Enter a potential client's details to find the top 10 most similar existing clients
+          based on industry, location, MSP, and name.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Alert: geocode warning -->
+  <div id="geocode-alert" class="hidden rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-amber-800 text-sm flex items-start gap-3">
+    <svg class="mt-0.5 shrink-0 h-5 w-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+    </svg>
+    <span id="geocode-msg"></span>
+  </div>
+
+  <!-- Error alert -->
+  <div id="error-alert" class="hidden rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-red-800 text-sm flex items-start gap-3">
+    <svg class="mt-0.5 shrink-0 h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M12 8v4m0 4h.01M21 12A9 9 0 113 12a9 9 0 0118 0z"/>
+    </svg>
+    <span id="error-msg"></span>
+  </div>
+
+  <div class="grid gap-8 lg:grid-cols-[380px_1fr]">
+
+    <!-- Input Panel -->
+    <div class="space-y-6">
+      <div class="rounded-3xl border border-emerald-100 bg-white shadow-lg p-6 lg:p-8">
+        <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+          <svg class="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
+          </svg>
+          Potential Client Details
+        </h2>
+
+        <form id="search-form" class="space-y-5">
+
+          <div class="space-y-2">
+            <label for="client-name" class="block text-sm font-semibold text-gray-700">
+              Client Name
+            </label>
+            <input
+              type="text"
+              id="client-name"
+              placeholder="e.g. Hilton Hotels"
+              class="block w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
+            />
+            <p class="text-xs text-gray-400">Optional — used for name similarity matching</p>
+          </div>
+
+          <div class="space-y-2">
+            <label for="industry" class="block text-sm font-semibold text-gray-700">
+              Industry <span class="text-red-500">*</span>
+            </label>
+            <select
+              id="industry"
+              required
+              class="block w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
+            >
+              <option value="">Select industry…</option>
+            </select>
+          </div>
+
+          <div class="space-y-2">
+            <label for="location" class="block text-sm font-semibold text-gray-700">
+              Location
+            </label>
+            <input
+              type="text"
+              id="location"
+              placeholder="e.g. Los Angeles, CA or 90210"
+              class="block w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
+            />
+            <p class="text-xs text-gray-400">City &amp; state or zip code — used to calculate miles</p>
+          </div>
+
+          <div class="space-y-2">
+            <label for="msp" class="block text-sm font-semibold text-gray-700">
+              MSP
+            </label>
+            <select
+              id="msp"
+              class="block w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
+            >
+              <option value="">Any / None</option>
+            </select>
+            <p class="text-xs text-gray-400">Optional — clients on the same MSP score higher</p>
+          </div>
+
+          <button
+            type="submit"
+            id="search-btn"
+            class="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3.5 text-white font-semibold text-sm hover:bg-emerald-700 active:bg-emerald-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg id="search-icon" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
+            </svg>
+            <svg id="spinner-icon" class="hidden h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+            </svg>
+            Find Similar Clients
+          </button>
+        </form>
+      </div>
+
+      <!-- Scoring legend -->
+      <div class="rounded-3xl border border-emerald-100 bg-emerald-50/60 p-6">
+        <h3 class="text-sm font-semibold text-emerald-800 mb-3">How Matching Works</h3>
+        <ul class="space-y-2 text-xs text-emerald-700">
+          <li class="flex items-start gap-2">
+            <span class="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 mt-1.5"></span>
+            <span><strong>Industry</strong> is the primary match factor — exact taxonomy match scores highest</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 mt-1.5"></span>
+            <span><strong>MSP</strong> — clients on the same MSP receive a scoring bonus</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 mt-1.5"></span>
+            <span><strong>Name similarity</strong> — shared keywords between names boost relevance</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 mt-1.5"></span>
+            <span><strong>Activity</strong> — more shifts in the last year signals a proven relationship</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 mt-1.5"></span>
+            <span><strong>Location</strong> — nearby clients receive a small proximity bonus</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Results Panel -->
+    <div>
+      <div class="rounded-3xl border border-emerald-100 bg-white shadow-lg overflow-hidden">
+        <div class="px-6 py-5 border-b border-emerald-100 flex items-center justify-between">
+          <h2 class="text-xl font-semibold text-gray-900">Similar Clients</h2>
+          <span id="result-count" class="text-sm text-gray-500 hidden">
+            Showing top <strong id="count-num">0</strong> matches
+          </span>
+        </div>
+
+        <!-- Empty state -->
+        <div id="empty-state" class="px-6 py-16 text-center text-gray-400">
+          <svg class="mx-auto h-12 w-12 text-emerald-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+          <p class="text-sm font-medium">Enter a potential client's details and click <em>Find Similar Clients</em> to see matches.</p>
+        </div>
+
+        <!-- No results -->
+        <div id="no-results" class="hidden px-6 py-16 text-center text-gray-400">
+          <svg class="mx-auto h-12 w-12 text-gray-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12A9 9 0 113 12a9 9 0 0118 0z"/>
+          </svg>
+          <p class="text-sm font-medium">No matching clients found for the selected industry.</p>
+        </div>
+
+        <!-- Results table -->
+        <div id="results-wrapper" class="hidden overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-emerald-50/80 text-emerald-800 text-xs uppercase tracking-wide">
+              <tr>
+                <th class="px-6 py-3 text-left font-semibold">#</th>
+                <th class="px-6 py-3 text-left font-semibold">Client Name</th>
+                <th class="px-6 py-3 text-left font-semibold">Industry</th>
+                <th class="px-6 py-3 text-left font-semibold">MSP</th>
+                <th class="px-6 py-3 text-right font-semibold">Shifts (1 yr)</th>
+                <th class="px-6 py-3 text-left font-semibold">Last Shift</th>
+                <th class="px-6 py-3 text-right font-semibold">Miles Away</th>
+              </tr>
+            </thead>
+            <tbody id="results-body" class="divide-y divide-gray-100">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/similar_client_report.js"></script>
+{% endblock %}
