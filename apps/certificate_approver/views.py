@@ -26,26 +26,64 @@ def get_s3_client():
         region_name=S3_REGION
     )
 
+def _to_date(val):
+    """Safely convert a DB date value (date, datetime, or string) to a date object."""
+    if val is None:
+        return None
+    if hasattr(val, 'date'):
+        return val.date()
+    try:
+        from datetime import date
+        if isinstance(val, str):
+            return datetime.strptime(val[:10], '%Y-%m-%d').date()
+        return val
+    except Exception:
+        return None
+
+
 def get_pending_certificates():
+    import urllib.parse
     engine = _engine()
     pending = []
     try:
         with engine.connect() as conn:
             query = text("""
-                SELECT ec.id, ec.employee_id, ec.certification_id, c.name as cert_type_name,
-                       ec.file, ec.number, ec.issued_at, ec.expires_at, 
-                       e.first_name, e.last_name, e.email 
+                SELECT ec.id, ec.employee_id, ec.certification_id, c.name AS cert_type_name,
+                       ec.file, ec.number, ec.issued_at, ec.expires_at,
+                       e.first_name, e.last_name, e.email,
+                       e.start_date, e.start_date2,
+                       c.other_work_type_id,
+                       owt.name          AS owt_name,
+                       owt.work_hours    AS owt_work_hours,
+                       owt.non_work_hours AS owt_non_work_hours,
+                       owt.rate          AS owt_rate,
+                       owt.custom_rate   AS owt_custom_rate,
+                       owt.cost          AS owt_cost,
+                       owt.cost_description AS owt_cost_description
                 FROM employee_certification ec
                 JOIN employee e ON ec.employee_id = e.employee_id
                 JOIN certification c ON ec.certification_id = c.id
-                WHERE ec.approved_at IS NULL AND ec.file IS NOT NULL AND e.email NOT LIKE '%[DELETED]%'
+                LEFT JOIN other_work_type owt ON c.other_work_type_id = owt.id
+                    AND owt.deleted_at IS NULL
+                WHERE ec.approved_at IS NULL
+                  AND ec.file IS NOT NULL
+                  AND e.email NOT LIKE '%[DELETED]%'
             """)
             res = conn.execute(query).fetchall()
             for row in res:
                 file_name = row.file
-                import urllib.parse
                 safe_file_name = urllib.parse.quote(file_name)
                 cert_url = f"https://{S3_BUCKET}.s3.{S3_REGION}.amazonaws.com/employee/certification/{safe_file_name}"
+
+                issued_date = _to_date(row.issued_at)
+                effective_start = _to_date(row.start_date2) if row.start_date2 else _to_date(row.start_date)
+                other_work_eligible = bool(
+                    row.other_work_type_id
+                    and issued_date is not None
+                    and effective_start is not None
+                    and issued_date > effective_start
+                )
+
                 pending.append({
                     "id": row.id,
                     "employee_id": row.employee_id,
@@ -58,7 +96,16 @@ def get_pending_certificates():
                     "first_name": row.first_name or "Unknown",
                     "last_name": row.last_name or "",
                     "email": row.email,
-                    "cert_url": cert_url
+                    "cert_url": cert_url,
+                    "other_work_type_id": row.other_work_type_id,
+                    "other_work_eligible": other_work_eligible,
+                    "owt_name": row.owt_name,
+                    "owt_work_hours": float(row.owt_work_hours) if row.owt_work_hours is not None else None,
+                    "owt_non_work_hours": float(row.owt_non_work_hours) if row.owt_non_work_hours is not None else None,
+                    "owt_rate": row.owt_rate,
+                    "owt_custom_rate": float(row.owt_custom_rate) if row.owt_custom_rate is not None else None,
+                    "owt_cost": float(row.owt_cost) if row.owt_cost is not None else None,
+                    "owt_cost_description": row.owt_cost_description,
                 })
     except Exception as e:
         print(f"Error fetching pending certificates: {e}")
@@ -98,13 +145,33 @@ def get_ai_prompt():
         print("Error reading certificate_approval.md:", e)
         return "You are an expert certificate verifier."
 
-async def analyze_certificate_ai(cert_url: str, cert_type_id: int, cert_type_name: str, 
-                                 issued_at: str, expires_at: str, number: str, file_name: str):
+async def analyze_certificate_ai(cert_url: str, cert_type_id: int, cert_type_name: str,
+                                 issued_at: str, expires_at: str, number: str, file_name: str,
+                                 employee_name: str = ""):
     try:
         prompt = get_ai_prompt()
-        
+
         system_content = "You are a certificate verification assistant for GoLive! Staffing. Follow the rules in the provided specification."
-        
+
+        # Pre-load PDF so we can report page count in metadata before the AI sees the images.
+        # This prevents the AI from confusing rendered PNG pages with a non-PDF submission.
+        is_pdf = cert_url.lower().split('?')[0].endswith('.pdf')
+        pdf_doc = None
+        if is_pdf:
+            try:
+                pdf_res = requests.get(cert_url)
+                if pdf_res.status_code == 200:
+                    pdf_doc = fitz.open(stream=pdf_res.content, filetype="pdf")
+            except Exception as e:
+                print("Failed to pre-load PDF user submission:", e)
+
+        if is_pdf and pdf_doc is not None:
+            file_format_line = f"Original File Format: PDF ({len(pdf_doc)} pages — rendered below as images for AI review)"
+        elif is_pdf:
+            file_format_line = "Original File Format: PDF (page count unavailable — rendering failed)"
+        else:
+            file_format_line = f"Original File Format: IMAGE ({file_name.rsplit('.', 1)[-1].upper() if '.' in file_name else 'unknown'})"
+
         user_message_text = f"""
 Here is the specification document:
 {prompt}
@@ -113,30 +180,29 @@ We are evaluating the following uploaded document:
 cert_type_id: {cert_type_id}
 cert_type_name: {cert_type_name}
 File Name: {file_name}
+{file_format_line}
 Claimed Issue Date: {issued_at or datetime.now().strftime('%Y-%m-%d')}
 Claimed Expiration Date: {expires_at or 'N/A'}
 Claimed Number: {number or 'N/A'}
+Employee Name on File: {employee_name or 'N/A'}
 
-Please verify the FIRST attached image (The User Submission) according to the rules for this cert_type_id.
+IMPORTANT: All documents in this system are rendered as images before being sent for AI review — including PDFs. Use the "Original File Format" field above (not the visual format of the images you receive) to determine the file type and page count.
+
+Please verify the attached pages (The User Submission) according to the rules for this cert_type_id.
 """
-        
+
         content = [
             {"type": "text", "text": user_message_text},
             {"type": "text", "text": "--- START OF USER SUBMISSION ---"}
         ]
 
-        if cert_url.lower().split('?')[0].endswith('.pdf'):
-            try:
-                pdf_res = requests.get(cert_url)
-                if pdf_res.status_code == 200:
-                    doc = fitz.open(stream=pdf_res.content, filetype="pdf")
-                    for page_num, page in enumerate(doc):
-                        pix = page.get_pixmap(dpi=100)
-                        b64 = base64.b64encode(pix.tobytes("png")).decode('utf-8')
-                        content.append({"type": "text", "text": f"Page {page_num + 1}:"})
-                        content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}})
-            except Exception as e:
-                print("Failed to parse PDF user submission:", e)
+        if is_pdf:
+            if pdf_doc is not None:
+                for page_num, page in enumerate(pdf_doc):
+                    pix = page.get_pixmap(dpi=100)
+                    b64 = base64.b64encode(pix.tobytes("png")).decode('utf-8')
+                    content.append({"type": "text", "text": f"Page {page_num + 1} of {len(pdf_doc)}:"})
+                    content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}})
         else:
             content.append({"type": "image_url", "image_url": {"url": cert_url}})
             
@@ -188,16 +254,19 @@ Please verify the FIRST attached image (The User Submission) according to the ru
 
 @router.post("/analyze")
 async def analyze_cert(
-    request: Request, 
+    request: Request,
     cert_url: str = Form(...),
     cert_type_id: int = Form(...),
     cert_type_name: str = Form(""),
     issued_at: str = Form(""),
     expires_at: str = Form(""),
     number: str = Form(""),
-    file_name: str = Form(...)
+    file_name: str = Form(...),
+    first_name: str = Form(""),
+    last_name: str = Form("")
 ):
-    result = await analyze_certificate_ai(cert_url, cert_type_id, cert_type_name, issued_at, expires_at, number, file_name)
+    employee_name = f"{first_name} {last_name}".strip()
+    result = await analyze_certificate_ai(cert_url, cert_type_id, cert_type_name, issued_at, expires_at, number, file_name, employee_name)
     if result["status"] == "success":
         return JSONResponse(result)
     else:
@@ -274,6 +343,127 @@ def send_notification_email(employee_email: str, first_name: str, status: str, c
         print(f"Failed to send email via MS Graph: {e}")
         return False
 
+def _calculate_other_work_rate(conn, employee_id: int, owt_rate: str, owt_custom_rate, date_str: str) -> float:
+    """Calculate the pay rate for an other_work_type entry using the same logic as GoLive."""
+    try:
+        if owt_rate == 'CUSTOM':
+            return float(owt_custom_rate or 0)
+
+        elif owt_rate == 'MINIMUM_WAGE':
+            row = conn.execute(text("""
+                SELECT mwra.rate
+                FROM employee e
+                JOIN min_wage_rate_amount mwra ON mwra.min_wage_id = e.min_wage_id
+                WHERE e.employee_id = :eid
+                  AND (mwra.start_date IS NULL OR mwra.start_date <= :date)
+                  AND (mwra.end_date IS NULL OR mwra.end_date >= :date)
+                ORDER BY mwra.start_date DESC
+                LIMIT 1
+            """), {"eid": employee_id, "date": date_str}).fetchone()
+            return float(row.rate) if row and row.rate else 0.0
+
+        elif owt_rate == '91_DAYS_SHIFTS':
+            from datetime import timedelta
+            try:
+                date_obj = datetime.strptime(date_str[:10], '%Y-%m-%d')
+            except Exception:
+                date_obj = datetime.now()
+            # Align to the most recent Sunday on or before the date (matches GoLive logic)
+            days_since_sunday = (date_obj.weekday() + 1) % 7
+            last_sunday = date_obj - timedelta(days=days_since_sunday)
+            start_date = last_sunday - timedelta(days=91)
+
+            row = conn.execute(text("""
+                SELECT SUM(se.rate) AS total_rate, COUNT(*) AS quantity
+                FROM shift_employee se
+                INNER JOIN event ev ON ev.event_id = se.event_id
+                WHERE se.employee_id = :eid
+                  AND ev.date >= :start_date
+                  AND ev.date <= :end_date
+                  AND se.cancel_reason = 0
+                  AND se.confirmed = 1
+                  AND se.deleted_at IS NULL
+                  AND EXISTS (
+                      SELECT 1 FROM timesheet ts
+                      WHERE ts.shift_employee_id = se.shift_employee_id
+                  )
+            """), {
+                "eid": employee_id,
+                "start_date": start_date.strftime('%Y-%m-%d'),
+                "end_date": last_sunday.strftime('%Y-%m-%d'),
+            }).fetchone()
+
+            if row and row.quantity:
+                return round(float(row.total_rate) / float(row.quantity), 2)
+            return 0.0
+
+    except Exception as e:
+        print(f"Error calculating other work rate: {e}")
+
+    return 0.0
+
+
+def register_other_work_for_cert(employee_id: int, other_work_type_id: int, issued_at_str: str) -> tuple:
+    """
+    Insert an employee_other_work record when a certificate is approved.
+    Mirrors GoLive's EmployeeOtherWork::registerBy() — skips duplicates silently.
+    Date used is the certificate's issued_at (when the employee actually completed the work).
+    """
+    try:
+        date_str = issued_at_str[:10] if issued_at_str and len(issued_at_str) >= 10 else datetime.now().strftime('%Y-%m-%d')
+
+        engine = _engine()
+        try:
+            with engine.begin() as conn:
+                owt = conn.execute(text("""
+                    SELECT id, work_hours, non_work_hours, rate, custom_rate, cost
+                    FROM other_work_type
+                    WHERE id = :owt_id AND deleted_at IS NULL
+                    LIMIT 1
+                """), {"owt_id": other_work_type_id}).fetchone()
+
+                if not owt:
+                    return False, f"Other work type {other_work_type_id} not found or deleted"
+
+                # Duplicate guard — same logic as GoLive's registerBy()
+                existing = conn.execute(text("""
+                    SELECT id FROM employee_other_work
+                    WHERE employee_id = :eid
+                      AND other_work_type_id = :owt_id
+                      AND date = :date
+                    LIMIT 1
+                """), {"eid": employee_id, "owt_id": other_work_type_id, "date": date_str}).fetchone()
+
+                if existing:
+                    return True, "already_exists"
+
+                rate = _calculate_other_work_rate(conn, employee_id, owt.rate, owt.custom_rate, date_str)
+
+                conn.execute(text("""
+                    INSERT INTO employee_other_work
+                        (employee_id, other_work_type_id, work_hours, non_work_hours, rate, cost, date, notes, created_at)
+                    VALUES
+                        (:eid, :owt_id, :work_hours, :non_work_hours, :rate, :cost, :date, :notes, NOW())
+                """), {
+                    "eid": employee_id,
+                    "owt_id": other_work_type_id,
+                    "work_hours": float(owt.work_hours or 0),
+                    "non_work_hours": float(owt.non_work_hours or 0),
+                    "rate": rate,
+                    "cost": float(owt.cost or 0),
+                    "date": date_str,
+                    "notes": "Auto-registered via GoLive Staffing Tools — Certificate Approver",
+                })
+
+            return True, ""
+        finally:
+            engine.dispose()
+
+    except Exception as e:
+        print(f"Error registering other work: {e}")
+        return False, str(e)
+
+
 def approve_cert_action(record_id: int, first_name: str, email: str, cert_type_name: str):
     try:
         engine = _engine()
@@ -297,13 +487,25 @@ async def approve_cert(
     record_id: int = Form(...),
     first_name: str = Form(""),
     email: str = Form(""),
-    cert_type_name: str = Form("")
+    cert_type_name: str = Form(""),
+    register_other_work: str = Form("false"),
+    employee_id: int = Form(0),
+    other_work_type_id: int = Form(0),
+    issued_at: str = Form(""),
 ):
     success, err = approve_cert_action(record_id, first_name, email, cert_type_name)
-    if success:
-        return JSONResponse({"status": "success"})
-    else:
+    if not success:
         return JSONResponse({"status": "error", "message": err}, status_code=500)
+
+    ow_message = None
+    if register_other_work == "true" and employee_id and other_work_type_id:
+        ow_success, ow_err = register_other_work_for_cert(employee_id, other_work_type_id, issued_at)
+        if not ow_success:
+            ow_message = f"Certificate approved but Other Work registration failed: {ow_err}"
+        elif ow_err == "already_exists":
+            ow_message = "Other Work already registered for this employee/type/date — skipped duplicate."
+
+    return JSONResponse({"status": "success", "ow_message": ow_message})
 
 def deny_cert_action(record_id: int, file_name: str, first_name: str, email: str, cert_type_name: str, reason: str):
     try:

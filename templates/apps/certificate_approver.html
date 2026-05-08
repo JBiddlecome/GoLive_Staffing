@@ -48,23 +48,55 @@
             <div><span class="font-semibold text-gray-500">Expires:</span> {{ cert.expires_at or 'N/A' }}</div>
             <div class="col-span-2"><span class="font-semibold text-gray-500">Number:</span> {{ cert.number or 'N/A' }}</div>
           </div>
-          
+
+          {% if cert.other_work_eligible %}
+          <div class="other-work-panel bg-amber-50 border border-amber-300 rounded-md p-3 mb-3">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold text-amber-800 uppercase tracking-wide">Other Work</span>
+              <label class="flex items-center gap-1.5 cursor-pointer select-none">
+                <input type="checkbox" class="register-ow-checkbox h-3.5 w-3.5 rounded border-amber-400 text-amber-600 focus:ring-amber-500" checked>
+                <span class="text-xs font-semibold text-amber-700">Register on approval</span>
+              </label>
+            </div>
+            <p class="text-xs font-medium text-amber-900 mb-1">{{ cert.owt_name }}</p>
+            <div class="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-amber-700">
+              {% if cert.owt_work_hours is not none %}
+              <span>{{ cert.owt_work_hours }}h work</span>
+              {% endif %}
+              {% if cert.owt_non_work_hours %}
+              <span>{{ cert.owt_non_work_hours }}h non-work</span>
+              {% endif %}
+              {% if cert.owt_rate == 'CUSTOM' and cert.owt_custom_rate is not none %}
+              <span>Rate: ${{ "%.2f"|format(cert.owt_custom_rate) }}/hr</span>
+              {% elif cert.owt_rate == 'MINIMUM_WAGE' %}
+              <span>Rate: Min. Wage</span>
+              {% elif cert.owt_rate == '91_DAYS_SHIFTS' %}
+              <span>Rate: 91-day avg</span>
+              {% endif %}
+              {% if cert.owt_cost %}
+              <span>Cost: ${{ "%.2f"|format(cert.owt_cost) }}</span>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+
           <div class="ai-result mb-4 text-sm hidden p-3 rounded-md border text-left overflow-y-auto max-h-48">
             <div class="font-semibold mb-1 ai-status"></div>
-            <div class="text-xs text-gray-600 mb-2 font-medium">Confidence: <span class="ai-confidence"></span></div>
+            <div class="text-xs text-gray-600 mb-1 font-medium">Confidence: <span class="ai-confidence"></span></div>
+            <div class="text-xs text-gray-600 mb-2 font-medium ai-name-match-row hidden">Name Match: <span class="ai-name-match font-semibold"></span> <span class="text-gray-400 ai-name-on-doc"></span></div>
             <ul class="text-xs text-gray-600 list-disc pl-4 space-y-1 ai-reasons"></ul>
             <div class="mt-2 text-xs italic text-gray-500 ai-notes"></div>
           </div>
 
           <div class="mt-auto space-y-2">
-            <button type="button" class="analyze-btn w-full inline-flex justify-center items-center gap-x-1.5 rounded-md bg-white px-2.5 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors" data-url="{{ cert.cert_url }}" data-cert-type-id="{{ cert.cert_type_id }}" data-cert-type-name="{{ cert.cert_type_name }}" data-issued-at="{{ cert.issued_at }}" data-expires-at="{{ cert.expires_at }}" data-number="{{ cert.number }}" data-file-name="{{ cert.file_name }}">
+            <button type="button" class="analyze-btn w-full inline-flex justify-center items-center gap-x-1.5 rounded-md bg-white px-2.5 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors" data-url="{{ cert.cert_url }}" data-cert-type-id="{{ cert.cert_type_id }}" data-cert-type-name="{{ cert.cert_type_name }}" data-issued-at="{{ cert.issued_at }}" data-expires-at="{{ cert.expires_at }}" data-number="{{ cert.number }}" data-file-name="{{ cert.file_name }}" data-first-name="{{ cert.first_name }}" data-last-name="{{ cert.last_name }}">
               <svg class="h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
               </svg>
               Analyze with AI
             </button>
             <div class="flex gap-2">
-              <button type="button" class="approve-btn flex-1 inline-flex justify-center items-center gap-x-1.5 rounded-md bg-emerald-600 px-2.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 transition-colors" data-record-id="{{ cert.id }}" data-first-name="{{ cert.first_name }}" data-email="{{ cert.email }}" data-cert-type-name="{{ cert.cert_type_name }}">
+              <button type="button" class="approve-btn flex-1 inline-flex justify-center items-center gap-x-1.5 rounded-md bg-emerald-600 px-2.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 transition-colors" data-record-id="{{ cert.id }}" data-first-name="{{ cert.first_name }}" data-email="{{ cert.email }}" data-cert-type-name="{{ cert.cert_type_name }}" data-employee-id="{{ cert.employee_id }}" data-other-work-eligible="{{ 'true' if cert.other_work_eligible else 'false' }}" data-other-work-type-id="{{ cert.other_work_type_id or '' }}" data-issued-at="{{ cert.issued_at or '' }}">
                 Approve
               </button>
               <button type="button" class="deny-btn flex-1 inline-flex justify-center items-center gap-x-1.5 rounded-md bg-red-600 px-2.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 transition-colors" data-record-id="{{ cert.id }}" data-file-name="{{ cert.file_name }}" data-first-name="{{ cert.first_name }}" data-email="{{ cert.email }}" data-cert-type-name="{{ cert.cert_type_name }}">
@@ -93,6 +125,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const resultDiv = card.querySelector('.ai-result');
       const statusDiv = card.querySelector('.ai-status');
       const confidenceDiv = card.querySelector('.ai-confidence');
+      const nameMatchRow = card.querySelector('.ai-name-match-row');
+      const nameMatchSpan = card.querySelector('.ai-name-match');
+      const nameOnDocSpan = card.querySelector('.ai-name-on-doc');
       const reasonsList = card.querySelector('.ai-reasons');
       const notesDiv = card.querySelector('.ai-notes');
       
@@ -109,6 +144,8 @@ document.addEventListener('DOMContentLoaded', () => {
       formData.append('expires_at', btn.dataset.expiresAt !== 'None' ? btn.dataset.expiresAt : '');
       formData.append('number', btn.dataset.number !== 'None' ? btn.dataset.number : '');
       formData.append('file_name', btn.dataset.fileName);
+      formData.append('first_name', btn.dataset.firstName || '');
+      formData.append('last_name', btn.dataset.lastName || '');
       
       try {
         const response = await fetch('/certificate-approver/analyze', {
@@ -123,7 +160,18 @@ document.addEventListener('DOMContentLoaded', () => {
           
           statusDiv.innerText = analysis.decision;
           confidenceDiv.innerText = (analysis.confidence || 'unknown').toUpperCase();
-          
+
+          const nameMatch = analysis.checks && analysis.checks.name_match;
+          if (nameMatch !== undefined && nameMatch !== 'n/a') {
+            nameMatchRow.classList.remove('hidden');
+            const nameOnDoc = (analysis.extracted && analysis.extracted.name_on_document) || '';
+            nameMatchSpan.innerText = nameMatch ? 'Yes' : 'No';
+            nameMatchSpan.className = 'ai-name-match font-semibold ' + (nameMatch ? 'text-emerald-700' : 'text-red-600');
+            nameOnDocSpan.innerText = nameOnDoc ? `(${nameOnDoc})` : '';
+          } else {
+            nameMatchRow.classList.add('hidden');
+          }
+
           if (analysis.decision === 'APPROVE') {
             statusDiv.className = 'font-semibold mb-1 ai-status text-emerald-700';
             resultDiv.className = 'ai-result mb-4 text-sm p-3 rounded-md bg-emerald-50 border border-emerald-200 text-left overflow-y-auto max-h-48';
@@ -170,19 +218,33 @@ document.addEventListener('DOMContentLoaded', () => {
       formData.append('first_name', btn.dataset.firstName);
       formData.append('email', btn.dataset.email);
       formData.append('cert_type_name', btn.dataset.certTypeName);
-      
+      formData.append('employee_id', btn.dataset.employeeId || '0');
+      formData.append('other_work_type_id', btn.dataset.otherWorkTypeId || '0');
+      formData.append('issued_at', btn.dataset.issuedAt || '');
+
+      const owEligible = btn.dataset.otherWorkEligible === 'true';
+      if (owEligible) {
+        const checkbox = card.querySelector('.register-ow-checkbox');
+        formData.append('register_other_work', checkbox && checkbox.checked ? 'true' : 'false');
+      } else {
+        formData.append('register_other_work', 'false');
+      }
+
       const originalHtml = btn.innerHTML;
       btn.innerHTML = 'Approving...';
       btn.disabled = true;
-      
+
       try {
         const response = await fetch('/certificate-approver/approve', {
           method: 'POST',
           body: formData
         });
         const data = await response.json();
-        
+
         if (response.ok && data.status === 'success') {
+          if (data.ow_message) {
+            console.warn('Other Work notice:', data.ow_message);
+          }
           card.style.opacity = '0';
           setTimeout(() => card.remove(), 300);
         } else {
