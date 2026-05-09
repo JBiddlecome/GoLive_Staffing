@@ -7,37 +7,28 @@
 <div class="px-4 sm:px-6 lg:px-8 w-full py-8">
   <div class="sm:flex sm:items-center justify-between border-b border-gray-200 pb-5">
     <div class="sm:flex-auto">
-      <h1 class="text-3xl font-semibold leading-tight text-emerald-800 brand-serif">Certificate Approver</h1>
-      <p class="mt-2 text-sm text-gray-700">Review pending employee certificates. Use AI to verify against SOP guidelines, then manually approve or deny.</p>
+      <h1 class="text-3xl font-semibold leading-tight text-emerald-800 brand-serif">Certificate Approver (Test Platform)</h1>
+      <p class="mt-2 text-sm text-gray-700">Test the AI analysis on already approved certificates to ensure it evaluates accurately.</p>
     </div>
     <div class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none flex items-center space-x-3">
-      <a href="/certificate-approver/test" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 sm:w-auto">
-        Test Platform
+      <a href="/certificate-approver" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 sm:w-auto">
+        Back to Pending
       </a>
-    </div>
-    <div class="mt-4 sm:ml-4 sm:mt-0 sm:flex-none flex items-center space-x-3 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-      <div class="flex flex-col text-right">
-        <span class="text-sm font-semibold text-gray-900">Automation</span>
-        <span class="text-xs text-gray-500" id="auto-status-text">{{ 'Active' if auto_approve_enabled else 'Paused' }}</span>
-      </div>
-      <button type="button" id="auto-toggle-btn" class="{{ 'bg-emerald-600' if auto_approve_enabled else 'bg-gray-200' }} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2" role="switch" aria-checked="{{ 'true' if auto_approve_enabled else 'false' }}">
-        <span aria-hidden="true" class="{{ 'translate-x-5' if auto_approve_enabled else 'translate-x-0' }} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
-      </button>
     </div>
   </div>
 
   <div class="mt-8">
-    {% if not pending_certificates %}
+    {% if not test_certificates %}
     <div class="text-center py-12 bg-white rounded-lg border border-gray-200 shadow-sm">
       <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
       </svg>
-      <h3 class="mt-2 text-sm font-semibold text-gray-900">No pending certificates</h3>
-      <p class="mt-1 text-sm text-gray-500">All caught up! There are no employee certificates awaiting approval.</p>
+      <h3 class="mt-2 text-sm font-semibold text-gray-900">No test certificates</h3>
+      <p class="mt-1 text-sm text-gray-500">There are no approved certificates to test against.</p>
     </div>
     {% else %}
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-      {% for cert in pending_certificates %}
+      {% for cert in test_certificates %}
       <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col cert-card" data-record-id="{{ cert.id }}">
         
         <div class="h-64 bg-gray-100 flex items-center justify-center border-b border-gray-200 relative overflow-hidden group">
@@ -139,50 +130,6 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-
-  // Auto-approve Toggle
-  const toggleBtn = document.getElementById('auto-toggle-btn');
-  const statusText = document.getElementById('auto-status-text');
-  let isEnabled = toggleBtn.getAttribute('aria-checked') === 'true';
-
-  toggleBtn.addEventListener('click', async () => {
-    const newState = !isEnabled;
-    toggleBtn.disabled = true;
-    
-    try {
-      const res = await fetch('/certificate-approver/api/toggle-auto-approve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled: newState })
-      });
-      
-      const data = await res.json();
-      if (res.ok && data.status === 'success') {
-        isEnabled = data.enabled;
-        toggleBtn.setAttribute('aria-checked', isEnabled.toString());
-        
-        if (isEnabled) {
-          toggleBtn.classList.remove('bg-gray-200');
-          toggleBtn.classList.add('bg-emerald-600');
-          toggleBtn.querySelector('span').classList.remove('translate-x-0');
-          toggleBtn.querySelector('span').classList.add('translate-x-5');
-          statusText.innerText = 'Active';
-        } else {
-          toggleBtn.classList.remove('bg-emerald-600');
-          toggleBtn.classList.add('bg-gray-200');
-          toggleBtn.querySelector('span').classList.remove('translate-x-5');
-          toggleBtn.querySelector('span').classList.add('translate-x-0');
-          statusText.innerText = 'Paused';
-        }
-      } else {
-        alert('Failed to update automation state');
-      }
-    } catch (err) {
-      alert('Network error connecting to server');
-    } finally {
-      toggleBtn.disabled = false;
-    }
-  });
 
   // AI Analyze
   const analyzeButtons = document.querySelectorAll('.analyze-btn');

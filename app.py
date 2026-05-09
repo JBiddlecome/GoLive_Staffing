@@ -78,6 +78,7 @@ from apps.ar_contact_updates.scheduler import ar_contacts_monitoring_loop
 from apps.client_profile_changes.scheduler import client_profile_changes_monitoring_loop
 from apps.email_forwarder.scheduler import email_forwarder_loop
 from apps.profile_picture_approval.scheduler import profile_picture_approval_loop
+from apps.certificate_approver.scheduler import certificate_approval_loop
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -89,6 +90,7 @@ async def lifespan(app: FastAPI):
     cpc_task = asyncio.create_task(client_profile_changes_monitoring_loop())
     ef_task = asyncio.create_task(email_forwarder_loop())
     ppa_task = asyncio.create_task(profile_picture_approval_loop())
+    ca_task = asyncio.create_task(certificate_approval_loop())
     yield
     monitor_task.cancel()
     cc_monitor_task.cancel()
@@ -97,6 +99,8 @@ async def lifespan(app: FastAPI):
     ar_task.cancel()
     cpc_task.cancel()
     ef_task.cancel()
+    ppa_task.cancel()
+    ca_task.cancel()
 
 app = FastAPI(title="GoLive Staffing — Tools", lifespan=lifespan)
 

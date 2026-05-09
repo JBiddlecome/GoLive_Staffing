@@ -107,14 +107,90 @@ def get_pending_certificates():
                     "owt_cost": float(row.owt_cost) if row.owt_cost is not None else None,
                     "owt_cost_description": row.owt_cost_description,
                 })
+            return pending
     except Exception as e:
-        print(f"Error fetching pending certificates: {e}")
-    finally:
-        engine.dispose()
-    return pending
+        print(f"Error fetching pending certs: {e}")
+        return []
 
-@router.get("", response_class=HTMLResponse)
-async def certificate_approver_page(request: Request):
+def get_approved_certificates_for_test():
+    import urllib.parse
+    engine = _engine()
+    test_certs = []
+    try:
+        with engine.connect() as conn:
+            query = text("""
+                SELECT ec.id, ec.employee_id, ec.certification_id, c.name AS cert_type_name,
+                       ec.file, ec.number, ec.issued_at, ec.expires_at,
+                       e.first_name, e.last_name, e.email,
+                       e.start_date, e.start_date2,
+                       c.other_work_type_id,
+                       owt.name          AS owt_name,
+                       owt.work_hours    AS owt_work_hours,
+                       owt.non_work_hours AS owt_non_work_hours,
+                       owt.rate          AS owt_rate,
+                       owt.custom_rate   AS owt_custom_rate,
+                       owt.cost          AS owt_cost,
+                       owt.cost_description AS owt_cost_description
+                FROM (
+                    SELECT id, employee_id, certification_id, file, number, issued_at, expires_at, approved_at,
+                           ROW_NUMBER() OVER(PARTITION BY certification_id ORDER BY id DESC) as rn
+                    FROM employee_certification
+                    WHERE approved_at IS NOT NULL
+                      AND file IS NOT NULL
+                      AND certification_id IN (3, 10, 14, 17, 18, 20, 29, 37, 40, 43, 44, 50, 51, 52, 54, 55, 56, 59, 60, 61, 62, 63, 64, 66, 67, 68, 69, 73)
+                ) ec
+                JOIN employee e ON ec.employee_id = e.employee_id
+                JOIN certification c ON ec.certification_id = c.id
+                LEFT JOIN other_work_type owt ON c.other_work_type_id = owt.id AND owt.deleted_at IS NULL
+                WHERE ec.rn <= 10
+                  AND e.email NOT LIKE '%[DELETED]%'
+                ORDER BY ec.certification_id, ec.id DESC
+            """)
+            res = conn.execute(query).fetchall()
+            for row in res:
+                file_name = row.file
+                safe_file_name = urllib.parse.quote(file_name)
+                cert_url = f"https://{S3_BUCKET}.s3.{S3_REGION}.amazonaws.com/employee/certification/{safe_file_name}"
+
+                issued_date = _to_date(row.issued_at)
+                effective_start = _to_date(row.start_date2) if row.start_date2 else _to_date(row.start_date)
+                other_work_eligible = bool(
+                    row.other_work_type_id
+                    and issued_date is not None
+                    and effective_start is not None
+                    and issued_date > effective_start
+                )
+
+                test_certs.append({
+                    "id": row.id,
+                    "employee_id": row.employee_id,
+                    "cert_type_id": row.certification_id,
+                    "cert_type_name": row.cert_type_name,
+                    "file_name": file_name,
+                    "number": row.number,
+                    "issued_at": str(row.issued_at) if row.issued_at else None,
+                    "expires_at": str(row.expires_at) if row.expires_at else None,
+                    "first_name": row.first_name or "Unknown",
+                    "last_name": row.last_name or "",
+                    "email": row.email,
+                    "cert_url": cert_url,
+                    "other_work_type_id": row.other_work_type_id,
+                    "other_work_eligible": other_work_eligible,
+                    "owt_name": row.owt_name,
+                    "owt_work_hours": row.owt_work_hours,
+                    "owt_non_work_hours": row.owt_non_work_hours,
+                    "owt_rate": row.owt_rate,
+                    "owt_custom_rate": row.owt_custom_rate,
+                    "owt_cost": row.owt_cost,
+                    "owt_cost_description": row.owt_cost_description
+                })
+            return test_certs
+    except Exception as e:
+        print(f"Error fetching test certs: {e}")
+        return []
+
+@router.get("/", response_class=HTMLResponse)
+async def certificate_approver_dashboard(request: Request):
     from apps.certificate_approver.scheduler import get_auto_approve_enabled
     
     user = request.session.get("user")
@@ -135,6 +211,19 @@ async def toggle_auto_approve(request: Request):
     enabled = data.get("enabled", False)
     set_auto_approve_enabled(enabled)
     return JSONResponse({"status": "success", "enabled": get_auto_approve_enabled()})
+
+@router.get("/test", response_class=HTMLResponse)
+async def certificate_approver_test_dashboard(request: Request):
+    from apps.certificate_approver.scheduler import get_auto_approve_enabled
+    test_certificates = get_approved_certificates_for_test()
+    return templates.TemplateResponse(
+        "apps/certificate_approver_test.html",
+        {
+            "request": request,
+            "test_certificates": test_certificates,
+            "auto_approve_enabled": get_auto_approve_enabled()
+        }
+    )
 
 def get_ai_prompt():
     prompt_path = os.path.join(os.getcwd(), "certificate_approval.md")
@@ -464,13 +553,44 @@ def register_other_work_for_cert(employee_id: int, other_work_type_id: int, issu
         return False, str(e)
 
 
-def approve_cert_action(record_id: int, first_name: str, email: str, cert_type_name: str):
+def approve_cert_action(record_id: int, first_name: str, email: str, cert_type_name: str, issued_at: str = "", expires_at: str = "", number: str = ""):
     try:
         engine = _engine()
         try:
             with engine.begin() as conn:
-                update_sql = text("UPDATE employee_certification SET approved_at = NOW(), approved_by = 1 WHERE id = :record_id")
-                conn.execute(update_sql, {"record_id": record_id})
+                record = conn.execute(text("SELECT employee_id, certification_id FROM employee_certification WHERE id = :record_id"), {"record_id": record_id}).fetchone()
+                
+                update_sql = "UPDATE employee_certification SET approved_at = NOW(), approved_by = 1"
+                params = {"record_id": record_id}
+                
+                if issued_at:
+                    update_sql += ", issued_at = :issued_at"
+                    params["issued_at"] = issued_at
+                    
+                if expires_at:
+                    update_sql += ", expires_at = :expires_at"
+                    params["expires_at"] = expires_at
+                    
+                if number:
+                    update_sql += ", number = :number"
+                    params["number"] = number
+                    
+                update_sql += " WHERE id = :record_id"
+                conn.execute(text(update_sql), params)
+                
+                if record:
+                    emp_id = record.employee_id
+                    cert_id = record.certification_id
+                    is_food_handler = cert_id in [3, 17, 18, 20, 50, 55, 60, 66] or "food handler" in cert_type_name.lower() or "food protection" in cert_type_name.lower() or "food worker" in cert_type_name.lower()
+                    
+                    if is_food_handler:
+                        conn.execute(text("""
+                            UPDATE employee_certification 
+                            SET approved_at = NOW(), approved_by = 1 
+                            WHERE employee_id = :emp_id 
+                              AND certification_id = 45 
+                              AND approved_at IS NULL
+                        """), {"emp_id": emp_id})
         finally:
             engine.dispose()
             
@@ -492,8 +612,10 @@ async def approve_cert(
     employee_id: int = Form(0),
     other_work_type_id: int = Form(0),
     issued_at: str = Form(""),
+    expires_at: str = Form(""),
+    number: str = Form(""),
 ):
-    success, err = approve_cert_action(record_id, first_name, email, cert_type_name)
+    success, err = approve_cert_action(record_id, first_name, email, cert_type_name, issued_at, expires_at, number)
     if not success:
         return JSONResponse({"status": "error", "message": err}, status_code=500)
 
