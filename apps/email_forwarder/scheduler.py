@@ -1,7 +1,7 @@
 """
 Email Forwarder Scheduler
 =========================
-Polls dan.stone@culinarystaffing.com and trina@culinarystaffing.com every
+Polls michael@culinarystaffing.com and marlen@culinarystaffing.com every
 2 minutes via Microsoft Graph API.
 
 Forwarding is active when ALL of the following are true:
@@ -106,8 +106,8 @@ def _is_within_schedule() -> bool:
 # Graph API helpers
 # ---------------------------------------------------------------------------
 SOURCE_MAILBOXES = [
-    "dan.stone@culinarystaffing.com",
-    "trina@culinarystaffing.com",
+    "michael@culinarystaffing.com",
+    "marlen@culinarystaffing.com",
 ]
 DESTINATION = "staffingteam@culinarystaffing.com"
 SENDER_FOR_GRAPH = "golive@culinarystaffing.com"   # shared mailbox with Mail.Send
