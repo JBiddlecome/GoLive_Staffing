@@ -88,15 +88,7 @@ async def profile_picture_approval_loop():
                         if not success:
                             print(f"[Profile Picture Auto-Approve] Failed to approve: {err}")
                     else:
-                        print(f"[Profile Picture Auto-Approve] Denying photo {photo['file_name']}. Reason: {reason}")
-                        success, err = deny_photo_action(
-                            photo['employee_id'],
-                            photo['file_name'],
-                            photo['first_name'],
-                            photo['email']
-                        )
-                        if not success:
-                            print(f"[Profile Picture Auto-Approve] Failed to deny: {err}")
+                        print(f"[Profile Picture Auto-Approve] Photo {photo['file_name']} not suitable. Reason: {reason}. Leaving for manual review.")
                 else:
                     print(f"[Profile Picture Auto-Approve] AI Analysis failed: {analysis_result.get('message')}")
                     

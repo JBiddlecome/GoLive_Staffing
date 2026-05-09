@@ -108,8 +108,8 @@ You will be given the employee's name as it appears in the HR system (`Employee 
 6. **Minor spelling variations.** Small transliteration differences (accent marks, doubled letters, missing accent) in the same name are a match.
 
 **Name mismatch handling:**
-- A `false` name match is **never by itself a reason to DECLINE** — it should be listed in `reasons` as a flag (e.g., "Name on document 'Maria Gonzalez' does not appear to match employee 'Maria Rodriguez'") and noted in `notes`, but the overall `decision` should be `NEEDS_REVIEW` rather than `DECLINE` unless the spec for this cert type explicitly requires an exact name match.
-- A `true` name match is a positive signal but is not required for `APPROVE` unless the spec explicitly requires it.
+- If `checks.name_match` is `false` (the names are clearly different people, like "Jack Smith" vs "Adam Ramos"), you **MUST NOT** return `APPROVE`. The overall `decision` must be **DECLINE** (if it is obviously someone else's document) or **NEEDS_REVIEW** (if you suspect a possible maiden name or legal name change issue but aren't sure). 
+- You may only return `APPROVE` if the name is a close match, a recognized nickname (e.g., Jake for Jacob), or if no name is visible (`"n/a"`) and the document is otherwise valid.
 
 ---
 
@@ -126,14 +126,15 @@ Each section below corresponds to a `cert_type_id`. Use only the spec that match
 **Required fields:** `issued_at_required=1`, `can_expire=1`, `number_required=0`, `exact_match_image=0`.
 
 **What to look for:**
-- The certificate must say **"California Food Handler"** or be issued by an **ANSI** or **ANAB** accredited provider.
+- The certificate must say **"California Food Handler"** OR **"Food Protection Manager"** (or **"ServSafe Manager"**) OR be issued by an **ANSI** or **ANAB** accredited provider.
+- **IMPORTANT**: If the document is a "Food Protection Manager" or "ServSafe Manager" certificate, it is **FULLY ACCEPTABLE** for this ID. Do NOT decline it under the global "different certificate type" rule.
 - Common valid issuers: **StateFoodSafety**, **Premier Food Safety**, **ServSafe**, **Learn2Serve / 360training**.
 - An issue date must be visible. An expiration date may or may not be printed (3 years is the default).
 - ANSI or ANAB accreditation logo is a strong positive signal.
 
 **Hard exclusions — DECLINE if any apply:**
 - Title says **"County of San Bernardino"**, **"County of San Diego"**, or **"Riverside County"** — these are county-specific cards and are *not* valid as a general California Food Handler. Decline and name the correct type (IDs 17, 18, or 20) in `notes`.
-- Document is clearly an RBS, ServSafe Manager, or non-food-handler course.
+- Document is clearly an RBS or non-food-handler course.
 
 ---
 
@@ -193,19 +194,16 @@ Examples of provider certificates that may qualify when those conditions are met
 
 **Validity:** 3 years from issue date.
 
-**Required fields:** `issued_at_required=1`, `can_expire=1`, `number_required=0`, `exact_match_image=1`.
+**Required fields:** `issued_at_required=1`, `can_expire=1`, `number_required=0`, `exact_match_image=0`.
 
 **What to look for:**
-- Issued **exclusively** through **StateFoodSafety**.
-- Title includes **"County of San Bernardino Food Handlers Training"**.
-- StateFoodSafety logo, San Bernardino County seal, and a QR code should be present.
-- Certificate Verification Number typically begins with `SB-`.
-- Issue date visible.
+- **MUST include "San Bernardino County Department of Public Health" on the certificate.** As long as it has this, it is acceptable.
+- Issue date and/or expiration date must be visible.
 
 **Hard exclusions — DECLINE:**
-- General California Food Handler card without "San Bernardino" in the title.
+- Does not mention "San Bernardino" and "Department of Public Health".
+- General California Food Handler card without "San Bernardino" on it.
 - San Diego or Riverside county card.
-- Issuer other than StateFoodSafety.
 
 ---
 
@@ -248,40 +246,34 @@ Two valid formats:
 
 **Validity:** Does not expire (`can_expire=0`).
 
-**Required fields:** `issued_at_required=1`, `exact_match_image=1`, `number_required=0`.
+**Required fields:** `issued_at_required=1`, `exact_match_image=0`, `number_required=0`.
 
 **What to look for:**
-Issued exclusively by **Levy** (the food service company). Two accepted layouts:
-
-1. **Pre-June 2024 format:** Plain layout with the Levy logo top-left, the employee name in large bold text, the line "**CONGRATULATIONS! YOU HAVE SUCCESSFULLY COMPLETED THE NON-LEVY TEAM MEMBER ORIENTATION.**", a date, and a list of training topics (Levy Culture and Hospitality, Food Safety & Sanitation, COVID Workplace Safety Practices, Responsible Alcohol Service).
-
-2. **June 2024+ format (current):** Header reads **"VOL/TEMP/SUBCON ORIENTATION"** with the **"Levy CREATING LEGENDS"** logo. Body says **"YOU HAVE SUCCESSFULLY COMPLETED LEVY'S ORIENTATION"** with a list of topics (Levy Culture & Hospitality, Food Safety & Sanitation, OSHA Bloodborne Pathogen & HAZCOM, Responsible Alcohol Service Training) and a date.
-
-The **employee name** must appear on the certificate.
+- The document can be any format, layout, or length (does not have to be multiple pages).
+- It **MUST** contain the exact phrase: **"You have successfully completed Levy's creating legends orientation. We are grateful to have you on our team!"**
+- The **employee name** must appear on the certificate.
 
 **Hard exclusions — DECLINE:**
+- Missing the required exact phrase.
 - Any orientation certificate from a different food service company (Aramark, Sodexo, Compass, etc.).
-- Layout that doesn't match either approved Levy template.
 - Missing employee name.
 
 ---
 
-### ID 37 — Harassment Prevention (California)
+### ID 37 — Harassment Prevention
 
 **Validity:** 2 years from issue date.
 
 **Required fields:** `issued_at_required=1`, `can_expire=1`, `number_required=0`, `exact_match_image=0`.
 
 **What to look for:**
+- **Note:** In this system, the base name "Harassment Prevention" maps to the California training, but **ANY state's Harassment Prevention certificate (California, New York, Washington, etc.) is fully acceptable here.** Do NOT decline a certificate just because it is from another state.
 - Title includes **"Harassment Prevention"**, **"Sexual Harassment Prevention"**, or **"Sexual Harassment and Abusive Conduct Prevention"**.
-- Issued by either:
-  - The **California Department of Fair Employment and Housing (DFEH)** / Civil Rights Department, OR
-  - A recognized California training provider (e.g., i2i, Prevent Harassment LLC).
+- Issued by any state department or recognized training provider (e.g., DFEH, i2i, Prevent Harassment LLC).
 - Completion date visible and within the last 2 years.
 - Course duration is typically **1 hour for non-supervisors** or **2 hours for supervisors** — either is acceptable.
 
 **Hard exclusions — DECLINE:**
-- Certificate from a different state (e.g., New York, Washington) when uploaded under this ID — flag the correct ID (68 for NY, 63 for WA) in `notes`.
 - Generic "ethics" or "workplace conduct" course that isn't specifically harassment prevention.
 
 ---
@@ -332,17 +324,14 @@ The **employee name** must appear on the certificate.
 **Required fields:** `issued_at_required=1`, `number_required=0`, `exact_match_image=0`.
 
 **What to look for:**
-- **Starbucks logo** (the green siren).
-- The certificate states it was issued **"by Starbucks"** or **"with Starbucks Coffee Company"** (regional variants like "Starbucks Coffee Company MENA" are fine).
-- Title is some variant of **"Barista"** or **"Certified Barista Trainer"** (management-level barista certifications are also acceptable).
-- Employee name is visible.
-- A completion date is visible.
-
-Layout has changed across years, so do not require an exact format match.
+- The word **"Starbucks"** must appear somewhere on the certificate.
+- As long as it says Starbucks, it is fully acceptable.
+- It does **not** have to match the example in the baselines folder, as layouts and logos have changed across years and regions.
+- Look for an employee name and completion date if visible.
 
 **Hard exclusions — DECLINE:**
+- Does not mention "Starbucks" anywhere on the certificate.
 - Generic "barista" certificate from a non-Starbucks training program.
-- Missing the Starbucks logo or wordmark.
 
 ---
 
@@ -546,13 +535,11 @@ Both must show the cardholder's **name**, a **"Valid from [date] to [date]"** ra
 
 **What to look for:**
 - Title includes **"Harassment Prevention"** or **"Sexual Harassment Prevention"**.
-- Document is for **Washington state** specifically (mentions Washington in the title, body, or issuer).
+- **ANY state's Harassment Prevention certificate (Washington, California, New York, etc.) is fully acceptable here.** Do NOT decline it for being from another state.
 - Completion date visible and within the last 2 years.
 
-**Note:** The current SOP details California and New York harassment training but does not contain a worked Washington example. If the document looks like a generic harassment training certificate that does **not** specifically reference Washington, return `NEEDS_REVIEW` with `notes` flagging that the SOP does not yet have an explicit Washington example to compare against.
-
 **Hard exclusions — DECLINE:**
-- Certificate that explicitly says "California" or "New York" in the title (those are IDs 37 and 68 respectively).
+- Generic "ethics" or "workplace conduct" course that isn't specifically harassment prevention.
 
 ---
 
@@ -560,17 +547,18 @@ Both must show the cardholder's **name**, a **"Valid from [date] to [date]"** ra
 
 **Validity:** Does not expire (`can_expire=0`).
 
-**Required fields:** `issued_at_required=1`, `exact_match_image=1`, `number_required=0`.
+**Required fields:** `issued_at_required=1`, `exact_match_image=0`, `number_required=0`.
 
 **What to look for:**
-- Document is titled **"Confidentiality Agreement"**.
-- Generated by **JotForm** — a **JotformSIGN Document ID** must be visible at the top of each page (e.g., "JotformSIGN Document ID: 251756586349065" or similar).
-- Document is **2 pages** total.
-- Body references **"Delaware North"** as the company, including the defined term "Delaware North Companies, Incorporated."
+- **File Type:** Can be any file format, but must show exactly two full pages. 
+- Must say **"Confidentiality Agreement"** at the top of page 1.
+- Generated by **JotForm** — a **JotformSIGN Document ID** must be visible at the top of each page.
+- Document must be a full **2 pages** total without any cutoff sections.
+- Body references **"Delaware North"** as the company.
 - Page 2 must contain: **"I ACKNOWLEDGE THAT I HAVE READ EACH PROVISION..."** acknowledgement, plus printed name, signature, and date filled in.
 
 **Hard exclusions — DECLINE:**
-- Partial document or a screenshot of only one page.
+- Partial document, a screenshot of only one page, or any cutoff pages where the full text is not visible.
 - Document not generated by JotForm (no JotformSIGN ID).
 - A different NDA (e.g., Trump National — that's ID 40).
 - Missing employee signature on page 2.
@@ -584,16 +572,17 @@ Both must show the cardholder's **name**, a **"Valid from [date] to [date]"** ra
 **Required fields:** `issued_at_required=1`, `number_required=0`, `exact_match_image=0`.
 
 **What to look for:**
+- **File Type:** Can be any image file type; it does **not** have to be a PDF.
 - Issued by **NYC Health (New York City Department of Health and Mental Hygiene)**.
 - Title is **"Qualifying Certificate in Food Protection"**.
-- The card includes a **photo ID of the holder** — this is required.
+- May be a physical card or a printed certificate.
+- The card or certificate typically includes a **photo ID of the holder** (if it's the physical card).
 - Holder's **name** visible.
 - A **certificate number** visible (e.g., "13-99999", "21-05330OL").
 - A **"Date issued"** field visible (often only month/year).
 - Required only for employees working in **New York City**.
 
 **Hard exclusions — DECLINE:**
-- No photo on the card.
 - Issuer is not NYC Health / NYC DOHMH.
 - An ANSI/ANAB online food handler certificate uploaded here.
 
@@ -606,14 +595,14 @@ Both must show the cardholder's **name**, a **"Valid from [date] to [date]"** ra
 **Required fields:** `issued_at_required=1`, `can_expire=1`, `number_required=0`, `exact_match_image=0`.
 
 **What to look for:**
-The current SOP entry for ATAP is a placeholder ("What to look for: XXX") and does not yet contain a worked example.
+- Must explicitly say either **"State Liquor Authority"** or **"Certificate of Completion of an Approved Alcohol Training Awareness Program"**.
+- Usually includes the **New York State of Opportunity** logo.
+- Look for an issue date and/or expiration date.
+- As long as it meets these criteria, it is fully acceptable.
 
-**General guidance** (apply with caution and prefer `NEEDS_REVIEW`):
-- ATAP stands for **Alcohol Training Awareness Program**, a **New York State Liquor Authority (SLA)** approved program.
-- Look for **"ATAP"**, **"Alcohol Training Awareness Program"**, or references to the **New York State Liquor Authority**.
-- Look for a **certificate / training number** and a **completion date**.
-
-**Recommended handling:** Return `NEEDS_REVIEW` with `notes` reading "ATAP spec is a placeholder in the SOP — please escalate to a human reviewer to fill in the canonical example and rules." Do not approve unless the document is unambiguously an ATAP certificate.
+**Hard exclusions — DECLINE:**
+- Does not mention "State Liquor Authority" or "Approved Alcohol Training Awareness Program".
+- Certificate for a different state's alcohol program (e.g., California RBS, Nevada TAM, Washington MAST).
 
 ---
 
@@ -624,15 +613,13 @@ The current SOP entry for ATAP is a placeholder ("What to look for: XXX") and do
 **Required fields:** `issued_at_required=1`, `can_expire=1`, `number_required=0`, `exact_match_image=0`.
 
 **What to look for:**
-Two accepted formats:
-1. **GoLive / Culinary Staffing-issued**, generated through **Certify'em**: Title **"Sexual Harassment Prevention Training"** with the **GoLive Staffing** logo (green "go! LIVE STAFFING"), followed by **"Sexual Harassment Prevention Training (New York)"**, an issue date, "Valid for 2 years," and a Certificate ID (e.g., `P5HW2W-CE000002`).
-2. **Other approved New York providers** (e.g., i2i, Prevent Harassment LLC) — title **"Certificate of Completion: Session A"** referencing **"Harassment and Bullying Prevention Training 1 hour for Employees"**, with a **New York state seal** visible.
-
-In either case the document **must** specifically reference **New York**.
+- Title includes **"Sexual Harassment Prevention Training"** or **"Harassment Prevention"**.
+- **ANY state's Harassment Prevention certificate (New York, California, Washington, etc.) is fully acceptable here.** Do NOT decline it for being from another state.
+- Issued by GoLive / Culinary Staffing (Certify'em), or other approved providers.
+- Completion date visible and within the last 2 years.
 
 **Hard exclusions — DECLINE:**
-- Certificate explicitly issued for California or any other state. New York requires the New York-specific course; out-of-state certificates are not accepted under this ID.
-- No state reference at all (default to `NEEDS_REVIEW` if ambiguous).
+- Generic "ethics" or "workplace conduct" course that isn't specifically harassment prevention.
 
 ---
 
@@ -640,20 +627,20 @@ In either case the document **must** specifically reference **New York**.
 
 **Validity:** Does not expire (`can_expire=0`).
 
-**Required fields:** `issued_at_required=1`, `exact_match_image=1`, `number_required=0`.
+**Required fields:** `issued_at_required=1`, `exact_match_image=0`, `number_required=0`.
 
 **What to look for:**
+- **File Type:** Can be any image file type, including a photograph of a printed page. It does **not** have to be a PDF.
 - Generated by **JotForm** — a **JotformSIGN Document ID** must appear at the top of the document.
 - Header includes the **Compass Group** logo (the cartoon character holding a thermometer) and the title **"ASSOCIATE HEALTH, FOOD SAFETY, & WORKPLACE SAFETY PLEDGE — FOR TEMPORARY & CONTRACT EMPLOYEES"**.
-- Document is **4 pages** long.
+- May be a single signed page or a multi-page document.
 - Body contains a checklist of pledges (stay home when sick, follow safety training, "clean as you go," PPE, etc.) with each item checkmarked.
-- Bottom of the final page contains:
+- Bottom of the document contains:
   - **Print Name** (typed),
   - **Signature** (handwritten or e-signature),
   - **Date**.
 
 **Hard exclusions — DECLINE:**
-- Partial document (fewer than 4 pages) or a screenshot.
 - Missing signature, printed name, or date.
 - A different employer's safety pledge.
 
@@ -684,6 +671,23 @@ In either case the document **must** specifically reference **New York**.
 
 ---
 
+### ID 56 — Event Supervisor Training
+
+**Validity:** Does not expire (`can_expire=0`).
+
+**Required fields:** `issued_at_required=1`, `exact_match_image=1`, `number_required=0`.
+
+**What to look for:**
+- Certificate title must be **"Event Supervisor Training"**.
+- At the bottom right, it must say **"Made for free with Certify'em"**.
+- The layout and appearance must exactly match the baseline image provided in the SOP reference folder.
+
+**Hard exclusions — DECLINE:**
+- Does not say "Made for free with Certify'em".
+- Visual mismatch from the standard baseline template.
+
+---
+
 ## Edge Cases and Tips
 
 - **Sample / template artifacts.** The SOP shows several documents stamped "EXAMPLE," "SAMPLE CARD," "Example Certification," or "Jane Doe / John Doe." If the uploaded image is one of these template documents (i.e., contains those literal placeholder names or watermarks), `DECLINE` with `notes` indicating the user uploaded a sample.
@@ -706,7 +710,7 @@ In either case the document **must** specifically reference **New York**.
 | 18 | San Diego Food Handlers Certificate | – | ✓ | ✓ | – |
 | 20 | Riverside Food Handlers Certificate | – | ✓ | ✓ | – |
 | 29 | Levy Orientation | – | – | ✓ | ✓ |
-| 37 | Harassment Prevention (California) | – | ✓ | ✓ | – |
+| 37 | Harassment Prevention | – | ✓ | ✓ | – |
 | 40 | Trump National Golf Club LA Confidentiality Agreement | – | – | ✓ | ✓ |
 | 43 | CPR / First Aid | – | ✓ | ✓ | – |
 | 44 | Starbucks Barista Certificate | – | – | ✓ | – |

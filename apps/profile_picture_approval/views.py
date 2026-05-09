@@ -81,9 +81,9 @@ AI_PROMPT = """
 You are an expert Image Content Moderator. Your task is to evaluate a user's uploaded profile picture for suitability based on strict criteria.
 
 Evaluation Criteria:
-Face Position: The person must be facing forward. Side profiles or obscured views are not allowed.
+Face Position: The person should be generally facing forward. It is okay if they are slightly facing to the side, but deny the picture if they are turned sideways 45 degrees or more. Obscured views are not allowed.
 Clarity & Distance: The face must be close to the camera and in focus.
-No Accessories: No sunglasses, hats that obscure the face, or masks. Glasses are acceptable as long as they are not dark sunglasses.
+No Accessories: No sunglasses or masks. Hats are acceptable as long as they do not cover the eyes. VERY IMPORTANT regarding glasses: If you can clearly see the person's eyes through the lenses, they MUST be considered prescription glasses and NOT sunglasses. Do not falsely reject prescription glasses as sunglasses. These are perfectly okay to approve.
 No Filters: No "beauty" filters, AR ears/noses, or heavy digital distortions.
 Safety & Ethics: Strictly reject any photo containing:
 Nudity or suggestive content.
@@ -156,12 +156,14 @@ def send_notification_email(employee_email: str, first_name: str, status: str):
         print(f"Failed to authenticate with Microsoft Graph: {e}")
         return False
 
+    small_print = ""
     if status == "Approved":
         subject = "Employee Photo Approved"
         body_text = f"Hi {first_name},<br><br>Good news! Your new profile picture has been approved and is now live on your account."
     else:
         subject = "Employee Photo Rejected"
         body_text = f"Hi {first_name},<br><br>Unfortunately, your profile picture upload was rejected because it did not meet our guidelines. Please upload a real, clear, close-up photo of yourself facing forward, without any face coverings."
+        small_print = "<hr style='margin-top: 30px; border: none; border-top: 1px solid #eee;'><p style='font-size: 11px; color: #666;'><em>Profile pictures are initially monitored using AI. If you believe your uploaded photo is being denied incorrectly, you can email it to info@culinarystaffing.com for manual approval.</em></p>"
 
     html_body = f"""
     <html>
@@ -169,6 +171,7 @@ def send_notification_email(employee_email: str, first_name: str, status: str):
         <h2 style="color: #047857;">Profile Picture Update</h2>
         <p>{body_text}</p>
         <p>Best regards,<br>The Culinary Staffing Team</p>
+        {small_print}
       </body>
     </html>
     """
