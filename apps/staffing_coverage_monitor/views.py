@@ -75,7 +75,18 @@ async def get_coverage_data():
             ORDER BY co.name, p.description
         """)
 
-        with engine.connect() as connection:
+        with engine.begin() as connection:
+            # Create history table if not exists
+            connection.execute(text("""
+                CREATE TABLE IF NOT EXISTS staffing_coverage_history (
+                    date DATE,
+                    county_id INT,
+                    position_id INT,
+                    ratio FLOAT,
+                    PRIMARY KEY (date, county_id, position_id)
+                )
+            """))
+
             shifts_df = pd.read_sql(shifts_sql, connection, params={"current_date": current_date})
             
             if shifts_df.empty:
@@ -116,18 +127,71 @@ async def get_coverage_data():
             # Merge the data
             merged = pd.merge(summary_shifts, emp_df, on=['county_id', 'position_id'], how='left')
             merged['eligible_count'] = merged['eligible_count'].fillna(0).astype(int)
+            merged['ratio'] = merged['eligible_count'] / merged['open_spots']
+
+            # Get previous day's ratios
+            prev_sql = text("""
+                SELECT county_id, position_id, ratio AS prev_ratio
+                FROM staffing_coverage_history
+                WHERE date = (
+                    SELECT MAX(date) 
+                    FROM staffing_coverage_history 
+                    WHERE date < :current_date
+                )
+            """)
+            prev_df = pd.read_sql(prev_sql, connection, params={"current_date": current_date})
+
+            # Merge previous ratios
+            if not prev_df.empty:
+                merged = pd.merge(merged, prev_df, on=['county_id', 'position_id'], how='left')
+            else:
+                merged['prev_ratio'] = pd.NA
+
+            # Record today's ratios
+            insert_sql = text("""
+                INSERT INTO staffing_coverage_history (date, county_id, position_id, ratio)
+                VALUES (:date, :county_id, :position_id, :ratio)
+                ON DUPLICATE KEY UPDATE ratio=VALUES(ratio)
+            """)
+            
+            records = [
+                {
+                    "date": current_date,
+                    "county_id": row['county_id'],
+                    "position_id": row['position_id'],
+                    "ratio": row['ratio']
+                }
+                for _, row in merged.iterrows()
+            ]
+            if records:
+                connection.execute(insert_sql, records)
 
             # Group by county for display
             result = []
             for county_name, group in merged.groupby('county_name'):
                 positions = []
                 for _, row in group.iterrows():
-                    positions.append({
+                    pos_data = {
                         "name": row['position_name'],
                         "open_spots": int(row['open_spots']),
                         "eligible_employees": int(row['eligible_count']),
                         "clients": row['client_name']
-                    })
+                    }
+                    
+                    if 'prev_ratio' in row and pd.notna(row['prev_ratio']):
+                        prev_ratio = float(row['prev_ratio'])
+                        current_ratio = float(row['ratio'])
+                        
+                        if prev_ratio > 0:
+                            change_pct = ((current_ratio - prev_ratio) / prev_ratio) * 100
+                        elif current_ratio > 0:
+                            change_pct = 100.0
+                        else:
+                            change_pct = 0.0
+                            
+                        pos_data["change_pct"] = change_pct
+
+                    positions.append(pos_data)
                 result.append({
                     "county": county_name,
                     "positions": positions
