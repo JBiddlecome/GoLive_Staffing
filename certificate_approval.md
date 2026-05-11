@@ -397,19 +397,18 @@ Two valid formats:
 
 **Validity:** **1 year** from training date.
 
-**Required fields:** `issued_at_required=1`, `can_expire=1`, `exact_match_image=1`, `number_required=0`.
+**Required fields:** `issued_at_required=1`, `can_expire=1`, `exact_match_image=0`, `number_required=0`.
 
 **What to look for:**
-- Issued **exclusively by Culinary Staffing Services**.
-- Distinctive **blue and purple wave** design (the certificate has flowing pink/purple curves on the right side and blue curves on the left).
-- Header reads **"Culinary Staffing Services"** at the top.
-- Title: **"CERTIFICATE OF CONGRATULATIONS — THIS IS TO CERTIFY THAT"**.
-- Employee name in cursive script.
-- Body: **"Has completed Workplace Violence Prevention Plan training On [date]. This certificate will expire in 1 year."**
+- **File Type & Length:** Can be ANY file format (IMAGE or PDF). Do NOT decline because the "Original File Format" is IMAGE. It does not have to be a certain number of pages.
+- The certificate must include the text: **"Culinary Staffing Services"** and **"Certificate of congratulations"** (capitalization may vary).
+- The certificate must include the text: **"Workplace Violence Prevention Plan Training"** (capitalization may vary).
+- It does **NOT** need to match the visual style of the baseline images exactly, as long as it contains the required text above.
+- The certificate does **NOT** have to have text that says, "This certificate will expire in 1 year."
 
 **Hard exclusions — DECLINE:**
 - Any other workplace violence or safety training certificate (the program is unique to California employers and Culinary Staffing's specific environments).
-- Layout that doesn't match the blue/purple wave template.
+- Missing "Culinary Staffing Services", "Certificate of congratulations", or "Workplace Violence Prevention Plan Training" text.
 
 ---
 

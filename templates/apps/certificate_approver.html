@@ -357,14 +357,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const denyButtons = document.querySelectorAll('.deny-btn');
   denyButtons.forEach(btn => {
     btn.addEventListener('click', async () => {
-      const reason = prompt('Please enter the reason for denial (this will be emailed to the employee):');
+      const card = btn.closest('.cert-card');
+      const reasonsList = card.querySelector('.ai-reasons');
+      let prepopulatedReason = '';
+      if (reasonsList && reasonsList.children.length > 0) {
+          const reasons = Array.from(reasonsList.children).map(li => li.innerText);
+          prepopulatedReason = reasons.join(' ');
+      }
+
+      const reason = prompt('Please enter the reason for denial (this will be emailed to the employee):', prepopulatedReason);
       if (reason === null) return; // User cancelled
       if (reason.trim() === '') {
           alert('A reason is required to deny a certificate.');
           return;
       }
       
-      const card = btn.closest('.cert-card');
       const formData = new FormData();
       formData.append('record_id', btn.dataset.recordId);
       formData.append('file_name', btn.dataset.fileName);

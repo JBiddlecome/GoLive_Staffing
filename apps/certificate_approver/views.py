@@ -51,7 +51,7 @@ def get_pending_certificates():
                 SELECT ec.id, ec.employee_id, ec.certification_id, c.name AS cert_type_name,
                        ec.file, ec.number, ec.issued_at, ec.expires_at,
                        e.first_name, e.last_name, e.email,
-                       e.start_date, e.start_date2,
+                       e.start_date, e.start_date2, e.status,
                        c.other_work_type_id,
                        owt.name          AS owt_name,
                        owt.work_hours    AS owt_work_hours,
@@ -82,6 +82,7 @@ def get_pending_certificates():
                     and issued_date is not None
                     and effective_start is not None
                     and issued_date > effective_start
+                    and row.status != 6
                 )
 
                 pending.append({
@@ -122,7 +123,7 @@ def get_approved_certificates_for_test():
                 SELECT ec.id, ec.employee_id, ec.certification_id, c.name AS cert_type_name,
                        ec.file, ec.number, ec.issued_at, ec.expires_at,
                        e.first_name, e.last_name, e.email,
-                       e.start_date, e.start_date2,
+                       e.start_date, e.start_date2, e.status,
                        c.other_work_type_id,
                        owt.name          AS owt_name,
                        owt.work_hours    AS owt_work_hours,
@@ -159,6 +160,7 @@ def get_approved_certificates_for_test():
                     and issued_date is not None
                     and effective_start is not None
                     and issued_date > effective_start
+                    and row.status != 6
                 )
 
                 test_certs.append({
