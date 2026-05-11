@@ -33,7 +33,9 @@ def get_pending_photos():
                 SELECT t.related_id as employee_id, t.file_name, e.first_name, e.last_name, e.email 
                 FROM temporary_file t
                 JOIN employee e ON t.related_id = e.employee_id
-                WHERE t.type = 'EMPLOYEE_PHOTO' AND t.file_name NOT LIKE '%[DELETED]%'
+                WHERE t.type = 'EMPLOYEE_PHOTO' 
+                  AND t.file_name NOT LIKE '%[DELETED]%'
+                  AND (e.email IS NULL OR e.email NOT LIKE '%[DELETED]%')
             """)
             res = conn.execute(query).fetchall()
             for row in res:
@@ -136,8 +138,8 @@ def send_notification_email(employee_email: str, first_name: str, status: str):
     client_id = os.getenv("O365_CLIENT_ID")
     client_secret = os.getenv("O365_CLIENT_SECRET")
     
-    if not all([tenant_id, client_id, client_secret, employee_email]):
-        print("Skipping email: Microsoft 365 OAuth credentials missing or employee email is empty.")
+    if not all([tenant_id, client_id, client_secret, employee_email]) or "[DELETED]" in employee_email:
+        print("Skipping email: Microsoft 365 OAuth credentials missing, employee email is empty, or email is marked as [DELETED].")
         return False
         
     token_url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
