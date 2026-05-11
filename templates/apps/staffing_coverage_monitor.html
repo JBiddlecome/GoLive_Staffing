@@ -106,6 +106,30 @@
               label = 'Tight';
             }
 
+            let changeHtml = '';
+            if (pos.change_pct !== undefined) {
+              const roundedPct = Math.abs(Math.round(pos.change_pct));
+              if (pos.change_pct > 0) {
+                changeHtml = `
+                  <div class="flex items-center text-emerald-600 ml-2" title="Improved by ${roundedPct}% from previous day">
+                    <svg class="h-3.5 w-3.5 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                    </svg>
+                    <span class="text-[11px] font-bold">${roundedPct}%</span>
+                  </div>
+                `;
+              } else if (pos.change_pct < 0) {
+                changeHtml = `
+                  <div class="flex items-center text-rose-600 ml-2" title="Decreased by ${roundedPct}% from previous day">
+                    <svg class="h-3.5 w-3.5 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                    <span class="text-[11px] font-bold">${roundedPct}%</span>
+                  </div>
+                `;
+              }
+            }
+
             const clientsList = pos.clients.map(client => `
               <li class="flex items-center justify-between py-1 pr-2">
                 <div class="flex items-center space-x-2">
@@ -134,8 +158,11 @@
                       <div class="text-sm font-bold text-slate-900">${pos.eligible_employees}</div>
                       <div class="text-[10px] text-slate-400 font-medium">Eligible</div>
                     </div>
-                    <div class="px-2.5 py-1 rounded-full text-[10px] font-bold ${bgColor} ${statusColor} border border-current opacity-70">
-                      ${label}
+                    <div class="flex items-center">
+                      <div class="px-2.5 py-1 rounded-full text-[10px] font-bold ${bgColor} ${statusColor} border border-current opacity-70">
+                        ${label}
+                      </div>
+                      ${changeHtml}
                     </div>
                   </div>
                 </button>
