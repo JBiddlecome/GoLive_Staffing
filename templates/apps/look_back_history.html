@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+{% block title %}Look Back History | GoLive Staffing{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <section class="rounded-2xl border border-emerald-100 bg-white shadow-sm">
+    <div class="px-6 py-6 lg:px-8">
+      <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div class="space-y-2">
+          <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">Sales Tools</p>
+          <h1 class="brand-serif text-4xl font-semibold leading-tight text-gray-950">Look Back History</h1>
+          <p class="max-w-3xl text-gray-600">
+            Enter a target date range to see which clients ordered shift lines during the same dates last year, then separate clients with and without recent activity.
+          </p>
+        </div>
+        <form id="lookback-form" class="grid gap-3 sm:grid-cols-[1fr_1fr_auto] lg:min-w-[520px]">
+          <label class="space-y-1 text-sm font-semibold text-gray-700">
+            <span>Start Date</span>
+            <input id="start-date" type="date" value="{{ start_date }}" class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          </label>
+          <label class="space-y-1 text-sm font-semibold text-gray-700">
+            <span>End Date</span>
+            <input id="end-date" type="date" value="{{ end_date }}" class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          </label>
+          <button id="run-btn" type="submit" class="self-end rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60">
+            Run
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <div id="error-alert" class="hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"></div>
+
+  <section id="summary-section" class="hidden grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+    <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Clients</p>
+      <p id="total-clients" class="mt-2 text-3xl font-semibold text-gray-950">0</p>
+    </div>
+    <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Inactive</p>
+      <p id="inactive-clients" class="mt-2 text-3xl font-semibold text-amber-700">0</p>
+    </div>
+    <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Active</p>
+      <p id="active-clients" class="mt-2 text-3xl font-semibold text-emerald-700">0</p>
+    </div>
+    <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Order Lines</p>
+      <p id="total-order-lines" class="mt-2 text-3xl font-semibold text-gray-950">0</p>
+    </div>
+    <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Prior-Year Revenue</p>
+      <p id="total-revenue" class="mt-2 text-3xl font-semibold text-gray-950">$0</p>
+    </div>
+  </section>
+
+  <section id="meta-section" class="hidden rounded-lg border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-900">
+    <span id="range-copy"></span>
+  </section>
+
+  <div id="loading-state" class="hidden rounded-lg border border-gray-200 bg-white px-6 py-12 text-center text-gray-500 shadow-sm">
+    Loading look back history...
+  </div>
+
+  <div id="empty-state" class="rounded-lg border border-gray-200 bg-white px-6 py-12 text-center text-gray-500 shadow-sm">
+    Choose a range and run the report.
+  </div>
+
+  <div id="results-section" class="hidden space-y-6">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <input id="search-input" type="search" placeholder="Search clients or positions" class="w-72 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+        <select id="sort-select" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          <option value="order_lines">Sort by order lines</option>
+          <option value="revenue">Sort by revenue</option>
+          <option value="client">Sort by client</option>
+          <option value="current">Sort by recent activity</option>
+        </select>
+      </div>
+      <button id="export-btn" class="rounded-lg border border-emerald-200 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">
+        Export CSV
+      </button>
+    </div>
+
+    <section class="rounded-lg border border-amber-200 bg-white shadow-sm">
+      <div class="flex items-center justify-between border-b border-amber-100 bg-amber-50 px-5 py-4">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-950">No shifts in last 30 days</h2>
+          <p class="text-sm text-gray-600">Prior-year clients with no current order lines in the activity window.</p>
+        </div>
+        <span id="inactive-count" class="rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-800">0</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+            <tr>
+              <th class="px-5 py-3 text-left font-semibold">Client</th>
+              <th class="px-5 py-3 text-right font-semibold">Order Lines</th>
+              <th class="px-5 py-3 text-right font-semibold">Staff Requested</th>
+              <th class="px-5 py-3 text-right font-semibold">Revenue</th>
+              <th class="px-5 py-3 text-left font-semibold">Positions Ordered</th>
+            </tr>
+          </thead>
+          <tbody id="inactive-body" class="divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="rounded-lg border border-emerald-200 bg-white shadow-sm">
+      <div class="flex items-center justify-between border-b border-emerald-100 bg-emerald-50 px-5 py-4">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-950">Has shifts in last 30 days</h2>
+          <p class="text-sm text-gray-600">Prior-year clients with current order lines in the activity window.</p>
+        </div>
+        <span id="active-count" class="rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-800">0</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+            <tr>
+              <th class="px-5 py-3 text-left font-semibold">Client</th>
+              <th class="px-5 py-3 text-right font-semibold">Order Lines</th>
+              <th class="px-5 py-3 text-right font-semibold">Staff Requested</th>
+              <th class="px-5 py-3 text-right font-semibold">Revenue</th>
+              <th class="px-5 py-3 text-right font-semibold">Recent Lines</th>
+              <th class="px-5 py-3 text-left font-semibold">Last Recent Shift</th>
+              <th class="px-5 py-3 text-left font-semibold">Positions Ordered</th>
+            </tr>
+          </thead>
+          <tbody id="active-body" class="divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const state = { inactive: [], active: [], data: null };
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value || 0);
+}
+
+function formatNumber(value) {
+  return new Intl.NumberFormat('en-US').format(value || 0);
+}
+
+function setText(id, value) {
+  document.getElementById(id).textContent = value;
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[char]));
+}
+
+function filteredRows(rows) {
+  const term = document.getElementById('search-input').value.trim().toLowerCase();
+  const sort = document.getElementById('sort-select').value;
+  let list = rows.filter((row) => {
+    if (!term) return true;
+    const positionText = row.positions_ordered.map((pos) => pos.position).join(' ').toLowerCase();
+    return row.client_name.toLowerCase().includes(term) || positionText.includes(term);
+  });
+  list.sort((a, b) => {
+    if (sort === 'client') return a.client_name.localeCompare(b.client_name);
+    if (sort === 'revenue') return b.prior_year_revenue - a.prior_year_revenue;
+    if (sort === 'current') return b.current_order_lines_last_30_days - a.current_order_lines_last_30_days;
+    return b.prior_year_order_lines - a.prior_year_order_lines;
+  });
+  return list;
+}
+
+function positionsHtml(row) {
+  return row.positions_ordered.map((pos) => (
+    `<span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">${escapeHtml(pos.position)}: ${formatNumber(pos.order_lines)}</span>`
+  )).join(' ');
+}
+
+function renderTable(rows, bodyId, isActive) {
+  const tbody = document.getElementById(bodyId);
+  const visible = filteredRows(rows);
+  if (!visible.length) {
+    const colspan = isActive ? 7 : 5;
+    tbody.innerHTML = `<tr><td colspan="${colspan}" class="px-5 py-8 text-center text-gray-500">No clients found.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = visible.map((row) => `
+    <tr class="hover:bg-gray-50">
+      <td class="min-w-64 px-5 py-4 font-semibold text-gray-950">${escapeHtml(row.client_name)}</td>
+      <td class="px-5 py-4 text-right tabular-nums">${formatNumber(row.prior_year_order_lines)}</td>
+      <td class="px-5 py-4 text-right tabular-nums">${formatNumber(row.prior_year_staff_requested)}</td>
+      <td class="px-5 py-4 text-right font-semibold tabular-nums">${formatCurrency(row.prior_year_revenue)}</td>
+      ${isActive ? `<td class="px-5 py-4 text-right tabular-nums">${formatNumber(row.current_order_lines_last_30_days)}</td>
+      <td class="px-5 py-4 text-gray-600">${row.last_current_shift_date || ''}</td>` : ''}
+      <td class="min-w-96 px-5 py-4"><div class="flex flex-wrap gap-1.5">${positionsHtml(row)}</div></td>
+    </tr>
+  `).join('');
+}
+
+function renderResults() {
+  renderTable(state.inactive, 'inactive-body', false);
+  renderTable(state.active, 'active-body', true);
+  setText('inactive-count', formatNumber(filteredRows(state.inactive).length));
+  setText('active-count', formatNumber(filteredRows(state.active).length));
+}
+
+function setLoading(isLoading) {
+  document.getElementById('run-btn').disabled = isLoading;
+  document.getElementById('loading-state').classList.toggle('hidden', !isLoading);
+  document.getElementById('empty-state').classList.add('hidden');
+}
+
+function showError(message) {
+  const alert = document.getElementById('error-alert');
+  alert.textContent = message;
+  alert.classList.remove('hidden');
+}
+
+function clearError() {
+  const alert = document.getElementById('error-alert');
+  alert.textContent = '';
+  alert.classList.add('hidden');
+}
+
+async function runReport() {
+  clearError();
+  const startDate = document.getElementById('start-date').value;
+  const endDate = document.getElementById('end-date').value;
+  if (!startDate || !endDate) {
+    showError('Please select both start and end dates.');
+    return;
+  }
+  setLoading(true);
+  try {
+    const response = await fetch('/look-back-history/api/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ start_date: startDate, end_date: endDate })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || 'Unable to load look back history.');
+
+    state.data = data;
+    state.inactive = data.inactive_clients || [];
+    state.active = data.active_clients || [];
+    setText('total-clients', formatNumber(data.summary.total_clients));
+    setText('inactive-clients', formatNumber(data.summary.inactive_clients));
+    setText('active-clients', formatNumber(data.summary.active_clients));
+    setText('total-order-lines', formatNumber(data.summary.total_order_lines));
+    setText('total-revenue', formatCurrency(data.summary.total_revenue));
+    setText('range-copy', `Selected ${data.selected_range.start} to ${data.selected_range.end}; looking back at ${data.lookback_range.start} to ${data.lookback_range.end}. Recent activity window: ${data.activity_range.start} to ${data.activity_range.end}.`);
+
+    document.getElementById('summary-section').classList.remove('hidden');
+    document.getElementById('meta-section').classList.remove('hidden');
+    document.getElementById('results-section').classList.remove('hidden');
+    renderResults();
+  } catch (error) {
+    showError(error.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+function csvEscape(value) {
+  return `"${String(value ?? '').replace(/"/g, '""')}"`;
+}
+
+function exportCsv() {
+  const rows = [...state.inactive, ...state.active];
+  if (!rows.length) return;
+  const lines = [[
+    'Status', 'Client ID', 'Client Name', 'Prior Year Order Lines', 'Prior Year Staff Requested',
+    'Prior Year Revenue', 'Recent Order Lines', 'Recent Staff Requested', 'Last Recent Shift Date',
+    'Positions Ordered'
+  ].map(csvEscape).join(',')];
+  rows.forEach((row) => {
+    lines.push([
+      row.status,
+      row.client_id,
+      row.client_name,
+      row.prior_year_order_lines,
+      row.prior_year_staff_requested,
+      row.prior_year_revenue,
+      row.current_order_lines_last_30_days,
+      row.current_staff_requested_last_30_days,
+      row.last_current_shift_date || '',
+      row.positions_ordered.map((pos) => `${pos.position}: ${pos.order_lines} lines / ${pos.staff_requested} staff`).join('; ')
+    ].map(csvEscape).join(','));
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'look_back_history.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+document.getElementById('lookback-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  runReport();
+});
+document.getElementById('search-input').addEventListener('input', renderResults);
+document.getElementById('sort-select').addEventListener('change', renderResults);
+document.getElementById('export-btn').addEventListener('click', exportCsv);
+</script>
+{% endblock %}
