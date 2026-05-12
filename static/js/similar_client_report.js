@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const resultsBody   = document.getElementById('results-body');
   const resultCount   = document.getElementById('result-count');
   const countNum      = document.getElementById('count-num');
+  const ALL_INDUSTRIES_VALUE = '__ALL__';
 
   // -------------------------------------------------------------------------
   // Weights Toggle & Sliders
@@ -43,19 +44,19 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   weightIndustry.addEventListener('input', () => {
-    weightIndustryVal.textContent = Number(weightIndustry.value).toLocaleString('en-US');
+    weightIndustryVal.textContent = Number(weightIndustry.value);
   });
 
   weightMsp.addEventListener('input', () => {
-    weightMspVal.textContent = Number(weightMsp.value).toLocaleString('en-US');
+    weightMspVal.textContent = Number(weightMsp.value);
   });
 
   weightShifts.addEventListener('input', () => {
-    weightShiftsVal.textContent = Number(weightShifts.value).toFixed(1);
+    weightShiftsVal.textContent = Number(weightShifts.value);
   });
 
   weightProximity.addEventListener('input', () => {
-    weightProximityVal.textContent = Number(weightProximity.value).toFixed(1);
+    weightProximityVal.textContent = Number(weightProximity.value);
   });
 
   // -------------------------------------------------------------------------
@@ -77,6 +78,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const resp = await fetch('/similar-client-report/api/options');
       const data = await resp.json();
 
+      industryEl.innerHTML = '';
+      const allOpt = document.createElement('option');
+      allOpt.value = ALL_INDUSTRIES_VALUE;
+      allOpt.textContent = 'All industries';
+      allOpt.selected = true;
+      industryEl.appendChild(allOpt);
+
       data.industries.forEach(ind => {
         const opt = document.createElement('option');
         opt.value = ind;               // raw DB enum sent to backend
@@ -96,6 +104,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   loadOptions();
+
+  industryEl.addEventListener('change', () => {
+    const selectedValues = Array.from(industryEl.selectedOptions).map(opt => opt.value);
+    if (selectedValues.includes(ALL_INDUSTRIES_VALUE) && selectedValues.length > 1) {
+      Array.from(industryEl.options).forEach(opt => {
+        if (opt.value === ALL_INDUSTRIES_VALUE) opt.selected = false;
+      });
+    }
+  });
 
   // -------------------------------------------------------------------------
   // Helpers
@@ -125,6 +142,19 @@ document.addEventListener('DOMContentLoaded', () => {
   function showError(msg) {
     errorMsg.textContent = msg;
     errorAlert.classList.remove('hidden');
+  }
+
+  function getSelectedIndustryPayload() {
+    const selectedValues = Array.from(industryEl.selectedOptions)
+      .map(opt => opt.value.trim())
+      .filter(Boolean);
+    const allIndustries = selectedValues.length === 0 || selectedValues.includes(ALL_INDUSTRIES_VALUE);
+    return {
+      all_industries: allIndustries,
+      industries: allIndustries
+        ? []
+        : selectedValues.filter(value => value !== ALL_INDUSTRIES_VALUE),
+    };
   }
 
   function showState(state) {
@@ -205,11 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     hideAlerts();
 
-    const industry = industryEl.value.trim();
-    if (!industry) {
-      showError('Please select an industry before searching.');
-      return;
-    }
+    const industryPayload = getSelectedIndustryPayload();
 
     setLoading(true);
 
@@ -219,7 +245,8 @@ document.addEventListener('DOMContentLoaded', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           client_name: clientNameEl.value.trim(),
-          industry,
+          industries: industryPayload.industries,
+          all_industries: industryPayload.all_industries,
           location: locationEl.value.trim(),
           msp_id: mspEl.value || null,
           weight_industry: parseFloat(weightIndustry.value),

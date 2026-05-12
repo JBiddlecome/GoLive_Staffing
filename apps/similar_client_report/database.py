@@ -157,16 +157,22 @@ _QUERY = text("""
 
 
 def fetch_similar_clients(
-    industry: str,
+    industries: list[str] | None,
     msp_id: str | None,
     client_name: str,
     lat: float | None,
     lon: float | None,
-    weight_industry: float = 10000.0,
-    weight_msp: float = 1000.0,
+    weight_industry: float = 100.0,
+    weight_msp: float = 50.0,
     weight_shifts: float = 1.0,
     weight_proximity: float = 1.0,
 ) -> list[dict]:
+    selected_industries = {
+        industry.strip()
+        for industry in (industries or [])
+        if industry and industry.strip()
+    }
+
     engine = _engine()
     with engine.connect() as conn:
         df = pd.read_sql(_QUERY, conn)
@@ -181,7 +187,7 @@ def fetch_similar_clients(
         score = 0.0
 
         # 1. Industry — exact DB enum match (dominant weight)
-        if client_industry == industry:
+        if selected_industries and client_industry in selected_industries:
             score += weight_industry
 
         # 2. MSP match
@@ -231,19 +237,19 @@ async def get_msps_async() -> list[dict]:
 
 
 async def get_similar_clients_async(
-    industry: str,
+    industries: list[str] | None,
     msp_id: str | None,
     client_name: str,
     lat: float | None,
     lon: float | None,
-    weight_industry: float = 10000.0,
-    weight_msp: float = 1000.0,
+    weight_industry: float = 100.0,
+    weight_msp: float = 50.0,
     weight_shifts: float = 1.0,
     weight_proximity: float = 1.0,
 ) -> list[dict]:
     return await run_in_threadpool(
         fetch_similar_clients,
-        industry,
+        industries,
         msp_id,
         client_name,
         lat,
