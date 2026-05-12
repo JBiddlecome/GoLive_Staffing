@@ -67,6 +67,7 @@ from apps.profile_picture_approval.views import router as profile_picture_approv
 from apps.certificate_approver.views import router as certificate_approver_router
 from apps.similar_client_report.views import router as similar_client_report_router
 from apps.look_back_history.views import router as look_back_history_router
+from apps.new_employee_position_approver.views import router as new_employee_position_approver_router
 from apps.auth.views import router as auth_router, get_current_user
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 
@@ -82,6 +83,7 @@ from apps.email_forwarder.scheduler import email_forwarder_loop
 from apps.profile_picture_approval.scheduler import profile_picture_approval_loop
 from apps.certificate_approver.scheduler import certificate_approval_loop
 from apps.reports.scheduler import google_spruce_goose_report_loop
+from apps.new_employee_position_approver.scheduler import new_employee_position_approver_loop
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -95,6 +97,7 @@ async def lifespan(app: FastAPI):
     ppa_task = asyncio.create_task(profile_picture_approval_loop())
     ca_task = asyncio.create_task(certificate_approval_loop())
     google_report_task = asyncio.create_task(google_spruce_goose_report_loop())
+    nepa_task = asyncio.create_task(new_employee_position_approver_loop())
     yield
     monitor_task.cancel()
     cc_monitor_task.cancel()
@@ -106,6 +109,7 @@ async def lifespan(app: FastAPI):
     ppa_task.cancel()
     ca_task.cancel()
     google_report_task.cancel()
+    nepa_task.cancel()
 
 app = FastAPI(title="GoLive Staffing — Tools", lifespan=lifespan)
 
@@ -236,6 +240,11 @@ app.include_router(health_benefits_router, prefix="/health-benefits", tags=["Hea
 app.include_router(sales_staffing_router, prefix="/sales-staffing-metrics", tags=["Sales & Staffing Metrics"])
 app.include_router(recruiting_metrics_router, prefix="/recruiting-metrics", tags=["Recruiting Metrics"])
 app.include_router(resume_analyzer_router, prefix="/resume-analyzer", tags=["Resume Analyzer"])
+app.include_router(
+    new_employee_position_approver_router,
+    prefix="/new-employee-position-approver",
+    tags=["New Employee Position Approver"],
+)
 app.include_router(
     sales_payroll_analyzer_router,
     prefix="/sales-payroll-analyzer",
