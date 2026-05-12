@@ -96,6 +96,7 @@
           <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
             <tr>
               <th class="px-5 py-3 text-left font-semibold">Client</th>
+              <th class="px-5 py-3 text-left font-semibold">Client Status</th>
               <th class="px-5 py-3 text-right font-semibold">Order Lines</th>
               <th class="px-5 py-3 text-right font-semibold">Staff Requested</th>
               <th class="px-5 py-3 text-right font-semibold">Revenue</th>
@@ -185,13 +186,14 @@ function renderTable(rows, bodyId, isActive) {
   const tbody = document.getElementById(bodyId);
   const visible = filteredRows(rows);
   if (!visible.length) {
-    const colspan = isActive ? 7 : 5;
+    const colspan = isActive ? 7 : 6;
     tbody.innerHTML = `<tr><td colspan="${colspan}" class="px-5 py-8 text-center text-gray-500">No clients found.</td></tr>`;
     return;
   }
   tbody.innerHTML = visible.map((row) => `
     <tr class="hover:bg-gray-50">
       <td class="min-w-64 px-5 py-4 font-semibold text-gray-950">${escapeHtml(row.client_name)}</td>
+      ${isActive ? '' : `<td class="px-5 py-4 text-gray-700">${escapeHtml(row.client_status || 'Unknown')}</td>`}
       <td class="px-5 py-4 text-right tabular-nums">${formatNumber(row.prior_year_order_lines)}</td>
       <td class="px-5 py-4 text-right tabular-nums">${formatNumber(row.prior_year_staff_requested)}</td>
       <td class="px-5 py-4 text-right font-semibold tabular-nums">${formatCurrency(row.prior_year_revenue)}</td>
@@ -275,8 +277,8 @@ function exportCsv() {
   if (!rows.length) return;
   const lines = [[
     'Status', 'Client ID', 'Client Name', 'Prior Year Order Lines', 'Prior Year Staff Requested',
-    'Prior Year Revenue', 'Recent Order Lines', 'Recent Staff Requested', 'Last Recent Shift Date',
-    'Positions Ordered'
+    'Client Status', 'Prior Year Revenue', 'Recent Order Lines', 'Recent Staff Requested',
+    'Last Recent Shift Date', 'Positions Ordered'
   ].map(csvEscape).join(',')];
   rows.forEach((row) => {
     lines.push([
@@ -285,6 +287,7 @@ function exportCsv() {
       row.client_name,
       row.prior_year_order_lines,
       row.prior_year_staff_requested,
+      row.client_status || '',
       row.prior_year_revenue,
       row.current_order_lines_last_30_days,
       row.current_staff_requested_last_30_days,
