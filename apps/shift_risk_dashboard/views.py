@@ -228,6 +228,8 @@ def _process_rows(rows) -> dict:
                 "event_title": row["event_title"],
                 "client_name": row["client_name"],
                 "venue_name": row["venue_name"],
+                "staffing_manager_id": row.get("staffing_manager_id"),
+                "staffing_manager_name": row.get("staffing_manager_name"),
                 "days_until_event": days_until,
                 "total_open_spots": 0,
                 "total_spots": 0,
@@ -280,6 +282,8 @@ SELECT
     c.name                                          AS client_name,
     v.venue_id,
     v.name                                          AS venue_name,
+    v.staffing_manager_id,
+    CONCAT(u_mgr.first_name, ' ', u_mgr.last_name)  AS staffing_manager_name,
     e.event_id,
     e.title                                         AS event_title,
     DATE_FORMAT(e.date, '%Y-%m-%d')                 AS event_date,
@@ -299,6 +303,7 @@ SELECT
 FROM event e
 JOIN client c       ON c.client_id   = e.client_id
 JOIN venue v        ON v.venue_id    = e.venue_id
+LEFT JOIN user u_mgr ON u_mgr.id = v.staffing_manager_id
 JOIN shift s        ON s.event_id    = e.event_id
 JOIN shift_position sp ON sp.shift_id = s.shift_id
 JOIN position p     ON p.position_id = sp.position_id
@@ -319,7 +324,7 @@ WHERE e.date >= CURDATE()
   AND (sp.count - COALESCE(se_counts.filled, 0)) > 0
   AND sp.count > 0
 GROUP BY
-    c.client_id, v.venue_id, e.event_id, s.shift_id,
+    c.client_id, v.venue_id, v.staffing_manager_id, u_mgr.first_name, u_mgr.last_name, e.event_id, s.shift_id,
     sp.shift_position_id, p.position_id
 ORDER BY e.date ASC, s.start ASC
 """)
