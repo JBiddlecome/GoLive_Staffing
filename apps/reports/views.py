@@ -1110,11 +1110,16 @@ async def get_top_frequency_cancellations():
 async def basic_client_report_page(request: Request):
     return templates.TemplateResponse("reports/basic_client_report.html", {"request": request})
 
-async def _get_basic_client_summary_df(client_id: int, start_date: str, end_date: str):
+async def _get_basic_client_summary_df(client_id: int, start_date: str, end_date: str, by_venue: bool = False):
     engine = _get_staffing_engine()
+    venue_select = "COALESCE(v.name, 'No Venue') AS venue_name," if by_venue else ""
+    venue_join = "LEFT JOIN venue v ON e.venue_id = v.venue_id" if by_venue else ""
+    venue_group = ", e.venue_id" if by_venue else ""
+    venue_order = "venue_name ASC, " if by_venue else ""
     try:
-        sql = text("""
+        sql = text(f"""
             SELECT 
+                {venue_select}
                 CONCAT(emp.first_name, ' ', emp.last_name) AS employee_name,
                 GROUP_CONCAT(DISTINCT p.description SEPARATOR ', ') AS positions_worked,
                 SUM(
@@ -1137,14 +1142,15 @@ async def _get_basic_client_summary_df(client_id: int, start_date: str, end_date
             FROM timesheet t
             JOIN shift_employee se ON t.shift_employee_id = se.shift_employee_id
             JOIN event e ON se.event_id = e.event_id
+            {venue_join}
             JOIN employee emp ON t.employee_id = emp.employee_id
             LEFT JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
             LEFT JOIN position p ON sp.position_id = p.position_id
             WHERE e.client_id = :client_id
               AND t.employee_worked = 'WORKED'
               AND e.date >= :start_date AND e.date <= :end_date
-            GROUP BY t.employee_id
-            ORDER BY emp.first_name ASC, emp.last_name ASC
+            GROUP BY t.employee_id {venue_group}
+            ORDER BY {venue_order} emp.first_name ASC, emp.last_name ASC
         """)
         with engine.begin() as conn:
             df = pd.read_sql(sql, conn, params={
@@ -1162,6 +1168,7 @@ async def _get_basic_client_detail_df(client_id: int, start_date: str, end_date:
         sql = text("""
             SELECT 
                 e.date AS shift_date,
+                COALESCE(v.name, 'No Venue') AS venue_name,
                 CONCAT(emp.first_name, ' ', emp.last_name) AS employee_name,
                 COALESCE(p.description, '') AS position,
                 COALESCE(
@@ -1188,6 +1195,7 @@ async def _get_basic_client_detail_df(client_id: int, start_date: str, end_date:
             FROM timesheet t
             JOIN shift_employee se ON t.shift_employee_id = se.shift_employee_id
             JOIN event e ON se.event_id = e.event_id
+            LEFT JOIN venue v ON e.venue_id = v.venue_id
             JOIN employee emp ON t.employee_id = emp.employee_id
             LEFT JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
             LEFT JOIN position p ON sp.position_id = p.position_id
@@ -1210,13 +1218,13 @@ async def _get_basic_client_detail_df(client_id: int, start_date: str, end_date:
         engine.dispose()
 
 @router.get("/api/basic-client-report")
-async def get_basic_client_report(client_id: int, start_date: str, end_date: str):
-    df = await _get_basic_client_summary_df(client_id, start_date, end_date)
+async def get_basic_client_report(client_id: int, start_date: str, end_date: str, by_venue: bool = False):
+    df = await _get_basic_client_summary_df(client_id, start_date, end_date, by_venue=by_venue)
     return df.astype(object).where(pd.notnull(df), None).to_dict(orient="records")
 
 @router.get("/api/basic-client-report/export")
-async def export_basic_client_report(client_id: int, start_date: str, end_date: str):
-    summary_df = await _get_basic_client_summary_df(client_id, start_date, end_date)
+async def export_basic_client_report(client_id: int, start_date: str, end_date: str, by_venue: bool = False):
+    summary_df = await _get_basic_client_summary_df(client_id, start_date, end_date, by_venue=by_venue)
     detail_df = await _get_basic_client_detail_df(client_id, start_date, end_date)
 
     if summary_df.empty:
@@ -1239,15 +1247,20 @@ async def export_basic_client_report(client_id: int, start_date: str, end_date: 
     safe_name = "".join(c if c.isalnum() or c in (' ', '-', '_') else '' for c in client_name).strip().replace(' ', '_')
 
     # Rename columns for nicer Excel headers
-    summary_export = summary_df.rename(columns={
+    summary_columns = {
         "employee_name": "Employee Name",
         "positions_worked": "Positions Worked",
         "total_hours": "Total Hours",
         "list_status": "List Status",
-    })
+    }
+    if by_venue:
+        summary_columns["venue_name"] = "Venue Name"
+        
+    summary_export = summary_df.rename(columns=summary_columns)
 
     detail_export = detail_df.rename(columns={
         "shift_date": "Date of Shift",
+        "venue_name": "Venue Name",
         "employee_name": "Employee Name",
         "position": "Position",
         "scheduled_hours": "Scheduled Hours",
@@ -1256,6 +1269,11 @@ async def export_basic_client_report(client_id: int, start_date: str, end_date: 
         "bill_rate": "Bill Rate",
         "list_status": "List Status",
     })
+
+    # Reorder summary columns to put Venue first if present
+    if by_venue and "Venue Name" in summary_export.columns:
+        cols = ["Venue Name"] + [c for c in summary_export.columns if c != "Venue Name"]
+        summary_export = summary_export[cols]
 
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:

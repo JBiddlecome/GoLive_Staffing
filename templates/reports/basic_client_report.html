@@ -30,6 +30,10 @@
           <label for="endDate" class="block text-sm font-medium text-slate-700 mb-2">End Date</label>
           <input type="date" id="endDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 p-2.5">
         </div>
+        <div class="flex items-center gap-2 h-[45px] mb-0.5">
+          <input type="checkbox" id="byVenue" class="w-4 h-4 text-emerald-600 bg-slate-50 border-slate-300 rounded focus:ring-emerald-500 cursor-pointer">
+          <label for="byVenue" class="text-sm font-medium text-slate-700 cursor-pointer">Separate by Venue</label>
+        </div>
         <div class="flex gap-3">
           <button id="generateBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-lg transition-colors flex items-center">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
@@ -75,7 +79,7 @@
       <div id="report-container" class="hidden overflow-hidden rounded-2xl border border-emerald-100">
         <table class="w-full text-left text-sm">
           <thead class="bg-emerald-50 text-emerald-800 font-semibold uppercase tracking-wider">
-            <tr>
+            <tr id="report-header-row">
               <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider">Employee Name</th>
               <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider">Positions Worked</th>
               <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider">Total Hours</th>
@@ -104,10 +108,12 @@
     const clearClientBtn = document.getElementById('clearClient');
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
+    const byVenueInput = document.getElementById('byVenue');
     const generateBtn = document.getElementById('generateBtn');
     const exportBtn = document.getElementById('exportBtn');
     const loading = document.getElementById('loading');
     const container = document.getElementById('report-container');
+    const headerRow = document.getElementById('report-header-row');
     const body = document.getElementById('report-body');
     const noData = document.getElementById('no-data');
     const summaryStats = document.getElementById('summary-stats');
@@ -185,6 +191,7 @@
       const clientId = clientIdInput.value;
       const start = startDateInput.value;
       const end = endDateInput.value;
+      const byVenue = byVenueInput.checked;
 
       if (!clientId) { alert('Please search for and select a client.'); return; }
       if (!start || !end) { alert('Please select both a start and end date.'); return; }
@@ -196,8 +203,27 @@
       body.innerHTML = '';
       exportBtn.disabled = true;
 
+      // Update dynamic header based on venue toggle
+      if (byVenue) {
+        headerRow.innerHTML = `
+          <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider">Venue Name</th>
+          <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider">Employee Name</th>
+          <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider">Positions Worked</th>
+          <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider">Total Hours</th>
+          <th class="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider">List Status</th>
+        `;
+      } else {
+        headerRow.innerHTML = `
+          <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider">Employee Name</th>
+          <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider">Positions Worked</th>
+          <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider">Total Hours</th>
+          <th class="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider">List Status</th>
+        `;
+      }
+
       try {
-        const resp = await fetch(`/reports/api/basic-client-report?client_id=${clientId}&start_date=${start}&end_date=${end}`);
+        const url = `/reports/api/basic-client-report?client_id=${clientId}&start_date=${start}&end_date=${end}&by_venue=${byVenue}`;
+        const resp = await fetch(url);
         if (!resp.ok) throw new Error(await resp.text());
         const data = await resp.json();
 
@@ -207,14 +233,17 @@
           // Calculate stats
           let totalHours = 0;
           const allPositions = new Set();
+          const uniqueEmployees = new Set();
           data.forEach(row => {
             totalHours += row['total_hours'] || 0;
             if (row['positions_worked']) {
               row['positions_worked'].split(', ').forEach(p => allPositions.add(p));
             }
+            uniqueEmployees.add(row['employee_name']);
           });
 
-          document.getElementById('statEmployees').textContent = data.length;
+          // In venue mode, length of array is employee x venue. uniqueEmployees.size gives actual employee count.
+          document.getElementById('statEmployees').textContent = byVenue ? uniqueEmployees.size : data.length;
           document.getElementById('statHours').textContent = totalHours.toFixed(2);
           document.getElementById('statPositions').textContent = allPositions.size;
           summaryStats.classList.remove('hidden');
@@ -231,12 +260,23 @@
             } else if (status === 'DNR') {
               statusBadge = '<span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">DNR</span>';
             }
-            tr.innerHTML = `
-              <td class="px-6 py-4 font-semibold text-gray-900">${row['employee_name'] || ''}</td>
-              <td class="px-6 py-4 text-gray-600">${row['positions_worked'] || ''}</td>
-              <td class="px-6 py-4 text-emerald-700 font-bold text-right">${row['total_hours'] ? Number(row['total_hours']).toFixed(2) : '0.00'}</td>
-              <td class="px-6 py-4 text-center">${statusBadge}</td>
-            `;
+            
+            if (byVenue) {
+              tr.innerHTML = `
+                <td class="px-6 py-4 font-medium text-gray-600 bg-slate-50/50 border-r border-emerald-50">${row['venue_name'] || ''}</td>
+                <td class="px-6 py-4 font-semibold text-gray-900">${row['employee_name'] || ''}</td>
+                <td class="px-6 py-4 text-gray-600">${row['positions_worked'] || ''}</td>
+                <td class="px-6 py-4 text-emerald-700 font-bold text-right">${row['total_hours'] ? Number(row['total_hours']).toFixed(2) : '0.00'}</td>
+                <td class="px-6 py-4 text-center">${statusBadge}</td>
+              `;
+            } else {
+              tr.innerHTML = `
+                <td class="px-6 py-4 font-semibold text-gray-900">${row['employee_name'] || ''}</td>
+                <td class="px-6 py-4 text-gray-600">${row['positions_worked'] || ''}</td>
+                <td class="px-6 py-4 text-emerald-700 font-bold text-right">${row['total_hours'] ? Number(row['total_hours']).toFixed(2) : '0.00'}</td>
+                <td class="px-6 py-4 text-center">${statusBadge}</td>
+              `;
+            }
             body.appendChild(tr);
           });
           container.classList.remove('hidden');
@@ -255,8 +295,9 @@
       const clientId = clientIdInput.value;
       const start = startDateInput.value;
       const end = endDateInput.value;
+      const byVenue = byVenueInput.checked;
       if (!clientId || !start || !end) return;
-      window.location.href = `/reports/api/basic-client-report/export?client_id=${clientId}&start_date=${start}&end_date=${end}`;
+      window.location.href = `/reports/api/basic-client-report/export?client_id=${clientId}&start_date=${start}&end_date=${end}&by_venue=${byVenue}`;
     });
   });
 </script>
