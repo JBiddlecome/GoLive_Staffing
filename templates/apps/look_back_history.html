@@ -10,7 +10,8 @@
           <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">Sales Tools</p>
           <h1 class="brand-serif text-4xl font-semibold leading-tight text-gray-950">Look Back History</h1>
           <p class="max-w-3xl text-gray-600">
-            Enter a target date range to see which clients ordered shift lines during the same dates last year, then separate clients with and without recent activity.
+            Enter a target date range to see which clients ordered shifts across the past 5 years in that same window.
+            Clients are ranked by how consistently they ordered — those active in all 5 years appear at the top.
           </p>
         </div>
         <form id="lookback-form" class="grid gap-3 sm:grid-cols-[1fr_1fr_auto] lg:min-w-[520px]">
@@ -38,19 +39,19 @@
       <p id="total-clients" class="mt-2 text-3xl font-semibold text-gray-950">0</p>
     </div>
     <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-      <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Inactive</p>
+      <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Inactive (30d)</p>
       <p id="inactive-clients" class="mt-2 text-3xl font-semibold text-amber-700">0</p>
     </div>
     <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-      <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Active</p>
+      <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Active (30d)</p>
       <p id="active-clients" class="mt-2 text-3xl font-semibold text-emerald-700">0</p>
     </div>
     <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-      <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Order Lines</p>
+      <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Total Order Lines</p>
       <p id="total-order-lines" class="mt-2 text-3xl font-semibold text-gray-950">0</p>
     </div>
     <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-      <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Prior-Year Revenue</p>
+      <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">5-Year Revenue</p>
       <p id="total-revenue" class="mt-2 text-3xl font-semibold text-gray-950">$0</p>
     </div>
   </section>
@@ -60,7 +61,7 @@
   </section>
 
   <div id="loading-state" class="hidden rounded-lg border border-gray-200 bg-white px-6 py-12 text-center text-gray-500 shadow-sm">
-    Loading look back history...
+    Loading 5-year look back history — this may take a moment...
   </div>
 
   <div id="empty-state" class="rounded-lg border border-gray-200 bg-white px-6 py-12 text-center text-gray-500 shadow-sm">
@@ -72,6 +73,7 @@
       <div class="flex items-center gap-2">
         <input id="search-input" type="search" placeholder="Search clients or positions" class="w-72 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
         <select id="sort-select" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          <option value="years_active">Sort by years active</option>
           <option value="order_lines">Sort by order lines</option>
           <option value="revenue">Sort by revenue</option>
           <option value="client">Sort by client</option>
@@ -83,6 +85,7 @@
       </button>
     </div>
 
+    <!-- Inactive section -->
     <section class="rounded-lg border border-amber-200 bg-white shadow-sm">
       <div class="flex items-center justify-between border-b border-amber-100 bg-amber-50 px-5 py-4">
         <div>
@@ -97,9 +100,9 @@
             <tr>
               <th class="px-5 py-3 text-left font-semibold">Client</th>
               <th class="px-5 py-3 text-left font-semibold">Client Status</th>
-              <th class="px-5 py-3 text-right font-semibold">Order Lines</th>
-              <th class="px-5 py-3 text-right font-semibold">Staff Requested</th>
-              <th class="px-5 py-3 text-right font-semibold">Revenue</th>
+              <th class="px-4 py-3 text-center font-semibold" style="min-width:120px">Years Active</th>
+              <th class="px-5 py-3 text-right font-semibold">Total Staff Req.</th>
+              <th class="px-5 py-3 text-right font-semibold">5-Yr Revenue</th>
               <th class="px-5 py-3 text-left font-semibold">Positions Ordered</th>
             </tr>
           </thead>
@@ -108,6 +111,7 @@
       </div>
     </section>
 
+    <!-- Active section -->
     <section class="rounded-lg border border-emerald-200 bg-white shadow-sm">
       <div class="flex items-center justify-between border-b border-emerald-100 bg-emerald-50 px-5 py-4">
         <div>
@@ -121,9 +125,9 @@
           <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
             <tr>
               <th class="px-5 py-3 text-left font-semibold">Client</th>
-              <th class="px-5 py-3 text-right font-semibold">Order Lines</th>
-              <th class="px-5 py-3 text-right font-semibold">Staff Requested</th>
-              <th class="px-5 py-3 text-right font-semibold">Revenue</th>
+              <th class="px-4 py-3 text-center font-semibold" style="min-width:120px">Years Active</th>
+              <th class="px-5 py-3 text-right font-semibold">Total Staff Req.</th>
+              <th class="px-5 py-3 text-right font-semibold">5-Yr Revenue</th>
               <th class="px-5 py-3 text-right font-semibold">Recent Lines</th>
               <th class="px-5 py-3 text-left font-semibold">Last Recent Shift</th>
               <th class="px-5 py-3 text-left font-semibold">Positions Ordered</th>
@@ -135,28 +139,117 @@
     </section>
   </div>
 </div>
+
+<style>
+.year-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin: 0 1px;
+  cursor: default;
+}
+.year-dot.filled { background-color: #059669; }
+.year-dot.empty  { background-color: #d1d5db; }
+.years-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.years-badge-5 { background: #d1fae5; color: #065f46; }
+.years-badge-4 { background: #a7f3d0; color: #065f46; }
+.years-badge-3 { background: #fef3c7; color: #92400e; }
+.years-badge-2 { background: #fed7aa; color: #9a3412; }
+.years-badge-1 { background: #fee2e2; color: #991b1b; }
+
+/* Tooltip */
+.yr-tooltip-wrapper { position: relative; display: inline-block; }
+.yr-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 200px;
+  background: #1f2937;
+  color: #f9fafb;
+  font-size: 0.72rem;
+  border-radius: 8px;
+  padding: 8px 10px;
+  z-index: 50;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+.yr-tooltip-wrapper:hover .yr-tooltip { display: block; }
+.yr-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #1f2937;
+}
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
+const LOOKBACK_YEARS = 5;
 const state = { inactive: [], active: [], data: null };
 
 function formatCurrency(value) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value || 0);
 }
-
 function formatNumber(value) {
   return new Intl.NumberFormat('en-US').format(value || 0);
 }
-
 function setText(id, value) {
   document.getElementById(id).textContent = value;
 }
-
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[char]));
+}
+
+function yearsActiveBadge(row) {
+  const n = row.years_active;
+  const cls = `years-badge years-badge-${Math.min(n, 5)}`;
+  // Build dots: offset 1 = most recent prior year, offset 5 = 5 years ago
+  // We show dots left-to-right for oldest-to-newest (offset 5 → 1)
+  const offsets = row.years_with_orders || [];
+  const offsetSet = new Set(offsets);
+  let dots = '';
+  const breakdown = row.year_breakdown || [];
+  // Map year_label to offset (we'll show dots oldest first)
+  // year_breakdown is sorted ascending by offset (offset 1 = most recent)
+  // Reverse so oldest is leftmost
+  const bdSorted = [...breakdown].sort((a, b) => a.year - b.year);
+
+  let tooltipLines = bdSorted.map(yb => {
+    return `${yb.year}: ${formatNumber(yb.order_lines)} lines / ${formatCurrency(yb.revenue)}`;
+  }).join('<br>');
+
+  // Dots: one per lookback year (5 total), filled if active
+  for (let yr = LOOKBACK_YEARS; yr >= 1; yr--) {
+    const active = offsetSet.has(yr);
+    dots += `<span class="year-dot ${active ? 'filled' : 'empty'}" title=""></span>`;
+  }
+
+  return `
+    <div class="yr-tooltip-wrapper">
+      <span class="${cls}">${n}/${LOOKBACK_YEARS}</span>
+      <div style="margin-top:4px;white-space:nowrap">${dots}</div>
+      <div class="yr-tooltip">
+        <strong style="display:block;margin-bottom:4px">Year-by-Year</strong>
+        ${tooltipLines}
+      </div>
+    </div>`;
 }
 
 function filteredRows(rows) {
@@ -164,20 +257,26 @@ function filteredRows(rows) {
   const sort = document.getElementById('sort-select').value;
   let list = rows.filter((row) => {
     if (!term) return true;
-    const positionText = row.positions_ordered.map((pos) => pos.position).join(' ').toLowerCase();
+    const positionText = (row.positions_ordered || []).map((pos) => pos.position).join(' ').toLowerCase();
     return row.client_name.toLowerCase().includes(term) || positionText.includes(term);
   });
   list.sort((a, b) => {
     if (sort === 'client') return a.client_name.localeCompare(b.client_name);
-    if (sort === 'revenue') return b.prior_year_revenue - a.prior_year_revenue;
+    if (sort === 'revenue') return b.total_revenue - a.total_revenue;
+    if (sort === 'order_lines') return b.total_order_lines - a.total_order_lines;
     if (sort === 'current') return b.current_order_lines_last_30_days - a.current_order_lines_last_30_days;
-    return b.prior_year_order_lines - a.prior_year_order_lines;
+    // Default: years active desc, then recent year present, then order lines
+    if (b.years_active !== a.years_active) return b.years_active - a.years_active;
+    const aRecent = (a.years_with_orders || []).includes(1) ? 1 : 0;
+    const bRecent = (b.years_with_orders || []).includes(1) ? 1 : 0;
+    if (bRecent !== aRecent) return bRecent - aRecent;
+    return b.total_order_lines - a.total_order_lines;
   });
   return list;
 }
 
 function positionsHtml(row) {
-  return row.positions_ordered.map((pos) => (
+  return (row.positions_ordered || []).map((pos) => (
     `<span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">${escapeHtml(pos.position)}: ${formatNumber(pos.order_lines)}</span>`
   )).join(' ');
 }
@@ -185,8 +284,8 @@ function positionsHtml(row) {
 function renderTable(rows, bodyId, isActive) {
   const tbody = document.getElementById(bodyId);
   const visible = filteredRows(rows);
+  const colspan = isActive ? 7 : 6;
   if (!visible.length) {
-    const colspan = isActive ? 7 : 6;
     tbody.innerHTML = `<tr><td colspan="${colspan}" class="px-5 py-8 text-center text-gray-500">No clients found.</td></tr>`;
     return;
   }
@@ -194,9 +293,9 @@ function renderTable(rows, bodyId, isActive) {
     <tr class="hover:bg-gray-50">
       <td class="min-w-64 px-5 py-4 font-semibold text-gray-950">${escapeHtml(row.client_name)}</td>
       ${isActive ? '' : `<td class="px-5 py-4 text-gray-700">${escapeHtml(row.client_status || 'Unknown')}</td>`}
-      <td class="px-5 py-4 text-right tabular-nums">${formatNumber(row.prior_year_order_lines)}</td>
-      <td class="px-5 py-4 text-right tabular-nums">${formatNumber(row.prior_year_staff_requested)}</td>
-      <td class="px-5 py-4 text-right font-semibold tabular-nums">${formatCurrency(row.prior_year_revenue)}</td>
+      <td class="px-4 py-4 text-center">${yearsActiveBadge(row)}</td>
+      <td class="px-5 py-4 text-right tabular-nums">${formatNumber(row.total_staff_requested)}</td>
+      <td class="px-5 py-4 text-right font-semibold tabular-nums">${formatCurrency(row.total_revenue)}</td>
       ${isActive ? `<td class="px-5 py-4 text-right tabular-nums">${formatNumber(row.current_order_lines_last_30_days)}</td>
       <td class="px-5 py-4 text-gray-600">${row.last_current_shift_date || ''}</td>` : ''}
       <td class="min-w-96 px-5 py-4"><div class="flex flex-wrap gap-1.5">${positionsHtml(row)}</div></td>
@@ -250,12 +349,15 @@ async function runReport() {
     state.data = data;
     state.inactive = data.inactive_clients || [];
     state.active = data.active_clients || [];
+
     setText('total-clients', formatNumber(data.summary.total_clients));
     setText('inactive-clients', formatNumber(data.summary.inactive_clients));
     setText('active-clients', formatNumber(data.summary.active_clients));
     setText('total-order-lines', formatNumber(data.summary.total_order_lines));
     setText('total-revenue', formatCurrency(data.summary.total_revenue));
-    setText('range-copy', `Selected ${data.selected_range.start} to ${data.selected_range.end}; looking back at ${data.lookback_range.start} to ${data.lookback_range.end}. Recent activity window: ${data.activity_range.start} to ${data.activity_range.end}.`);
+
+    const ranges = (data.lookback_ranges || []).map(r => `${r.year} (${r.start} – ${r.end})`).join(', ');
+    setText('range-copy', `Selected: ${data.selected_range.start} to ${data.selected_range.end}. Looking back across: ${ranges}. Recent activity window: ${data.activity_range.start} to ${data.activity_range.end}.`);
 
     document.getElementById('summary-section').classList.remove('hidden');
     document.getElementById('meta-section').classList.remove('hidden');
@@ -276,23 +378,25 @@ function exportCsv() {
   const rows = [...state.inactive, ...state.active];
   if (!rows.length) return;
   const lines = [[
-    'Status', 'Client ID', 'Client Name', 'Prior Year Order Lines', 'Prior Year Staff Requested',
-    'Client Status', 'Prior Year Revenue', 'Recent Order Lines', 'Recent Staff Requested',
-    'Last Recent Shift Date', 'Positions Ordered'
+    'Status', 'Client ID', 'Client Name', 'Client Status', 'Years Active (of 5)',
+    'Total Order Lines', 'Total Staff Requested', '5-Year Revenue',
+    'Recent Order Lines (30d)', 'Recent Staff Requested (30d)', 'Last Recent Shift Date',
+    'Positions Ordered'
   ].map(csvEscape).join(',')];
   rows.forEach((row) => {
     lines.push([
       row.status,
       row.client_id,
       row.client_name,
-      row.prior_year_order_lines,
-      row.prior_year_staff_requested,
       row.client_status || '',
-      row.prior_year_revenue,
+      row.years_active,
+      row.total_order_lines,
+      row.total_staff_requested,
+      row.total_revenue,
       row.current_order_lines_last_30_days,
       row.current_staff_requested_last_30_days,
       row.last_current_shift_date || '',
-      row.positions_ordered.map((pos) => `${pos.position}: ${pos.order_lines} lines / ${pos.staff_requested} staff`).join('; ')
+      (row.positions_ordered || []).map((pos) => `${pos.position}: ${pos.order_lines} lines / ${pos.staff_requested} staff`).join('; ')
     ].map(csvEscape).join(','));
   });
   const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });

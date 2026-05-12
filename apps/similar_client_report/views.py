@@ -31,20 +31,37 @@ async def get_options():
 async def search_similar_clients(request: Request):
     body = await request.json()
     client_name = (body.get("client_name") or "").strip()
-    industry = (body.get("industry") or "").strip()
+    all_industries = bool(body.get("all_industries"))
+    raw_industries = body.get("industries")
+    if isinstance(raw_industries, list):
+        industries = [
+            str(industry).strip()
+            for industry in raw_industries
+            if str(industry).strip()
+        ]
+    else:
+        industry = (body.get("industry") or "").strip()
+        industries = [industry] if industry else []
+    if all_industries:
+        industries = []
     location = (body.get("location") or "").strip()
     msp_id = body.get("msp_id") or None
 
     try:
-        weight_industry = float(body.get("weight_industry") if body.get("weight_industry") is not None else 10000.0)
-        weight_msp = float(body.get("weight_msp") if body.get("weight_msp") is not None else 1000.0)
+        weight_industry = float(body.get("weight_industry") if body.get("weight_industry") is not None else 100.0)
+        weight_msp = float(body.get("weight_msp") if body.get("weight_msp") is not None else 50.0)
         weight_shifts = float(body.get("weight_shifts") if body.get("weight_shifts") is not None else 1.0)
         weight_proximity = float(body.get("weight_proximity") if body.get("weight_proximity") is not None else 1.0)
     except (ValueError, TypeError):
-        weight_industry = 10000.0
-        weight_msp = 1000.0
+        weight_industry = 100.0
+        weight_msp = 50.0
         weight_shifts = 1.0
         weight_proximity = 1.0
+
+    weight_industry = max(1.0, min(100.0, weight_industry))
+    weight_msp = max(1.0, min(100.0, weight_msp))
+    weight_shifts = max(1.0, min(100.0, weight_shifts))
+    weight_proximity = max(1.0, min(100.0, weight_proximity))
 
     lat: float | None = None
     lon: float | None = None
@@ -57,11 +74,8 @@ async def search_similar_clients(request: Request):
                 f"Could not geocode '{location}'. Miles from location will not be shown."
             )
 
-    if not industry:
-        return JSONResponse({"error": "Industry is required."}, status_code=422)
-
     results = await get_similar_clients_async(
-        industry,
+        industries,
         msp_id,
         client_name,
         lat,
