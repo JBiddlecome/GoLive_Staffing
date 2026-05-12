@@ -9,6 +9,7 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import URL
 from datetime import date
 from typing import Any, Optional
+from apps.profit_tracker.billing import calculate_total_bill
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -436,6 +437,7 @@ async def get_profit_data(payload: ProfitPayload):
             reg_bill + ot_bill + dt_bill + non_worked_bill + service_amt_c + meal_amt_c + 
             c_tips + c_parking + c_travel
         )
+        total_bill = calculate_total_bill(row)
         total_pay = (
             reg_pay + ot_pay + dt_pay + non_worked_pay + service_amt_e + meal_amt_e + 
             e_tips + e_parking + e_travel +
@@ -787,7 +789,7 @@ async def get_weekly_client_data(payload: ProfitPayload):
             e_tips = float(row.get("employee_tips", 0))
             e_parking = float(row.get("employee_parking", 0))
             e_travel = float(row.get("employee_travel", 0))
-        total_bill = reg_bill + ot_bill + dt_bill + non_worked_bill + service_amt_c + meal_amt_c + c_tips + c_parking + c_travel
+        total_bill = calculate_total_bill(row)
         total_pay = reg_pay + ot_pay + dt_pay + non_worked_pay + service_amt_e + meal_amt_e + e_tips + e_parking + e_travel + additional_pay + bonus_pay
         msp_rate = float(row.get("msp_rate", 0))
         wc_rate = float(row.get("wc_rate", 0))

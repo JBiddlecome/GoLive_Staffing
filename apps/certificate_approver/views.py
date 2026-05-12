@@ -17,6 +17,7 @@ templates = Jinja2Templates(directory="templates")
 
 S3_BUCKET = os.getenv("S3_BUCKET", "web-application-files")
 S3_REGION = os.getenv("S3_REGION", "us-east-1")
+CERTIFICATE_APPROVER_USER_ID = 35598
 
 def get_s3_client():
     return boto3.client(
@@ -562,8 +563,8 @@ def approve_cert_action(record_id: int, first_name: str, email: str, cert_type_n
             with engine.begin() as conn:
                 record = conn.execute(text("SELECT employee_id, certification_id FROM employee_certification WHERE id = :record_id"), {"record_id": record_id}).fetchone()
                 
-                update_sql = "UPDATE employee_certification SET approved_at = NOW(), approved_by = 1"
-                params = {"record_id": record_id}
+                update_sql = "UPDATE employee_certification SET approved_at = NOW(), approved_by = :approved_by"
+                params = {"record_id": record_id, "approved_by": CERTIFICATE_APPROVER_USER_ID}
                 
                 if issued_at:
                     update_sql += ", issued_at = :issued_at"
@@ -588,11 +589,11 @@ def approve_cert_action(record_id: int, first_name: str, email: str, cert_type_n
                     if is_food_handler:
                         conn.execute(text("""
                             UPDATE employee_certification 
-                            SET approved_at = NOW(), approved_by = 1 
+                            SET approved_at = NOW(), approved_by = :approved_by 
                             WHERE employee_id = :emp_id 
                               AND certification_id = 45 
                               AND approved_at IS NULL
-                        """), {"emp_id": emp_id})
+                        """), {"emp_id": emp_id, "approved_by": CERTIFICATE_APPROVER_USER_ID})
         finally:
             engine.dispose()
             
