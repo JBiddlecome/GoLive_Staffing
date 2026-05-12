@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+
+{% block title %}New Employee Position Approver - GoLive Tools{% endblock %}
+{% block main_class %}w-full px-4 py-8{% endblock %}
+
+{% block content %}
+<div class="px-4 sm:px-6 lg:px-8 w-full py-8 space-y-6">
+  <div class="flex flex-col gap-4 border-b border-gray-200 pb-5 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <h1 class="text-3xl font-semibold leading-tight text-emerald-800 brand-serif">New Employee Position Approver</h1>
+      <p class="mt-2 text-sm text-gray-700">Reviews newly active employees with resumes and queues AI-recommended eligible positions for manual approval.</p>
+      <p class="mt-1 text-xs text-gray-500">
+        Last scan: {{ last_scan_at or "Not scanned yet" }}{% if last_scan_message %} - {{ last_scan_message }}{% endif %}
+      </p>
+    </div>
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+      <div class="flex items-center gap-3 bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-xl shadow-sm ring-1 ring-emerald-600/5">
+        <div class="flex flex-col">
+          <span class="text-sm font-semibold text-emerald-950 leading-none">Automatic Approval</span>
+          <span class="text-[11px] text-emerald-700/80 mt-0.5 font-medium">Auto-add & Notify New Recs</span>
+        </div>
+        <button type="button" 
+                id="toggle-auto-approve"
+                class="{% if auto_approve_enabled %}bg-emerald-600{% else %}bg-gray-200{% endif %} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 shadow-inner" 
+                role="switch" 
+                data-active="{{ 'true' if auto_approve_enabled else 'false' }}"
+                aria-checked="{{ 'true' if auto_approve_enabled else 'false' }}">
+          <span class="sr-only">Toggle Auto-Approval</span>
+          <span aria-hidden="true" 
+                id="toggle-knob"
+                class="{% if auto_approve_enabled %}translate-x-5{% else %}translate-x-0{% endif %} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+        </button>
+      </div>
+      <button
+        id="scan-now-btn"
+        type="button"
+        class="inline-flex items-center justify-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 disabled:opacity-60 h-fit"
+      >
+        Scan Now
+      </button>
+    </div>
+  </div>
+
+  <p id="scan-status" class="text-sm text-gray-600" role="status"></p>
+
+  <div class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th scope="col" class="px-4 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
+            <th scope="col" class="px-4 py-3 text-left text-sm font-semibold text-gray-900">Employee</th>
+            <th scope="col" class="px-4 py-3 text-left text-sm font-semibold text-gray-900">Start Date</th>
+            <th scope="col" class="px-4 py-3 text-left text-sm font-semibold text-gray-900">AI Recommendations</th>
+            <th scope="col" class="px-4 py-3 text-left text-sm font-semibold text-gray-900">Summary</th>
+            <th scope="col" class="px-4 py-3 text-left text-sm font-semibold text-gray-900">Resume</th>
+            <th scope="col" class="px-4 py-3 text-left text-sm font-semibold text-gray-900">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 bg-white">
+          {% for row in records %}
+          <tr class="{% if row.completed %}bg-gray-50{% endif %}">
+            <td class="whitespace-nowrap px-4 py-4 text-sm">
+              {% if row.status == "Recommended" %}
+              <span class="inline-flex rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Recommended</span>
+              {% elif row.status == "Approved" %}
+              <span class="inline-flex rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20">Approved</span>
+              {% elif row.status == "Review Error" %}
+              <span class="inline-flex rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10">Review Error</span>
+              {% elif row.status == "Dismissed" %}
+              <span class="inline-flex rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-500/10">Dismissed</span>
+              {% else %}
+              <span class="inline-flex rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">{{ row.status }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-4 text-sm">
+              <p class="font-semibold text-gray-900">{{ row.employee_name }}</p>
+              <p class="text-xs text-gray-500">ID {{ row.employee_id }}{% if row.phone %} - {{ row.phone }}{% endif %}</p>
+            </td>
+            <td class="whitespace-nowrap px-4 py-4 text-sm text-gray-600">
+              <p>{{ row.hire_date or "-" }}</p>
+              {% if row.rehire_date %}
+              <p class="text-xs text-gray-500">Rehire {{ row.rehire_date }}</p>
+              {% endif %}
+            </td>
+            <td class="min-w-[18rem] px-4 py-4 text-sm text-gray-700">
+              {% if row.recommendations %}
+              <form class="approve-form space-y-3" data-review-id="{{ row.review_id }}">
+                <input type="hidden" name="review_id" value="{{ row.review_id }}">
+                <div class="space-y-2">
+                  {% for rec in row.recommendations %}
+                  <label class="flex items-start gap-2 rounded-md border border-gray-200 p-2">
+                    <input
+                      type="checkbox"
+                      name="selected_position_ids"
+                      value="{{ rec.position_id }}"
+                      class="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-600"
+                      {% if not rec.match_found or row.completed %}disabled{% else %}checked{% endif %}
+                    >
+                    <span>
+                      <span class="font-medium text-gray-900">{{ rec.position_description }}</span>
+                      <span class="block text-xs text-gray-500">
+                        AI: {{ rec.label }}{% if rec.confidence is not none %} - {{ (rec.confidence * 100) | round | int }}% confidence{% endif %}
+                      </span>
+                      {% if not rec.match_found %}
+                      <span class="block text-xs text-red-600">No matching position found in the database catalog.</span>
+                      {% endif %}
+                    </span>
+                  </label>
+                  {% endfor %}
+                </div>
+                {% if not row.completed and row.status == "Recommended" %}
+                <button type="submit" class="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
+                  Approve Selected
+                </button>
+                {% endif %}
+              </form>
+              {% else %}
+              <span class="text-gray-400">None</span>
+              {% endif %}
+            </td>
+            <td class="max-w-[24rem] px-4 py-4 text-sm text-gray-600">
+              {% if row.error %}
+              <p class="text-red-700">{{ row.error }}</p>
+              {% elif row.ai_summary %}
+              <p class="font-medium text-gray-900">{{ row.ai_summary.hospitality_experience_overview or "No overview returned." }}</p>
+              <p class="mt-1 text-xs text-gray-500">Estimated hospitality years: {{ row.ai_summary.total_hospitality_years_estimate or "N/A" }}</p>
+              {% else %}
+              <span class="text-gray-400">No summary</span>
+              {% endif %}
+            </td>
+            <td class="whitespace-nowrap px-4 py-4 text-sm">
+              {% if row.resume_url %}
+              <a href="{{ row.resume_url }}" target="_blank" class="font-medium text-emerald-700 hover:text-emerald-900 underline underline-offset-2">View</a>
+              {% else %}
+              <span class="text-gray-400">None</span>
+              {% endif %}
+            </td>
+            <td class="whitespace-nowrap px-4 py-4 text-sm">
+              {% if not row.completed %}
+              <form method="post" action="/new-employee-position-approver/dismiss">
+                <input type="hidden" name="review_id" value="{{ row.review_id }}">
+                <button type="submit" class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50">
+                  Dismiss
+                </button>
+              </form>
+              {% elif row.approved_positions %}
+              <span class="text-xs text-gray-500">Added {{ row.approved_positions | join(", ") }}</span>
+              {% else %}
+              <span class="text-xs text-gray-500">Closed</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+          {% if not records %}
+          <tr>
+            <td colspan="7" class="px-4 py-12 text-center text-sm text-gray-500">No reviewed employees yet.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const scanButton = document.getElementById("scan-now-btn");
+  const scanStatus = document.getElementById("scan-status");
+
+  scanButton?.addEventListener("click", async () => {
+    scanButton.disabled = true;
+    scanStatus.textContent = "Scanning for new active employees with resumes...";
+    try {
+      const response = await fetch("/new-employee-position-approver/scan", { method: "POST" });
+      const data = await response.json();
+      if (!response.ok) {
+        scanStatus.textContent = data.message || "Scan failed.";
+        return;
+      }
+      scanStatus.textContent = data.message || "Scan complete.";
+      window.setTimeout(() => window.location.reload(), 900);
+    } catch (error) {
+      console.error(error);
+      scanStatus.textContent = "Scan failed.";
+    } finally {
+      scanButton.disabled = false;
+    }
+  });
+
+  document.querySelectorAll(".approve-form").forEach((form) => {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const checked = form.querySelectorAll("input[name='selected_position_ids']:checked");
+      if (!checked.length) {
+        alert("Select at least one matched position.");
+        return;
+      }
+      if (!confirm("Add the selected positions as eligible on this employee profile?")) {
+        return;
+      }
+
+      const submitButton = form.querySelector("button[type='submit']");
+      submitButton.disabled = true;
+      submitButton.textContent = "Approving...";
+
+      try {
+        const response = await fetch("/new-employee-position-approver/approve", {
+          method: "POST",
+          body: new FormData(form),
+        });
+        const data = await response.json();
+        if (!response.ok || data.status !== "success") {
+          alert(data.message || "Approval failed.");
+          submitButton.disabled = false;
+          submitButton.textContent = "Approve Selected";
+          return;
+        }
+        alert(data.message);
+        window.location.reload();
+      } catch (error) {
+        console.error(error);
+        alert("Approval failed.");
+        submitButton.disabled = false;
+        submitButton.textContent = "Approve Selected";
+      }
+    });
+  });
+  
+  // --- Automation Toggle Script ---
+  const toggleBtn = document.getElementById('toggle-auto-approve');
+  const toggleKnob = document.getElementById('toggle-knob');
+  
+  if (toggleBtn && toggleKnob) {
+    toggleBtn.addEventListener('click', async () => {
+      const isActive = toggleBtn.dataset.active === 'true';
+      const nextState = !isActive;
+      
+      // Optimistic transition
+      toggleBtn.dataset.active = nextState.toString();
+      toggleBtn.setAttribute('aria-checked', nextState.toString());
+      
+      if (nextState) {
+        toggleBtn.classList.remove('bg-gray-200');
+        toggleBtn.classList.add('bg-emerald-600');
+        toggleKnob.classList.remove('translate-x-0');
+        toggleKnob.classList.add('translate-x-5');
+      } else {
+        toggleBtn.classList.remove('bg-emerald-600');
+        toggleBtn.classList.add('bg-gray-200');
+        toggleKnob.classList.remove('translate-x-5');
+        toggleKnob.classList.add('translate-x-0');
+      }
+      
+      const formData = new FormData();
+      formData.append('enabled', nextState ? 'true' : 'false');
+      
+      try {
+        const res = await fetch('/new-employee-position-approver/toggle-automation', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!res.ok) {
+          throw new Error("Server rejection.");
+        }
+        console.log("State updated successfully.");
+      } catch (err) {
+        alert('Failed to save toggle configuration. Reverting switch.');
+        console.error(err);
+        
+        // Revert UI
+        toggleBtn.dataset.active = isActive.toString();
+        toggleBtn.setAttribute('aria-checked', isActive.toString());
+        if (isActive) {
+          toggleBtn.classList.remove('bg-gray-200');
+          toggleBtn.classList.add('bg-emerald-600');
+          toggleKnob.classList.remove('translate-x-0');
+          toggleKnob.classList.add('translate-x-5');
+        } else {
+          toggleBtn.classList.remove('bg-emerald-600');
+          toggleBtn.classList.add('bg-gray-200');
+          toggleKnob.classList.remove('translate-x-5');
+          toggleKnob.classList.add('translate-x-0');
+        }
+      }
+    });
+  }
+});
+</script>
+{% endblock %}
