@@ -19,6 +19,7 @@ def test_build_client_rows_splits_active_and_uses_order_line_counts():
             {
                 "client_id": 1,
                 "client_name": "Inactive Client",
+                "client_status": 10,
                 "position_name": "Server",
                 "order_lines": 2,
                 "staff_requested": 10,
@@ -26,6 +27,7 @@ def test_build_client_rows_splits_active_and_uses_order_line_counts():
             {
                 "client_id": 2,
                 "client_name": "Active Client",
+                "client_status": 1,
                 "position_name": "Bartender",
                 "order_lines": 1,
                 "staff_requested": 4,
@@ -50,5 +52,7 @@ def test_build_client_rows_splits_active_and_uses_order_line_counts():
     assert by_client[1]["prior_year_order_lines"] == 2
     assert by_client[1]["prior_year_staff_requested"] == 10
     assert by_client[1]["prior_year_revenue"] == 1000.0
+    assert by_client[1]["client_status"] == "Inactive 60 days"
     assert by_client[2]["status"] == "active"
+    assert by_client[2]["client_status"] == "Active"
     assert by_client[2]["current_order_lines_last_30_days"] == 3

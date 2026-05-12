@@ -17,6 +17,16 @@ from apps.profit_tracker.billing import total_bill_by_client
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
+CLIENT_STATUS_LABELS = {
+    0: "Terminated",
+    1: "Active",
+    3: "Prospect",
+    4: "Candidate Partner",
+    10: "Inactive 60 days",
+    11: "Inactive 180 days",
+    12: "Inactive 365 days",
+}
+
 
 class LookBackPayload(BaseModel):
     start_date: str
@@ -81,6 +91,7 @@ def _fetch_order_summary(engine: Any, start_date: date, end_date: date) -> pd.Da
         SELECT
             c.client_id,
             c.name AS client_name,
+            c.status AS client_status,
             COALESCE(NULLIF(p.description, ''), NULLIF(sp.additional_title, ''), 'Unknown') AS position_name,
             COUNT(DISTINCT sp.shift_position_id) AS order_lines,
             SUM(COALESCE(sp.count, 0)) AS staff_requested
@@ -95,7 +106,7 @@ def _fetch_order_summary(engine: Any, start_date: date, end_date: date) -> pd.Da
           AND sp.deleted_at IS NULL
           AND e.date >= :start_date
           AND e.date <= :end_date
-        GROUP BY c.client_id, c.name, position_name
+        GROUP BY c.client_id, c.name, c.status, position_name
         ORDER BY c.name, order_lines DESC, position_name
         """
     )
@@ -177,10 +188,23 @@ def build_client_rows(
         ]
 
         status = "active" if current_order_lines > 0 else "inactive"
+        raw_client_status = group.iloc[0].get("client_status")
+        try:
+            client_status_code = (
+                int(raw_client_status) if pd.notna(raw_client_status) else None
+            )
+        except (TypeError, ValueError):
+            client_status_code = None
+        client_status_label = CLIENT_STATUS_LABELS.get(
+            client_status_code,
+            f"Status {client_status_code}" if client_status_code is not None else "Unknown",
+        )
         rows.append(
             {
                 "client_id": client_id_int,
                 "client_name": str(group.iloc[0]["client_name"]),
+                "client_status": client_status_label,
+                "client_status_code": client_status_code,
                 "status": status,
                 "prior_year_order_lines": int(group["order_lines"].sum()),
                 "prior_year_staff_requested": int(group["staff_requested"].sum()),
