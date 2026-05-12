@@ -35,8 +35,11 @@
             <p class="text-sm text-gray-600 mt-1">Monitoring future published shifts that are at risk of being understaffed.</p>
         </div>
         <div class="flex items-center gap-4 text-sm">
-            <span id="last-updated" class="text-gray-500 font-medium">Loading...</span>
-            <button onclick="fetchData()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition font-medium">
+            <select id="manager-filter" onchange="applyFilter()" class="border border-gray-300 rounded-xl px-4 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 max-w-[200px] truncate shadow-sm">
+                <option value="">All Managers</option>
+            </select>
+            <span id="last-updated" class="text-gray-500 font-medium whitespace-nowrap">Loading...</span>
+            <button onclick="fetchData()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition font-medium whitespace-nowrap">
                 Refresh Now
             </button>
         </div>
@@ -80,9 +83,10 @@
     <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden event-card mb-6 transition-all">
         <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div>
-                <div class="flex items-center gap-2 mb-1">
+                <div class="flex items-center flex-wrap gap-2 mb-1">
                     <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-1 rounded-md client-name"></span>
                     <span class="text-sm font-medium text-gray-500 venue-name"></span>
+                    <span class="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded border border-gray-200 manager-name"></span>
                 </div>
                 <h2 class="text-xl font-bold text-gray-900 event-title"></h2>
                 <div class="text-sm text-gray-600 mt-1 event-date-info"></div>
@@ -158,6 +162,7 @@
     let lastFetched = null;
     let refreshInterval = null;
     let charts = {};
+    let allData = null;
 
     // ── Native date helpers (no moment dependency in render code) ────────
     const _DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -226,9 +231,11 @@
             const res = await fetch('/shift-risk-dashboard/data');
             if (!res.ok) throw new Error('Network response was not ok');
             const data = await res.json();
+            allData = data;
             
             lastFetched = new Date(data.generated_at + 'Z');
             updateLastUpdated();
+            populateManagerDropdown(data.events);
             renderDashboard(data);
         } catch (err) {
             console.error(err);
@@ -238,6 +245,36 @@
                     Failed to load dashboard data. Please try again.
                 </div>
             `;
+        }
+    }
+
+    function populateManagerDropdown(events) {
+        const select = document.getElementById('manager-filter');
+        const currentVal = select.value;
+        const managersMap = new Map();
+        
+        events.forEach(e => {
+            if (e.staffing_manager_id) {
+                managersMap.set(e.staffing_manager_id.toString(), e.staffing_manager_name || 'Unknown');
+            }
+        });
+        
+        const managers = Array.from(managersMap.entries()).map(([id, name]) => ({ id, name }));
+        managers.sort((a, b) => a.name.localeCompare(b.name));
+        
+        select.innerHTML = '<option value="">All Managers</option>';
+        managers.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.id;
+            opt.textContent = m.name;
+            if (m.id === currentVal) opt.selected = true;
+            select.appendChild(opt);
+        });
+    }
+
+    function applyFilter() {
+        if (allData) {
+            renderDashboard(allData);
         }
     }
 
@@ -286,10 +323,30 @@
     }
 
     function renderDashboard(data) {
-        renderSummaryCards(data);
+        const selectedManagerId = document.getElementById('manager-filter').value;
+        
+        let filteredEvents = data.events;
+        if (selectedManagerId) {
+            filteredEvents = filteredEvents.filter(e => e.staffing_manager_id && e.staffing_manager_id.toString() === selectedManagerId);
+        }
 
-        const todayEvents = data.events.filter(e => e.min_hours_until_shift <= 24);
-        const futureEvents = data.events.filter(e => e.min_hours_until_shift > 24);
+        const critical = filteredEvents.filter(e => e.shifts.some(s => s.positions.some(p => p.risk_level === 'CRITICAL'))).length;
+        const warning = filteredEvents.filter(e => 
+            e.shifts.some(s => s.positions.some(p => p.risk_level === 'WARNING')) && 
+            !e.shifts.some(s => s.positions.some(p => p.risk_level === 'CRITICAL'))
+        ).length;
+        const totalOpen = filteredEvents.reduce((sum, e) => sum + e.total_open_spots, 0);
+
+        const summaryData = {
+            total_at_risk_events: filteredEvents.length,
+            critical_events: critical,
+            warning_events: warning,
+            total_open_spots: totalOpen
+        };
+        renderSummaryCards(summaryData);
+
+        const todayEvents = filteredEvents.filter(e => e.min_hours_until_shift <= 24);
+        const futureEvents = filteredEvents.filter(e => e.min_hours_until_shift > 24);
 
         // Update tab badges
         document.getElementById('badge-today').textContent = todayEvents.length;
@@ -322,6 +379,15 @@
                 
                 eventNode.querySelector('.client-name').textContent = event.client_name;
                 eventNode.querySelector('.venue-name').textContent = event.venue_name;
+                
+                const mgrNode = eventNode.querySelector('.manager-name');
+                if (event.staffing_manager_name) {
+                    mgrNode.textContent = event.staffing_manager_name;
+                    mgrNode.style.display = 'inline-block';
+                } else {
+                    mgrNode.style.display = 'none';
+                }
+
                 eventNode.querySelector('.event-title').textContent = event.event_title;
                 
                 const eventDateStr = fmtDate(event.event_date);
