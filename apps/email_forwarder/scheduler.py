@@ -6,9 +6,13 @@ Polls michael@culinarystaffing.com and marlen@culinarystaffing.com every
 
 Forwarding is active when ALL of the following are true:
   1. The manual toggle is ON  (set via the Staffing Tools UI)
-  2. The current PST time is within the forwarding schedule:
-       Mon–Fri  00:00 – 09:00 AND 17:30 – 23:59
+  2. The current Pacific time (PDT/PST) is within the forwarding schedule:
+       Mon–Fri  00:00 – 09:00 AND 17:30 – 23:59 PT
        Sat–Sun  00:00 – 23:59  (all day)
+
+NOTE: Microsoft Graph API returns receivedDateTime in UTC (Zulu). The
+cutoff passed to the API is always computed and formatted in UTC so that
+the filter correctly matches email received timestamps.
 
 Emails are forwarded to staffingteam@culinarystaffing.com.
 The original messages are LEFT in place (not deleted / moved).
@@ -75,7 +79,7 @@ def get_log() -> list:
 # ---------------------------------------------------------------------------
 # Schedule check
 # ---------------------------------------------------------------------------
-PST = ZoneInfo("America/Los_Angeles")
+PT = ZoneInfo("America/Los_Angeles")  # Handles both PDT (UTC-7) and PST (UTC-8) automatically
 
 SCHEDULE = {
     # weekday() -> list of (start_hour_min, end_hour_min) or None for all-day
@@ -84,17 +88,17 @@ SCHEDULE = {
     2: [((0, 0), (9, 0)), ((17, 30), (23, 59))],   # Wednesday
     3: [((0, 0), (9, 0)), ((17, 30), (23, 59))],   # Thursday
     4: [((0, 0), (9, 0)), ((17, 30), (23, 59))],   # Friday
-    5: None,                                      # Saturday – all day
-    6: None,                                      # Sunday – all day
+    5: None,                                        # Saturday – all day
+    6: None,                                        # Sunday – all day
 }
 
 
 def _is_within_schedule() -> bool:
-    now = datetime.now(PST)
+    now = datetime.now(PT)
     day_rules = SCHEDULE.get(now.weekday())
     if day_rules is None:
         return True  # all day
-    
+
     now_hm = (now.hour, now.minute)
     for start, end in day_rules:
         if start <= now_hm <= end:
@@ -111,6 +115,11 @@ SOURCE_MAILBOXES = [
 ]
 DESTINATION = "staffingteam@culinarystaffing.com"
 SENDER_FOR_GRAPH = "golive@culinarystaffing.com"   # shared mailbox with Mail.Send
+
+# Emails from these addresses will never be forwarded (case-insensitive)
+IGNORED_SENDERS = {
+    "mail@culinarystaffing.com",
+}
 
 
 def _get_access_token() -> str | None:
@@ -139,12 +148,19 @@ def _get_access_token() -> str | None:
 
 
 def _fetch_recent_messages(token: str, mailbox: str) -> list[dict]:
-    """Return up to 25 most recent inbox messages received in the last 2 hours."""
-    from datetime import timedelta
-    cutoff = (datetime.now(PST) - timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    """Return up to 25 most recent inbox messages received in the last 2 hours.
+
+    IMPORTANT: Microsoft Graph receivedDateTime is always in UTC (Zulu).  We
+    must build the cutoff in UTC and emit it with a Z suffix so the OData
+    filter matches correctly – using a Pacific-local time here would shift the
+    window by 7–8 hours and cause misses or false positives.
+    """
+    from datetime import timezone, timedelta
+    # Compute cutoff in UTC, format with Z suffix as required by Graph API
+    cutoff_utc = (datetime.now(timezone.utc) - timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
     url = (
         f"https://graph.microsoft.com/v1.0/users/{mailbox}/mailFolders/inbox/messages"
-        f"?$filter=receivedDateTime ge {cutoff}"
+        f"?$filter=receivedDateTime ge {cutoff_utc}"
         f"&$select=id,subject,from,toRecipients,ccRecipients,receivedDateTime,body,bodyPreview"
         f"&$top=25"
         f"&$orderby=receivedDateTime desc"
@@ -247,8 +263,8 @@ async def email_forwarder_loop():
             if not enabled:
                 print("[Email Forwarder] Toggle is OFF – skipping poll.")
             elif not _is_within_schedule():
-                now = datetime.now(PST)
-                print(f"[Email Forwarder] Outside schedule ({now.strftime('%A %H:%M')} PST) – skipping poll.")
+                now = datetime.now(PT)
+                print(f"[Email Forwarder] Outside schedule ({now.strftime('%A %H:%M')} PT / {now.strftime('%Z')}) – skipping poll.")
             else:
                 token = _get_access_token()
                 if token:
@@ -261,11 +277,17 @@ async def email_forwarder_loop():
                             if not msg_id or msg_id in forwarded_ids:
                                 continue
 
+                            sender_addr = msg.get("from", {}).get("emailAddress", {}).get("address", "").lower()
+                            if sender_addr in IGNORED_SENDERS:
+                                print(f"[Email Forwarder] Skipping message from ignored sender '{sender_addr}': {msg.get('subject', '(no subject)')}")
+                                forwarded_ids.append(msg_id)  # mark as seen so it isn't re-evaluated
+                                continue
+
                             success = _forward_message(token, msg, mailbox)
                             if success:
                                 forwarded_ids.append(msg_id)
                                 log_entry = {
-                                    "timestamp": datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S"),
+                                    "timestamp": datetime.now(PT).strftime("%Y-%m-%d %H:%M:%S"),
                                     "source": mailbox,
                                     "destination": DESTINATION,
                                     "subject": msg.get("subject", "(no subject)"),

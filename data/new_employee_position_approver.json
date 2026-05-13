@@ -2200,6 +2200,6 @@
       "dismissed_reason": ""
     }
   ],
-  "last_scan_at": "2026-05-12T17:28:13-07:00",
-  "last_scan_message": "No new active employees with resumes found for 2026-05-12."
+  "last_scan_at": "2026-05-12T19:00:54-07:00",
+  "last_scan_message": "Scan error: (pymysql.err.OperationalError) (2003, \"Can't connect to MySQL server on '127.0.0.1' ([WinError 10061] No connection could be made because the target machine actively refused it)\")\n(Background on this error at: https://sqlalche.me/e/20/e3q8)"
 }
