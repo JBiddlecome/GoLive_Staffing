@@ -11,34 +11,68 @@ from apps.profile_picture_approval.views import (
     deny_photo_action
 )
 
-_STATE_FILE = Path("apps/profile_picture_approval/auto_approve_state.json")
+_auto_approve_enabled = False
+_state_initialized = False
 
-def _load_state() -> dict:
-    if _STATE_FILE.exists():
-        try:
-            with open(_STATE_FILE, "r") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return {"enabled": False}
-
-def _save_state(state: dict) -> None:
+def _ensure_state_table():
+    from sqlalchemy import text
+    from apps.position_requests.scheduler import _engine
+    engine = _engine()
     try:
-        tmp = _STATE_FILE.with_suffix(".tmp")
-        with open(tmp, "w") as f:
-            json.dump(state, f, indent=2)
-        tmp.replace(_STATE_FILE)
+        with engine.begin() as conn:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS golive_app_state (
+                    app_name VARCHAR(100) NOT NULL,
+                    state_key VARCHAR(100) NOT NULL,
+                    state_value LONGTEXT,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    PRIMARY KEY (app_name, state_key)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            """))
     except Exception as e:
-        print(f"[Profile Picture Auto-Approve] Error saving state: {e}")
+        print(f"[Profile Picture Auto-Approve] Error ensuring state table: {e}")
+    finally:
+        engine.dispose()
 
 def get_auto_approve_enabled() -> bool:
-    state = _load_state()
-    return state.get("enabled", False)
+    global _auto_approve_enabled, _state_initialized
+    if not _state_initialized:
+        _ensure_state_table()
+        from sqlalchemy import text
+        from apps.position_requests.scheduler import _engine
+        engine = _engine()
+        try:
+            with engine.begin() as conn:
+                res = conn.execute(text("SELECT state_value FROM golive_app_state WHERE app_name = 'profile_picture_approval' AND state_key = 'auto_approve'")).fetchone()
+                if res and res[0] is not None:
+                    _auto_approve_enabled = (res[0].lower() == 'true')
+        except Exception as e:
+            print(f"[Profile Picture Auto-Approve] Error loading auto approve state from DB: {e}")
+        finally:
+            engine.dispose()
+        _state_initialized = True
+    return _auto_approve_enabled
 
 def set_auto_approve_enabled(value: bool) -> None:
-    state = _load_state()
-    state["enabled"] = value
-    _save_state(state)
+    global _auto_approve_enabled, _state_initialized
+    _auto_approve_enabled = value
+    _state_initialized = True
+    _ensure_state_table()
+    from sqlalchemy import text
+    from apps.position_requests.scheduler import _engine
+    engine = _engine()
+    try:
+        with engine.begin() as conn:
+            val_str = 'true' if value else 'false'
+            conn.execute(text("""
+                INSERT INTO golive_app_state (app_name, state_key, state_value)
+                VALUES ('profile_picture_approval', 'auto_approve', :value)
+                ON DUPLICATE KEY UPDATE state_value = :value
+            """), {"value": val_str})
+    except Exception as e:
+        print(f"[Profile Picture Auto-Approve] Error saving auto approve state to DB: {e}")
+    finally:
+        engine.dispose()
     print(f"[Profile Picture Auto-Approve] Toggle set to {'ON' if value else 'OFF'}")
 
 async def profile_picture_approval_loop():

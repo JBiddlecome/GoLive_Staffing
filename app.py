@@ -68,6 +68,7 @@ from apps.certificate_approver.views import router as certificate_approver_route
 from apps.similar_client_report.views import router as similar_client_report_router
 from apps.look_back_history.views import router as look_back_history_router
 from apps.new_employee_position_approver.views import router as new_employee_position_approver_router
+from apps.client_notifications.views import router as client_notifications_router
 from apps.auth.views import router as auth_router, get_current_user
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 
@@ -84,6 +85,7 @@ from apps.profile_picture_approval.scheduler import profile_picture_approval_loo
 from apps.certificate_approver.scheduler import certificate_approval_loop
 from apps.reports.scheduler import google_spruce_goose_report_loop
 from apps.new_employee_position_approver.scheduler import new_employee_position_approver_loop
+from apps.client_notifications.scheduler import client_notifications_loop
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -98,6 +100,7 @@ async def lifespan(app: FastAPI):
     ca_task = asyncio.create_task(certificate_approval_loop())
     google_report_task = asyncio.create_task(google_spruce_goose_report_loop())
     nepa_task = asyncio.create_task(new_employee_position_approver_loop())
+    cn_task = asyncio.create_task(client_notifications_loop())
     yield
     monitor_task.cancel()
     cc_monitor_task.cancel()
@@ -110,6 +113,7 @@ async def lifespan(app: FastAPI):
     ca_task.cancel()
     google_report_task.cancel()
     nepa_task.cancel()
+    cn_task.cancel()
 
 app = FastAPI(title="GoLive Staffing — Tools", lifespan=lifespan)
 
@@ -265,6 +269,7 @@ app.include_router(
     interview_questions_router, prefix="/interview-questions", tags=["Interview Questions"]
 )
 app.include_router(reports_router, prefix="/reports", tags=["Reports"])
+app.include_router(client_notifications_router, prefix="/client-notifications", tags=["Client Notifications"])
 app.include_router(reportable_router, prefix="/reportable", tags=["Reportable"])
 app.include_router(
     payroll_recruiting_reports_router,

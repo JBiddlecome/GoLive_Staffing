@@ -30,17 +30,68 @@ S3_BUCKET = os.getenv("S3_BUCKET", "web-application-files")
 S3_REGION = os.getenv("S3_REGION", "us-east-1")
 S3_PREFIX = os.getenv("RESUME_S3_PREFIX", "employee/resume/")
 
+_auto_approve_enabled = False
+_state_initialized = False
+
+def _ensure_state_table():
+    from sqlalchemy import text
+    from apps.position_requests.scheduler import _engine
+    engine = _engine()
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS golive_app_state (
+                    app_name VARCHAR(100) NOT NULL,
+                    state_key VARCHAR(100) NOT NULL,
+                    state_value LONGTEXT,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    PRIMARY KEY (app_name, state_key)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            """))
+    except Exception as e:
+        logger.error(f"[New Employee Position Approver] Error ensuring state table: {e}")
+    finally:
+        engine.dispose()
+
 def get_automation_enabled() -> bool:
-    if CONFIG_FILE.exists():
+    global _auto_approve_enabled, _state_initialized
+    if not _state_initialized:
+        _ensure_state_table()
+        from sqlalchemy import text
+        from apps.position_requests.scheduler import _engine
+        engine = _engine()
         try:
-            return json.loads(CONFIG_FILE.read_text(encoding="utf-8")).get("auto_approve", False)
-        except Exception:
-            pass
-    return False
+            with engine.begin() as conn:
+                res = conn.execute(text("SELECT state_value FROM golive_app_state WHERE app_name = 'new_employee_position_approver' AND state_key = 'auto_approve'")).fetchone()
+                if res and res[0] is not None:
+                    _auto_approve_enabled = (res[0].lower() == 'true')
+        except Exception as e:
+            logger.error(f"[New Employee Position Approver] Error loading auto approve state from DB: {e}")
+        finally:
+            engine.dispose()
+        _state_initialized = True
+    return _auto_approve_enabled
 
 def set_automation_enabled(enabled: bool) -> None:
-    CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
-    CONFIG_FILE.write_text(json.dumps({"auto_approve": enabled}), encoding="utf-8")
+    global _auto_approve_enabled, _state_initialized
+    _auto_approve_enabled = enabled
+    _state_initialized = True
+    _ensure_state_table()
+    from sqlalchemy import text
+    from apps.position_requests.scheduler import _engine
+    engine = _engine()
+    try:
+        with engine.begin() as conn:
+            val_str = 'true' if enabled else 'false'
+            conn.execute(text("""
+                INSERT INTO golive_app_state (app_name, state_key, state_value)
+                VALUES ('new_employee_position_approver', 'auto_approve', :value)
+                ON DUPLICATE KEY UPDATE state_value = :value
+            """), {"value": val_str})
+    except Exception as e:
+        logger.error(f"[New Employee Position Approver] Error saving auto approve state to DB: {e}")
+    finally:
+        engine.dispose()
 
 _state_lock = asyncio.Lock()
 
