@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 import os
 from datetime import date, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -28,11 +30,32 @@ CLIENT_STATUS_LABELS = {
 }
 
 LOOKBACK_YEARS = 5
+NOTES_FILE = Path("data/lookback_history_notes.json")
+
+
+def _load_notes() -> dict[str, str]:
+    if not NOTES_FILE.exists():
+        return {}
+    try:
+        with NOTES_FILE.open("r") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _save_notes(notes: dict[str, str]):
+    NOTES_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with NOTES_FILE.open("w") as f:
+        json.dump(notes, f, indent=2)
 
 
 class LookBackPayload(BaseModel):
     start_date: str
     end_date: str
+
+
+class NotePayload(BaseModel):
+    note: str
 
 
 def _db_url_from_env() -> URL:
@@ -107,21 +130,25 @@ def _fetch_order_summary_for_range(
             c.client_id,
             c.name AS client_name,
             c.status AS client_status,
+            CONCAT_WS(' ', u_mgr.first_name, u_mgr.last_name) AS staffing_manager_name,
             COALESCE(NULLIF(p.description, ''), NULLIF(sp.additional_title, ''), 'Unknown') AS position_name,
             COUNT(DISTINCT sp.shift_position_id) AS order_lines,
             SUM(COALESCE(sp.count, 0)) AS staff_requested
         FROM client c
         JOIN event e ON c.client_id = e.client_id
+        JOIN venue v ON e.venue_id = v.venue_id
+        LEFT JOIN user u_mgr ON v.staffing_manager_id = u_mgr.id
         JOIN shift s ON e.event_id = s.event_id
         JOIN shift_position sp ON s.shift_id = sp.shift_id
         LEFT JOIN position p ON sp.position_id = p.position_id
         WHERE c.deleted_at IS NULL
           AND e.deleted_at IS NULL
+          AND v.deleted_at IS NULL
           AND s.deleted_at IS NULL
           AND sp.deleted_at IS NULL
           AND e.date >= :start_date
           AND e.date <= :end_date
-        GROUP BY c.client_id, c.name, c.status, position_name
+        GROUP BY c.client_id, c.name, c.status, staffing_manager_name, position_name
         ORDER BY c.name, order_lines DESC, position_name
         """
     )
@@ -195,6 +222,7 @@ def build_client_rows(
                 client_registry[client_id_int] = {
                     "client_id": client_id_int,
                     "client_name": str(group.iloc[0]["client_name"]),
+                    "staffing_manager_name": str(group.iloc[0].get("staffing_manager_name", "")),
                     "client_status_code": status_code,
                     "client_status": CLIENT_STATUS_LABELS.get(
                         status_code,
@@ -285,6 +313,7 @@ def build_client_rows(
         rows.append({
             "client_id": client_id_int,
             "client_name": info["client_name"],
+            "staffing_manager_name": info["staffing_manager_name"],
             "client_status": info["client_status"],
             "client_status_code": info["client_status_code"],
             "status": status,
@@ -390,3 +419,36 @@ async def get_look_back_history(payload: LookBackPayload):
             "active_clients": active_clients,
         }
     )
+
+
+@router.get("/api/contacts/{client_id}")
+async def get_client_contacts(client_id: int):
+    engine = _engine()
+    sql = text(
+        """
+        SELECT name, title, email, phone, mobile
+        FROM client_contact
+        WHERE client_id = :client_id
+        ORDER BY preferred DESC, name ASC
+        """
+    )
+    try:
+        with engine.begin() as connection:
+            df = pd.read_sql(sql, connection, params={"client_id": client_id})
+            return df.to_dict(orient="records")
+    finally:
+        engine.dispose()
+
+
+@router.get("/api/notes/{client_id}")
+async def get_client_note(client_id: int):
+    notes = _load_notes()
+    return {"note": notes.get(str(client_id), "")}
+
+
+@router.post("/api/notes/{client_id}")
+async def save_client_note(client_id: int, payload: NotePayload):
+    notes = _load_notes()
+    notes[str(client_id)] = payload.note
+    _save_notes(notes)
+    return {"status": "success"}

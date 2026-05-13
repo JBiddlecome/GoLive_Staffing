@@ -70,9 +70,31 @@
 
   <div id="results-section" class="hidden space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-2">
-        <input id="search-input" type="search" placeholder="Search clients or positions" class="w-72 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
-        <select id="sort-select" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+      <div class="flex flex-wrap items-center gap-3">
+        <input id="search-input" type="search" placeholder="Search clients or positions" class="w-64 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+        
+        <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+          <span>Min Revenue</span>
+          <input id="min-revenue-input" type="number" value="10000" step="1000" class="w-28 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+        </label>
+
+        <select id="manager-filter" class="w-48 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          <option value="">All Staffing Managers</option>
+        </select>
+
+        <select id="status-filter" class="w-48 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          <option value="all">All Statuses</option>
+          <option value="non_terminated" selected>Non-Terminated</option>
+          <option value="1">Active</option>
+          <option value="3">Prospect</option>
+          <option value="4">Candidate Partner</option>
+          <option value="10">Inactive 60 days</option>
+          <option value="11">Inactive 180 days</option>
+          <option value="12">Inactive 365 days</option>
+          <option value="0">Terminated</option>
+        </select>
+
+        <select id="sort-select" class="w-48 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
           <option value="years_active">Sort by years active</option>
           <option value="order_lines">Sort by order lines</option>
           <option value="revenue">Sort by revenue</option>
@@ -99,11 +121,13 @@
           <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
             <tr>
               <th class="px-5 py-3 text-left font-semibold">Client</th>
+              <th class="px-5 py-3 text-left font-semibold">Staffing Manager</th>
               <th class="px-5 py-3 text-left font-semibold">Client Status</th>
               <th class="px-4 py-3 text-center font-semibold" style="min-width:120px">Years Active</th>
               <th class="px-5 py-3 text-right font-semibold">Total Staff Req.</th>
               <th class="px-5 py-3 text-right font-semibold">5-Yr Revenue</th>
               <th class="px-5 py-3 text-left font-semibold">Positions Ordered</th>
+              <th class="px-5 py-3 text-center font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody id="inactive-body" class="divide-y divide-gray-100"></tbody>
@@ -125,12 +149,14 @@
           <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
             <tr>
               <th class="px-5 py-3 text-left font-semibold">Client</th>
+              <th class="px-5 py-3 text-left font-semibold">Staffing Manager</th>
               <th class="px-4 py-3 text-center font-semibold" style="min-width:120px">Years Active</th>
               <th class="px-5 py-3 text-right font-semibold">Total Staff Req.</th>
               <th class="px-5 py-3 text-right font-semibold">5-Yr Revenue</th>
               <th class="px-5 py-3 text-right font-semibold">Recent Lines</th>
               <th class="px-5 py-3 text-left font-semibold">Last Recent Shift</th>
               <th class="px-5 py-3 text-left font-semibold">Positions Ordered</th>
+              <th class="px-5 py-3 text-center font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody id="active-body" class="divide-y divide-gray-100"></tbody>
@@ -141,6 +167,11 @@
 </div>
 
 <style>
+.btn-action {
+  @apply rounded-md px-2.5 py-1.5 text-xs font-semibold shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2;
+}
+.btn-notes { @apply bg-emerald-50 text-emerald-700 hover:bg-emerald-100; }
+.btn-contacts { @apply bg-blue-50 text-blue-700 hover:bg-blue-100; }
 .year-dot {
   display: inline-block;
   width: 10px;
@@ -254,12 +285,33 @@ function yearsActiveBadge(row) {
 
 function filteredRows(rows) {
   const term = document.getElementById('search-input').value.trim().toLowerCase();
+  const minRevenue = parseFloat(document.getElementById('min-revenue-input').value) || 0;
+  const manager = document.getElementById('manager-filter').value;
+  const status = document.getElementById('status-filter').value;
   const sort = document.getElementById('sort-select').value;
+
   let list = rows.filter((row) => {
-    if (!term) return true;
+    // Search
     const positionText = (row.positions_ordered || []).map((pos) => pos.position).join(' ').toLowerCase();
-    return row.client_name.toLowerCase().includes(term) || positionText.includes(term);
+    const matchesSearch = !term || row.client_name.toLowerCase().includes(term) || positionText.includes(term);
+    
+    // Revenue
+    const matchesRevenue = (row.total_revenue || 0) >= minRevenue;
+    
+    // Manager
+    const matchesManager = !manager || row.staffing_manager_name === manager;
+    
+    // Status
+    let matchesStatus = true;
+    if (status === 'non_terminated') {
+      matchesStatus = row.client_status_code !== 0;
+    } else if (status !== 'all') {
+      matchesStatus = String(row.client_status_code) === status;
+    }
+    
+    return matchesSearch && matchesRevenue && matchesManager && matchesStatus;
   });
+
   list.sort((a, b) => {
     if (sort === 'client') return a.client_name.localeCompare(b.client_name);
     if (sort === 'revenue') return b.total_revenue - a.total_revenue;
@@ -275,39 +327,175 @@ function filteredRows(rows) {
   return list;
 }
 
+function populateManagers(rows) {
+  const managers = [...new Set(rows.map(r => r.staffing_manager_name).filter(Boolean))].sort();
+  const select = document.getElementById('manager-filter');
+  const currentValue = select.value;
+  select.innerHTML = '<option value="">All Staffing Managers</option>' + 
+    managers.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+  select.value = currentValue;
+}
+
 function positionsHtml(row) {
   return (row.positions_ordered || []).map((pos) => (
     `<span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">${escapeHtml(pos.position)}: ${formatNumber(pos.order_lines)}</span>`
   )).join(' ');
 }
 
-function renderTable(rows, bodyId, isActive) {
+function renderResults() {
+  const filteredInactive = filteredRows(state.inactive);
+  const filteredActive = filteredRows(state.active);
+
+  renderTable(filteredInactive, 'inactive-body', false, true);
+  renderTable(filteredActive, 'active-body', true, true);
+
+  const totalFiltered = filteredInactive.length + filteredActive.length;
+  setText('inactive-count', formatNumber(filteredInactive.length));
+  setText('active-count', formatNumber(filteredActive.length));
+
+  // Update summary cards
+  setText('total-clients', formatNumber(totalFiltered));
+  setText('inactive-clients', formatNumber(filteredInactive.length));
+  setText('active-clients', formatNumber(filteredActive.length));
+
+  const totalLines = [...filteredInactive, ...filteredActive].reduce((sum, r) => sum + r.total_order_lines, 0);
+  const totalRev = [...filteredInactive, ...filteredActive].reduce((sum, r) => sum + r.total_revenue, 0);
+  
+  setText('total-order-lines', formatNumber(totalLines));
+  setText('total-revenue', formatCurrency(totalRev));
+}
+
+function renderTable(visible, bodyId, isActive, isPreFiltered = false) {
   const tbody = document.getElementById(bodyId);
-  const visible = filteredRows(rows);
-  const colspan = isActive ? 7 : 6;
+  if (!isPreFiltered) visible = filteredRows(visible);
+  
+  const colspan = isActive ? 9 : 8;
   if (!visible.length) {
     tbody.innerHTML = `<tr><td colspan="${colspan}" class="px-5 py-8 text-center text-gray-500">No clients found.</td></tr>`;
     return;
   }
   tbody.innerHTML = visible.map((row) => `
-    <tr class="hover:bg-gray-50">
+    <tr class="hover:bg-gray-50 border-b border-gray-100">
       <td class="min-w-64 px-5 py-4 font-semibold text-gray-950">${escapeHtml(row.client_name)}</td>
+      <td class="px-5 py-4 text-gray-700">${escapeHtml(row.staffing_manager_name || 'N/A')}</td>
       ${isActive ? '' : `<td class="px-5 py-4 text-gray-700">${escapeHtml(row.client_status || 'Unknown')}</td>`}
       <td class="px-4 py-4 text-center">${yearsActiveBadge(row)}</td>
       <td class="px-5 py-4 text-right tabular-nums">${formatNumber(row.total_staff_requested)}</td>
       <td class="px-5 py-4 text-right font-semibold tabular-nums">${formatCurrency(row.total_revenue)}</td>
       ${isActive ? `<td class="px-5 py-4 text-right tabular-nums">${formatNumber(row.current_order_lines_last_30_days)}</td>
       <td class="px-5 py-4 text-gray-600">${row.last_current_shift_date || ''}</td>` : ''}
-      <td class="min-w-96 px-5 py-4"><div class="flex flex-wrap gap-1.5">${positionsHtml(row)}</div></td>
+      <td class="min-w-64 px-5 py-4"><div class="flex flex-wrap gap-1.5">${positionsHtml(row)}</div></td>
+      <td class="px-5 py-4 text-center">
+        <div class="flex items-center justify-center gap-2">
+          <button onclick="toggleNotes(${row.client_id})" class="btn-action btn-notes" title="Client Notes">Notes</button>
+          <button onclick="toggleContacts(${row.client_id})" class="btn-action btn-contacts" title="Client Contacts">Contacts</button>
+        </div>
+      </td>
+    </tr>
+    <tr id="notes-row-${row.client_id}" class="hidden bg-emerald-50/30">
+      <td colspan="${colspan}" class="px-8 py-6">
+        <div class="max-w-3xl space-y-3">
+          <label class="block text-sm font-semibold text-emerald-900">Notes for ${escapeHtml(row.client_name)}</label>
+          <textarea id="notes-area-${row.client_id}" rows="3" class="w-full rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" placeholder="Enter notes here..."></textarea>
+          <div class="flex justify-end gap-2">
+            <button onclick="toggleNotes(${row.client_id})" class="rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">Cancel</button>
+            <button id="save-note-btn-${row.client_id}" onclick="saveNote(${row.client_id})" class="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700">Save Note</button>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr id="contacts-row-${row.client_id}" class="hidden bg-blue-50/30">
+      <td colspan="${colspan}" class="px-8 py-6">
+        <div class="space-y-3">
+          <label class="block text-sm font-semibold text-blue-900">Contacts for ${escapeHtml(row.client_name)}</label>
+          <div id="contacts-content-${row.client_id}" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="animate-pulse text-sm text-blue-600">Loading contacts...</div>
+          </div>
+        </div>
+      </td>
     </tr>
   `).join('');
 }
 
-function renderResults() {
-  renderTable(state.inactive, 'inactive-body', false);
-  renderTable(state.active, 'active-body', true);
-  setText('inactive-count', formatNumber(filteredRows(state.inactive).length));
-  setText('active-count', formatNumber(filteredRows(state.active).length));
+async function toggleNotes(clientId) {
+  const row = document.getElementById(`notes-row-${clientId}`);
+  const isHidden = row.classList.contains('hidden');
+  
+  // Close other sub-rows if open
+  document.getElementById(`contacts-row-${clientId}`).classList.add('hidden');
+  
+  if (isHidden) {
+    row.classList.remove('hidden');
+    // Fetch current note
+    try {
+      const resp = await fetch(`/look-back-history/api/notes/${clientId}`);
+      const data = await resp.json();
+      document.getElementById(`notes-area-${clientId}`).value = data.note || '';
+    } catch (e) { console.error('Failed to fetch note', e); }
+  } else {
+    row.classList.add('hidden');
+  }
+}
+
+async function saveNote(clientId) {
+  const btn = document.getElementById(`save-note-btn-${clientId}`);
+  const note = document.getElementById(`notes-area-${clientId}`).value;
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  
+  try {
+    const resp = await fetch(`/look-back-history/api/notes/${clientId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note })
+    });
+    if (resp.ok) {
+      toggleNotes(clientId); // Close after save
+    } else {
+      alert('Failed to save note');
+    }
+  } catch (e) {
+    alert('Error saving note');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Note';
+  }
+}
+
+async function toggleContacts(clientId) {
+  const row = document.getElementById(`contacts-row-${clientId}`);
+  const isHidden = row.classList.contains('hidden');
+  
+  // Close other sub-rows if open
+  document.getElementById(`notes-row-${clientId}`).classList.add('hidden');
+  
+  if (isHidden) {
+    row.classList.remove('hidden');
+    const content = document.getElementById(`contacts-content-${clientId}`);
+    try {
+      const resp = await fetch(`/look-back-history/api/contacts/${clientId}`);
+      const contacts = await resp.json();
+      if (!contacts.length) {
+        content.innerHTML = '<div class="text-sm text-gray-500">No contacts found for this client.</div>';
+      } else {
+        content.innerHTML = contacts.map(c => `
+          <div class="rounded-lg border border-blue-100 bg-white p-3 shadow-sm">
+            <div class="font-semibold text-gray-900">${escapeHtml(c.name)}</div>
+            <div class="text-xs text-gray-500">${escapeHtml(c.title || '')}</div>
+            <div class="mt-2 space-y-1">
+              ${c.email ? `<a href="mailto:${c.email}" class="block text-xs text-blue-600 hover:underline">${escapeHtml(c.email)}</a>` : ''}
+              ${c.phone ? `<div class="text-xs text-gray-700">P: ${escapeHtml(c.phone)}</div>` : ''}
+              ${c.mobile ? `<div class="text-xs text-gray-700">M: ${escapeHtml(c.mobile)}</div>` : ''}
+            </div>
+          </div>
+        `).join('');
+      }
+    } catch (e) {
+      content.innerHTML = '<div class="text-sm text-red-600">Error loading contacts.</div>';
+    }
+  } else {
+    row.classList.add('hidden');
+  }
 }
 
 function setLoading(isLoading) {
@@ -350,11 +538,7 @@ async function runReport() {
     state.inactive = data.inactive_clients || [];
     state.active = data.active_clients || [];
 
-    setText('total-clients', formatNumber(data.summary.total_clients));
-    setText('inactive-clients', formatNumber(data.summary.inactive_clients));
-    setText('active-clients', formatNumber(data.summary.active_clients));
-    setText('total-order-lines', formatNumber(data.summary.total_order_lines));
-    setText('total-revenue', formatCurrency(data.summary.total_revenue));
+    populateManagers([...state.inactive, ...state.active]);
 
     const ranges = (data.lookback_ranges || []).map(r => `${r.year} (${r.start} – ${r.end})`).join(', ');
     setText('range-copy', `Selected: ${data.selected_range.start} to ${data.selected_range.end}. Looking back across: ${ranges}. Recent activity window: ${data.activity_range.start} to ${data.activity_range.end}.`);
@@ -378,7 +562,7 @@ function exportCsv() {
   const rows = [...state.inactive, ...state.active];
   if (!rows.length) return;
   const lines = [[
-    'Status', 'Client ID', 'Client Name', 'Client Status', 'Years Active (of 5)',
+    'Status', 'Client ID', 'Client Name', 'Staffing Manager', 'Client Status', 'Years Active (of 5)',
     'Total Order Lines', 'Total Staff Requested', '5-Year Revenue',
     'Recent Order Lines (30d)', 'Recent Staff Requested (30d)', 'Last Recent Shift Date',
     'Positions Ordered'
@@ -388,6 +572,7 @@ function exportCsv() {
       row.status,
       row.client_id,
       row.client_name,
+      row.staffing_manager_name || '',
       row.client_status || '',
       row.years_active,
       row.total_order_lines,
@@ -413,6 +598,9 @@ document.getElementById('lookback-form').addEventListener('submit', (event) => {
   runReport();
 });
 document.getElementById('search-input').addEventListener('input', renderResults);
+document.getElementById('min-revenue-input').addEventListener('input', renderResults);
+document.getElementById('manager-filter').addEventListener('change', renderResults);
+document.getElementById('status-filter').addEventListener('change', renderResults);
 document.getElementById('sort-select').addEventListener('change', renderResults);
 document.getElementById('export-btn').addEventListener('click', exportCsv);
 </script>
