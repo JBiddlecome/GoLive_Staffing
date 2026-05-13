@@ -98,7 +98,11 @@ async def get_meal_penalty_data(
                 emp.last_name,
                 t.employee_no_break_penalty,
                 t.client_no_break_penalty,
-                TIMESTAMPDIFF(MINUTE, t.employee_start, t.employee_break_start) AS mins_to_break
+                TIMESTAMPDIFF(
+                    MINUTE, 
+                    CASE WHEN IFNULL(t.use_sheet, '') = 'CLIENT' THEN t.client_start ELSE t.employee_start END, 
+                    CASE WHEN IFNULL(t.use_sheet, '') = 'CLIENT' THEN t.client_break_start ELSE t.employee_break_start END
+                ) AS mins_to_break
             FROM timesheet t
             JOIN employee emp ON t.employee_id = emp.employee_id
             JOIN event e ON t.event_id = e.event_id
@@ -106,14 +110,26 @@ async def get_meal_penalty_data(
             JOIN venue v ON e.venue_id = v.venue_id
             WHERE e.date >= :start_date 
               AND e.date <= :end_date
-              AND t.employee_break_start IS NOT NULL 
-              AND t.employee_start IS NOT NULL
-              AND t.employee_end IS NOT NULL
-              AND TIMESTAMPDIFF(MINUTE, t.employee_start, t.employee_break_start) > 300
+              AND (CASE WHEN IFNULL(t.use_sheet, '') = 'CLIENT' THEN t.client_break_start ELSE t.employee_break_start END) IS NOT NULL 
+              AND (CASE WHEN IFNULL(t.use_sheet, '') = 'CLIENT' THEN t.client_start ELSE t.employee_start END) IS NOT NULL
+              AND (CASE WHEN IFNULL(t.use_sheet, '') = 'CLIENT' THEN t.client_end ELSE t.employee_end END) IS NOT NULL
+              AND TIMESTAMPDIFF(
+                  MINUTE, 
+                  CASE WHEN IFNULL(t.use_sheet, '') = 'CLIENT' THEN t.client_start ELSE t.employee_start END, 
+                  CASE WHEN IFNULL(t.use_sheet, '') = 'CLIENT' THEN t.client_break_start ELSE t.employee_break_start END
+              ) > 300
               AND IFNULL(e.state, '') NOT IN ('NV', 'WA')
               AND (
-                  TIMESTAMPDIFF(MINUTE, t.employee_start, t.employee_end) - 
-                  IFNULL(TIMESTAMPDIFF(MINUTE, t.employee_break_start, t.employee_break_end), 0)
+                  TIMESTAMPDIFF(
+                      MINUTE, 
+                      CASE WHEN IFNULL(t.use_sheet, '') = 'CLIENT' THEN t.client_start ELSE t.employee_start END, 
+                      CASE WHEN IFNULL(t.use_sheet, '') = 'CLIENT' THEN t.client_end ELSE t.employee_end END
+                  ) - 
+                  IFNULL(TIMESTAMPDIFF(
+                      MINUTE, 
+                      CASE WHEN IFNULL(t.use_sheet, '') = 'CLIENT' THEN t.client_break_start ELSE t.employee_break_start END, 
+                      CASE WHEN IFNULL(t.use_sheet, '') = 'CLIENT' THEN t.client_break_end ELSE t.employee_break_end END
+                  ), 0)
               ) >= 360
             ORDER BY e.date DESC, c.name ASC
         """)

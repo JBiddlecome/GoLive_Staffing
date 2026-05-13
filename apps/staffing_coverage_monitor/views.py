@@ -12,32 +12,46 @@ from sqlalchemy.engine import URL
 from datetime import datetime
 
 # ---------------------------------------------------------------------------
-# Local SQLite DB for daily coverage history (avoids needing CREATE TABLE
-# permissions on the production MySQL DB)
+# Persistent MySQL DB for daily coverage history (shared across instances)
 # ---------------------------------------------------------------------------
-_DATA_DIR = Path("data")
-_DATA_DIR.mkdir(parents=True, exist_ok=True)
-_HISTORY_DB = _DATA_DIR / "staffing_coverage_history.db"
+_history_table_ensured = False
+_HISTORY_DB = Path("data/staffing_coverage_history.db")
 
-def _get_history_conn() -> sqlite3.Connection:
-    conn = sqlite3.connect(_HISTORY_DB)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-def _init_history_db() -> None:
-    with _get_history_conn() as conn:
-        conn.execute("""
+def _ensure_history_table(connection) -> None:
+    global _history_table_ensured
+    if not _history_table_ensured:
+        connection.execute(text("""
             CREATE TABLE IF NOT EXISTS staffing_coverage_history (
-                date TEXT NOT NULL,
-                county_id INTEGER NOT NULL,
-                position_id INTEGER NOT NULL,
-                ratio REAL NOT NULL,
+                date VARCHAR(10) NOT NULL,
+                county_id INT NOT NULL,
+                position_id INT NOT NULL,
+                ratio DOUBLE NOT NULL,
                 PRIMARY KEY (date, county_id, position_id)
-            )
-        """)
-        conn.commit()
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """))
+        
+        # Seamlessly migrate any existing local SQLite records to the shared MySQL DB
+        if _HISTORY_DB.exists():
+            try:
+                with sqlite3.connect(_HISTORY_DB) as s_conn:
+                    s_conn.row_factory = sqlite3.Row
+                    rows = s_conn.execute("SELECT date, county_id, position_id, ratio FROM staffing_coverage_history").fetchall()
+                    if rows:
+                        records = [{
+                            "date": str(r["date"]),
+                            "county_id": int(r["county_id"]),
+                            "position_id": int(r["position_id"]),
+                            "ratio": float(r["ratio"])
+                        } for r in rows]
+                        connection.execute(text("""
+                            INSERT INTO staffing_coverage_history (date, county_id, position_id, ratio)
+                            VALUES (:date, :county_id, :position_id, :ratio)
+                            ON DUPLICATE KEY UPDATE ratio = VALUES(ratio)
+                        """), records)
+            except Exception as e:
+                print(f"Error migrating SQLite history to MySQL: {e}")
 
-_init_history_db()
+        _history_table_ensured = True
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -143,40 +157,51 @@ async def get_coverage_data():
                 "position_ids": tuple(position_ids)
             })
 
-        # Merge the data (done outside MySQL connection — history is SQLite)
+        # Merge the data
         merged = pd.merge(summary_shifts, emp_df, on=['county_id', 'position_id'], how='left')
         merged['eligible_count'] = merged['eligible_count'].fillna(0).astype(int)
         merged['ratio'] = merged['eligible_count'] / merged['open_spots']
 
-        # Get previous day's ratios from SQLite
-        with _get_history_conn() as hist_conn:
-            prev_rows = hist_conn.execute("""
-                SELECT county_id, position_id, ratio AS prev_ratio
-                FROM staffing_coverage_history
-                WHERE date = (
-                    SELECT MAX(date)
-                    FROM staffing_coverage_history
-                    WHERE date < ?
-                )
-            """, (current_date,)).fetchall()
+        # Ensure history table and process previous/current day's ratios in MySQL DB
+        with engine.begin() as connection:
+            _ensure_history_table(connection)
 
-            # Merge previous ratios
-            if prev_rows:
-                prev_df = pd.DataFrame([dict(r) for r in prev_rows])
+            # Get previous day's ratios from MySQL
+            max_date_res = connection.execute(text("""
+                SELECT MAX(date) FROM staffing_coverage_history WHERE date < :current_date
+            """), {"current_date": current_date}).fetchone()
+            prev_date = max_date_res[0] if max_date_res else None
+
+            if prev_date:
+                prev_rows = connection.execute(text("""
+                    SELECT county_id, position_id, ratio AS prev_ratio
+                    FROM staffing_coverage_history
+                    WHERE date = :prev_date
+                """), {"prev_date": prev_date}).fetchall()
+
+                prev_df = pd.DataFrame([{
+                    "county_id": r.county_id,
+                    "position_id": r.position_id,
+                    "prev_ratio": r.prev_ratio
+                } for r in prev_rows])
                 merged = pd.merge(merged, prev_df, on=['county_id', 'position_id'], how='left')
             else:
                 merged['prev_ratio'] = pd.NA
 
-            # Record today's ratios into SQLite
-            hist_conn.executemany("""
-                INSERT INTO staffing_coverage_history (date, county_id, position_id, ratio)
-                VALUES (?, ?, ?, ?)
-                ON CONFLICT(date, county_id, position_id) DO UPDATE SET ratio=excluded.ratio
-            """, [
-                (current_date, int(row['county_id']), int(row['position_id']), float(row['ratio']))
-                for _, row in merged.iterrows()
-            ])
-            hist_conn.commit()
+            # Record today's ratios into MySQL
+            records = [{
+                "date": current_date,
+                "county_id": int(row['county_id']),
+                "position_id": int(row['position_id']),
+                "ratio": float(row['ratio'])
+            } for _, row in merged.iterrows()]
+
+            if records:
+                connection.execute(text("""
+                    INSERT INTO staffing_coverage_history (date, county_id, position_id, ratio)
+                    VALUES (:date, :county_id, :position_id, :ratio)
+                    ON DUPLICATE KEY UPDATE ratio = VALUES(ratio)
+                """), records)
 
         # Group by county for display
         result = []

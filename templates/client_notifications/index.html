@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% block title %}Client Notifications — GoLive Staffing{% endblock %}
+{% block content %}
+<div class="space-y-8">
+    <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-500 to-indigo-400 text-white shadow-2xl">
+        <div class="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_30%,white,transparent_30%)]"></div>
+        <div class="relative px-8 py-10 lg:px-12 lg:py-14">
+            <div class="space-y-4">
+                <p class="uppercase tracking-[0.25em] text-sm font-semibold text-indigo-50">Staffing Tools</p>
+                <h1 class="brand-serif text-4xl md:text-5xl font-semibold leading-tight">Client Notifications</h1>
+                <p class="text-indigo-50/90 text-lg max-w-2xl">
+                    Monthly activity reviews for clients. Automatically summarize employee performance, ratings, and staffing metrics.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <div class="grid gap-8 lg:grid-cols-3">
+        <!-- Settings Panel -->
+        <div class="lg:col-span-1 space-y-6">
+            <div class="rounded-3xl border border-gray-100 bg-white p-6 shadow-xl">
+                <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <span class="p-2 rounded-lg bg-indigo-50 text-indigo-600">⚙️</span>
+                    Notification Settings
+                </h2>
+                
+                <form id="settings-form" class="space-y-6">
+                    <div class="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100 transition hover:border-indigo-200">
+                        <div>
+                            <p class="font-semibold text-gray-900">Enable Sending</p>
+                            <p class="text-xs text-gray-500">Global toggle for notifications</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="global_send_enabled" class="sr-only peer" {% if settings.global_send_enabled %}checked{% endif %}>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100 transition hover:border-indigo-200">
+                        <div>
+                            <p class="font-semibold text-gray-900">Test Email Only</p>
+                            <p class="text-xs text-gray-500">Send to test@culinarystaffing.com</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="test_email_only" class="sr-only peer" {% if settings.test_email_only %}checked{% endif %}>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100 transition hover:border-indigo-200">
+                        <div>
+                            <p class="font-semibold text-gray-900">Staffing Manager Only</p>
+                            <p class="text-xs text-gray-500">Only send to the assigned SM</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="staffing_manager_only" class="sr-only peer" {% if settings.staffing_manager_only %}checked{% endif %}>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-indigo-200 transition-all active:scale-[0.98]">
+                        Save Configuration
+                    </button>
+                </form>
+            </div>
+
+            <div class="rounded-3xl border border-gray-100 bg-white p-6 shadow-xl">
+                <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <span class="p-2 rounded-lg bg-emerald-50 text-emerald-600">🧪</span>
+                    Testing & Processing
+                </h2>
+                <p class="text-sm text-gray-600 mb-6">
+                    Process 10 random clients from the prior month to see a preview of their notification data.
+                </p>
+                <button id="process-test-btn" class="w-full py-3 px-4 bg-white border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50 font-bold rounded-2xl transition-all flex items-center justify-center gap-2">
+                    <span id="btn-spinner" class="hidden animate-spin h-5 w-5 border-2 border-emerald-600 border-t-transparent rounded-full"></span>
+                    Process 10 Clients
+                </button>
+            </div>
+        </div>
+
+        <!-- Results Panel -->
+        <div class="lg:col-span-2 space-y-6">
+            <div id="results-container" class="space-y-6">
+                <div class="rounded-3xl border border-dashed border-gray-300 bg-gray-50/50 p-12 text-center">
+                    <div class="text-4xl mb-4">📊</div>
+                    <h3 class="text-lg font-semibold text-gray-900">No Data Processed Yet</h3>
+                    <p class="text-gray-500 max-w-sm mx-auto">Click the process button to gather activity data for testing.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('settings-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        // Explicitly handle checkboxes
+        formData.set('global_send_enabled', e.target.global_send_enabled.checked);
+        formData.set('test_email_only', e.target.test_email_only.checked);
+        formData.set('staffing_manager_only', e.target.staffing_manager_only.checked);
+
+        try {
+            const res = await fetch('/client-notifications/api/settings', {
+                method: 'POST',
+                body: formData
+            });
+            if (res.ok) {
+                alert('Settings saved successfully!');
+            }
+        } catch (err) {
+            alert('Error saving settings: ' + err);
+        }
+    });
+
+    document.getElementById('process-test-btn').addEventListener('click', async () => {
+        const btn = document.getElementById('process-test-btn');
+        const spinner = document.getElementById('btn-spinner');
+        const container = document.getElementById('results-container');
+
+        btn.disabled = true;
+        spinner.classList.remove('hidden');
+        container.innerHTML = `
+            <div class="flex flex-col items-center justify-center p-12 space-y-4">
+                <div class="animate-spin h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full"></div>
+                <p class="text-indigo-600 font-semibold animate-pulse">Gathering prior month activity...</p>
+            </div>
+        `;
+
+        try {
+            const res = await fetch('/client-notifications/api/process-test', { method: 'POST' });
+            const result = await res.json();
+            
+            if (result.status === 'success') {
+                renderResults(result.data);
+            } else {
+                container.innerHTML = `<div class="p-8 text-red-600 bg-red-50 rounded-3xl">Error: ${result.message}</div>`;
+            }
+        } catch (err) {
+            container.innerHTML = `<div class="p-8 text-red-600 bg-red-50 rounded-3xl">Request failed: ${err}</div>`;
+        } finally {
+            btn.disabled = false;
+            spinner.classList.add('hidden');
+        }
+    });
+
+    function renderResults(data) {
+        const container = document.getElementById('results-container');
+        if (data.length === 0) {
+            container.innerHTML = `<div class="p-8 text-gray-600 bg-gray-50 rounded-3xl">No client activity found for the prior month.</div>`;
+            return;
+        }
+
+        container.innerHTML = data.map(client => `
+            <div class="rounded-3xl border border-gray-100 bg-white shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div class="bg-indigo-600 px-6 py-4 text-white flex justify-between items-center">
+                    <h3 class="text-xl font-bold">${client.client_name}</h3>
+                    <span class="px-3 py-1 rounded-full bg-white/20 text-xs font-mono uppercase tracking-wider">ID: ${client.client_id}</span>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                        <div class="p-4 rounded-2xl bg-indigo-50 border border-indigo-100">
+                            <p class="text-xs text-indigo-600 font-bold uppercase mb-1">Preferred Added</p>
+                            <p class="text-2xl font-black text-indigo-900">${client.preferred_added_count}</p>
+                        </div>
+                        <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-100">
+                            <p class="text-xs text-emerald-600 font-bold uppercase mb-1">Total Hours</p>
+                            <p class="text-2xl font-black text-emerald-900">${client.total_hours.toFixed(1)}</p>
+                        </div>
+                        <div class="p-4 rounded-2xl bg-amber-50 border border-amber-100">
+                            <p class="text-xs text-amber-600 font-bold uppercase mb-1">Avg Rating</p>
+                            <p class="text-2xl font-black text-amber-900">${client.avg_rating ? client.avg_rating.toFixed(1) : 'N/A'}</p>
+                        </div>
+                        <div class="p-4 rounded-2xl bg-rose-50 border border-rose-100">
+                            <p class="text-xs text-rose-600 font-bold uppercase mb-1">Employees</p>
+                            <p class="text-2xl font-black text-rose-900">${client.employees_worked.length}</p>
+                        </div>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div>
+                            <h4 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                <span class="w-2 h-6 bg-indigo-600 rounded-full"></span>
+                                Positions & Hours
+                            </h4>
+                            <div class="space-y-2">
+                                ${client.positions.map(p => `
+                                    <div class="flex justify-between items-center p-3 rounded-xl bg-gray-50 border border-gray-100 hover:bg-white hover:shadow-md transition cursor-default">
+                                        <span class="font-semibold text-gray-700">${p.position}</span>
+                                        <span class="text-indigo-600 font-bold">${p.hours.toFixed(1)}h</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="space-y-6">
+                            <div>
+                                <h4 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                    <span class="w-2 h-6 bg-emerald-600 rounded-full"></span>
+                                    Timing Metrics (Hours)
+                                </h4>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="p-3 rounded-xl bg-gray-50 border border-gray-100">
+                                        <p class="text-[10px] text-gray-500 uppercase font-bold">Avg Start Time</p>
+                                        <p class="text-lg font-bold text-gray-900">${client.avg_creation_to_start_hours ? client.avg_creation_to_start_hours.toFixed(1) : 'N/A'}</p>
+                                    </div>
+                                    <div class="p-3 rounded-xl bg-gray-50 border border-gray-100">
+                                        <p class="text-[10px] text-gray-500 uppercase font-bold">Avg Fill Time</p>
+                                        <p class="text-lg font-bold text-gray-900">${client.avg_creation_to_fill_hours ? client.avg_creation_to_fill_hours.toFixed(1) : 'N/A'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                    <span class="w-2 h-6 bg-amber-600 rounded-full"></span>
+                                    Fill Rates
+                                </h4>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="p-3 rounded-xl bg-gray-50 border border-gray-100">
+                                        <p class="text-[10px] text-gray-500 uppercase font-bold">> 24h Warning</p>
+                                        <p class="text-lg font-bold text-gray-900">${client.fill_rate_over_24h ? client.fill_rate_over_24h.toFixed(0) + '%' : 'N/A'}</p>
+                                    </div>
+                                    <div class="p-3 rounded-xl bg-gray-50 border border-gray-100">
+                                        <p class="text-[10px] text-gray-500 uppercase font-bold">< 24h Warning</p>
+                                        <p class="text-lg font-bold text-gray-900">${client.fill_rate_under_24h ? client.fill_rate_under_24h.toFixed(0) + '%' : 'N/A'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 pt-6 border-t border-gray-100">
+                        <button class="text-xs text-gray-400 hover:text-indigo-600 transition flex items-center gap-1" onclick="this.nextElementSibling.classList.toggle('hidden')">
+                            Show worked employees (${client.employees_worked.length}) ▾
+                        </button>
+                        <div class="hidden mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            ${client.employees_worked.map(name => `
+                                <span class="px-2 py-1 rounded-lg bg-gray-100 text-[10px] text-gray-600 truncate">${name}</span>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+</script>
+{% endblock %}
