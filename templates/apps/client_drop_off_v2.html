@@ -627,6 +627,15 @@
     };
 
     const initializePage = async () => {
+        const loggedInManager = "{{ logged_in_manager|default('') }}";
+        if (managerFilter && loggedInManager) {
+            Array.from(managerFilter.options).forEach(opt => {
+                if (opt.value.toLowerCase() === loggedInManager.toLowerCase()) {
+                    managerFilter.value = opt.value;
+                }
+            });
+        }
+        
         await refreshContacted();
         await initializeNotes();
         applyManagerFilter();

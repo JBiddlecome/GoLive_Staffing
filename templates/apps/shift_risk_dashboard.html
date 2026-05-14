@@ -248,6 +248,9 @@
         }
     }
 
+    const loggedInManager = "{{ logged_in_manager|default('') }}";
+    let filterInitialized = false;
+
     function populateManagerDropdown(events) {
         const select = document.getElementById('manager-filter');
         const currentVal = select.value;
@@ -267,9 +270,16 @@
             const opt = document.createElement('option');
             opt.value = m.id;
             opt.textContent = m.name;
-            if (m.id === currentVal) opt.selected = true;
+            
+            if (!filterInitialized && loggedInManager && m.name.toLowerCase() === loggedInManager.toLowerCase()) {
+                opt.selected = true;
+            } else if (filterInitialized && m.id === currentVal) {
+                opt.selected = true;
+            }
+            
             select.appendChild(opt);
         });
+        filterInitialized = true;
     }
 
     function applyFilter() {

@@ -61,11 +61,38 @@ async def client_drop_off_v2(request: Request) -> HTMLResponse:
         }
     )
 
+    # Lookup Staffing Manager name for the logged-in user
+    user_data = request.session.get("user")
+    logged_in_email = user_data.get("email") if user_data else None
+    logged_in_manager = ""
+    
+    if logged_in_email:
+        from sqlalchemy import create_engine, text
+        from apps.client_drop_off_v2.app import _db_url_from_env
+        engine = create_engine(_db_url_from_env(), pool_pre_ping=True)
+        try:
+            with engine.connect() as conn:
+                check_sql = text("""
+                    SELECT CONCAT_WS(' ', u.first_name, u.last_name) as full_name
+                    FROM venue v 
+                    JOIN user u ON v.staffing_manager_id = u.id 
+                    WHERE u.email = :email 
+                    LIMIT 1
+                """)
+                res = conn.execute(check_sql, {"email": logged_in_email}).fetchone()
+                if res:
+                    logged_in_manager = res[0]
+        except Exception:
+            pass
+        finally:
+            engine.dispose()
+
     context = {
         "request": request,
         "records": records,
         "total_clients": len(records),
         "staffing_managers": staffing_managers,
+        "logged_in_manager": logged_in_manager,
     }
     return templates.TemplateResponse("apps/client_drop_off_v2.html", context)
 
