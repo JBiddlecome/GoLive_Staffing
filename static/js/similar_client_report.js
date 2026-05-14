@@ -21,6 +21,52 @@ document.addEventListener('DOMContentLoaded', () => {
   const countNum      = document.getElementById('count-num');
   const ALL_INDUSTRIES_VALUE = '__ALL__';
 
+  // AI Modal DOM Elements
+  const aiModal = document.getElementById('ai-modal');
+  const closeAiModalBtn = document.getElementById('close-ai-modal');
+  const aiModalClientName = document.getElementById('ai-modal-client-name');
+  const aiLoading = document.getElementById('ai-loading');
+  const aiResult = document.getElementById('ai-result');
+  const aiError = document.getElementById('ai-error');
+
+  closeAiModalBtn.addEventListener('click', () => {
+    aiModal.classList.add('hidden');
+  });
+
+  window.runAiAnalysis = async function(clientName) {
+    aiModal.classList.remove('hidden');
+    aiModalClientName.textContent = clientName;
+    aiLoading.classList.remove('hidden');
+    aiResult.classList.add('hidden');
+    aiError.classList.add('hidden');
+
+    try {
+      const formData = new FormData();
+      formData.append('client_name', clientName);
+      formData.append('custom_prompt', 'Just basic information presented in a very short reply. A brief summary of who is being communicated with (client email or name), brief summary of what they order and when, and when the last communication was.');
+
+      const resp = await fetch('/client-communication-summary/analyze', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        aiError.textContent = data.error || 'An error occurred during analysis.';
+        aiError.classList.remove('hidden');
+      } else {
+        aiResult.textContent = data.analysis;
+        aiResult.classList.remove('hidden');
+      }
+    } catch (e) {
+      aiError.textContent = 'Network error. Please try again.';
+      aiError.classList.remove('hidden');
+    } finally {
+      aiLoading.classList.add('hidden');
+    }
+  };
+
   // -------------------------------------------------------------------------
   // Weights Toggle & Sliders
   // -------------------------------------------------------------------------
@@ -206,12 +252,18 @@ document.addEventListener('DOMContentLoaded', () => {
       tr.className = i % 2 === 0 ? 'bg-white hover:bg-emerald-50/30 transition-colors' : 'bg-gray-50/50 hover:bg-emerald-50/30 transition-colors';
 
       const locationStr = [r.city, r.state].filter(Boolean).join(', ') || '—';
+      const escapedName = (r.client_name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
       tr.innerHTML = `
         <td class="px-6 py-4 text-gray-400 font-medium">${i + 1}</td>
         <td class="px-6 py-4">
-          <div class="font-semibold text-gray-900">${r.client_name || '—'}</div>
+          <div class="font-semibold text-emerald-700 hover:text-emerald-800 cursor-pointer underline" onclick="runAiAnalysis('${escapedName}')">${r.client_name || '—'}</div>
           <div class="text-xs text-gray-400 mt-0.5">${locationStr}</div>
+        </td>
+        <td class="px-6 py-4">
+          <span class="inline-block px-2.5 py-1 rounded-full bg-gray-50 text-gray-700 text-xs font-medium border border-gray-200">
+            ${r.status || 'Unknown'}
+          </span>
         </td>
         <td class="px-6 py-4">
           <span class="inline-block px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-100">

@@ -264,6 +264,7 @@
               <tr>
                 <th class="px-6 py-3 text-left font-semibold">#</th>
                 <th class="px-6 py-3 text-left font-semibold">Client Name</th>
+                <th class="px-6 py-3 text-left font-semibold">Status</th>
                 <th class="px-6 py-3 text-left font-semibold">Industry</th>
                 <th class="px-6 py-3 text-left font-semibold">MSP</th>
                 <th class="px-6 py-3 text-right font-semibold">Shifts (1 yr)</th>
@@ -279,6 +280,29 @@
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- AI Analysis Modal -->
+<div id="ai-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
+  <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[90vh]">
+    <div class="px-6 py-5 border-b border-emerald-100 flex items-center justify-between">
+      <h3 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
+        <svg class="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        AI Email Analysis: <span id="ai-modal-client-name" class="text-emerald-700"></span>
+      </h3>
+      <button type="button" id="close-ai-modal" class="text-gray-400 hover:text-gray-600 focus:outline-none">
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="p-6 overflow-y-auto" id="ai-modal-content">
+      <div id="ai-loading" class="flex flex-col items-center justify-center py-8 text-emerald-600">
+        <svg class="h-10 w-10 animate-spin mb-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+        <p class="font-medium">Analyzing Close.com emails...</p>
+      </div>
+      <div id="ai-result" class="hidden whitespace-pre-wrap text-sm text-gray-700 leading-relaxed"></div>
+      <div id="ai-error" class="hidden rounded-xl border border-red-200 bg-red-50 p-4 text-red-700 text-sm"></div>
+    </div>
   </div>
 </div>
 {% endblock %}

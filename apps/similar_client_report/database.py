@@ -128,6 +128,7 @@ _QUERY = text("""
     SELECT
         c.client_id,
         c.name            AS client_name,
+        c.status          AS client_status,
         c.industry,
         c.industry_other,
         c.latitude,
@@ -212,8 +213,28 @@ def fetch_similar_clients(
         last_shift = row.get("last_shift_date")
         last_shift_str = str(last_shift) if last_shift and str(last_shift) not in ("NaT", "None", "nan") else None
 
+        status_map = {
+            0: "Terminated",
+            1: "Active",
+            3: "Prospect",
+            4: "Candidate Partner",
+            10: "Inactive 60 days",
+            11: "Inactive 180 days",
+            12: "Inactive 365 days",
+        }
+        status_val = row.get("client_status")
+        
+        # Handle cases where status_val might be a string if pandas inferred object
+        try:
+            status_val = int(status_val) if pd.notna(status_val) else -1
+        except (ValueError, TypeError):
+            status_val = -1
+            
+        status_str = status_map.get(status_val, "Unknown")
+
         rows.append({
             "client_name": row.get("client_name"),
+            "status": status_str,
             "industry": client_industry or (row.get("industry_other") or ""),
             "msp": row.get("msp_name") or "No MSP",
             "shifts_last_year": shifts,
