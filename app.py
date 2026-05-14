@@ -71,6 +71,8 @@ from apps.new_employee_position_approver.views import router as new_employee_pos
 from apps.client_notifications.views import router as client_notifications_router
 from apps.auth.views import router as auth_router, get_current_user
 from apps.contacts_data import add_contact, load_contacts, remove_contact
+from apps.staffing_tools_hub.views import router as staffing_tools_hub_router
+
 
 from contextlib import asynccontextmanager
 import asyncio
@@ -148,6 +150,11 @@ templates = Jinja2Templates(directory="templates")
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.get("/staffing-tools", response_class=HTMLResponse)
+async def staffing_tools(request: Request):
+    return templates.TemplateResponse("staffing_tools.html", {"request": request})
 
 
 @app.get("/external-ai-tools", response_class=HTMLResponse)
@@ -445,6 +452,12 @@ app.include_router(
     prefix="/look-back-history",
     tags=["Look Back History"],
 )
+app.include_router(
+    staffing_tools_hub_router,
+    prefix="/api/staffing-tools",
+    tags=["Staffing Tools Hub"],
+)
+
 
 # Redirect /sms_paraphraser to /sms-paraphraser for backward compatibility
 @app.get("/sms_paraphraser", include_in_schema=False)

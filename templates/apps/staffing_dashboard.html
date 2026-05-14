@@ -31,8 +31,19 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
             </span>
-            <input type="text" id="clientSearch" placeholder="Search by client or manager..." 
+            <input type="text" id="clientSearch" placeholder="Search by client..." 
                 class="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none" />
+        </div>
+        <div class="relative w-full md:max-w-xs">
+            <select id="staffingManagerFilter" class="w-full pl-4 pr-10 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none appearance-none cursor-pointer text-gray-700">
+                <option value="">All Staffing Managers</option>
+                {% for mgr in staffing_managers %}
+                    <option value="{{ mgr }}">{{ mgr }}</option>
+                {% endfor %}
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
         </div>
         <button id="refreshBtn"
             class="inline-flex items-center justify-center rounded-2xl bg-gray-900 px-8 py-3.5 font-bold text-white shadow-lg hover:bg-black transition-all active:scale-95">
@@ -85,6 +96,7 @@
         const refreshIcon = document.getElementById('refreshIcon');
         const refreshText = document.getElementById('refreshText');
         const searchInput = document.getElementById('clientSearch');
+        const staffingManagerFilter = document.getElementById('staffingManagerFilter');
         const clientCount = document.getElementById('clientCount');
         const totalShiftsCount = document.getElementById('totalShiftsCount');
 
@@ -251,20 +263,36 @@
 
         function applyFilterAndSort() {
             const term = searchInput.value.toLowerCase();
-            const filtered = dashboardData.filter(item => 
-                item.client_name.toLowerCase().includes(term) || 
-                (item.staffing_manager_name && item.staffing_manager_name.toLowerCase().includes(term))
-            );
+            const managerTerm = staffingManagerFilter.value.toLowerCase();
+            
+            const filtered = dashboardData.filter(item => {
+                const matchesClient = item.client_name.toLowerCase().includes(term);
+                const managerName = item.staffing_manager_name ? item.staffing_manager_name.toLowerCase() : "";
+                
+                const matchesSearch = matchesClient || managerName.includes(term);
+                const matchesDropdown = managerTerm === "" || managerName === managerTerm;
+                
+                return matchesSearch && matchesDropdown;
+            });
             const sorted = sortData(filtered);
             renderDashboard(sorted);
             updateCounters(sorted);
         }
 
         searchInput.addEventListener('input', applyFilterAndSort);
+        staffingManagerFilter.addEventListener('change', applyFilterAndSort);
 
         refreshBtn.addEventListener('click', fetchData);
 
         // Init
+        const loggedInManager = "{{ logged_in_manager|default('') }}";
+        if (loggedInManager) {
+            Array.from(staffingManagerFilter.options).forEach(opt => {
+                if (opt.value.toLowerCase() === loggedInManager.toLowerCase()) {
+                    staffingManagerFilter.value = opt.value;
+                }
+            });
+        }
         fetchData();
     });
 

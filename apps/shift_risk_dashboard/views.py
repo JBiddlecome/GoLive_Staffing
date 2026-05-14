@@ -346,7 +346,47 @@ ORDER BY se.created_at ASC
 
 @router.get("/", response_class=HTMLResponse)
 async def shift_risk_dashboard_index(request: Request):
-    return templates.TemplateResponse("apps/shift_risk_dashboard.html", {"request": request})
+    user_data = request.session.get("user")
+    logged_in_email = user_data.get("email") if user_data else None
+    logged_in_manager = ""
+    staffing_managers = []
+    
+    engine = _engine()
+    try:
+        with engine.connect() as conn:
+            if logged_in_email:
+                check_sql = text("""
+                    SELECT CONCAT_WS(' ', u.first_name, u.last_name) as full_name
+                    FROM venue v 
+                    JOIN user u ON v.staffing_manager_id = u.id 
+                    WHERE u.email = :email 
+                    LIMIT 1
+                """)
+                res = conn.execute(check_sql, {"email": logged_in_email}).fetchone()
+                if res:
+                    logged_in_manager = res[0]
+                    
+            managers_sql = text("""
+                SELECT DISTINCT CONCAT(u.first_name, ' ', u.last_name) AS full_name
+                FROM venue v
+                JOIN user u ON v.staffing_manager_id = u.id
+                WHERE u.first_name IS NOT NULL AND u.last_name IS NOT NULL
+                ORDER BY full_name
+            """)
+            staffing_managers = [row[0] for row in conn.execute(managers_sql).fetchall()]
+    except Exception:
+        pass
+    finally:
+        engine.dispose()
+
+    return templates.TemplateResponse(
+        "apps/shift_risk_dashboard.html", 
+        {
+            "request": request,
+            "logged_in_manager": logged_in_manager,
+            "staffing_managers": staffing_managers
+        }
+    )
 
 
 @router.get("/data")

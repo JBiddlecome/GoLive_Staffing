@@ -63,12 +63,47 @@ async def unconfirmed_requests_page(request: Request):
     today = datetime.now(ZoneInfo("America/Los_Angeles")).date()
     two_weeks_later = today + timedelta(days=14)
     
+    user_data = request.session.get("user")
+    logged_in_email = user_data.get("email") if user_data else None
+    logged_in_manager = ""
+    staffing_managers = []
+    
+    engine = _engine()
+    try:
+        with engine.connect() as conn:
+            if logged_in_email:
+                check_sql = text("""
+                    SELECT CONCAT_WS(' ', u.first_name, u.last_name) as full_name
+                    FROM venue v 
+                    JOIN user u ON v.staffing_manager_id = u.id 
+                    WHERE u.email = :email 
+                    LIMIT 1
+                """)
+                res = conn.execute(check_sql, {"email": logged_in_email}).fetchone()
+                if res:
+                    logged_in_manager = res[0]
+                    
+            managers_sql = text("""
+                SELECT DISTINCT v.staffing_manager_id, CONCAT(u.first_name, ' ', u.last_name) AS full_name
+                FROM venue v
+                JOIN user u ON v.staffing_manager_id = u.id
+                WHERE u.first_name IS NOT NULL AND u.last_name IS NOT NULL
+                ORDER BY full_name
+            """)
+            staffing_managers = [{"id": row[0], "name": row[1]} for row in conn.execute(managers_sql).fetchall()]
+    except Exception:
+        pass
+    finally:
+        engine.dispose()
+    
     return templates.TemplateResponse(
         "apps/unconfirmed_requests.html", 
         {
             "request": request,
             "default_start": today.isoformat(),
-            "default_end": two_weeks_later.isoformat()
+            "default_end": two_weeks_later.isoformat(),
+            "logged_in_manager": logged_in_manager,
+            "staffing_managers": staffing_managers
         }
     )
 

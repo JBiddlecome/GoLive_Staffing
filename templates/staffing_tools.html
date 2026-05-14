@@ -1,0 +1,690 @@
+{% extends "base.html" %}
+{% block title %}Staffing Tools Hub — GoLive Staffing{% endblock %}
+
+{% block content %}
+<style>
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #f8fafc;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+</style>
+
+<div class="space-y-10">
+  <!-- Top Banner Section -->
+  <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-700 via-emerald-600 to-teal-500 text-white shadow-2xl">
+    <div class="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_30%,white,transparent_30%)]"></div>
+    <div class="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-white/10 blur-3xl"></div>
+    
+    <div class="relative px-8 py-10 lg:px-12 lg:py-12 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+      <div class="space-y-3 max-w-2xl">
+        <h1 class="brand-serif text-4xl md:text-5xl font-semibold leading-tight">Staffing Tools</h1>
+      </div>
+
+      <!-- Top Right Button for Open Shifts Map -->
+      <div class="flex-shrink-0">
+        <a href="/open-shifts-map" class="group inline-flex items-center gap-3 rounded-2xl bg-white text-emerald-800 px-6 py-4 font-semibold shadow-xl shadow-emerald-950/20 hover:bg-emerald-50 hover:scale-105 active:scale-95 transition-all duration-200 border border-emerald-100">
+          <div class="p-2 rounded-xl bg-emerald-100 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-200">
+            <!-- Globe / Map Icon -->
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5a2 2 0 002 2h0a2 2 0 012 2v3m-3 5h3m-3 0h1m-1 0h.01M19.938 10a9.001 9.001 0 00-15.876 0m15.876 0a8.994 8.994 0 01-1.5 5.5m-14.376-5.5a8.994 8.994 0 001.5 5.5m12.876 0c-.5.5-.99.965-1.488 1.378M12 21a9.004 9.004 0 007.45-3.622M12 21c-2.38 0-4.56-.838-6.26-2.228m13.71-8.272A8.994 8.994 0 0012 3a8.994 8.994 0 00-7.45 3.622"></path>
+            </svg>
+          </div>
+          <div class="text-left">
+            <span class="block text-xs uppercase tracking-wider text-emerald-600/80 font-bold">Interactive</span>
+            <span class="block text-base font-bold leading-none mt-0.5">Open Shifts Map</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Navigation Tabs Header -->
+  <div class="flex flex-col items-center">
+    <div class="inline-flex p-1.5 bg-gray-100/80 backdrop-blur rounded-2xl border border-gray-200/60 shadow-inner max-w-full overflow-x-auto">
+      <button onclick="switchTab('dashboard')" id="tab-btn-dashboard" class="tab-button px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center gap-2 whitespace-nowrap">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+        Dashboard
+      </button>
+      <button onclick="switchTab('research')" id="tab-btn-research" class="tab-button px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center gap-2 whitespace-nowrap">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        Research
+      </button>
+      <button onclick="switchTab('reports')" id="tab-btn-reports" class="tab-button px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center gap-2 whitespace-nowrap">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        Reports
+      </button>
+      <button onclick="switchTab('admin')" id="tab-btn-admin" class="tab-button px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center gap-2 whitespace-nowrap">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        Admin
+      </button>
+    </div>
+  </div>
+
+  <!-- Tab Content Panes -->
+  <!-- 1. Dashboard Tab (First Tab) -->
+  <div id="tab-pane-dashboard" class="tab-pane space-y-8 transition-opacity duration-300">
+    <!-- Viewer Context Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between bg-white p-6 rounded-3xl border border-gray-100 shadow-sm gap-4">
+      <div>
+        <h2 class="brand-serif text-2xl font-semibold text-gray-900">Operations &amp; Risk Visual</h2>
+        <p class="text-sm text-gray-500 mt-0.5">Unified real-time dashboard view customized for signed-in management.</p>
+      </div>
+      <div id="viewer-context-badge" class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-gray-50 border border-gray-200/60 text-xs font-semibold text-gray-600 animate-pulse">
+        <div class="w-2 h-2 rounded-full bg-amber-400"></div>
+        <span>Detecting Staffing Manager access...</span>
+      </div>
+    </div>
+
+    <!-- The Single Visual Grid / Columns of 4 Blocks -->
+    <div class="grid gap-8 md:grid-cols-2">
+      <!-- BLOCK 1: Staffing Manager Dashboard -->
+      <div class="group relative flex flex-col rounded-2xl border border-emerald-100 bg-white shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden">
+        <!-- Block Header -->
+        <div onclick="window.location.href='/staffing-dashboard'" class="p-6 pb-4 bg-gradient-to-br from-emerald-50/60 to-emerald-100/30 border-b border-emerald-100/60 flex items-center justify-between cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-600/20">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+            </div>
+            <div>
+              <h3 class="brand-serif text-xl font-bold text-gray-900 group-hover:text-emerald-700 transition-colors">Staffing Manager Dashboard</h3>
+              <p class="text-xs text-rose-600 font-bold uppercase tracking-wider mt-0.5">Clients &lt; 90% Fill Rate</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-white px-3 py-1.5 rounded-full shadow-sm border border-emerald-100 group-hover:bg-emerald-600 group-hover:text-white transition-all">
+            <span>Open App</span>
+            <span class="group-hover:translate-x-0.5 transition-transform">➔</span>
+          </div>
+        </div>
+
+        <!-- Block Content: Fixed Height Scrollable Area -->
+        <div class="max-h-80 overflow-y-auto divide-y divide-gray-50 custom-scrollbar flex-1" id="section-1-content">
+          <div class="p-12 text-center flex flex-col items-center justify-center space-y-3">
+            <div class="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-xs text-gray-500 font-medium">Pulling critical client fill rates...</p>
+          </div>
+        </div>
+
+        <!-- Block Footer -->
+        <div onclick="window.location.href='/staffing-dashboard'" class="px-6 py-3 bg-gray-50/60 border-t border-gray-100 text-center text-[11px] font-semibold text-gray-500 cursor-pointer hover:bg-gray-100 transition-colors">
+          Sorted by lowest fill rate percentage. Click block to expand deeper.
+        </div>
+      </div>
+
+      <!-- BLOCK 2: Shift Risk Dashboard -->
+      <div class="group relative flex flex-col rounded-2xl border border-amber-100 bg-white shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden">
+        <div onclick="window.location.href='/shift-risk-dashboard'" class="p-6 pb-4 bg-gradient-to-br from-amber-50/60 to-amber-100/30 border-b border-amber-100/60 flex items-center justify-between cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-600 text-white shadow-md shadow-amber-600/20">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </div>
+            <div>
+              <h3 class="brand-serif text-xl font-bold text-gray-900 group-hover:text-amber-700 transition-colors">Shift Risk Dashboard</h3>
+              <p class="text-xs text-amber-600 font-bold uppercase tracking-wider mt-0.5">Critical Risk Index</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-white px-3 py-1.5 rounded-full shadow-sm border border-amber-100 group-hover:bg-amber-600 group-hover:text-white transition-all">
+            <span>Open App</span>
+            <span class="group-hover:translate-x-0.5 transition-transform">➔</span>
+          </div>
+        </div>
+
+        <!-- Block Content: Fixed Height Scrollable Area -->
+        <div class="max-h-80 overflow-y-auto divide-y divide-gray-50 custom-scrollbar flex-1" id="section-2-content">
+          <div class="p-12 text-center flex flex-col items-center justify-center space-y-3">
+            <div class="w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-xs text-gray-500 font-medium">Analyzing shift risk levels...</p>
+          </div>
+        </div>
+
+
+        <div onclick="window.location.href='/shift-risk-dashboard'" class="px-6 py-3 bg-gray-50/60 border-t border-gray-100 text-center text-[11px] font-semibold text-gray-500 cursor-pointer hover:bg-gray-100 transition-colors">
+          Click block to open Shift Risk full monitoring matrix.
+        </div>
+      </div>
+
+      <!-- BLOCK 3: Client Drop Off -->
+      <div class="group relative flex flex-col rounded-2xl border border-rose-100 bg-white shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden">
+        <div onclick="window.location.href='/client-drop-off-v2'" class="p-6 pb-4 bg-gradient-to-br from-rose-50/60 to-rose-100/30 border-b border-rose-100/60 flex items-center justify-between cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-600 text-white shadow-md shadow-rose-600/20">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>
+            </div>
+            <div>
+              <h3 class="brand-serif text-xl font-bold text-gray-900 group-hover:text-rose-700 transition-colors">Client Drop Off</h3>
+              <p class="text-xs text-rose-600 font-bold uppercase tracking-wider mt-0.5">Attrition Trackers</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 text-xs font-bold text-rose-600 bg-white px-3 py-1.5 rounded-full shadow-sm border border-rose-100 group-hover:bg-rose-600 group-hover:text-white transition-all">
+            <span>Open App</span>
+            <span class="group-hover:translate-x-0.5 transition-transform">➔</span>
+          </div>
+        </div>
+
+        <!-- Block Content: Fixed Height Scrollable Area -->
+        <div class="max-h-80 overflow-y-auto divide-y divide-gray-50 custom-scrollbar flex-1" id="section-3-content">
+          <div class="p-12 text-center flex flex-col items-center justify-center space-y-3">
+            <div class="w-8 h-8 border-3 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-xs text-gray-500 font-medium">Detecting potential churn...</p>
+          </div>
+        </div>
+
+
+        <div onclick="window.location.href='/client-drop-off-v2'" class="px-6 py-3 bg-gray-50/60 border-t border-gray-100 text-center text-[11px] font-semibold text-gray-500 cursor-pointer hover:bg-gray-100 transition-colors">
+          Click block to open Client Drop Off detailed intelligence dashboard.
+        </div>
+      </div>
+
+      <!-- BLOCK 4: Unconfirmed Requests -->
+      <div class="group relative flex flex-col rounded-2xl border border-indigo-100 bg-white shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden">
+        <div onclick="window.location.href='/unconfirmed-requests'" class="p-6 pb-4 bg-gradient-to-br from-indigo-50/60 to-indigo-100/30 border-b border-indigo-100/60 flex items-center justify-between cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-600/20">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div>
+              <h3 class="brand-serif text-xl font-bold text-gray-900 group-hover:text-indigo-700 transition-colors">Unconfirmed Requests</h3>
+              <p class="text-xs text-indigo-600 font-bold uppercase tracking-wider mt-0.5">Pending Approvals</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 text-xs font-bold text-indigo-600 bg-white px-3 py-1.5 rounded-full shadow-sm border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+            <span>Open App</span>
+            <span class="group-hover:translate-x-0.5 transition-transform">➔</span>
+          </div>
+        </div>
+
+        <div class="max-h-80 overflow-y-auto divide-y divide-gray-50 custom-scrollbar flex-1" id="section-4-content">
+          <div class="p-12 text-center flex flex-col items-center justify-center space-y-3">
+            <div class="w-8 h-8 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-xs text-gray-500 font-medium">Fetching unconfirmed requests...</p>
+          </div>
+        </div>
+
+        <div onclick="window.location.href='/unconfirmed-requests'" class="px-6 py-3 bg-gray-50/60 border-t border-gray-100 text-center text-[11px] font-semibold text-gray-500 cursor-pointer hover:bg-gray-100 transition-colors">
+          Click block to manage unconfirmed placement requests.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Research Tab -->
+  <div id="tab-pane-research" class="tab-pane space-y-6 transition-opacity duration-300 hidden">
+    <div class="border-b border-gray-100 pb-4">
+      <h2 class="brand-serif text-2xl font-semibold text-gray-900">Research Apps</h2>
+      <p class="text-sm text-gray-500 mt-1">Deep-dive intelligence and historical analyses for client communications and staffing profiles.</p>
+    </div>
+    <div class="grid gap-6 md:grid-cols-2">
+      <!-- Client Communication Summary -->
+      <a href="/client-communication-summary" class="group relative flex flex-col rounded-3xl border border-emerald-100 bg-white p-8 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
+        <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-200 border border-emerald-100/50">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+        </div>
+        <h3 class="brand-serif text-xl font-bold text-gray-900 mb-2 group-hover:text-emerald-700 transition-colors">Client Communication Summary</h3>
+        <p class="text-gray-600 text-sm leading-relaxed flex-1">AI-powered analysis of client email communications via Close.com — identify issues, feedback, and revenue trends.</p>
+        <div class="mt-6 flex items-center text-xs font-bold uppercase tracking-wider text-emerald-600 group-hover:text-emerald-700">
+          <span>Open Application</span>
+          <span class="ml-1.5 group-hover:translate-x-1 transition-transform">➔</span>
+        </div>
+      </a>
+
+      <!-- Employee Dashboard -->
+      <a href="/staffing-employee-dashboard" class="group relative flex flex-col rounded-3xl border border-emerald-100 bg-white p-8 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
+        <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-teal-600 group-hover:bg-teal-600 group-hover:text-white transition-colors duration-200 border border-teal-100/50">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+        </div>
+        <h3 class="brand-serif text-xl font-bold text-gray-900 mb-2 group-hover:text-teal-700 transition-colors">Employee Dashboard</h3>
+        <p class="text-gray-600 text-sm leading-relaxed flex-1">Search for an employee and see a comprehensive performance snapshot to drive optimal staffing decisions.</p>
+        <div class="mt-6 flex items-center text-xs font-bold uppercase tracking-wider text-teal-600 group-hover:text-teal-700">
+          <span>Open Application</span>
+          <span class="ml-1.5 group-hover:translate-x-1 transition-transform">➔</span>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- 3. Reports Tab -->
+  <div id="tab-pane-reports" class="tab-pane space-y-6 transition-opacity duration-300 hidden">
+    <div class="border-b border-gray-100 pb-4">
+      <h2 class="brand-serif text-2xl font-semibold text-gray-900">Staffing Reports</h2>
+      <p class="text-sm text-gray-500 mt-1">Specialized audit lists, placement tracking, and fill rate insights across selected clients and venues.</p>
+    </div>
+    <div class="grid gap-6 md:grid-cols-3">
+      <!-- Preferred List -->
+      <a href="/reports/preferred" class="group relative flex flex-col rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
+        <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-colors duration-200 border border-amber-100/50 text-2xl">
+          ★
+        </div>
+        <h3 class="brand-serif text-lg font-bold text-gray-900 mb-2.5">Preferred List</h3>
+        <p class="text-gray-600 text-xs leading-relaxed flex-1">View all preferred employees for specific clients, including detailed assigned reasons and internal notes.</p>
+        <div class="mt-5 flex items-center text-xs font-bold text-emerald-600">
+          View Report <span class="ml-1.5 group-hover:translate-x-1 transition-transform">➔</span>
+        </div>
+      </a>
+
+      <!-- DNR List -->
+      <a href="/reports/dnr" class="group relative flex flex-col rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
+        <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600 group-hover:bg-red-600 group-hover:text-white transition-colors duration-200 border border-red-100/50 text-xl font-bold">
+          ⊘
+        </div>
+        <h3 class="brand-serif text-lg font-bold text-gray-900 mb-2.5">DNR List</h3>
+        <p class="text-gray-600 text-xs leading-relaxed flex-1">Access "Do Not Return" logs for clients to correctly manage staff eligibility and prevent scheduling issues.</p>
+        <div class="mt-5 flex items-center text-xs font-bold text-emerald-600">
+          View Report <span class="ml-1.5 group-hover:translate-x-1 transition-transform">➔</span>
+        </div>
+      </a>
+
+      <!-- Basic Client Report -->
+      <a href="/reports/basic-client-report" class="group relative flex flex-col rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
+        <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-colors duration-200 border border-sky-100/50 text-xl">
+          📋
+        </div>
+        <h3 class="brand-serif text-lg font-bold text-gray-900 mb-2.5">Basic Client Report</h3>
+        <p class="text-gray-600 text-xs leading-relaxed flex-1">Generate custom summary reports displaying assigned employee names, mapped positions, and total accumulated hours.</p>
+        <div class="mt-5 flex items-center text-xs font-bold text-emerald-600">
+          View Report <span class="ml-1.5 group-hover:translate-x-1 transition-transform">➔</span>
+        </div>
+      </a>
+
+      <!-- Commerce Casino Hours -->
+      <a href="/reports/commerce-hours" class="group relative flex flex-col rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
+        <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors duration-200 border border-purple-100/50 text-xl font-bold">
+          ◷
+        </div>
+        <h3 class="brand-serif text-lg font-bold text-gray-900 mb-2.5">Commerce Casino Hours</h3>
+        <p class="text-gray-600 text-xs leading-relaxed flex-1">Export exact employee worked hours and specific operational positions dedicated to Commerce Casino accounts.</p>
+        <div class="mt-5 flex items-center text-xs font-bold text-emerald-600">
+          View Report <span class="ml-1.5 group-hover:translate-x-1 transition-transform">➔</span>
+        </div>
+      </a>
+
+      <!-- <24 Hour Cancellations -->
+      <a href="/reports/less-24-cancellations" class="group relative flex flex-col rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
+        <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-colors duration-200 border border-rose-100/50 text-xl font-bold">
+          ⚠
+        </div>
+        <h3 class="brand-serif text-lg font-bold text-gray-900 mb-2.5">&lt;24 Hour Cancellations</h3>
+        <p class="text-gray-600 text-xs leading-relaxed flex-1">Analyze short-notice employee shift drops occurring less than 24 hours prior to event start, along with subsequent refill speeds.</p>
+        <div class="mt-5 flex items-center text-xs font-bold text-emerald-600">
+          View Report <span class="ml-1.5 group-hover:translate-x-1 transition-transform">➔</span>
+        </div>
+      </a>
+
+      <!-- Client Fill Rates -->
+      <a href="/reports/client-fill-rates" class="group relative flex flex-col rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
+        <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-200 border border-indigo-100/50 text-xl">
+          ⏱
+        </div>
+        <h3 class="brand-serif text-lg font-bold text-gray-900 mb-2.5">Client Fill Rates</h3>
+        <p class="text-gray-600 text-xs leading-relaxed flex-1">Monitor high-level organizational placement outcomes: track created shifts, filled percentages, and placement latency.</p>
+        <div class="mt-5 flex items-center text-xs font-bold text-emerald-600">
+          View Report <span class="ml-1.5 group-hover:translate-x-1 transition-transform">➔</span>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- 4. Admin Tab -->
+  <div id="tab-pane-admin" class="tab-pane space-y-6 transition-opacity duration-300 hidden">
+    <div class="border-b border-gray-100 pb-4">
+      <h2 class="brand-serif text-2xl font-semibold text-gray-900">Administrative Tools</h2>
+      <p class="text-sm text-gray-500 mt-1">Automation engines governing external mail delivery routing, performance briefs, and content AI formatting.</p>
+    </div>
+    <div class="grid gap-6 md:grid-cols-3">
+      <!-- Email Forwarder -->
+      <a href="/email-forwarder" class="group relative flex flex-col rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
+        <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-colors duration-200 border border-sky-100/50">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+        </div>
+        <h3 class="brand-serif text-lg font-bold text-gray-900 mb-2.5">Email Forwarder</h3>
+        <p class="text-gray-600 text-xs leading-relaxed flex-1">Automated background mail switch forwarding specific addresses directly to the main staffing unit during configured off-hours schedules.</p>
+        <div class="mt-5 flex items-center text-xs font-bold text-emerald-600">
+          Configure <span class="ml-1.5 group-hover:translate-x-1 transition-transform">➔</span>
+        </div>
+      </a>
+
+      <!-- Client Notifications -->
+      <a href="/client-notifications" class="group relative flex flex-col rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
+        <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-200 border border-indigo-100/50">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+        </div>
+        <h3 class="brand-serif text-lg font-bold text-gray-900 mb-2.5">Client Notifications</h3>
+        <p class="text-gray-600 text-xs leading-relaxed flex-1">Compile comprehensive multi-client analytical overviews and dispatch beautifully styled HTML email update reports automatically.</p>
+        <div class="mt-5 flex items-center text-xs font-bold text-emerald-600">
+          Configure <span class="ml-1.5 group-hover:translate-x-1 transition-transform">➔</span>
+        </div>
+      </a>
+
+      <!-- SMS Paraphraser -->
+      <a href="/sms-paraphraser" class="group relative flex flex-col rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
+        <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors duration-200 border border-purple-100/50">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path></svg>
+        </div>
+        <h3 class="brand-serif text-lg font-bold text-gray-900 mb-2.5">SMS Paraphraser</h3>
+        <p class="text-gray-600 text-xs leading-relaxed flex-1">Instantly process detailed event briefing notes using advanced AI language rewriting to draft highly concise outgoing text messages.</p>
+        <div class="mt-5 flex items-center text-xs font-bold text-emerald-600">
+          Configure <span class="ml-1.5 group-hover:translate-x-1 transition-transform">➔</span>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function switchTab(tabId) {
+    // 1. Hide all panes
+    const panes = document.querySelectorAll('.tab-pane');
+    panes.forEach(pane => {
+      pane.classList.add('hidden');
+    });
+
+    // 2. Remove active state from all buttons
+    const buttons = document.querySelectorAll('.tab-button');
+    buttons.forEach(btn => {
+      btn.className = 'tab-button px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center gap-2 whitespace-nowrap text-gray-600 hover:text-gray-900 hover:bg-gray-200/50';
+    });
+
+    // 3. Show selected pane
+    const targetPane = document.getElementById('tab-pane-' + tabId);
+    if (targetPane) {
+      targetPane.classList.remove('hidden');
+    }
+
+    // 4. Set active state on target button
+    const targetBtn = document.getElementById('tab-btn-' + tabId);
+    if (targetBtn) {
+      targetBtn.className = 'tab-button px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center gap-2 whitespace-nowrap bg-emerald-600 text-white shadow-md shadow-emerald-600/20';
+    }
+  }
+
+  async function loadDashboardHubData() {
+    try {
+      const resp = await fetch('/api/staffing-tools/dashboard-summary');
+      const data = await resp.json();
+      
+      if (data.status === 'success') {
+        // Update context badge
+        const badge = document.getElementById('viewer-context-badge');
+        if (badge) {
+          badge.classList.remove('animate-pulse');
+          if (data.viewer.is_staffing_manager) {
+            badge.className = 'inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 shadow-sm';
+            badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>Portfolio View: ${data.viewer.email}</span>`;
+          } else if (data.viewer.email) {
+            badge.className = 'inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-blue-50 border border-blue-200 text-xs font-bold text-blue-800 shadow-sm';
+            badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-blue-500"></span><span>Org Wide View (Logged in as ${data.viewer.email})</span>`;
+          } else {
+            badge.className = 'inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-purple-50 border border-purple-200 text-xs font-bold text-purple-800 shadow-sm';
+            badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-purple-500"></span><span>Org Wide View (Global Access)</span>`;
+          }
+        }
+
+        // Populate Section 1
+        const sec1 = document.getElementById('section-1-content');
+        if (sec1) {
+          if (data.section_1.length === 0) {
+            sec1.innerHTML = `<div class="p-10 text-center text-sm text-gray-400 font-medium italic">No clients found with under 90% fill rate.</div>`;
+          } else {
+            sec1.innerHTML = data.section_1.map(item => {
+              const fillRateClass = item.fill_rate < 50 ? 'bg-rose-50 text-rose-700 border-rose-200' : (item.fill_rate < 75 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-blue-50 text-blue-700 border-blue-200');
+              return `
+                <div class="p-3 flex items-center justify-between gap-4 hover:bg-gray-50/80 transition-colors">
+                  <div class="min-w-0 flex-1">
+                    <p class="font-bold text-gray-900 truncate text-base">${item.client_name}</p>
+                    <p class="text-xs text-gray-500 font-medium mt-0.5">Events: <span class="font-bold text-gray-700">${item.event_count}</span></p>
+                  </div>
+                  <div class="text-right flex-shrink-0">
+                    <div class="text-[11px] font-black uppercase tracking-wider text-gray-400 mb-1">
+                      Slots: <span class="text-emerald-600">${item.filled_shifts}</span> / <span class="text-gray-700">${item.total_shifts}</span>
+                    </div>
+                    <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-black border shadow-2xs ${fillRateClass}">
+                      ${item.fill_rate}% Fill
+                    </span>
+                  </div>
+                </div>
+              `;
+            }).join('');
+          }
+        }
+
+        // Populate Section 2
+        const sec2 = document.getElementById('section-2-content');
+        if (sec2) {
+          if (data.section_2.length === 0) {
+            sec2.innerHTML = `<div class="p-10 text-center text-sm text-gray-400 font-medium italic">No critical risk clients found.</div>`;
+          } else {
+            sec2.innerHTML = data.section_2.map(item => {
+              return `
+                <div class="p-3 flex items-center justify-between gap-4 hover:bg-gray-50/80 transition-colors">
+                  <div class="min-w-0 flex-1">
+                    <p class="font-bold text-gray-900 truncate text-base">${item.client_name}</p>
+                    <p class="text-xs text-gray-500 font-medium mt-0.5">Soonest In: <span class="font-bold text-rose-600">${item.days_until} Days</span></p>
+                  </div>
+                  <div class="text-right flex-shrink-0">
+                    <div class="text-[11px] font-black uppercase tracking-wider text-gray-400 mb-1">
+                      Open Spots: <span class="text-rose-600 font-bold">${item.open_spots}</span>
+                    </div>
+                    <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-black border border-rose-200 bg-rose-50 text-rose-700 shadow-2xs">
+                      ${item.fill_pct}% Filled
+                    </span>
+                  </div>
+                </div>
+              `;
+            }).join('');
+          }
+        }
+        // Populate Section 3: Client Drop Off
+        const sec3 = document.getElementById('section-3-content');
+        if (sec3) {
+          if (data.section_3.length === 0) {
+            sec3.innerHTML = `<div class="p-10 text-center text-sm text-gray-400 font-medium italic">No potential drop-offs identified.</div>`;
+          } else {
+            sec3.innerHTML = data.section_3.map(item => {
+              const noteColor = item.last_note ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : 'text-gray-400 bg-gray-50 border-gray-100';
+              return `
+                <div class="p-3 flex items-center justify-between gap-4 hover:bg-gray-50/80 transition-colors">
+                  <div class="min-w-0 flex-1">
+                    <p class="font-bold text-gray-900 truncate text-base">${item.client_name}</p>
+                    <div class="flex items-center gap-2 mt-1">
+                      <span class="text-xs text-gray-500 font-medium">Inactive: <span class="font-bold text-rose-600">${item.days_since} Days</span></span>
+                      ${item.last_note ? `<span class="w-1 h-1 rounded-full bg-gray-300"></span><span class="text-[10px] italic text-gray-400 truncate max-w-[120px]">"${item.last_note}"</span>` : ''}
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <div class="flex flex-col items-end gap-1 relative">
+                       <button type="button" class="hub-notes-btn inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${noteColor} cursor-pointer hover:opacity-80 transition" data-client="${item.client_name}">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
+                        Notes
+                      </button>
+                      <button type="button" class="hub-contacted-btn inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border border-gray-200 bg-white text-gray-600 cursor-pointer hover:bg-gray-100 transition" data-client="${item.client_name}">
+                        Contacted
+                      </button>
+                      
+                      <!-- Notes Menu -->
+                      <div class="hub-notes-panel absolute right-full top-0 mr-2 z-50 hidden w-64 rounded-lg border border-gray-200 bg-white p-3 text-left text-xs shadow-xl" data-client-notes="${item.client_name}">
+                        <div class="flex items-center justify-between mb-2">
+                          <p class="text-[11px] font-semibold uppercase text-gray-400">Notes</p>
+                          <button type="button" class="hub-notes-close text-gray-400 hover:text-gray-600" aria-label="Close notes">✕</button>
+                        </div>
+                        <div class="hub-notes-content mb-3 text-gray-700 italic max-h-32 overflow-y-auto custom-scrollbar">
+                          ${item.last_note ? item.last_note : '<span class="text-gray-400">No notes yet.</span>'}
+                        </div>
+                        <div>
+                          <label class="block text-[10px] font-semibold uppercase text-gray-400 mb-1">Add new note</label>
+                          <textarea class="hub-notes-input w-full rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:border-gray-300 focus:outline-none" rows="2" placeholder="Type a note"></textarea>
+                          <button type="button" class="hub-notes-save mt-2 w-full rounded-md bg-gray-900 px-2 py-1 text-xs font-semibold text-white hover:bg-gray-800" data-client="${item.client_name}">Save note</button>
+                        </div>
+                      </div>
+
+                      <!-- Contacted Menu -->
+                      <div class="hub-ignore-menu absolute right-full top-8 mr-2 z-50 hidden w-40 rounded-lg border border-gray-200 bg-white p-2 text-left text-xs shadow-xl" data-client-menu="${item.client_name}">
+                        <p class="px-2 pb-1 text-[11px] font-semibold uppercase text-gray-400">Ignore for</p>
+                        ${[1,2,3,4].map(w => `<button type="button" class="hub-ignore-option w-full rounded-md px-2 py-1 text-left text-gray-700 hover:bg-gray-100" data-client="${item.client_name}" data-weeks="${w}">${w} Week${w>1?'s':''}</button>`).join('')}
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('');
+          }
+        }
+        // Populate Section 4: Unconfirmed Requests
+        const sec4 = document.getElementById('section-4-content');
+        if (sec4) {
+          if (data.section_4.length === 0) {
+            sec4.innerHTML = `<div class="p-10 text-center text-sm text-gray-400 font-medium italic">No unconfirmed requests found.</div>`;
+          } else {
+            sec4.innerHTML = data.section_4.map(item => {
+              return `
+                <div class="p-3 flex items-center justify-between gap-4 hover:bg-gray-50/80 transition-colors">
+                  <div class="min-w-0 flex-1">
+                    <p class="font-bold text-gray-900 truncate text-base">${item.employee_name}</p>
+                    <p class="text-xs text-gray-500 font-medium mt-0.5">Date: <span class="font-bold text-gray-700">${item.event_date}</span></p>
+                    <p class="text-xs text-gray-500 font-medium truncate mt-0.5">Venue: <span class="text-gray-600">${item.venue_name}</span></p>
+                  </div>
+                  <div class="text-right flex-shrink-0 flex flex-col items-end gap-1.5">
+                    <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[10px] font-black border border-indigo-200 bg-indigo-50 text-indigo-700 shadow-2xs uppercase tracking-wide">
+                      ${item.hours_passed} Hrs Passed
+                    </span>
+                    <span class="text-[10px] font-bold text-gray-500 bg-white border border-gray-200 px-2 py-0.5 rounded-md shadow-sm">
+                      ${item.bundle || 'No Bundle'}
+                    </span>
+                  </div>
+                </div>
+              `;
+            }).join('');
+          }
+        }
+      } else {
+        throw new Error(data.message || 'API returned error status');
+      }
+
+    } catch (err) {
+      console.error('Failed to load dashboard summary', err);
+      const errorMsg = `<div class="p-8 text-center text-xs text-rose-600 font-semibold">Error loading real-time data visual.</div>`;
+      
+      const sec1 = document.getElementById('section-1-content');
+      if (sec1) sec1.innerHTML = errorMsg;
+      
+      const sec2 = document.getElementById('section-2-content');
+      if (sec2) sec2.innerHTML = errorMsg;
+
+      const sec3 = document.getElementById('section-3-content');
+      if (sec3) sec3.innerHTML = errorMsg;
+
+      const sec4 = document.getElementById('section-4-content');
+      if (sec4) sec4.innerHTML = errorMsg;
+
+      const badge = document.getElementById('viewer-context-badge');
+      if (badge) {
+        badge.classList.remove('animate-pulse');
+        badge.className = 'inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-800 shadow-sm';
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span><span>System Error</span>`;
+      }
+    }
+  }
+
+
+  // Initialize first tab on DOM loaded
+  document.addEventListener('DOMContentLoaded', () => {
+    switchTab('dashboard');
+    loadDashboardHubData();
+  });
+
+  // Event Delegation for Section 3 Hub menus
+  document.addEventListener("click", async (event) => {
+    // Contacted Button
+    const contactedBtn = event.target.closest(".hub-contacted-btn");
+    if (contactedBtn) {
+      document.querySelectorAll(".hub-ignore-menu, .hub-notes-panel").forEach(el => el.classList.add("hidden"));
+      const menu = contactedBtn.parentElement.querySelector(".hub-ignore-menu");
+      if (menu) menu.classList.remove("hidden");
+      return;
+    }
+
+    // Notes Button
+    const notesBtn = event.target.closest(".hub-notes-btn");
+    if (notesBtn) {
+      document.querySelectorAll(".hub-ignore-menu, .hub-notes-panel").forEach(el => el.classList.add("hidden"));
+      const panel = notesBtn.parentElement.querySelector(".hub-notes-panel");
+      if (panel) panel.classList.remove("hidden");
+      return;
+    }
+
+    // Close notes
+    if (event.target.closest(".hub-notes-close")) {
+      event.target.closest(".hub-notes-panel").classList.add("hidden");
+      return;
+    }
+
+    // Click outside to close
+    if (!event.target.closest(".hub-ignore-menu") && !event.target.closest(".hub-notes-panel") && !event.target.closest(".hub-contacted-btn") && !event.target.closest(".hub-notes-btn")) {
+      document.querySelectorAll(".hub-ignore-menu, .hub-notes-panel").forEach(el => el.classList.add("hidden"));
+    }
+
+    // Ignore Options (Contacted Save)
+    const ignoreOption = event.target.closest(".hub-ignore-option");
+    if (ignoreOption) {
+      const clientName = ignoreOption.dataset.client;
+      const weeks = Number(ignoreOption.dataset.weeks);
+      
+      const addWeeks = (w) => {
+          const date = new Date();
+          date.setDate(date.getDate() + w * 7);
+          return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      };
+
+      ignoreOption.textContent = "Saving...";
+      try {
+        const response = await fetch("/client-drop-off-v2/contacted/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ client: clientName, ignore_until: addWeeks(weeks) }),
+        });
+        if (response.ok) {
+           loadDashboardHubData();
+        }
+      } catch (err) {
+        console.error("Failed to save contacted", err);
+      }
+      return;
+    }
+
+    // Notes Save
+    const notesSaveBtn = event.target.closest(".hub-notes-save");
+    if (notesSaveBtn) {
+      const clientName = notesSaveBtn.dataset.client;
+      const panel = notesSaveBtn.closest(".hub-notes-panel");
+      const input = panel.querySelector(".hub-notes-input");
+      const noteText = input.value.trim();
+      if (!noteText) return;
+
+      notesSaveBtn.textContent = "Saving...";
+      try {
+        const response = await fetch("/client-drop-off-v2/notes/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ client: clientName, text: noteText }),
+        });
+        if (response.ok) {
+           loadDashboardHubData();
+        }
+      } catch (err) {
+        console.error("Failed to save note", err);
+        notesSaveBtn.textContent = "Error!";
+      }
+      return;
+    }
+  });
+</script>
+{% endblock %}

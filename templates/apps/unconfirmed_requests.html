@@ -182,6 +182,21 @@
         refreshBtn.addEventListener('click', loadData);
         managerSelect.addEventListener('change', loadData);
 
+        // Pre-select logged in manager if present in the initial template context
+        const loggedInManager = "{{ logged_in_manager|default('') }}";
+        if (loggedInManager) {
+            const initialManagers = {{ staffing_managers|tojson|safe }};
+            initialManagers.forEach(mgr => {
+                const opt = document.createElement('option');
+                opt.value = mgr.id;
+                opt.textContent = mgr.name;
+                if (mgr.name.toLowerCase() === loggedInManager.toLowerCase()) {
+                    opt.selected = true;
+                }
+                managerSelect.appendChild(opt);
+            });
+        }
+
         // Auto load on first run
         loadData();
     });
