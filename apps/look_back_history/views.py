@@ -452,3 +452,47 @@ async def save_client_note(client_id: int, payload: NotePayload):
     notes[str(client_id)] = payload.note
     _save_notes(notes)
     return {"status": "success"}
+
+
+@router.get("/api/chart/{client_id}")
+async def get_client_chart_data(client_id: int):
+    engine = _engine()
+    sql = text(
+        """
+        SELECT 
+            DATE_FORMAT(e.date, '%Y-%m') AS month,
+            COUNT(t.timesheet_id) AS shift_count
+        FROM event e
+        JOIN timesheet t ON t.event_id = e.event_id
+        WHERE e.client_id = :client_id
+          AND e.deleted_at IS NULL
+          AND e.date >= DATE_SUB(CURDATE(), INTERVAL 5 YEAR)
+          AND e.date <= CURDATE()
+        GROUP BY DATE_FORMAT(e.date, '%Y-%m')
+        ORDER BY month ASC
+        """
+    )
+    try:
+        with engine.begin() as connection:
+            df = pd.read_sql(sql, connection, params={"client_id": client_id})
+            
+            today = date.today()
+            start_date = subtract_years(today, 5)
+            # Create a full sequence of months to ensure no gaps
+            all_months = pd.date_range(
+                start=start_date.replace(day=1), 
+                end=today, 
+                freq='MS'
+            ).strftime('%Y-%m').tolist()
+            
+            data_dict = dict(zip(df['month'], df['shift_count']))
+            
+            labels = []
+            counts = []
+            for m in all_months:
+                labels.append(m)
+                counts.append(int(data_dict.get(m, 0)))
+                
+            return {"labels": labels, "counts": counts}
+    finally:
+        engine.dispose()

@@ -137,14 +137,17 @@
 
     <!-- Active section -->
     <section class="rounded-lg border border-emerald-200 bg-white shadow-sm">
-      <div class="flex items-center justify-between border-b border-emerald-100 bg-emerald-50 px-5 py-4">
+      <div class="flex items-center justify-between border-b border-emerald-100 bg-emerald-50 px-5 py-4 cursor-pointer" onclick="document.getElementById('active-table-container').classList.toggle('hidden')">
         <div>
-          <h2 class="text-lg font-semibold text-gray-950">Has shifts in last 30 days</h2>
+          <h2 class="text-lg font-semibold text-gray-950">Has shifts in last 30 days (Click to expand)</h2>
           <p class="text-sm text-gray-600">Prior-year clients with current order lines in the activity window.</p>
         </div>
-        <span id="active-count" class="rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-800">0</span>
+        <div class="flex items-center gap-3">
+          <span id="active-count" class="rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-800">0</span>
+          <svg class="h-5 w-5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+        </div>
       </div>
-      <div class="overflow-x-auto">
+      <div id="active-table-container" class="overflow-x-auto hidden">
         <table class="w-full text-sm">
           <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
             <tr>
@@ -163,6 +166,29 @@
         </table>
       </div>
     </section>
+  </div>
+</div>
+
+<!-- AI Analysis Modal -->
+<div id="ai-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
+  <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[90vh]">
+    <div class="px-6 py-5 border-b border-emerald-100 flex items-center justify-between">
+      <h3 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
+        <svg class="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        AI Email Analysis: <span id="ai-modal-client-name" class="text-emerald-700"></span>
+      </h3>
+      <button type="button" id="close-ai-modal" class="text-gray-400 hover:text-gray-600 focus:outline-none" onclick="document.getElementById('ai-modal').classList.add('hidden');">
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="p-6 overflow-y-auto" id="ai-modal-content">
+      <div id="ai-loading" class="flex flex-col items-center justify-center py-8 text-emerald-600">
+        <svg class="h-10 w-10 animate-spin mb-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+        <p class="font-medium">Analyzing Close.com emails...</p>
+      </div>
+      <div id="ai-result" class="hidden whitespace-pre-wrap text-sm text-gray-700 leading-relaxed"></div>
+      <div id="ai-error" class="hidden rounded-xl border border-red-200 bg-red-50 p-4 text-red-700 text-sm"></div>
+    </div>
   </div>
 </div>
 
@@ -229,9 +255,11 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 const LOOKBACK_YEARS = 5;
 const state = { inactive: [], active: [], data: null };
+const clientCharts = {};
 
 function formatCurrency(value) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value || 0);
@@ -246,6 +274,46 @@ function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[char]));
+}
+
+async function runAiAnalysis(clientName) {
+  const aiModal = document.getElementById('ai-modal');
+  const aiModalClientName = document.getElementById('ai-modal-client-name');
+  const aiLoading = document.getElementById('ai-loading');
+  const aiResult = document.getElementById('ai-result');
+  const aiError = document.getElementById('ai-error');
+
+  aiModal.classList.remove('hidden');
+  aiModalClientName.textContent = clientName;
+  aiLoading.classList.remove('hidden');
+  aiResult.classList.add('hidden');
+  aiError.classList.add('hidden');
+
+  try {
+    const formData = new FormData();
+    formData.append('client_name', clientName);
+    formData.append('custom_prompt', 'Just basic information presented in a very short reply. A brief summary of who is being communicated with (client email or name), brief summary of what they order and when, and when the last communication was.');
+
+    const resp = await fetch('/client-communication-summary/analyze', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      aiError.textContent = data.error || 'An error occurred during analysis.';
+      aiError.classList.remove('hidden');
+    } else {
+      aiResult.textContent = data.analysis;
+      aiResult.classList.remove('hidden');
+    }
+  } catch (e) {
+    aiError.textContent = 'Network error. Please try again.';
+    aiError.classList.remove('hidden');
+  } finally {
+    aiLoading.classList.add('hidden');
+  }
 }
 
 function yearsActiveBadge(row) {
@@ -374,9 +442,12 @@ function renderTable(visible, bodyId, isActive, isPreFiltered = false) {
     tbody.innerHTML = `<tr><td colspan="${colspan}" class="px-5 py-8 text-center text-gray-500">No clients found.</td></tr>`;
     return;
   }
-  tbody.innerHTML = visible.map((row) => `
+  tbody.innerHTML = visible.map((row) => {
+    const escapedName = escapeHtml(row.client_name);
+    const escapedNameForJS = (row.client_name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    return `
     <tr class="hover:bg-gray-50 border-b border-gray-100">
-      <td class="min-w-64 px-5 py-4 font-semibold text-gray-950">${escapeHtml(row.client_name)}</td>
+      <td class="min-w-64 px-5 py-4 font-semibold text-emerald-700 hover:text-emerald-800 cursor-pointer underline" onclick="runAiAnalysis('${escapedNameForJS}')">${escapedName}</td>
       <td class="px-5 py-4 text-gray-700">${escapeHtml(row.staffing_manager_name || 'N/A')}</td>
       ${isActive ? '' : `<td class="px-5 py-4 text-gray-700">${escapeHtml(row.client_status || 'Unknown')}</td>`}
       <td class="px-4 py-4 text-center">${yearsActiveBadge(row)}</td>
@@ -387,6 +458,7 @@ function renderTable(visible, bodyId, isActive, isPreFiltered = false) {
       <td class="min-w-64 px-5 py-4"><div class="flex flex-wrap gap-1.5">${positionsHtml(row)}</div></td>
       <td class="px-5 py-4 text-center">
         <div class="flex items-center justify-center gap-2">
+          <button onclick="toggleChart(${row.client_id})" class="btn-action bg-indigo-50 text-indigo-700 hover:bg-indigo-100" title="Shift History Chart">Chart</button>
           <button onclick="toggleNotes(${row.client_id})" class="btn-action btn-notes" title="Client Notes">Notes</button>
           <button onclick="toggleContacts(${row.client_id})" class="btn-action btn-contacts" title="Client Contacts">Contacts</button>
         </div>
@@ -414,7 +486,18 @@ function renderTable(visible, bodyId, isActive, isPreFiltered = false) {
         </div>
       </td>
     </tr>
-  `).join('');
+    <tr id="chart-row-${row.client_id}" class="hidden bg-indigo-50/30">
+      <td colspan="${colspan}" class="px-8 py-6">
+        <div class="space-y-3 w-full">
+          <label class="block text-sm font-semibold text-indigo-900">5-Year Shift History for ${escapeHtml(row.client_name)}</label>
+          <div id="chart-loading-${row.client_id}" class="animate-pulse text-sm text-indigo-600 hidden">Loading chart data...</div>
+          <div class="bg-white p-4 rounded-lg border border-indigo-100 shadow-sm" style="height: 300px;">
+            <canvas id="chart-canvas-${row.client_id}"></canvas>
+          </div>
+        </div>
+      </td>
+    </tr>
+  `;}).join('');
 }
 
 async function toggleNotes(clientId) {
@@ -423,6 +506,7 @@ async function toggleNotes(clientId) {
   
   // Close other sub-rows if open
   document.getElementById(`contacts-row-${clientId}`).classList.add('hidden');
+  document.getElementById(`chart-row-${clientId}`).classList.add('hidden');
   
   if (isHidden) {
     row.classList.remove('hidden');
@@ -468,6 +552,7 @@ async function toggleContacts(clientId) {
   
   // Close other sub-rows if open
   document.getElementById(`notes-row-${clientId}`).classList.add('hidden');
+  document.getElementById(`chart-row-${clientId}`).classList.add('hidden');
   
   if (isHidden) {
     row.classList.remove('hidden');
@@ -497,6 +582,74 @@ async function toggleContacts(clientId) {
     row.classList.add('hidden');
   }
 }
+
+async function toggleChart(clientId) {
+  const row = document.getElementById(`chart-row-${clientId}`);
+  const isHidden = row.classList.contains('hidden');
+  
+  // Close other sub-rows if open
+  document.getElementById(`notes-row-${clientId}`).classList.add('hidden');
+  document.getElementById(`contacts-row-${clientId}`).classList.add('hidden');
+  
+  if (isHidden) {
+    row.classList.remove('hidden');
+    
+    // Only fetch and render if chart doesn't exist yet
+    if (!clientCharts[clientId]) {
+      const loading = document.getElementById(`chart-loading-${clientId}`);
+      loading.classList.remove('hidden');
+      
+      try {
+        const resp = await fetch(`/look-back-history/api/chart/${clientId}`);
+        const data = await resp.json();
+        
+        const ctx = document.getElementById(`chart-canvas-${clientId}`).getContext('2d');
+        
+        clientCharts[clientId] = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: data.labels,
+            datasets: [{
+              label: 'Shifts (Monthly)',
+              data: data.counts,
+              borderColor: '#4f46e5', // indigo-600
+              backgroundColor: 'rgba(79, 70, 229, 0.1)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.3,
+              pointRadius: 2,
+              pointBackgroundColor: '#4f46e5'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: { stepSize: 1 }
+              },
+              x: {
+                grid: { display: false }
+              }
+            },
+            plugins: {
+              legend: { display: false }
+            }
+          }
+        });
+      } catch (e) {
+        console.error('Failed to load chart data', e);
+        loading.textContent = 'Error loading chart data.';
+      } finally {
+        loading.classList.add('hidden');
+      }
+    }
+  } else {
+    row.classList.add('hidden');
+  }
+}
+
 
 function setLoading(isLoading) {
   document.getElementById('run-btn').disabled = isLoading;
