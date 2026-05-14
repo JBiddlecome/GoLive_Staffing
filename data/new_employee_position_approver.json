@@ -19,6 +19,7 @@
       "32085",
       "43178",
       "45827",
+      "45887",
       "45888",
       "45951",
       "46066",
@@ -27,6 +28,227 @@
     ]
   },
   "records": [
+    {
+      "review_id": "2026-05-13:45887",
+      "review_date": "2026-05-13",
+      "employee_id": 45887,
+      "employee_name": "Sheonna Pollard",
+      "first_name": "Sheonna",
+      "last_name": "Pollard",
+      "email": "1srpollard@gmail.com",
+      "phone": "970-599-0338",
+      "hire_date": "2026-05-13",
+      "rehire_date": "",
+      "resume_file": "ymyp5n7gsa75feo1_Pollard%20Resume%20upd%2012.20.25%20(1)%20(1).docx",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/ymyp5n7gsa75feo1_Pollard%2520Resume%2520upd%252012.20.25%2520%281%29%2520%281%29.docx",
+      "status": "Recommended",
+      "recommendations": [
+        {
+          "key": "baker",
+          "label": "Baker",
+          "base_name": "Baker",
+          "ai_level": 1,
+          "ai_status": "level_1",
+          "estimated_years": 3.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Experience with baking/pastry in culinary education and professional kitchen, but not as a dedicated baker."
+          ],
+          "position_id": 130,
+          "position_description": "Baker",
+          "match_found": true
+        },
+        {
+          "key": "pastry",
+          "label": "Pastry",
+          "base_name": "Pastry",
+          "ai_level": 1,
+          "ai_status": "level_1",
+          "estimated_years": 3.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Experience with baking and pastry at culinary school, and in professional kitchen at soup kitchen, but not in a dedicated pastry role."
+          ],
+          "position_id": 121,
+          "position_description": "Pastry Cook",
+          "match_found": true
+        }
+      ],
+      "ai_summary": {
+        "hospitality_experience_overview": "Over 20 years in home-based kitchen, 3 years in professional kitchen, catering, and food prep roles; no formal fine-dining or upscale venue experience.",
+        "total_hospitality_years_estimate": 3.0,
+        "notable_venues": [
+          "Someone Cares Soup Kitchen",
+          "Sh\u00e9 Cooks Catering CO.",
+          "Imperial Beach Culinary School"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "Experience primarily in soup kitchen, catering, property management, tax, and rideshare; no fast-food or quick-service chain roles counted."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Over 20 years in home-based kitchen, 3 years in professional kitchen, catering, and food prep roles; no formal fine-dining or upscale venue experience.",
+          "total_hospitality_years_estimate": 3.0,
+          "notable_venues": [
+            "Someone Cares Soup Kitchen",
+            "Sh\u00e9 Cooks Catering CO.",
+            "Imperial Beach Culinary School"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "Experience primarily in soup kitchen, catering, property management, tax, and rideshare; no fast-food or quick-service chain roles counted."
+        },
+        "positions": {
+          "cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "Experience in professional kitchen (3 years) at Someone Cares Soup Kitchen, but not in fine dining or upscale venues, and no specific cook role at a restaurant."
+            ]
+          },
+          "prep_cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "Prep work mentioned in kitchen roles, but no specific prep cook position or venue type that qualifies for Level 2 or 3."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No mention of dishwashing roles."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No specific utility or support roles in hospitality venues."
+            ]
+          },
+          "server": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "Served menu items at soup kitchen, but not in a restaurant setting; not counted as formal server experience."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No hosting or front-of-house roles at hospitality venues."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles explicitly described as runner."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No busser roles mentioned."
+            ]
+          },
+          "bartender": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No bartender experience noted."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barback roles mentioned."
+            ]
+          },
+          "cashier": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No cashier roles in hospitality venues."
+            ]
+          },
+          "pastry": {
+            "status": "level_1",
+            "estimated_years": 3.0,
+            "confidence": 0.8,
+            "reasons": [
+              "Experience with baking and pastry at culinary school, and in professional kitchen at soup kitchen, but not in a dedicated pastry role."
+            ]
+          },
+          "baker": {
+            "status": "level_1",
+            "estimated_years": 3.0,
+            "confidence": 0.8,
+            "reasons": [
+              "Experience with baking/pastry in culinary education and professional kitchen, but not as a dedicated baker."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No sushi or similar cuisine experience mentioned."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No concessions experience noted."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barista roles or coffee shop experience mentioned."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No valet experience listed."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No supervisory or management experience in hospitality venues."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "Sheonna R. Pollard\n\n1650 Redondo Ave #17\n\nLong Beach, CA 90804\n\nCell: (970)599-0338\n\nEmail: 1srpollard@gmail.com\n\nObjective:\u00a0 Highly motivated Culinary graduate seeking employment with a company that I can best utilize my skills and abilities. Where I can learn more and have room for growth, I have 20+ years in a home based kitchen and 3 years in a professional kitchen setting.\n\nSummary of Qualifications:\n\nDaily Operating responsibilities\n\nFood Preparation\n\nWorkstation Cleanliness\n\nBOH/FOH experience\n\nProficient in Microsoft Office/ Google Suite\n\nProficient Knife Skills\n\nFast Learner\n\nAble to work in a fast pace setting\n\nScheduling/ Appointment Setting\n\nKitchen Maintenance, Organizing                         Inventory / FIFO\n\nCatering                \t                                        Cutting Techniques\n\nDetail Oriented\n\nFood Safety          \t                                        Multi Tasking\n\nCustomer Service\n\nEager to Learn\n\nNext Day Prep / Closing Responsibilities\n\nRecipe Creation / scailing\n\nBaking / Pastry\n\nYears Of Experience included: 2009-2026\n\nCook/Sous Chef      Someone Cares Soup Kitchen\n\nTasked kitchen staff with responsibilities for shift, Inventory, Prep, cooked recipes for breakfast and lunch menu, kitchen sanitation, served menu items to patrons, customer service, prepped for next day service, and other day to day responsibilities.\n\nCaterer / Cook                  Sh\u00e9 Cooks Catering CO.\n\nLA, California  &  Denver, CO\n\nPrepping food for catering jobs, posting payments from Events, Payroll, Cooking Orders for Catering Jobs Delivering Orders to Customers to various locations and venues.\n\nHQ Simple                            Property Manager                      Long Beach, CA\n\nI maintained property for a 34 unit building, collected rent and posted. Utilized Microsoft Office & Teams for in Office communication. Helped tenants when issues arise in the building. Managed & prepared tenants for upcoming community events.\n\nH&R Block                         Tax Associate                                      Fort Collins, CO\n\nI prepared individual and business tax returns throughout the tax season, I also handled heavy incoming and outbound calls, helped clients with troubleshooting issues as they arise. . Utilized Microsoft Office, Customer service, heavy Data Entry (alpha-numeric) Billing Support, Client communications and Customer Support.\n\nLyft & Uber Professionals                Owner/ Driver                                    Denver, CO\n\nI drove passengers to and from various destinations  in multiple cities within Colorado and California, helped with luggage, travel plans, processed rides and handled payments, utilized Google Maps for locations, restaurants and local establishments for all clients. Customer service.\n\nAppleOne                         Administrative Positions                         Northern, CO\n\nI personally handled a vast amount of administrative & Service responsibilities as well as Data Entry, 10-key, Microsoft Office, Heavy phone que, customer service, human security services, office management, trained on multiple systematic programs within each company Customer service, Coordinator for employee events, student events and team meetings.\n\nOtterbox                            Customer Service Rep                              Longmont, Co\n\nI worked in a team setting, fast paced environment with a heavy call que, answered sales calls and customer service, Inventory, know how to troubleshoot irate customers.\n\nEducation:\n\nAugusta Escoffier School of Culinary Arts       2024-2026\n\nBoulder, CO.                                                Culinary Arts\n\nSan Diego Job Corps                                          1995-1996                   Imperial Beach, CA.                                    Culinary Arts\n\nReferences Available",
+      "error": "",
+      "created_at": "2026-05-13T17:06:34-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
     {
       "review_id": "2026-05-13:45951",
       "review_date": "2026-05-13",
@@ -4217,6 +4439,6 @@
       "dismissed_reason": ""
     }
   ],
-  "last_scan_at": "2026-05-13T16:06:48-07:00",
+  "last_scan_at": "2026-05-13T17:14:27-07:00",
   "last_scan_message": "No new active employees with resumes found for 2026-05-13."
 }

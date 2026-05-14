@@ -366,6 +366,7 @@ async def _get_preferred_df(client_id: int):
                 c.name as "Client Name", 
                 COALESCE(v.name, 'All Venues') as venue_name, 
                 CONCAT(emp.first_name, ' ', emp.last_name) as employee_name, 
+                pw.positions_worked,
                 e.reason, 
                 e.notes, 
                 COALESCE(NULLIF(CONCAT(u.first_name, ' ', u.last_name), ' '), u.username) as created_by
@@ -374,6 +375,19 @@ async def _get_preferred_df(client_id: int):
             JOIN client c ON e.client_id = c.client_id
             LEFT JOIN venue v ON e.venue_id = v.venue_id
             LEFT JOIN user u ON e.created_by = u.id
+            LEFT JOIN (
+                SELECT 
+                    t.employee_id,
+                    GROUP_CONCAT(DISTINCT p.description SEPARATOR ', ') AS positions_worked
+                FROM timesheet t
+                JOIN shift_employee se ON t.shift_employee_id = se.shift_employee_id
+                JOIN event ev ON se.event_id = ev.event_id
+                LEFT JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
+                LEFT JOIN position p ON sp.position_id = p.position_id
+                WHERE ev.client_id = :client_id
+                  AND t.employee_worked IN ('WORKED', 'SENTHOME')
+                GROUP BY t.employee_id
+            ) pw ON e.employee_id = pw.employee_id
             WHERE e.client_id = :client_id
             ORDER BY e.date_created DESC
         """)
@@ -398,8 +412,17 @@ async def export_preferred_data(client_id: int):
         raise HTTPException(status_code=404, detail="No data found for this client")
     
     output = io.BytesIO()
+    export_df = df.rename(columns={
+        "date_created": "Date Created",
+        "venue_name": "Venue",
+        "employee_name": "Employee Name",
+        "positions_worked": "Positions Worked",
+        "reason": "Reason",
+        "notes": "Notes",
+        "created_by": "Created By",
+    })
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Preferred List')
+        export_df.to_excel(writer, index=False, sheet_name='Preferred List')
     output.seek(0)
     
     filename = f"preferred_list_{client_id}.xlsx"
