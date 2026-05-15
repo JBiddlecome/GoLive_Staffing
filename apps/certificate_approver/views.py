@@ -357,6 +357,9 @@ async def analyze_cert(
     first_name: str = Form(""),
     last_name: str = Form("")
 ):
+    from apps.api_usage_tracker import log_api_usage
+    log_api_usage("Certificate Approver", request=request)
+    
     employee_name = f"{first_name} {last_name}".strip()
     result = await analyze_certificate_ai(cert_url, cert_type_id, cert_type_name, issued_at, expires_at, number, file_name, employee_name)
     if result["status"] == "success":

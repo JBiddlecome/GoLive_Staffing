@@ -134,6 +134,9 @@ async def fetch_emails(
 
 @router.post("/analyze")
 async def analyze_email(request: Request):
+    from apps.api_usage_tracker import log_api_usage
+    log_api_usage("Email Review", request=request)
+    
     data = await request.json()
     email_text = data.get("email_text", "")
     
@@ -188,6 +191,9 @@ async def analyze_email(request: Request):
 
 @router.post("/analyze_batch")
 async def analyze_batch_email(request: Request):
+    from apps.api_usage_tracker import log_api_usage
+    log_api_usage("Email Review", request=request)
+    
     data = await request.json()
     emails_data = data.get("emails", [])
     
@@ -246,6 +252,9 @@ async def analyze_batch_email(request: Request):
 
 @router.post("/custom_query")
 async def custom_query(request: Request):
+    from apps.api_usage_tracker import log_api_usage
+    log_api_usage("Email Review", request=request)
+    
     data = await request.json()
     emails_data = data.get("emails", [])
     custom_prompt = data.get("custom_prompt", "")

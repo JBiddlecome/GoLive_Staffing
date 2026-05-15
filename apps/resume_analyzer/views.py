@@ -239,9 +239,13 @@ async def page(request: Request) -> HTMLResponse:
 
 @router.post("/analyze", response_class=JSONResponse)
 async def analyze_resume(
+    request: Request,
     file: UploadFile | None = File(None),
     resume_text: str | None = Form(None),
 ) -> JSONResponse:
+    from apps.api_usage_tracker import log_api_usage
+    log_api_usage("Resume Analyzer", request=request)
+    
     if file:
         contents = await file.read()
         if not contents:

@@ -94,7 +94,10 @@ async def search_employees(q: str = Query(..., min_length=2)):
         engine.dispose()
 
 @router.get("/api/dashboard/{employee_id}/reliability", response_class=JSONResponse)
-async def get_dashboard_reliability(employee_id: int):
+async def get_dashboard_reliability(request: Request, employee_id: int):
+    from apps.api_usage_tracker import log_api_usage
+    log_api_usage("Staffing Employee Dashboard", request=request)
+    
     api_key = os.getenv("STAFFING_EMPLOYEE_DASHBOARD") or os.getenv("OPENAI_API_KEY")
     if not api_key:
         return JSONResponse({"status": "error", "message": "STAFFING_EMPLOYEE_DASHBOARD or OPENAI_API_KEY is not configured."}, status_code=500)

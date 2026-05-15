@@ -83,7 +83,10 @@ async def sms_paraphraser_page(request: Request) -> HTMLResponse:
     return templates.TemplateResponse("apps/sms_paraphraser.html", {"request": request})
 
 @router.post("/paraphrase")
-async def paraphrase_event(payload: ParaphraseRequest) -> JSONResponse:
+async def paraphrase_event(request: Request, payload: ParaphraseRequest) -> JSONResponse:
+    from apps.api_usage_tracker import log_api_usage
+    log_api_usage("SMS Paraphraser", request=request)
+    
     event_id = payload.event_id
     selected_fields = payload.sections
 

@@ -367,6 +367,9 @@ async def _extract_resume_text_or_image_message(filename: str) -> tuple[str | No
 
 
 async def _analyze_resume(filename: str) -> tuple[dict[str, Any], str]:
+    from apps.api_usage_tracker import log_api_usage
+    log_api_usage("New Employee Position Approver")
+
     api_key = os.getenv("NEW_EMPLOYEE_POSITION_APPROVER") or os.getenv("OPENAI_API_KEY")
     if not api_key:
         raise RuntimeError("NEW_EMPLOYEE_POSITION_APPROVER or OPENAI_API_KEY is not configured.")

@@ -92,7 +92,10 @@ async def get_daily_reports(date_str: str = Query(..., alias="date")):
         engine.dispose()
 
 @router.get("/api/assessment/{employee_id}", response_class=JSONResponse)
-async def get_assessment_data(employee_id: int, employee_note_id: int):
+async def get_assessment_data(request: Request, employee_id: int, employee_note_id: int):
+    from apps.api_usage_tracker import log_api_usage
+    log_api_usage("Daily Report Assessment", request=request)
+    
     api_key = os.getenv("DAILY_REPORT_ASSESSMENT") or os.getenv("OPENAI_API_KEY")
     if not api_key:
         return JSONResponse({"status": "error", "message": "DAILY_REPORT_ASSESSMENT or OPENAI_API_KEY is not configured."}, status_code=500)

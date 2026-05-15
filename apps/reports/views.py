@@ -639,7 +639,10 @@ _last_result_cache: Dict[str, Any] = {}
 
 
 @router.post("/api/ask")
-async def api_ask(payload: AskRequest):
+async def api_ask(request: Request, payload: AskRequest):
+    from apps.api_usage_tracker import log_api_usage
+    log_api_usage("Reports", request=request)
+    
     question = payload.question.strip()
     if not question:
         raise HTTPException(status_code=400, detail="No question provided")
