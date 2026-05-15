@@ -20,3 +20,6 @@ apps/ar_contact_updates/ar_state.json
 scratch/monthly_client_breakdown.csv
 scratch/monthly_summary.csv
 data/*.flag
+data/new_employee_position_approver.json
+data/api_usage_logs.db
+data/api_usage_logs.db

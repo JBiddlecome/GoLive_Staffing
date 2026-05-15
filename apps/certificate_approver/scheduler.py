@@ -26,10 +26,25 @@ def _ensure_state_table():
     finally:
         engine.dispose()
 
+def _ensure_ai_reviewed_column():
+    from sqlalchemy import text
+    from apps.position_requests.scheduler import _engine
+    engine = _engine()
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE employee_certification ADD COLUMN ai_reviewed_at DATETIME DEFAULT NULL"))
+            print("[Certificate Approver] Added ai_reviewed_at column.")
+    except Exception as e:
+        # Expected to fail if column already exists
+        pass
+    finally:
+        engine.dispose()
+
 def get_auto_approve_enabled() -> bool:
     global _auto_approve_enabled, _state_initialized
     if not _state_initialized:
         _ensure_state_table()
+        _ensure_ai_reviewed_column()
         from sqlalchemy import text
         from apps.position_requests.scheduler import _engine
         engine = _engine()
@@ -76,7 +91,7 @@ async def certificate_approval_loop():
                 continue
                 
             print(f"[{datetime.now()}] Certificate Approver: Checking for pending certificates...")
-            pending = get_pending_certificates()
+            pending = get_pending_certificates(include_ai_reviewed=False)
             
             if not pending:
                 await asyncio.sleep(60)
@@ -142,6 +157,17 @@ async def certificate_approval_loop():
                         # )
                     else:
                         print(f"[{datetime.now()}] Certificate Approver: Cert {cert['id']} needs manual review. Skipping.")
+                        
+                    # Mark as AI reviewed to prevent infinite loops
+                    from sqlalchemy import text
+                    from apps.position_requests.scheduler import _engine
+                    try:
+                        eng = _engine()
+                        with eng.begin() as conn:
+                            conn.execute(text("UPDATE employee_certification SET ai_reviewed_at = NOW() WHERE id = :rid"), {"rid": cert['id']})
+                        eng.dispose()
+                    except Exception as e:
+                        print(f"Failed to mark ai_reviewed_at for cert {cert['id']}: {e}")
                 else:
                     print(f"[{datetime.now()}] Certificate Approver: AI Error on cert {cert['id']}")
                 
