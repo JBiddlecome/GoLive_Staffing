@@ -125,6 +125,14 @@ async def extract_resume_text(filename: str) -> str:
 
 async def evaluate_candidate(resume_text: str, roles_to_evaluate: list) -> dict:
     """Pass the resume text to OpenAI to check for experience."""
+    import sys
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    try:
+        from apps.api_usage_tracker import log_api_usage
+        log_api_usage("Stand Alone Scripts")
+    except ImportError:
+        pass
+
     if "Error" in resume_text:
         return {"qualifies_cook_2": False, "qualifies_prep_cook_2": False, "qualifies_server_2": False, "reasoning": resume_text, "years_of_experience": 0}
         

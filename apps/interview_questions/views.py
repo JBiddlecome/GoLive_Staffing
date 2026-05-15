@@ -99,7 +99,10 @@ async def interview_question_responses(request: Request) -> HTMLResponse:
 
 
 @router.post("/evaluate")
-async def evaluate_interview(payload: EvaluateInterviewRequest) -> JSONResponse:
+async def evaluate_interview(request: Request, payload: EvaluateInterviewRequest) -> JSONResponse:
+    from apps.api_usage_tracker import log_api_usage
+    log_api_usage("Interview Questions", request=request)
+    
     transcript = payload.transcript.strip()
     if not transcript:
         raise HTTPException(status_code=400, detail="Transcript is required.")

@@ -40,6 +40,7 @@
     "2026-05-15": [
       "29172",
       "29605",
+      "30038",
       "45931",
       "46010",
       "46058",
@@ -50,6 +51,198 @@
     ]
   },
   "records": [
+    {
+      "review_id": "2026-05-15:30038",
+      "review_date": "2026-05-15",
+      "employee_id": 30038,
+      "employee_name": "Jack Black",
+      "first_name": "Jack",
+      "last_name": "Black",
+      "email": "Jackblack@mailinator.com",
+      "phone": "234-567-8901",
+      "hire_date": "2026-05-15",
+      "rehire_date": "",
+      "resume_file": "4cw9d4cktk8t9xli_0kfzl0bbmrjp8lwt_Dwayne Fowlks Resume.pdf",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/4cw9d4cktk8t9xli_0kfzl0bbmrjp8lwt_Dwayne%20Fowlks%20Resume.pdf",
+      "status": "No New Positions",
+      "recommendations": [],
+      "ai_summary": {
+        "hospitality_experience_overview": "Over 25 years of culinary experience, including roles in catering, restaurant management, and food service for large events and private dining.",
+        "total_hospitality_years_estimate": 25.0,
+        "notable_venues": [
+          "Wolfgang Puck Catering",
+          "Uncle Johnny\u2019s Burgers",
+          "Crafts Services",
+          "Culinary Staffing Service"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "Fast-food experience not present; all experience is in culinary, catering, and restaurant management venues."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Over 25 years of culinary experience, including roles in catering, restaurant management, and food service for large events and private dining.",
+          "total_hospitality_years_estimate": 25.0,
+          "notable_venues": [
+            "Wolfgang Puck Catering",
+            "Uncle Johnny\u2019s Burgers",
+            "Crafts Services",
+            "Culinary Staffing Service"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "Fast-food experience not present; all experience is in culinary, catering, and restaurant management venues."
+        },
+        "positions": {
+          "cook": {
+            "status": "level_3",
+            "estimated_years": 12.0,
+            "confidence": 1.0,
+            "reasons": [
+              "Worked as a cook in Wolfgang Puck Catering, preparing and serving large groups, and in various culinary roles at Uncle Johnny\u2019s Burgers and Crafts Services."
+            ]
+          },
+          "prep_cook": {
+            "status": "level_3",
+            "estimated_years": 12.0,
+            "confidence": 1.0,
+            "reasons": [
+              "Performed kitchen prep at Wolfgang Puck Catering, including inventory and general prep work, and in other culinary roles."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No specific mention of dishwashing roles."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No explicit utility or cleaning roles described."
+            ]
+          },
+          "server": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No direct server experience mentioned."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No hosting roles specified."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No runner experience noted."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No busser roles mentioned."
+            ]
+          },
+          "bartender": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No bartender experience noted."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barback roles mentioned."
+            ]
+          },
+          "cashier": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No cashier experience specified."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No pastry experience mentioned."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No baking roles specified."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No sushi experience noted."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No concessions experience mentioned."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barista experience noted."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No valet experience mentioned."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No supervisory experience in hotel, food & beverage, or hospital industry specified."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "Dwayne  Fowlks \nCulinary Professional    \n \n  \nContact  \nReseda, CA  \n(c) 818-613-8399  \nSpareribs09@gmail.com  Objective  \nKnowledgeable and experienced Chef with over 25 years of culinary \nexperience ready to assist or lead in private dining as well as in the \ncommercial setting. Proven track record of culinary  excellence, menu \ndevelopment, cost management and customer satisfaction . Highly \norganized and detail -oriented, with a strong foc us on food safety and \nquality .   \nCertifications  \nSt. Joseph\u2019 s Bread & Roses \nCulinary Program 2023  \n \nCaterers Apprentice Culinary \nProgram  2010  \nMiscellaneous  \nFood Handler Permit 2017 \n Key Skills  \nGood Knife skills  \nGrilling expertise  \nBBQ expert ise \nTeam player  with Good Attitude  \nReliable & Dependent  Experience  \nCulinary Staffing Service 2018 to present  \nCooked in a variety  of settings,  for a mu ltitude of cuisines , for both \nsmal l and large groups  \nUncle Johnny\u2019 s Burgers 2016 to present  \nHeaded this restaurant  successfully with great cu stomer satisfaction \nthrough the pandemic  and to the present as a seasonal pop-up  \nCraft s Services 2010  to 2016  \nPrepared and served snack s and second  meal s to cast and crew for \nthe Motion Picture and television industry  \nWolfgang Puck Catering 2003 to 2010  \nPrep ped, cooked and served u pwards of 1000 people for corporate \nand entertainment industry events .  \nResponsibilities  \nOpened kitchen every morning, t ook inventory of produce and protein, \nperformed general kitchen prep  for lunch and dinner service, serve d as \nsous chef to the executive chef, worked on the line, communicated \nwith the front house, ma de sure there was an op en line of \ncommunication between kitchen staff , and did expedit ing for catering  \n References  \nReferences Available Upon Request",
+      "error": "",
+      "created_at": "2026-05-15T14:31:07-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
     {
       "review_id": "2026-05-15:46115",
       "review_date": "2026-05-15",
@@ -6803,6 +6996,6 @@
       "dismissed_reason": ""
     }
   ],
-  "last_scan_at": "2026-05-15T13:57:06-07:00",
+  "last_scan_at": "2026-05-15T14:32:18-07:00",
   "last_scan_message": "No new active employees with resumes found for 2026-05-15."
 }

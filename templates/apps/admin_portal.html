@@ -233,6 +233,63 @@
             color: var(--primary-color);
         }
 
+        .usage-section {
+            margin-top: 4rem;
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .usage-section h2 {
+            font-size: 1.75rem;
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .usage-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .usage-table th, .usage-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .usage-table th {
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.05em;
+        }
+
+        .usage-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .usage-table tr:hover {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .count-badge {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: inline-block;
+        }
+
         @media (max-width: 768px) {
             .header {
                 padding: 1rem 1.5rem;
@@ -299,6 +356,36 @@
             </a>
             
             <!-- Future admin apps can be added here -->
+        </div>
+
+        <div class="usage-section">
+            <h2><i class="fa-solid fa-chart-line"></i> AI API Usage Logs</h2>
+            {% if api_usage %}
+            <div style="overflow-x: auto;">
+                <table class="usage-table">
+                    <thead>
+                        <tr>
+                            <th>User Email</th>
+                            <th>App Name</th>
+                            <th>Times Used</th>
+                            <th>Last Used (UTC)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in api_usage %}
+                        <tr>
+                            <td>{{ log.user_email }}</td>
+                            <td>{{ log.app_name }}</td>
+                            <td><span class="count-badge">{{ log.count }}</span></td>
+                            <td>{{ log.last_used }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p style="color: var(--text-secondary); text-align: center; padding: 2rem 0;">No API usage has been recorded yet.</p>
+            {% endif %}
         </div>
     </main>
 </body>

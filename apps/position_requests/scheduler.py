@@ -386,6 +386,9 @@ def _evaluate_positions_against_levels(
 
 
 async def ai_analyze(resume_text, experience_text, requested_positions):
+    from apps.api_usage_tracker import log_api_usage
+    log_api_usage("Position Requests")
+    
     """Run structured AI analysis and return (status, analysis_text, approved_positions)."""
     combined_text = f"User provided experience:\n{experience_text}\n\nResume text:\n{resume_text}"
     user_msg = (
