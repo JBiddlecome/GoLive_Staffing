@@ -48,10 +48,233 @@
       "46094",
       "46105",
       "46107",
-      "46115"
+      "46115",
+      "46117"
     ]
   },
   "records": [
+    {
+      "review_id": "2026-05-15:46117",
+      "review_date": "2026-05-15",
+      "employee_id": 46117,
+      "employee_name": "Bryant Guevara",
+      "first_name": "Bryant",
+      "last_name": "Guevara",
+      "email": "b_guevara03@icloud.com",
+      "phone": "714-770-5761",
+      "hire_date": "2026-05-15",
+      "rehire_date": "",
+      "resume_file": "e6yzq093f4mixhwb_Resume.pdf",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/e6yzq093f4mixhwb_Resume.pdf",
+      "status": "Recommended",
+      "recommendations": [
+        {
+          "key": "cook",
+          "label": "Cook 2",
+          "base_name": "Cook",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 2.0,
+          "confidence": 0.9,
+          "reasons": [
+            "Experience as a line cook at Bosscat Kitchen & Libations (2024-2025) for about 1 year.",
+            "Fast-food role at Blaze Pizza (2022-2024) qualifies for Level 1, but combined with the culinary role, total is approximately 2 years, placing it at Level 2."
+          ],
+          "position_id": 288,
+          "position_description": "Cook 1",
+          "match_found": true
+        },
+        {
+          "key": "cook",
+          "label": "Cook 2",
+          "base_name": "Cook",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 2.0,
+          "confidence": 0.9,
+          "reasons": [
+            "Experience as a line cook at Bosscat Kitchen & Libations (2024-2025) for about 1 year.",
+            "Fast-food role at Blaze Pizza (2022-2024) qualifies for Level 1, but combined with the culinary role, total is approximately 2 years, placing it at Level 2."
+          ],
+          "position_id": 102,
+          "position_description": "Cook 2",
+          "match_found": true
+        }
+      ],
+      "ai_summary": {
+        "hospitality_experience_overview": "Experience at Blaze Pizza as a team member and at Bosscat Kitchen & Libations as a line cook, both in California. Fast-food/quick-service experience at Blaze Pizza qualifies for Level 1, and the more culinary-focused role at Bosscat Kitchen & Libations adds to non-fast-food experience.",
+        "total_hospitality_years_estimate": 3.0,
+        "notable_venues": [
+          "Blaze Pizza",
+          "Bosscat Kitchen & Libations"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "Fast-food experience at Blaze Pizza counts as Level 1. The Bosscat Kitchen role is a culinary venue, contributing to higher levels."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Experience at Blaze Pizza as a team member and at Bosscat Kitchen & Libations as a line cook, both in California. Fast-food/quick-service experience at Blaze Pizza qualifies for Level 1, and the more culinary-focused role at Bosscat Kitchen & Libations adds to non-fast-food experience.",
+          "total_hospitality_years_estimate": 3.0,
+          "notable_venues": [
+            "Blaze Pizza",
+            "Bosscat Kitchen & Libations"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "Fast-food experience at Blaze Pizza counts as Level 1. The Bosscat Kitchen role is a culinary venue, contributing to higher levels."
+        },
+        "positions": {
+          "cook": {
+            "status": "level_2",
+            "estimated_years": 2.0,
+            "confidence": 0.9,
+            "reasons": [
+              "Experience as a line cook at Bosscat Kitchen & Libations (2024-2025) for about 1 year.",
+              "Fast-food role at Blaze Pizza (2022-2024) qualifies for Level 1, but combined with the culinary role, total is approximately 2 years, placing it at Level 2."
+            ]
+          },
+          "prep_cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No specific prep cook role identified in the experience."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No dishwasher role mentioned."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No utility role identified."
+            ]
+          },
+          "server": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No server experience listed."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No host experience listed."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No runner experience listed."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No busser experience listed."
+            ]
+          },
+          "bartender": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No bartender experience listed."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No barback experience listed."
+            ]
+          },
+          "cashier": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No cashier experience listed."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No pastry experience listed."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No baker experience listed."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No sushi experience listed."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No concessions experience listed."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No barista experience listed."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No valet experience listed."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No event supervisor experience listed."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "Bryant\n \nGuevara\n \nSanta\n \nAna,\n \nCA\n \n|\n \n(714)770-5761\n \n|\n \nb_guevara03@icloud.com\n \nProfessional\n \nSummary\n \n-\n \n \nHighly\n \nmotivated\n \nculinary\n \nstudent\n \nwith\n \na\n \nstrong\n \nfocus\n \non\n \nfood\n \nsafety\n \nand\n \nquality\n \ncontrol.\n \nProven\n \nability\n \nto\n \nmaintain\n \nhigh\n \nkitchen\n \nstandards\n \nwhile\n \ncollaborating\n \neffectively\n \nwith\n \ncoworkers.\n \n \n \nWork\n \nExperience\n \n-\n \n \nBlaze\n \nPizza\n \n-\n \nTeam\n \nMember\n \n|\n \nSanta\n \nAna,\n \nCA\n \n|\n \n2022-2024\n \n\u25cf\n \nPrepared\n \npizzas\n \nto\n \norder\n \nand\n \nensured\n \nfood\n \nsafety\n \nstandards\n \nwere\n \nconsistently\n \nmet\n \n\u25cf\n \nCollaborated\n \nwith\n \nother\n \nteam\n \nmembers\n \nto\n \nmaintain\n \nefficient\n \nkitchen\n \noperations\n \nduring\n \nrush\n \nhours\n \n\u25cf\n \nAssisted\n \nin\n \ntraining\n \nnew\n \nteam\n \nmembers\n \non\n \nprocedures\n \nand\n \nmenu\n \nitems\n \nBosscat\n \nKitchen\n \n&\n \nLibations\n \n-\n \nLine\n \nCook\n \n|\n \nOrange,\n \nCA\n \n|\n \n2024-2025\n \n\u25cf\n \nPrepared\n \ningredients\n \nand\n \ndishes\n \naccording\n \nto\n \nmenu\n \nspecifications\n \nand\n \nfood\n \nsafety\n \nstandards\n \n\u25cf\n \nOperated\n \nkitchen\n \nequipment\n \nefficiently\n \nand\n \nsafely ,\n \nensuring\n \ncleanliness\n \nand\n \nproper\n \nmaintenance\n \n\u25cf\n \nAdapted\n \nquickly\n \nto\n \nnew\n \nrecipes\n \nand\n \ntechniques\n \nbeing\n \ntaught\n \non\n \nthe\n \nspot\n \n\u25cf\n \n \nSet\n \nup\n \nand\n \nprepared\n \ncooking\n \nsupplies/equipment\n \nat\n \nworkstations\n \nduring\n \nopening\n \nand\n \nclosing\n \nto\n \nmaximize\n \nefficiency\n \nEducation\n \n-\n \n \nOrange\n \nCoast\n \nCollege\n \n|\n \nCosta\n \nMesa,\n \nCA\n \n|\n \n2025\n \n-\n \npresent\n \nAS\n \n-\n \nCulinary\n \nArts\n \nExpected\n \ndate\n \nof\n \ngraduation\n \n-\n \nMay\n \n2028\n \nAwards/Certifications\n \nServsafe\n \nAller gens\n \n \nFood\n \nHandlers\n \nCertificate\n \n \nLanguages\n \n|\n \nEnglish\n \n(Fluent)\n \n|\n \nSpanish\n \n(Fluent)",
+      "error": "",
+      "created_at": "2026-05-15T15:23:59-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
     {
       "review_id": "2026-05-15:46085",
       "review_date": "2026-05-15",
@@ -7284,6 +7507,6 @@
       "dismissed_reason": ""
     }
   ],
-  "last_scan_at": "2026-05-15T15:08:45-07:00",
+  "last_scan_at": "2026-05-15T16:06:12-07:00",
   "last_scan_message": "No new active employees with resumes found for 2026-05-15."
 }

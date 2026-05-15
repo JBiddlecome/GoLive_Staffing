@@ -42,13 +42,13 @@ def _to_date(val):
         return None
 
 
-def get_pending_certificates():
+def get_pending_certificates(include_ai_reviewed: bool = True):
     import urllib.parse
     engine = _engine()
     pending = []
     try:
         with engine.connect() as conn:
-            query = text("""
+            query_str = """
                 SELECT ec.id, ec.employee_id, ec.certification_id, c.name AS cert_type_name,
                        ec.file, ec.number, ec.issued_at, ec.expires_at,
                        e.first_name, e.last_name, e.email,
@@ -69,8 +69,12 @@ def get_pending_certificates():
                 WHERE ec.approved_at IS NULL
                   AND ec.file IS NOT NULL
                   AND e.email NOT LIKE '%[DELETED]%'
-            """)
-            res = conn.execute(query).fetchall()
+            """
+            
+            if not include_ai_reviewed:
+                query_str += " AND ec.ai_reviewed_at IS NULL "
+                
+            res = conn.execute(text(query_str)).fetchall()
             for row in res:
                 file_name = row.file
                 safe_file_name = urllib.parse.quote(file_name)
