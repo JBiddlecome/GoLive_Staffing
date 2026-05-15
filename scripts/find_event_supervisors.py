@@ -23,7 +23,7 @@ else:
 # Configuration
 # ---------------------------------------------------------
 # Set your OpenAI API key
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY = os.getenv("STAND_ALONE") or os.getenv("OPENAI_API_KEY")
 
 # S3 Configuration
 S3_BUCKET = "web-application-files"

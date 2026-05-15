@@ -393,7 +393,7 @@ async def ai_analyze(resume_text, experience_text, requested_positions):
         f"Return only the JSON schema provided.\n\n{combined_text}"
     )
     try:
-        client = openai.AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        client = openai.AsyncOpenAI(api_key=os.getenv("POSTION_REQUESTS") or os.getenv("OPENAI_API_KEY"))
         response = await client.chat.completions.create(
             model=os.getenv("OPENAI_MODEL_AUTOMATION", "gpt-4.1-nano"),
             messages=[

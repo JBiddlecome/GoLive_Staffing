@@ -367,9 +367,9 @@ async def _extract_resume_text_or_image_message(filename: str) -> tuple[str | No
 
 
 async def _analyze_resume(filename: str) -> tuple[dict[str, Any], str]:
-    api_key = os.getenv("RESUME_ANALYZER_OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
+    api_key = os.getenv("NEW_EMPLOYEE_POSITION_APPROVER") or os.getenv("OPENAI_API_KEY")
     if not api_key:
-        raise RuntimeError("OPENAI_API_KEY or RESUME_ANALYZER_OPENAI_API_KEY is not configured.")
+        raise RuntimeError("NEW_EMPLOYEE_POSITION_APPROVER or OPENAI_API_KEY is not configured.")
 
     resume_text, image_messages = await _extract_resume_text_or_image_message(filename)
     if image_messages:

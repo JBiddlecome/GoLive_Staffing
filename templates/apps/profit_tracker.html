@@ -256,6 +256,7 @@
     .bg-wc { background: #fbbf24; }
     .bg-cc { background: #a78bfa; }
     .bg-bt { background: #fb923c; }
+    .bg-comm { background: #14b8a6; }
     .bg-tax { background: #f87171; }
     .bg-other { background: #c084fc; }
 
@@ -574,6 +575,12 @@
             </div>
 
             <div class="pt-card expense">
+                <div class="pt-card-title">Commissions</div>
+                <div class="pt-card-value" id="valCommissions">$0.00</div>
+                <div class="pt-card-percent" id="pctCommissions">0%</div>
+            </div>
+
+            <div class="pt-card expense">
                 <div class="pt-card-title">Payroll Tax</div>
                 <div class="pt-card-value" id="valPayrollTax">$0.00</div>
                 <div class="pt-card-percent" id="pctPayrollTax">0%</div>
@@ -586,7 +593,7 @@
             </div>
 
             <div class="pt-card profit">
-                <div class="pt-card-title">Net Profit</div>
+                <div class="pt-card-title">Gross Profit</div>
                 <div class="pt-card-value profit-val" id="valProfit">$0.00</div>
                 <div class="pt-card-percent" id="pctProfit" style="background: rgba(52, 211, 153, 0.2); color: var(--pt-success);">0%</div>
             </div>
@@ -600,6 +607,7 @@
                 <div class="pt-progress-segment bg-wc" id="barWc" style="width: 0%" title="WC Fee"></div>
                 <div class="pt-progress-segment bg-cc" id="barCc" style="width: 0%" title="CC Fee"></div>
                 <div class="pt-progress-segment bg-bt" id="barBt" style="width: 0%" title="Billing Type Fee"></div>
+                <div class="pt-progress-segment bg-comm" id="barCommissions" style="width: 0%" title="Commissions"></div>
                 <div class="pt-progress-segment bg-tax" id="barTax" style="width: 0%" title="Payroll Tax"></div>
                 <div class="pt-progress-segment bg-other" id="barOther" style="width: 0%" title="Other Work"></div>
                 <div class="pt-progress-segment bg-profit" id="barProfit" style="width: 0%" title="Profit"></div>
@@ -611,6 +619,7 @@
                 <div class="pt-legend-item"><div class="pt-legend-dot bg-wc"></div> WC Fee</div>
                 <div class="pt-legend-item"><div class="pt-legend-dot bg-cc"></div> CC Fee</div>
                 <div class="pt-legend-item"><div class="pt-legend-dot bg-bt"></div> Billing Type Fee</div>
+                <div class="pt-legend-item"><div class="pt-legend-dot bg-comm"></div> Commissions</div>
                 <div class="pt-legend-item"><div class="pt-legend-dot bg-tax"></div> Payroll Tax</div>
                 <div class="pt-legend-item"><div class="pt-legend-dot bg-other"></div> Other Work</div>
             </div>
@@ -660,6 +669,7 @@
                             <th class="sortable text-right" data-key="wc_fee" data-col="wc_fee" onclick="sortTable('wc_fee')">WC Fee</th>
                             <th class="sortable text-right" data-key="cc_fee" data-col="cc_fee" onclick="sortTable('cc_fee')">CC Fee</th>
                             <th class="sortable text-right" data-key="bt_fee" data-col="bt_fee" onclick="sortTable('bt_fee')">BT Fee</th>
+                            <th class="sortable text-right" data-key="commissions" data-col="commissions" onclick="sortTable('commissions')">Commissions</th>
                             <th class="sortable text-right" data-key="payroll_tax" data-col="payroll_tax" onclick="sortTable('payroll_tax')">Payroll Tax</th>
                             <th class="sortable text-right" data-key="profit" data-col="profit" onclick="sortTable('profit')">Profit</th>
                             <th class="sortable text-right" data-key="profit_pct" data-col="profit_pct" onclick="sortTable('profit_pct')">Profit %</th>
@@ -705,6 +715,7 @@
 
     let clientChartInstance = null;
     let allClientBreakdown = []; // raw data from API
+    let globalOtherWork = 0;
     let currentSortKey = 'total_bill';
     let currentSortDir = 'desc';
 
@@ -718,6 +729,7 @@
         { key: 'wc_fee', label: 'WC Fee', default: true },
         { key: 'cc_fee', label: 'CC Fee', default: true },
         { key: 'bt_fee', label: 'BT Fee', default: true },
+        { key: 'commissions', label: 'Commissions', default: true },
         { key: 'payroll_tax', label: 'Payroll Tax', default: true },
         { key: 'profit', label: 'Profit', default: true },
         { key: 'profit_pct', label: 'Profit %', default: true }
@@ -871,6 +883,7 @@
                 { key: 'wc_fee', html: `<td class="text-right text-amber-400" data-col="wc_fee">${formatCurrency(client.wc_fee)}</td>` },
                 { key: 'cc_fee', html: `<td class="text-right" style="color: #a78bfa" data-col="cc_fee">${formatCurrency(client.cc_fee)}</td>` },
                 { key: 'bt_fee', html: `<td class="text-right" style="color: #fb923c" data-col="bt_fee">${formatCurrency(client.bt_fee)}</td>` },
+                { key: 'commissions', html: `<td class="text-right text-teal-400" data-col="commissions">${formatCurrency(client.commissions)}</td>` },
                 { key: 'payroll_tax', html: `<td class="text-right text-red-400" data-col="payroll_tax">${formatCurrency(client.payroll_tax)}</td>` },
                 { key: 'profit', html: `<td class="text-right font-bold ${client.profit >= 0 ? 'text-emerald-400' : 'text-red-500'}" data-col="profit">${formatCurrency(client.profit)}</td>` },
                 { key: 'profit_pct', html: `<td class="text-right font-bold" style="${pctColor}" data-col="profit_pct">${client.total_bill > 0 ? pp + '%' : '—'}</td>` }
@@ -883,7 +896,7 @@
 
         // Compute averages and totals
         const n = list.length;
-        const sums = { total_bill: 0, gross_pay: 0, msp_fee: 0, wc_fee: 0, cc_fee: 0, bt_fee: 0, payroll_tax: 0, profit: 0 };
+        const sums = { total_bill: 0, gross_pay: 0, msp_fee: 0, wc_fee: 0, cc_fee: 0, bt_fee: 0, commissions: 0, payroll_tax: 0, profit: 0 };
         list.forEach(c => { for (const k in sums) sums[k] += c[k]; });
         const avgProfitPct = sums.total_bill > 0 ? (sums.profit / sums.total_bill * 100).toFixed(1) : '0.0';
 
@@ -898,6 +911,7 @@
                 { key: 'wc_fee', html: `<td class="text-right">${formatCurrency(valuesObj.wc_fee)}</td>` },
                 { key: 'cc_fee', html: `<td class="text-right">${formatCurrency(valuesObj.cc_fee)}</td>` },
                 { key: 'bt_fee', html: `<td class="text-right">${formatCurrency(valuesObj.bt_fee)}</td>` },
+                { key: 'commissions', html: `<td class="text-right">${formatCurrency(valuesObj.commissions)}</td>` },
                 { key: 'payroll_tax', html: `<td class="text-right">${formatCurrency(valuesObj.payroll_tax)}</td>` },
                 { key: 'profit', html: `<td class="text-right">${formatCurrency(valuesObj.profit)}</td>` },
                 { key: 'profit_pct', html: `<td class="text-right">${pctVal}%</td>` }
@@ -913,10 +927,20 @@
         avgTr.innerHTML = makeFootCells(`Average (${n} clients)`, avgVals, avgProfitPct);
         tfoot.appendChild(avgTr);
 
+        // Other Work row
+        const otherWorkVals = { total_bill: 0, gross_pay: 0, msp_fee: 0, wc_fee: 0, cc_fee: 0, bt_fee: 0, commissions: 0, payroll_tax: 0, profit: -globalOtherWork };
+        const owTr = document.createElement('tr');
+        owTr.innerHTML = makeFootCells('Other Work', otherWorkVals, '—');
+        tfoot.appendChild(owTr);
+
+        // Adjust totals for Other Work
+        sums.profit -= globalOtherWork;
+        const finalProfitPct = sums.total_bill > 0 ? (sums.profit / sums.total_bill * 100).toFixed(1) : '0.0';
+
         // Totals row
         const totTr = document.createElement('tr');
         totTr.className = 'totals-row';
-        totTr.innerHTML = makeFootCells('Totals', sums, avgProfitPct);
+        totTr.innerHTML = makeFootCells('Totals', sums, finalProfitPct);
         tfoot.appendChild(totTr);
     }
 
@@ -946,6 +970,7 @@
             setContent('valWcFee', formatCurrency(data.wc_fee));
             setContent('valCcFee', formatCurrency(data.cc_fee));
             setContent('valBtFee', formatCurrency(data.bt_fee));
+            setContent('valCommissions', formatCurrency(data.commissions));
             setContent('valPayrollTax', formatCurrency(data.payroll_tax));
             setContent('valOtherWork', formatCurrency(data.other_work));
             setContent('valProfit', formatCurrency(data.profit));
@@ -955,6 +980,7 @@
             const pctWc = formatPercent(data.wc_fee, total);
             const pctCc = formatPercent(data.cc_fee, total);
             const pctBt = formatPercent(data.bt_fee, total);
+            const pctCommissions = formatPercent(data.commissions, total);
             const pctTax = formatPercent(data.payroll_tax, total);
             const pctOther = formatPercent(data.other_work, total);
             const pctProfit = formatPercent(data.profit, total);
@@ -964,6 +990,7 @@
             setContent('pctWcFee', pctWc);
             setContent('pctCcFee', pctCc);
             setContent('pctBtFee', pctBt);
+            setContent('pctCommissions', pctCommissions);
             setContent('pctPayrollTax', pctTax);
             setContent('pctOtherWork', pctOther);
             setContent('pctProfit', pctProfit);
@@ -974,6 +1001,7 @@
                 setWidth('barWc', pctWc);
                 setWidth('barCc', pctCc);
                 setWidth('barBt', pctBt);
+                setWidth('barCommissions', pctCommissions);
                 setWidth('barTax', pctTax);
                 setWidth('barOther', pctOther);
                 setWidth('barProfit', pctProfit);
@@ -1008,6 +1036,7 @@
 
             // Store and render table
             allClientBreakdown = data.client_breakdown || [];
+            globalOtherWork = data.other_work || 0;
             renderClientTable();
 
             document.getElementById('loader').style.display = 'none';
@@ -1115,7 +1144,7 @@
 
         const n = list.length;
         if (n > 0) {
-            const sums = { total_bill: 0, gross_pay: 0, msp_fee: 0, wc_fee: 0, cc_fee: 0, bt_fee: 0, payroll_tax: 0, profit: 0 };
+            const sums = { total_bill: 0, gross_pay: 0, msp_fee: 0, wc_fee: 0, cc_fee: 0, bt_fee: 0, commissions: 0, payroll_tax: 0, profit: 0 };
             list.forEach(c => { for (const k in sums) sums[k] += c[k]; });
             const avgProfitPct = sums.total_bill > 0 ? (sums.profit / sums.total_bill * 100).toFixed(1) : '0.0';
             
@@ -1138,7 +1167,13 @@
             };
 
             rows.push(makeRow(`Average (${n} clients)`, avgVals, avgProfitPct));
-            rows.push(makeRow('Totals', sums, avgProfitPct));
+            
+            const otherWorkVals = { total_bill: 0, gross_pay: 0, msp_fee: 0, wc_fee: 0, cc_fee: 0, bt_fee: 0, commissions: 0, payroll_tax: 0, profit: -globalOtherWork };
+            rows.push(makeRow('Other Work', otherWorkVals, '—'));
+            
+            sums.profit -= globalOtherWork;
+            const finalProfitPct = sums.total_bill > 0 ? (sums.profit / sums.total_bill * 100).toFixed(1) : '0.0';
+            rows.push(makeRow('Totals', sums, finalProfitPct));
         }
 
         const csvContent = rows.join("\n");

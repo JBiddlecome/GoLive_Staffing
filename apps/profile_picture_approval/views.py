@@ -103,7 +103,7 @@ Output Format: Provide a JSON response with the following keys:
 
 async def analyze_photo_ai(photo_url: str):
     try:
-        client = openai.AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        client = openai.AsyncOpenAI(api_key=os.getenv("PROFILE_PICTURE_APPROVAL") or os.getenv("OPENAI_API_KEY"))
         response = await client.chat.completions.create(
             model=os.getenv("OPENAI_MODEL_PRODUCTION", "gpt-4o"),
             messages=[
