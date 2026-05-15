@@ -291,10 +291,10 @@ async def analyze_resume(
 
 
 def _get_openai_client() -> OpenAI:
-    api_key = os.getenv("RESUME_ANALYZER_OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
+    api_key = os.getenv("RESUME_ANALYZER") or os.getenv("OPENAI_API_KEY")
     if not api_key:
         raise RuntimeError(
-            "RESUME_ANALYZER_OPENAI_API_KEY is not configured. Falling back to OPENAI_API_KEY is also not set."
+            "RESUME_ANALYZER or OPENAI_API_KEY is not configured."
         )
     return OpenAI(api_key=api_key)
 

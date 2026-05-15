@@ -140,7 +140,7 @@ async def analyze_email(request: Request):
     if not email_text:
         return JSONResponse(status_code=400, content={"error": "No email text provided."})
         
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = os.getenv("EMAIL_REVIEW") or os.getenv("OPENAI_API_KEY")
     if not api_key:
         return JSONResponse(status_code=500, content={"error": "OpenAI API Key not configured."})
         
@@ -194,7 +194,7 @@ async def analyze_batch_email(request: Request):
     if not emails_data:
         return JSONResponse(status_code=400, content={"error": "No email text provided."})
         
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = os.getenv("EMAIL_REVIEW") or os.getenv("OPENAI_API_KEY")
     if not api_key:
         return JSONResponse(status_code=500, content={"error": "OpenAI API Key not configured."})
         
@@ -255,7 +255,7 @@ async def custom_query(request: Request):
     if not custom_prompt:
         return JSONResponse(status_code=400, content={"error": "No custom prompt provided."})
         
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = os.getenv("EMAIL_REVIEW") or os.getenv("OPENAI_API_KEY")
     if not api_key:
         return JSONResponse(status_code=500, content={"error": "OpenAI API Key not configured."})
         

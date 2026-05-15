@@ -79,9 +79,9 @@ class EvaluateInterviewRequest(BaseModel):
 
 
 def _get_openai_client() -> OpenAI:
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = os.getenv("INTERVIEW_QUESTIONS") or os.getenv("OPENAI_API_KEY")
     if not api_key:
-        raise RuntimeError("OPENAI_API_KEY is not configured in the environment.")
+        raise RuntimeError("INTERVIEW_QUESTIONS or OPENAI_API_KEY is not configured in the environment.")
     return OpenAI(api_key=api_key)
 
 

@@ -328,7 +328,7 @@ Please verify the attached pages (The User Submission) according to the rules fo
                 
                 content.append({"type": "text", "text": "--- END OF BASELINE REFERENCE ---"})
 
-        client = openai.AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        client = openai.AsyncOpenAI(api_key=os.getenv("CERTIFICATE_APPROVER") or os.getenv("OPENAI_API_KEY"))
         response = await client.chat.completions.create(
             model=os.getenv("OPENAI_MODEL_PRODUCTION", "gpt-4o"),
             messages=[

@@ -22,7 +22,7 @@ from .business_logic import get_business_logic_prompt, get_planner_context
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
-client = OpenAI()
+client = OpenAI(api_key=os.getenv("REPORTS") or os.getenv("OPENAI_API_KEY"))
 
 # Tables that will be loaded into DuckDB for querying.
 # This list is dynamically built from the database at load time (see load_data).
