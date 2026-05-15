@@ -105,6 +105,9 @@ async def get_profit_data(payload: ProfitPayload):
                 e.date,
                 sp.bonus,
                 c.name AS client_name,
+                c.sales_executive_id,
+                c.won_date,
+                u.last_name AS sales_executive_last_name,
                 COALESCE(m.name, '') AS msp_name,
                 c.payment_type,
                 c.billing_type_id,
@@ -130,6 +133,7 @@ async def get_profit_data(payload: ProfitPayload):
             LEFT JOIN timesheet t ON se.shift_employee_id = t.shift_employee_id
             LEFT JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
             LEFT JOIN shift s ON sp.shift_id = s.shift_id
+            LEFT JOIN user u ON c.sales_executive_id = u.id
             WHERE e.date >= :start_date AND e.date <= :end_date
               AND (
                   (se.deleted_at IS NULL AND se.confirmed = 1 AND se.cancel_reason = 0)
@@ -174,6 +178,7 @@ async def get_profit_data(payload: ProfitPayload):
             "wc_fee": 0,
             "cc_fee": 0,
             "bt_fee": 0,
+            "commissions": 0,
             "payroll_tax": 0,
             "other_work": 0,
             "profit": 0,
@@ -464,6 +469,23 @@ async def get_profit_data(payload: ProfitPayload):
         except (ValueError, TypeError):
             bt_fee = 0.0
 
+        commissions = 0.0
+        sales_executive_id = row.get("sales_executive_id")
+        if pd.notna(sales_executive_id) and str(sales_executive_id).strip() != "":
+            last_name = str(row.get("sales_executive_last_name") or "").strip()
+            if last_name == "Inherited by":
+                commissions = total_bill * 0.005
+            else:
+                won_date_raw = row.get("won_date")
+                shift_date_raw = row.get("date")
+                if pd.notna(won_date_raw) and pd.notna(shift_date_raw):
+                    if pd.to_datetime(shift_date_raw) <= pd.to_datetime(won_date_raw) + pd.DateOffset(years=1):
+                        commissions = total_bill * 0.03
+                    else:
+                        commissions = total_bill * 0.01
+                else:
+                    commissions = total_bill * 0.01
+
         return pd.Series({
             "client_name": row["client_name"],
             "msp_name": row.get("msp_name", ""),
@@ -472,7 +494,8 @@ async def get_profit_data(payload: ProfitPayload):
             "msp_fee": msp_fee,
             "wc_fee": wc_fee,
             "cc_fee": cc_fee,
-            "bt_fee": bt_fee
+            "bt_fee": bt_fee,
+            "commissions": commissions
         })
 
     calc_df = df.apply(process_row, axis=1)
@@ -483,10 +506,11 @@ async def get_profit_data(payload: ProfitPayload):
     wc_fee_sum = float(calc_df["wc_fee"].sum())
     cc_fee_sum = float(calc_df["cc_fee"].sum())
     bt_fee_sum = float(calc_df["bt_fee"].sum())
+    commissions_sum = float(calc_df["commissions"].sum())
     
     payroll_tax = gross_pay_sum * 0.10
     
-    profit = total_bill_sum - gross_pay_sum - msp_fee_sum - wc_fee_sum - cc_fee_sum - bt_fee_sum - payroll_tax - other_work_sum
+    profit = total_bill_sum - gross_pay_sum - msp_fee_sum - wc_fee_sum - cc_fee_sum - bt_fee_sum - commissions_sum - payroll_tax - other_work_sum
     
     # Build a lookup: client_name -> msp_name (take first non-empty value)
     msp_lookup = {}
@@ -496,7 +520,7 @@ async def get_profit_data(payload: ProfitPayload):
         if cname not in msp_lookup or (not msp_lookup[cname] and mname):
             msp_lookup[cname] = mname if pd.notna(mname) else ""
 
-    client_group = calc_df.groupby("client_name")[["total_bill", "total_pay", "msp_fee", "wc_fee", "cc_fee", "bt_fee"]].sum().reset_index()
+    client_group = calc_df.groupby("client_name")[["total_bill", "total_pay", "msp_fee", "wc_fee", "cc_fee", "bt_fee", "commissions"]].sum().reset_index()
     client_breakdown = []
     for _, r in client_group.iterrows():
         c_bill = float(r["total_bill"])
@@ -505,8 +529,9 @@ async def get_profit_data(payload: ProfitPayload):
         c_wc = float(r["wc_fee"])
         c_cc = float(r["cc_fee"])
         c_bt = float(r["bt_fee"])
+        c_commissions = float(r["commissions"])
         c_tax = c_pay * 0.10
-        c_profit = c_bill - c_pay - c_msp - c_wc - c_cc - c_bt - c_tax
+        c_profit = c_bill - c_pay - c_msp - c_wc - c_cc - c_bt - c_commissions - c_tax
         client_breakdown.append({
             "client_name": r["client_name"],
             "msp_name": msp_lookup.get(r["client_name"], ""),
@@ -516,6 +541,7 @@ async def get_profit_data(payload: ProfitPayload):
             "wc_fee": round(c_wc, 2),
             "cc_fee": round(c_cc, 2),
             "bt_fee": round(c_bt, 2),
+            "commissions": round(c_commissions, 2),
             "payroll_tax": round(c_tax, 2),
             "profit": round(c_profit, 2)
         })
@@ -529,6 +555,7 @@ async def get_profit_data(payload: ProfitPayload):
         "wc_fee": round(wc_fee_sum, 2),
         "cc_fee": round(cc_fee_sum, 2),
         "bt_fee": round(bt_fee_sum, 2),
+        "commissions": round(commissions_sum, 2),
         "payroll_tax": round(payroll_tax, 2),
         "other_work": round(other_work_sum, 2),
         "profit": round(profit, 2),
@@ -566,6 +593,9 @@ async def get_weekly_client_data(payload: ProfitPayload):
                 e.date,
                 sp.bonus,
                 c.name AS client_name,
+                c.sales_executive_id,
+                c.won_date,
+                u.last_name AS sales_executive_last_name,
                 c.payment_type,
                 c.billing_type_id,
                 se.bill_rate,
@@ -590,6 +620,7 @@ async def get_weekly_client_data(payload: ProfitPayload):
             LEFT JOIN timesheet t ON se.shift_employee_id = t.shift_employee_id
             LEFT JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
             LEFT JOIN shift s ON sp.shift_id = s.shift_id
+            LEFT JOIN user u ON c.sales_executive_id = u.id
             WHERE e.date >= :start_date AND e.date <= :end_date
               AND c.name = :client_name
               AND (
@@ -810,6 +841,23 @@ async def get_weekly_client_data(payload: ProfitPayload):
         except (ValueError, TypeError):
             bt_fee = 0.0
 
+        commissions = 0.0
+        sales_executive_id = row.get("sales_executive_id")
+        if pd.notna(sales_executive_id) and str(sales_executive_id).strip() != "":
+            last_name = str(row.get("sales_executive_last_name") or "").strip()
+            if last_name == "Inherited by":
+                commissions = total_bill * 0.005
+            else:
+                won_date_raw = row.get("won_date")
+                shift_date_raw = row.get("date")
+                if pd.notna(won_date_raw) and pd.notna(shift_date_raw):
+                    if pd.to_datetime(shift_date_raw) <= pd.to_datetime(won_date_raw) + pd.DateOffset(years=1):
+                        commissions = total_bill * 0.03
+                    else:
+                        commissions = total_bill * 0.01
+                else:
+                    commissions = total_bill * 0.01
+
         return pd.Series({
             "date": row["date"],
             "total_bill": total_bill,
@@ -817,14 +865,15 @@ async def get_weekly_client_data(payload: ProfitPayload):
             "msp_fee": msp_fee,
             "wc_fee": wc_fee,
             "cc_fee": cc_fee,
-            "bt_fee": bt_fee
+            "bt_fee": bt_fee,
+            "commissions": commissions
         })
 
     calc_df = df.apply(process_row, axis=1)
     calc_df["date"] = pd.to_datetime(calc_df["date"])
     calc_df.set_index("date", inplace=True)
     
-    weekly = calc_df.resample("W-MON", label="left", closed="left")[["total_bill", "total_pay", "msp_fee", "wc_fee", "cc_fee", "bt_fee"]].sum()
+    weekly = calc_df.resample("W-MON", label="left", closed="left")[["total_bill", "total_pay", "msp_fee", "wc_fee", "cc_fee", "bt_fee", "commissions"]].sum()
     
     weeks_data = []
     for dt, r in weekly.iterrows():
@@ -834,8 +883,9 @@ async def get_weekly_client_data(payload: ProfitPayload):
         c_wc = float(r["wc_fee"])
         c_cc = float(r["cc_fee"])
         c_bt = float(r["bt_fee"])
+        c_commissions = float(r["commissions"])
         c_tax = c_pay * 0.10
-        c_profit = c_bill - c_pay - c_msp - c_wc - c_cc - c_bt - c_tax
+        c_profit = c_bill - c_pay - c_msp - c_wc - c_cc - c_bt - c_commissions - c_tax
         c_profit_pct = (c_profit / c_bill * 100) if c_bill else 0.0
         
         weeks_data.append({
@@ -846,6 +896,7 @@ async def get_weekly_client_data(payload: ProfitPayload):
             "wc_fee": round(c_wc, 2),
             "cc_fee": round(c_cc, 2),
             "bt_fee": round(c_bt, 2),
+            "commissions": round(c_commissions, 2),
             "payroll_tax": round(c_tax, 2),
             "profit": round(c_profit, 2),
             "profit_pct": round(c_profit_pct, 1),
