@@ -58,7 +58,8 @@ async def fetch_emails(
     # 2. Query sent messages
     headers = {
         "Authorization": f"Bearer {access_token}",
-        "Accept": "application/json"
+        "Accept": "application/json",
+        "Prefer": "outlook.body-content-type=\"text\""
     }
     
     # We filter by sentItems folder for the given user within the date range
@@ -74,7 +75,7 @@ async def fetch_emails(
     
     params = {
         "$filter": filter_query,
-        "$select": "id,subject,bodyPreview,body,sentDateTime,toRecipients",
+        "$select": "id,subject,bodyPreview,body,uniqueBody,sentDateTime,toRecipients",
         "$top": "100"
     }
     
@@ -113,8 +114,12 @@ async def fetch_emails(
         to_list = [r.get("emailAddress", {}).get("address", "") for r in m.get("toRecipients", [])]
         to_str = ", ".join([addr for addr in to_list if addr])
         
-        # Grab text content if possible
+        # Grab text content if possible. Use uniqueBody to avoid giant quoted reply chains.
+        unique_body = m.get("uniqueBody", {}).get("content", "")
         body_content = m.get("body", {}).get("content", "")
+        
+        # Prefer unique_body, fallback to body_content
+        final_body = unique_body if unique_body else body_content
         content_type = m.get("body", {}).get("contentType", "text")
         
         results.append({
@@ -123,7 +128,7 @@ async def fetch_emails(
             "sent_date": m.get("sentDateTime"),
             "to": to_str,
             "preview": m.get("bodyPreview", ""),
-            "body": body_content,
+            "body": final_body,
             "content_type": content_type
         })
         

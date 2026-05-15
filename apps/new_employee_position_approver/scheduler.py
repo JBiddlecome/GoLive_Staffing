@@ -354,7 +354,7 @@ async def _extract_resume_text_or_image_message(filename: str) -> tuple[str | No
                         "type": "text",
                         "text": "Transcribe this resume image and evaluate it using the provided schema. Respond with JSON only.",
                     },
-                    {"type": "image_url", "image_url": {"url": f"data:{safe_mime};base64,{encoded}"}},
+                    {"type": "image_url", "image_url": {"url": f"data:{safe_mime};base64,{encoded}", "detail": "low"}},
                 ],
             },
         ]
