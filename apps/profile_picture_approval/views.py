@@ -111,7 +111,7 @@ async def analyze_photo_ai(photo_url: str):
                     "role": "user",
                     "content": [
                         {"type": "text", "text": AI_PROMPT},
-                        {"type": "image_url", "image_url": {"url": photo_url}}
+                        {"type": "image_url", "image_url": {"url": photo_url, "detail": "low"}}
                     ],
                 }
             ],
