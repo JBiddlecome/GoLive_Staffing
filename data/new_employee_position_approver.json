@@ -44,6 +44,7 @@
       "45931",
       "46010",
       "46058",
+      "46085",
       "46094",
       "46105",
       "46107",
@@ -51,6 +52,293 @@
     ]
   },
   "records": [
+    {
+      "review_id": "2026-05-15:46085",
+      "review_date": "2026-05-15",
+      "employee_id": 46085,
+      "employee_name": "Daylin Bickham",
+      "first_name": "Daylin",
+      "last_name": "Bickham",
+      "email": "Daylin.e.bickham@gmail.com",
+      "phone": "323-738-1990",
+      "hire_date": "2026-05-15",
+      "rehire_date": "",
+      "resume_file": "7ugjajotbb6nts9g_2025%20updated%20resume.pdf",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/7ugjajotbb6nts9g_2025%2520updated%2520resume.pdf",
+      "status": "Recommended",
+      "recommendations": [
+        {
+          "key": "cashier",
+          "label": "Cashier",
+          "base_name": "Cashier",
+          "ai_level": 1,
+          "ai_status": "level_1",
+          "estimated_years": 2.0,
+          "confidence": 0.9,
+          "reasons": [
+            "Cash handling and register experience at Subway and restaurant roles, qualifying for Level 1."
+          ],
+          "position_id": 101,
+          "position_description": "Cashier",
+          "match_found": true
+        },
+        {
+          "key": "cook",
+          "label": "Cook 2",
+          "base_name": "Cook",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 4.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Multiple line cook roles at restaurant venues (True Food Kitchen, Joeys DTLA), including station-specific experience, totaling approximately 4 years. No fast-food experience counted for this role."
+          ],
+          "position_id": 288,
+          "position_description": "Cook 1",
+          "match_found": true
+        },
+        {
+          "key": "cook",
+          "label": "Cook 2",
+          "base_name": "Cook",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 4.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Multiple line cook roles at restaurant venues (True Food Kitchen, Joeys DTLA), including station-specific experience, totaling approximately 4 years. No fast-food experience counted for this role."
+          ],
+          "position_id": 102,
+          "position_description": "Cook 2",
+          "match_found": true
+        },
+        {
+          "key": "dishwasher",
+          "label": "Dishwasher",
+          "base_name": "Dishwasher",
+          "ai_level": 1,
+          "ai_status": "level_1",
+          "estimated_years": 1.0,
+          "confidence": 0.9,
+          "reasons": [
+            "Dishwashing duties at Subway and during restaurant roles, qualifying for Level 1."
+          ],
+          "position_id": 105,
+          "position_description": "Dishwasher",
+          "match_found": true
+        },
+        {
+          "key": "server",
+          "label": "Server 2",
+          "base_name": "Server",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 2.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Customer service experience at Subway and restaurant roles, including taking orders and handling cash, totaling about 2 years."
+          ],
+          "position_id": 285,
+          "position_description": "Server 1",
+          "match_found": true
+        },
+        {
+          "key": "server",
+          "label": "Server 2",
+          "base_name": "Server",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 2.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Customer service experience at Subway and restaurant roles, including taking orders and handling cash, totaling about 2 years."
+          ],
+          "position_id": 115,
+          "position_description": "Server 2",
+          "match_found": true
+        }
+      ],
+      "ai_summary": {
+        "hospitality_experience_overview": "Over 7 years of kitchen, customer service, and custodial experience, including roles as head chef, line cook, and food prep in various restaurant settings, with additional experience in retail food handling and healthcare food services.",
+        "total_hospitality_years_estimate": 7.0,
+        "notable_venues": [
+          "Chef Grizzley's Kitchen",
+          "True Food Kitchen",
+          "Joeys DTLA",
+          "Ralph's",
+          "Subway",
+          "Manchester Healthcare"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "Experience at Subway qualifies for Level 1 Cashier role; other roles are in restaurant or healthcare settings, qualifying for higher levels depending on role."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Over 7 years of kitchen, customer service, and custodial experience, including roles as head chef, line cook, and food prep in various restaurant settings, with additional experience in retail food handling and healthcare food services.",
+          "total_hospitality_years_estimate": 7.0,
+          "notable_venues": [
+            "Chef Grizzley's Kitchen",
+            "True Food Kitchen",
+            "Joeys DTLA",
+            "Ralph's",
+            "Subway",
+            "Manchester Healthcare"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "Experience at Subway qualifies for Level 1 Cashier role; other roles are in restaurant or healthcare settings, qualifying for higher levels depending on role."
+        },
+        "positions": {
+          "cook": {
+            "status": "level_2",
+            "estimated_years": 4.0,
+            "confidence": 0.8,
+            "reasons": [
+              "Multiple line cook roles at restaurant venues (True Food Kitchen, Joeys DTLA), including station-specific experience, totaling approximately 4 years. No fast-food experience counted for this role."
+            ]
+          },
+          "prep_cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No explicit prep cook roles identified; roles as line cook and kitchen management are listed."
+            ]
+          },
+          "dishwasher": {
+            "status": "level_1",
+            "estimated_years": 1.0,
+            "confidence": 0.9,
+            "reasons": [
+              "Dishwashing duties at Subway and during restaurant roles, qualifying for Level 1."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No specific utility or support staff roles identified."
+            ]
+          },
+          "server": {
+            "status": "level_2",
+            "estimated_years": 2.0,
+            "confidence": 0.8,
+            "reasons": [
+              "Customer service experience at Subway and restaurant roles, including taking orders and handling cash, totaling about 2 years."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No explicit hosting or front desk roles listed."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No specific runner experience identified."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No busser roles listed."
+            ]
+          },
+          "bartender": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No bartending experience listed."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barback roles listed."
+            ]
+          },
+          "cashier": {
+            "status": "level_1",
+            "estimated_years": 2.0,
+            "confidence": 0.9,
+            "reasons": [
+              "Cash handling and register experience at Subway and restaurant roles, qualifying for Level 1."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No pastry-specific roles listed."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No baking roles listed."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No sushi experience listed."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No concessions experience listed."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barista experience listed."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No valet experience listed."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No supervisory experience in hospitality or hotel industry listed."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "Daylin\n \nBickham\n \n \nDaylin\n \nE.\n \nBickham\n \n5422\n \n6th\n \nAvenue\n \nLos\n \nAngeles,\n \nCA\n \n90043\n \n323-738-1990\n \nDaylin.E.Bickham@gmail.com\n \n \nSkills\n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \nKitchen\n \nExperience\n \n(\n7\n \nyears\n):\n \n\u00b7\n \nEnsuring\n \ncleanliness\n \nand\n \nsafety,\n \nadaptability,\n \nattentiveness,\n \neducating\n \nstaff\n \non\n \nfood\n \nsafety\n \nand\n \nhygiene,\n \nkitchen\n \nmanagement,\n \nquick\n \ndecision-making,\n \ndependability,\n \nmeat\n \ncutting,\n \neffective\n \ncommunication\n \namongst\n \ncoworkers,\n \nmenu\n \nplanning,\n \nknowledge\n \nof\n \nproduce\n \nand\n \nfood\n \nhandling\n \nservices\n \nthrough\n \nculinary\n \ntraining,\n \npatience,\n \nworking\n \nin\n \ncollaboration\n \nwith\n \nrestaurant\n \nowner/managers,\n \nfood\n \npresentational\n \nabilities\n \nalong\n \nwith\n \ncrafting\n \nand\n \ncreating\n \ndishes,\n \nmeal\n \npreparation,\n \nbussing,\n \nresearching\n \nlatest\n \nfood\n \ntrends,\n \nresponsiveness,\n \nmonitor\n \nfacility\n \nand\n \ncooking\n \nequipment,\n \ntimeliness,\n \npricing,\n \nand\n \ninventory\n \ncontrol.\n \n \nCustomer\n \nService\n \n(\n5\n \nyears\n):\n \n\u00b7\n \nPro\ufb01cient\n \nin\n \nwritten\n \nand\n \noral\n \ncommunication\n \n(English),\n \nensuring\n \ncustomer\n \nsatisfaction,\n \nactively\n \nlistening\n \nto\n \nconsumers\n \nwith\n \nefforts\n \nto\n \nidentify\n \nand\n \ncater\n \nto\n \ncompany\u2019s\n \ntarget\n \naudiences,\n \ncash\n \nhandling/register\n \nexperience,\n \ndirectly\n \ntaking\n \norders\n \nfrom\n \ncustomers\n \n(in-person,\n \nover\n \nthe\n \nphone\n \nand\n \nonline),\n \ngreat\n \ninterpersonal\n \ncommunication\n \n(to\n \nfellow\n \nstaff\n \nand\n \npatrons)\n \nwith\n \nability\n \nto\n \ncreate\n \nand\n \nimplement\n \neffective\n \nstrategies\n \nin\n \ngroup\n \nand/or\n \nindependent\n \nwork\n \nenvironment(s).\n \n \nCustodial\n \nExperience\n \n(\n7\n \nyears\n)\n:\n \n\u00b7Organize/coordinate\n \ndaily\n \ncustodial\n \noperations\n \nfor\n \nbusiness,\n \nensure\n \na\n \nsafe\n \nand\n \nsecure\n \nenvironment\n \nfor\n \nworkers\n \nand\n \nvisitors,\n \nabiding\n \nby\n \nall\n \nAPPA\n \ncleaning\n \nstandards,\n \nsupervising\n \nexperience,\n \nscheduling\n \nand\n \ndelegating\n \nemployees\u2019\n \noccupational\n \nduties.\n \n\n\n \n\u3161\n \nExperience\n \n \nChef\n \nGrizzley\u2019s\n \nKitchen\n/\nHead\n \nChef;\n \nKitchen\n \nManager\n \n02/2021\n \n-\n \n07/2024,\n  \nInglewood,\n \nCA\n \n \n\u00b7\n \nCreate\n \npromotional\n \n\ufb02yers\n \nand\n \nmenus,\n \ncurate\n \nscheduling\n \nfor\n \ncaterings\n \nand\n \nevents,\n \nclosing\n \nand\n \nopening\n \nbusiness\n \noperations,\n \ntrain\n  \nnew\n \nemployees\n \nand\n \ntook\n  \ninventory,\n \nanswer\n \nincoming\n \nphone\n \ncall\n  \norders,\n \nful\ufb01ll\n  \nonline\n \norders,\n  \nsafe\n \nand\n \nproper\n \nuse\n \nof\n \ngrill,\n \nfryer,\n \nand\n \nstove\n \ntop,\n \ncash\n \nhandling,\n \ncustomer\n \nservice\n \nand\n \ncustodian\n \n(if\n \nnecessary).\n \nTrue\n \nFood\n \nKitchen/line\n \ncook\n \n09/10/2024-\n \n06/01/2025\n \n-\n \nline\n \ncook\n \nfor\n \nseveral\n \ndifferent\n \nstations\n \nincluding\n \nWoc,\n \nbrick\n \noven\n \npizza,\n \nsaute,\n \nand\n \npantry(salad\n \nand\n \ndessert\n \nstation).\n \nClosing\n \nand\n \nprepping\n \nfor\n \nmorning\n \nstaff\n \nwas\n \nmandatory.\n \nto\n \ndo\n \na\n \nlot\n \nof\n \ncatering\n \nbecause\n \nof\n \nthe\n \nlocation.\n \nTaking\n \nout\n \nthe\n \ntrash\n \nand\n \nlabeling\n \nunlabeled\n \nfood\n \nin\n \nthe\n \nfridge.\n \nAfter\n \nevery\n \nnight\n \nI\n \nhad\n \nto\n \ndeep\n \nclean\n \nthe\n \nstation.\n \nJoeys\n \nDTLA/\n \nLIne\n \ncook\n \n04/02/2022-\n \n01/03/2023\n \n-\n \nline\n \ncook\n \nfor\n \nsaute\u2019\n \nstation\n \nand\n \nsalad\n \nbar\n \nstation.\n \nIn\n \ncharge\n \nof\n \nserving\n  \nout\n \nhot\n \nplates\n \nwithin\n \na\n \n20\n \nmin\n \ntime\n \nframe.\n \nWorked\n \nthe\n \nclosing\n \nshift\n \nconsisting\n \nof\n \ncleaning\n \nmy\n \nwork\n \nstation,\n \nputting\n \nup\n \nthe\n \nfood\n \nin\n \nthe\n \nwalk-in\n \nfridge,\n \nand\n \ntaking\n \nout\n \ntrash.\n \nRalph\u2019s\n/\nButcher;\n \nMeat\n \nDepartment\n \n05/2020\n \n-\n \n02/2021,\n  \nLos\n \nAngeles,\n \nCA\n \n*\n \n\u00b7\n \nShipping/ordering\n  \nof\n \npoultry\n \nand\n \nseafood,\n \npackaging/unpacking\n \npoultry\n \nand\n \nseafood,\n \nclosing/washing\n \ndown\n \nthe\n \nseafood\n \ndepartment\n \nand\n \nback\n \nroom,\n \nmaking\n \nsure\n \nthe\n \npoultry\n \ncase\n \nis\n \n\ufb01lled\n \nup\n \nby\n \nend\n \nof\n \nnight,\n \nweighing\n \nmeat,\n \nand\n \npricing\n \nof\n \nseafood\n \nand\n \npoultry\n \nSubway\n/\nCrew\n \nMember\n \n07/2017\n \n\u2013\n \n12/2019,\n  \nLos\n \nAngeles,\n \nCA\n \n\u00b7\nSeek\n \nout\n \nguests\u2019\n \nrequests,\n \nsandwich\n \nartist,\n \ncash\n \nhandling\n \nand\n \nprocessing\n \ncredit\n \ncard\n \npayments,\n \nclosing\n \nand\n \nopening\n \nbusiness,\n \ndishwasher,\n \nabiding\n \nby\n \nAPPA\n \ncleaning\n \nstandards\n \nand\n \nguidelines.\n\u00b7\n \nShipping/ordering\n  \nof\n \npoultry\n \nand\n \nseafood,\n \npackaging/unpacking\n \npoultry\n \nand\n \nseafood,\n \nclosing/washing\n \ndown\n \nthe\n \nseafood\n \ndepartment\n \nand\n \nback\n \nroom,\n \nmaking\n \nsure\n \nthe\n \npoultry\n \ncase\n \nis\n \n\ufb01lled\n \nup\n \nby\n \nend\n \nof\n \nnight,\n \nweighing\n \nmeat,\n \nand\n \npricing\n \nof\n \nseafood\n \nand\n \npoultry\n \nManchester\n \nHealthcare/Chef\n \n10/2024-\n \nstill\n \nemployed\n \nLos\n \nAngeles,CA\n \n-\n \nMaking\n \nthree\n \ndifferent\n \nvariations\n \nof\n \nfood\n \nfor\n \nmental\n \nhealth\n \npatients.\n \nconsisting\n \nof\n \npuree\n \nfood,\n \nMechanical\n \nfood\n \n(chopped\n \nsmall\n \npieces),and\n \nRegular\n \nfood.\n \nIn\n \ncharge\n \nof\n \ndaily\n \ncleaning\n \nalong\n \nwith\n \nwriting\n \ndown\n \nand\n \nrecording\n \nthe\n \ntemperatures\n \nof\n \nthe\n \nfood\n \nthat\n \nis\n \nserved,\n \nthe\n \nrefrigerator,\n \nand\n \nfreezer.\n \n",
+      "error": "",
+      "created_at": "2026-05-15T15:02:37-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
     {
       "review_id": "2026-05-15:30038",
       "review_date": "2026-05-15",
@@ -6996,6 +7284,6 @@
       "dismissed_reason": ""
     }
   ],
-  "last_scan_at": "2026-05-15T14:32:18-07:00",
+  "last_scan_at": "2026-05-15T15:08:45-07:00",
   "last_scan_message": "No new active employees with resumes found for 2026-05-15."
 }
