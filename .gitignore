@@ -23,3 +23,5 @@ data/*.flag
 data/new_employee_position_approver.json
 data/api_usage_logs.db
 data/api_usage_logs.db
+data/api_usage_logs.db
+data/new_employee_position_approver.json
