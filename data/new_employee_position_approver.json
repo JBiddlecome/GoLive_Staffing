@@ -50,9 +50,720 @@
       "46107",
       "46115",
       "46117"
+    ],
+    "2026-05-17": [
+      "31629"
+    ],
+    "2026-05-18": [
+      "18226",
+      "45941",
+      "46121"
     ]
   },
   "records": [
+    {
+      "review_id": "2026-05-18:46121",
+      "review_date": "2026-05-18",
+      "employee_id": 46121,
+      "employee_name": "Erick Gomez",
+      "first_name": "Erick",
+      "last_name": "Gomez",
+      "email": "Erickstevegomez@gmail.com",
+      "phone": "323-561-1938",
+      "hire_date": "2013-05-15",
+      "rehire_date": "2026-05-18",
+      "resume_file": "vsqz6mdpuxpgsxd3_2025%20resume.gdoc",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/vsqz6mdpuxpgsxd3_2025%2520resume.gdoc",
+      "status": "Review Error",
+      "recommendations": [],
+      "ai_summary": {},
+      "ai_payload": {},
+      "resume_text_preview": "",
+      "error": "Unsupported resume file format for automatic text extraction.",
+      "created_at": "2026-05-18T09:38:39-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
+    {
+      "review_id": "2026-05-18:18226",
+      "review_date": "2026-05-18",
+      "employee_id": 18226,
+      "employee_name": "Berchell Rhodes",
+      "first_name": "Berchell",
+      "last_name": "Rhodes",
+      "email": "berchell777@gmail.com",
+      "phone": "213-660-9565",
+      "hire_date": "2021-06-08",
+      "rehire_date": "2026-05-18",
+      "resume_file": "z2wv0kmcsvbb0e4f_Berchell Rhodes.pdf",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/z2wv0kmcsvbb0e4f_Berchell%20Rhodes.pdf",
+      "status": "Recommended",
+      "recommendations": [
+        {
+          "key": "cook",
+          "label": "Cook 1",
+          "base_name": "Cook",
+          "ai_level": 1,
+          "ai_status": "level_1",
+          "estimated_years": 0.5,
+          "confidence": 0.7,
+          "reasons": [
+            "Cook role at Boomtown Casino & Hotel involved food prep and cooking, with promotion from prep cook to cook, totaling about 3 years. Fast-food roles at Wendy's and Burger King count as Level 1."
+          ],
+          "position_id": 288,
+          "position_description": "Cook 1",
+          "match_found": true
+        },
+        {
+          "key": "prep_cook",
+          "label": "Prep Cook 1",
+          "base_name": "Prep Cook",
+          "ai_level": 1,
+          "ai_status": "level_1",
+          "estimated_years": 0.5,
+          "confidence": 0.7,
+          "reasons": [
+            "Started as prep cook at Boomtown Casino & Hotel, promoted to cook, total about 3 years. Fast-food prep roles at Wendy's and Burger King count as Level 1."
+          ],
+          "position_id": 302,
+          "position_description": "Prep Cook 1",
+          "match_found": true
+        },
+        {
+          "key": "server",
+          "label": "Server 1",
+          "base_name": "Server",
+          "ai_level": 1,
+          "ai_status": "level_1",
+          "estimated_years": 1.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Waitress/Waiter role at Horseshoe Casino involved serving, with about 2 years of experience, plus casino roles with customer service duties."
+          ],
+          "position_id": 285,
+          "position_description": "Server 1",
+          "match_found": true
+        }
+      ],
+      "ai_summary": {
+        "hospitality_experience_overview": "Limited hospitality experience with some roles at casinos and fast-food venues; most experience is in security, customer service, and general labor.",
+        "total_hospitality_years_estimate": 2.0,
+        "notable_venues": [
+          "Boomtown Casino & Hotel",
+          "Horseshoe Casino",
+          "ELDORADO CASINO",
+          "Wendy's",
+          "McDonald's",
+          "Burger King"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "Fast-food roles at Wendy's, McDonald's, and Burger King count as Level 1 experience. Casino and hotel roles are not considered hospitality venues for this assessment."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Limited hospitality experience with some roles at casinos and fast-food venues; most experience is in security, customer service, and general labor.",
+          "total_hospitality_years_estimate": 2.0,
+          "notable_venues": [
+            "Boomtown Casino & Hotel",
+            "Horseshoe Casino",
+            "ELDORADO CASINO",
+            "Wendy's",
+            "McDonald's",
+            "Burger King"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "Fast-food roles at Wendy's, McDonald's, and Burger King count as Level 1 experience. Casino and hotel roles are not considered hospitality venues for this assessment."
+        },
+        "positions": {
+          "cook": {
+            "status": "level_1",
+            "estimated_years": 0.5,
+            "confidence": 0.7,
+            "reasons": [
+              "Cook role at Boomtown Casino & Hotel involved food prep and cooking, with promotion from prep cook to cook, totaling about 3 years. Fast-food roles at Wendy's and Burger King count as Level 1."
+            ]
+          },
+          "prep_cook": {
+            "status": "level_1",
+            "estimated_years": 0.5,
+            "confidence": 0.7,
+            "reasons": [
+              "Started as prep cook at Boomtown Casino & Hotel, promoted to cook, total about 3 years. Fast-food prep roles at Wendy's and Burger King count as Level 1."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No specific experience in dishwashing or related roles."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles explicitly involving utility or similar functions."
+            ]
+          },
+          "server": {
+            "status": "level_1",
+            "estimated_years": 1.0,
+            "confidence": 0.8,
+            "reasons": [
+              "Waitress/Waiter role at Horseshoe Casino involved serving, with about 2 years of experience, plus casino roles with customer service duties."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No specific hosting experience noted."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles involving running food or similar duties."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No busser experience documented."
+            ]
+          },
+          "bartender": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No bartending experience."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barback experience."
+            ]
+          },
+          "cashier": {
+            "status": "level_1",
+            "estimated_years": 2.0,
+            "confidence": 0.8,
+            "reasons": [
+              "Cashier roles at Wendy's, McDonald's, Burger King, and casino roles involving cash handling, totaling about 4 years, all at fast-food or quick-service venues."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No pastry-specific experience."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No baking experience documented."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No sushi experience."
+            ]
+          },
+          "concessions": {
+            "status": "level_1",
+            "estimated_years": 0.5,
+            "confidence": 0.7,
+            "reasons": [
+              "Concession work at Levy Restaurants involved some food service duties, counted as Level 1."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barista experience."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No valet experience."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No supervisory experience in hospitality or hotel industry."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "Berchell Rhodes\nDuring this pandemic it's imperative to find a way to survive and flourish.\nLos Angeles, CA  90013\nberchell777@gmail.com\n2134597424\nIn everything I do I am committed and put my best foot forward.\nWilling to relocate: Anywhere\nAuthorized to work in the US for any employer\nWork Experience\nSecurity Guard\nParker Security  - Los Angeles, CA\nJuly 2018 to Present\n\u2022 Monitored 13 buildings\u00a0\n\u2022 Followed all security and safety regulations\u00a0\n\u2022 Wrote logs and incident reports\u00a0\n\u2022 Monitored entrance and exit doors and access gates\nSecurity Guard\nGlobal Protection Services  - California, PA\nJanuary 2020 to March 2020\nGuarding post. Insure safety of all in my section.\nCall Center Representative\nCloset World  - Los Angeles, CA\nFebruary 2019 to July 2019\nHousekeeper\nUSAhostels  - Los Angeles, CA\nJanuary 2019 to May 2019\nClean rooms beds bathroms and common areas.\nHousekeeper\nHORSESHOE Casino  - Bossier City, LA\nDecember 2017 to March 2019\nAmazon Fulfilment Associate\nUPS MAIL  - Dallas, TX\nApril 2017 to December 2018\nTexas\u00a0\n\u00a0\nUPS MAIL\u00a0\nPACKER PICKER\n\nINVENTORY SORTER\nTemp.Agency  - Dallas, TX\nSeptember 2016 to March 2017\nCash Handler, Server Concession, Sales Ass. Event Associate\nLevy Restaurants And Acrobat Staffing  - Los Angeles, CA\nFebruary 2016 to August 2016\nPrivate Assistant\nJean Simpson Personnel Services  - Shreveport, LA\nMarch 2014 to January 2016\nPackage Handler/Sorter\nTempt Agency\nDecember 2013 to May 2015\nSales Associate\nWORLD WIDE READERS\nJanuary 2013 to September 2013\nla, CA\u00a0\nEmployment Type: Full Time (30 Hours or More)\u00a0\nBy working Door To Door I've improved my work ethic and, social able and personable skills as\nwell.Selling magazines was not the easiest job but it taught me the importance of getting up and\u00a0\nworking for you own. I was paid off commission and was given room and board. For a\u00a0\nweek they paid and after that it was my job to pay. I traveled city to city and state to state.\u00a0\nLeaving off better than when I started. I left with confidence with in my self and in my words.\nCOOK, Line Att.\nBoomtown Casino & Hotel  - Bossier City, LA\nJanuary 2010 to December 2012\nEmployment Type: Full Time (30 Hours or More)\u00a0\nI begun as a prep cook then grew further in the company and was promoted to being back in the\nkitchen catering. I'm a highly talented\u00a0\ncook ass. with huge experience in preparing, seasoning, and cooking a wide Variety of meats\u00a0\nvegetables, soups, breakfast dishes. I can cater\u00a0\nspecial events if required. instruct and functionally supervise the activities of other employees\u00a0\nperforming same or related duties. I can\u00a0\nmaintain clean work areas utensils and equipment .I've assisted in food inventory and control.\u00a0\nHelped with meal prep and serving.\u00a0\nPerformed delegated tasks from the Head Cook.\u00a0\nCoordinated constant clean up in kitchen and dining room.\u00a0\netc\nGUEST AMBASSADOR\nBURGER KING  - Los Angeles, CA\nMarch 2009 to December 2012\nEmployment Type: Full Time (30 Hours or More)\u00a0\nI started out as drive thru cashier and was promoted to guest ambassador.\u00a0\nI received payment by cash, check, credit cards, vouchers, or automatic debits.\u00a0\n\nI assisted customers by providing information and resolving their complaints.\u00a0\nI greeted customers entering and existing establishment\u00a0\nCounted Money in cash drawers at the beginning of shifts to ensure that amounts were correct.\nCook and Waitress/Waiter, Food Preparation Workers\nHoreshoe Casino  - Bossier City, LA\nDecember 2010 to January 2012\nEmployment Type: Full Time (30 Hours or More)\u00a0\nI begun as a waitress then a hostess and was then promoted with in to ASS. COOK. and so forth.\u00a0\nGrilled cooked and fried foods.\u00a0\nperformed simple food prep task\u00a0\nAssisted in meal prep.\u00a0\nwaited on customers and served as well.\u00a0\nMore on duties upon request\nCook Helper, Pastry, Food Preparation Workers\nELDORADO CASINO  - Shreveport, LA\nMarch 2010 to December 2011\nEmployment Type: Full Time (30 Hours or More)\u00a0\ncook and line att.\nCASHIER, Cashiers\nWENDY'S  - Shreveport, LA\nJuly 2009 to December 2009\nEmployment Type: Part Time (Less than 30 Hours)cashier\nCashier and Salesperson, Cashiers\nMCDONALD'S  - Shreveport, LA\nMarch 2005 to June 2007\nEmployment Type: Full Time (30 Hours or More)\u00a0\nCashier\nEducation\nHigh school or equivalent\nCohen High school\nSkills\n\u2022Cash (10+ years)\n\u2022credit (7 years)\n\u2022vouchers (8 years)\n\u2022Nanny\n\u2022Warehouse Associate (5 years)\n\u2022Picker Packer (6 years)\n\n\u2022Baby Sitter (10+ years)\n\u2022General Labor (10+ years)\n\u2022Order Puller (7 years)\n\u2022Shipping Receiving (4 years)\n\u2022Unloading (3 years)\n\u2022Loading (5 years)\n\u2022Call Center\n\u2022Customer Service\n\u2022Receptionist\n\u2022Microsoft Word\n\u2022Time Management\n\u2022Security\n\u2022Excel\n\u2022Security\n\u2022Sales\n\u2022Receptionist\n\u2022Organizational Skills\n\u2022Microsoft Word\n\u2022Time Management\n\u2022Typing\n\u2022Communication Skills\n\u2022Inventory\n\u2022Front Desk\n\u2022Management\n\u2022Training\nAdditional Information\nSKILLS\u00a0\nOver 10 years of work in customer service, with a proven ability to create an exceptional guest\u00a0\nexperience\u00a0\nFlexible and open-minded quick-learner, adept at adjusting to diverse and fast-p",
+      "error": "",
+      "created_at": "2026-05-18T09:38:25-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
+    {
+      "review_id": "2026-05-18:45941",
+      "review_date": "2026-05-18",
+      "employee_id": 45941,
+      "employee_name": "Jordan Davis",
+      "first_name": "Jordan",
+      "last_name": "Davis",
+      "email": "Jordanraymond65@gmail.com",
+      "phone": "323-975-7042",
+      "hire_date": "2026-05-18",
+      "rehire_date": "",
+      "resume_file": "yx3qazapdis1lwnk_Jordan%20Davis%20Resume%20.pdf",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/yx3qazapdis1lwnk_Jordan%2520Davis%2520Resume%2520.pdf",
+      "status": "Recommended",
+      "recommendations": [
+        {
+          "key": "cook",
+          "label": "Cook 2",
+          "base_name": "Cook",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 4.0,
+          "confidence": 0.9,
+          "reasons": [
+            "Experience as prep cook at Los Angeles Country Club and snack bar, totaling about 4 years at upscale venues."
+          ],
+          "position_id": 288,
+          "position_description": "Cook 1",
+          "match_found": true
+        },
+        {
+          "key": "cook",
+          "label": "Cook 2",
+          "base_name": "Cook",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 4.0,
+          "confidence": 0.9,
+          "reasons": [
+            "Experience as prep cook at Los Angeles Country Club and snack bar, totaling about 4 years at upscale venues."
+          ],
+          "position_id": 102,
+          "position_description": "Cook 2",
+          "match_found": true
+        },
+        {
+          "key": "prep_cook",
+          "label": "Prep Cook 2",
+          "base_name": "Prep Cook",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 4.0,
+          "confidence": 0.9,
+          "reasons": [
+            "Multiple prep cook roles at Los Angeles Country Club and snack bar, totaling about 4 years."
+          ],
+          "position_id": 302,
+          "position_description": "Prep Cook 1",
+          "match_found": true
+        },
+        {
+          "key": "prep_cook",
+          "label": "Prep Cook 2",
+          "base_name": "Prep Cook",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 4.0,
+          "confidence": 0.9,
+          "reasons": [
+            "Multiple prep cook roles at Los Angeles Country Club and snack bar, totaling about 4 years."
+          ],
+          "position_id": 110,
+          "position_description": "Prep Cook 2",
+          "match_found": true
+        }
+      ],
+      "ai_summary": {
+        "hospitality_experience_overview": "Experience at Los Angeles Country Club and Los Angeles Athletic Club as a prep cook and caf\u00e9 manager, totaling approximately 4 years of hospitality experience at upscale venues. Fast-food experience is not present.",
+        "total_hospitality_years_estimate": 4.0,
+        "notable_venues": [
+          "Los Angeles Country Club",
+          "Los Angeles Athletic Club"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "No fast-food or non-qualifying experience present."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Experience at Los Angeles Country Club and Los Angeles Athletic Club as a prep cook and caf\u00e9 manager, totaling approximately 4 years of hospitality experience at upscale venues. Fast-food experience is not present.",
+          "total_hospitality_years_estimate": 4.0,
+          "notable_venues": [
+            "Los Angeles Country Club",
+            "Los Angeles Athletic Club"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "No fast-food or non-qualifying experience present."
+        },
+        "positions": {
+          "cook": {
+            "status": "level_2",
+            "estimated_years": 4.0,
+            "confidence": 0.9,
+            "reasons": [
+              "Experience as prep cook at Los Angeles Country Club and snack bar, totaling about 4 years at upscale venues."
+            ]
+          },
+          "prep_cook": {
+            "status": "level_2",
+            "estimated_years": 4.0,
+            "confidence": 0.9,
+            "reasons": [
+              "Multiple prep cook roles at Los Angeles Country Club and snack bar, totaling about 4 years."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No roles or experience related to dishwashing or utility work mentioned."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No utility or cleaning roles specified."
+            ]
+          },
+          "server": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "Customer service roles at Pacific Theaters not related to serving food in a restaurant setting."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No hosting or front-of-house experience mentioned."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No runner roles or similar experience listed."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No bussing experience noted."
+            ]
+          },
+          "bartender": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No bartending experience or related roles."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No barback experience listed."
+            ]
+          },
+          "cashier": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "Cashier roles at Gold Max and Pacific Theaters are not directly related to hospitality cashier positions."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No pastry or baking experience mentioned."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No baking experience listed."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No sushi or related experience."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "Customer service at Pacific Theaters not related to concessions roles."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No barista experience listed."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No valet experience or related roles."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No supervisory experience in hospitality or hotel industry."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "JORDAN L. DAV I S  (323) 975-7042\u25aa JORDANRAYMOND65@GMAIL.COM EDUCATION & TRAINING Santa Monica Junior College        December \u2013 2012 \u25aaPre-requisite courses Fairfax High School         Diploma \u2013 2008 Certifications \u25aaFood Handlers Certificate EXPERIENCE Los Angeles Country Club         Los Angeles, CA Prep Cook          June 2015-Present \u25aaResponsible for planning and directing food preparation in an efficient style. \u25aaSupervise kitchen staff, monitoring and solving problems that may arise in the kitchen in a speedy manner.  \u25aaMaintain safety, sanitation and nutrition standards. \u25aaPrepare a variety of foods according to orders and chefs\u2019 instructions, making sure to follow approved procedures. Los Angeles Athletic Club        Los Angeles, CA Fresh 8 Caf\u00e9 Manager         November 2015-Dec. 2017 \u25aaMotivate kitchen staff to perform superb service, leading to the direct increase in repeat customers. \u25aaBalance coordinating staff for large events such as weddings and conferences, while managing the caf\u00e9 operations. \u25aaManage the daily running of the caf\u00e9, such as: menu options, food preparation, restocking and delivering products. \u25aaUtilize good problem-solving and decision-making skills to enhance the food safety practices and kitchen activities.  Los Angeles Country Club        Los Angeles, CA Prep Cook \u2013 Snack Bar         February 2015-May 2015 \u25aaTaught safety standards and maintenance issues, and the kitchen culture to 15-20 team members. \u25aaAssisted in keeping kitchen clean, hygienic and tidy, at all times.  \u25aaCarried out instructions given by higher-level management team. \u25aaMade sure that the kitchen and all required ingredients for the day are prepped for the chef\u2019s arrival. Gold Max           Carson, CA Customer Service Representative/Buyer       March 2012-April 2014 \u25aaExamined, selected and purchased the most favorable priced merchandise. \u25aaReceived and posted customer payments by recording cash, checks, and credit card transactions. \u25aaSet and/or recommended mark-up rates and printed price tags, while maintaining display of store.  Pacific Theaters                     Los Angeles, CA Customer Service Coordinator                     Sept. 2006 \u2013 Sept. 2009 \u25aaPerformed duties such as greeting patrons, ticket sales and up selling at concession stands. \u25aaDelivered excellent customer service with minimal supervision. \u25aaPromoted to coordinator position entailing handling customer relations and complaints.    \n\nPERSONAL INTERESTS I enjoy sports, music and animals. I also love visiting the beach and spending time with my family.",
+      "error": "",
+      "created_at": "2026-05-18T09:23:10-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
+    {
+      "review_id": "2026-05-17:31629",
+      "review_date": "2026-05-17",
+      "employee_id": 31629,
+      "employee_name": "Rudy Loya",
+      "first_name": "Rudy",
+      "last_name": "Loya",
+      "email": "rudyloya1989@gmail.com",
+      "phone": "562-342-8795",
+      "hire_date": "2024-10-15",
+      "rehire_date": "2026-05-17",
+      "resume_file": "461rhqwcpxasvffv_Resume_2023.pdf",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/461rhqwcpxasvffv_Resume_2023.pdf",
+      "status": "No New Positions",
+      "recommendations": [],
+      "ai_summary": {
+        "hospitality_experience_overview": "Bartender roles at Canoe House and Chonitos Mexican Restaurant, with additional retail experience at Kohl's. Fast-paced bar environment with customer service and mixology skills.",
+        "total_hospitality_years_estimate": 1.75,
+        "notable_venues": [
+          "Canoe House",
+          "Chonitos Mexican Restaurant"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "No fast-food experience; all experience at hospitality venues."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Bartender roles at Canoe House and Chonitos Mexican Restaurant, with additional retail experience at Kohl's. Fast-paced bar environment with customer service and mixology skills.",
+          "total_hospitality_years_estimate": 1.75,
+          "notable_venues": [
+            "Canoe House",
+            "Chonitos Mexican Restaurant"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "No fast-food experience; all experience at hospitality venues."
+        },
+        "positions": {
+          "cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No roles related to cooking or kitchen work identified."
+            ]
+          },
+          "prep_cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No roles related to prep cooking or kitchen prep identified."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No dishwashing or cleaning roles at hospitality venues mentioned."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No utility or support roles at hospitality venues identified."
+            ]
+          },
+          "server": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No explicit server roles at restaurants or similar venues mentioned."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No hosting or front desk roles identified."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No runner roles or similar support roles identified."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No bussing or support roles at restaurants identified."
+            ]
+          },
+          "bartender": {
+            "status": "level_2",
+            "estimated_years": 1.75,
+            "confidence": 0.9,
+            "reasons": [
+              "Bartender roles at Canoe House and Chonitos Mexican Restaurant, both hospitality venues, totaling approximately 1.75 years."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No barback roles or similar support roles identified."
+            ]
+          },
+          "cashier": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No cashier roles at retail or hospitality venues mentioned."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No pastry or baking roles identified."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No baking or related roles identified."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No sushi or similar cuisine experience mentioned."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No concessions or stadium/arena roles identified."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No barista roles or coffee shop experience mentioned."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No valet or parking attendant roles identified."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No supervisory or management experience in hospitality events identified."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "Customer Service/Retail\nCommunication\nOrganizationLong Beach Community College, Associates Degree\nAlhambra High School, Class of 2007\nLeadership and Management\nProblem-Solving\nFluent SpanishMixologist\nHospitality\nPOS System Operations2013\n2007\nGreet customers, take drink orders and serve drinks in a timely and friendly manner \nMix and prepare cocktails, wine, beer and non-alcoholic beverages to customer requests\nCheck customer identification and verify that they are of legal drinking age\nKeep the bar area clean, organized and stocked with necessary supplies\nHandle cash and credit card transactions, manage the cash register and reconcile the cash drawer\nUpsell drinks and food items to increase revenue and profitability\nMaintain a thorough knowledge of the menu and be able to make recommendations to customers  Key Qualifications and ResponsibilitiesCanoe House\nBartender    \nKohl\u2019s\nSales/Retail Associate\nAssist customers with their purchases, answer customer questions about products, and recommend\nproducts to promote sales goals\nMaintaining the store's appearance and cleanliness, restocking merchandise, processing transactions\nHandling customer complaints or issues \nEnsuring that all merchandise is properly priced and labeled Key Qualifications and ResponsibilitiesDecember 2020 - November 2021+1(562)342-8795  | Rudyloya1989@gmail.com\nAlhambra, CARUDY LOYA\nChonitos Mexican Restaurant\nBartender\nGreeting customers, taking orders and crafting delicious cocktails\nMaintained a clean and organized workspace\nEnsured the bar was fully stocked and processed payments\nTraining new hires\nAdhere to all alcohol serving laws and regulations Key Qualifications and ResponsibilitiesDuring my time as a bartender, I honed my skills in mixology, customer service, and multitasking in a fast-\npaced environment. Through my experience, I developed a keen attention to detail and the ability to remain\ncalm under pressure, resulting in consistently positive customer feedback and repeat business.   PROFESSIONAL EXPERIENCESTRENGTHS AND EXPERTISEEDUCATION\n       \nDecember 2021- September 2022\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd",
+      "error": "",
+      "created_at": "2026-05-17T15:16:32-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
     {
       "review_id": "2026-05-15:46117",
       "review_date": "2026-05-15",
@@ -7507,6 +8218,6 @@
       "dismissed_reason": ""
     }
   ],
-  "last_scan_at": "2026-05-16T11:25:12-07:00",
-  "last_scan_message": "Scan error: (pymysql.err.OperationalError) (2003, \"Can't connect to MySQL server on '127.0.0.1' ([WinError 10061] No connection could be made because the target machine actively refused it)\")\n(Background on this error at: https://sqlalche.me/e/20/e3q8)"
+  "last_scan_at": "2026-05-18T09:38:40-07:00",
+  "last_scan_message": "Checked 2 new employee(s); added 1 recommendation record(s)."
 }

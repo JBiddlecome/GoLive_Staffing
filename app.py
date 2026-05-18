@@ -72,7 +72,7 @@ from apps.client_notifications.views import router as client_notifications_route
 from apps.auth.views import router as auth_router, get_current_user
 from apps.contacts_data import add_contact, load_contacts, remove_contact
 from apps.staffing_tools_hub.views import router as staffing_tools_hub_router
-
+from apps.orders.views import router as orders_router
 
 from contextlib import asynccontextmanager
 import asyncio
@@ -457,6 +457,7 @@ app.include_router(
     prefix="/api/staffing-tools",
     tags=["Staffing Tools Hub"],
 )
+app.include_router(orders_router, prefix="/orders", tags=["Orders"])
 
 
 # Redirect /sms_paraphraser to /sms-paraphraser for backward compatibility
