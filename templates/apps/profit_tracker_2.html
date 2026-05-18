@@ -527,19 +527,44 @@
         document.getElementById('clientChartSection').style.display = 'none';
 
         try {
-            const response = await fetch('/profit-tracker-2/api/data', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ start_date: startDate, end_date: endDate })
-            });
+            const endFillDateObj = new Date();
+            const startFillDateObj = new Date();
+            startFillDateObj.setMonth(startFillDateObj.getMonth() - 3);
+            
+            const startFillDate = startFillDateObj.toISOString().split('T')[0];
+            const endFillDate = endFillDateObj.toISOString().split('T')[0];
+
+            const [response, fillRatesResponse] = await Promise.all([
+                fetch('/profit-tracker-2/api/data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ start_date: startDate, end_date: endDate })
+                }),
+                fetch(`/reports/api/client-fill-rates?start_date=${startFillDate}&end_date=${endFillDate}`)
+            ]);
 
             if (!response.ok) {
                 throw new Error("Failed to fetch data");
             }
 
             const data = await response.json();
+            
+            let fillRatesMap = {};
+            if (fillRatesResponse.ok) {
+                const fillRatesData = await fillRatesResponse.json();
+                fillRatesData.forEach(fr => {
+                    fillRatesMap[fr.client_name] = fr.fill_rate;
+                });
+            }
+
+            if (data.client_breakdown) {
+                data.client_breakdown.forEach(c => {
+                    c.fill_rate_3m = fillRatesMap[c.client_name];
+                });
+            }
+            
             const total = data.total_bill;
 
             // Animate values
@@ -606,8 +631,30 @@
                         updateClientChart();
                         window.scrollTo({ top: document.getElementById('clientChartSection').offsetTop - 100, behavior: 'smooth' });
                     };
+                    
+                    let badgeBg = 'rgba(255,255,255,0.1)';
+                    let badgeColor = '#cbd5e1';
+                    if (client.fill_rate_3m !== null && client.fill_rate_3m !== undefined) {
+                        if (client.fill_rate_3m >= 95) {
+                            badgeBg = 'rgba(52, 211, 153, 0.2)';
+                            badgeColor = 'var(--pt-success)'; // Green
+                        } else if (client.fill_rate_3m >= 90) {
+                            badgeBg = 'rgba(251, 191, 36, 0.2)';
+                            badgeColor = 'var(--pt-warning)'; // Yellow
+                        } else if (client.fill_rate_3m >= 85) {
+                            badgeBg = 'rgba(249, 115, 22, 0.2)';
+                            badgeColor = '#fb923c'; // Orange
+                        } else {
+                            badgeBg = 'rgba(248, 113, 113, 0.2)';
+                            badgeColor = 'var(--pt-danger)'; // Red
+                        }
+                    }
+
+                    const fillRateBadge = client.fill_rate_3m !== null && client.fill_rate_3m !== undefined
+                        ? `<span style="font-size: 0.75rem; padding: 0.15rem 0.4rem; border-radius: 4px; background: ${badgeBg}; margin-left: 0.5rem; color: ${badgeColor};" title="3-Month Fill Rate">${client.fill_rate_3m}%</span>`
+                        : '';
                     tr.innerHTML = `
-                        <td class="font-medium text-white">${client.client_name}</td>
+                        <td class="font-medium text-white">${client.client_name}${fillRateBadge}</td>
                         <td class="text-right">${formatCurrency(client.total_bill)}</td>
                         <td class="text-right text-blue-400">${formatCurrency(client.gross_pay)}</td>
                         <td class="text-right text-pink-400">${formatCurrency(client.msp_fee)}</td>
