@@ -116,11 +116,16 @@ def _get_base_context(request: Request) -> Dict[str, object]:
 
     engine = _engine()
     county_choices = []
+    position_choices = []
     try:
         with engine.connect() as conn:
             rs = conn.execute(text("SELECT id, name FROM county ORDER BY name"))
             for row in rs:
                 county_choices.append((row[0], row[1]))
+                
+            rs_pos = conn.execute(text("SELECT position_id, description FROM position WHERE deleted_at IS NULL ORDER BY description"))
+            for row in rs_pos:
+                position_choices.append((row[0], row[1]))
     except Exception:
         pass
     finally:
@@ -128,7 +133,8 @@ def _get_base_context(request: Request) -> Dict[str, object]:
         
     context.update({
         "candidate_statuses": CANDIDATE_STATUSES,
-        "county_choices": county_choices
+        "county_choices": county_choices,
+        "position_choices": position_choices
     })
     return context
 
@@ -320,18 +326,24 @@ async def process(
 async def candidate_report(
     candidate_status: str = Form(""),
     counties: List[str] = Form(default=[]),
+    positions: List[str] = Form(default=[]),
     created_start: str = Form(""),
     created_end: str = Form("")
 ):
     engine = _engine()
     try:
         query = """
-            SELECT e.status, e.first_name, e.last_name, e.mobile, e.created_on, e.email, c.name as county
+            SELECT DISTINCT e.status, e.first_name, e.last_name, e.mobile, e.created_on, e.email, c.name as county
             FROM employee e
             LEFT JOIN county c ON e.county_id = c.id
-            WHERE 1=1
         """
         params = {}
+        
+        valid_positions = [int(x) for x in positions if x.isdigit()]
+        if valid_positions:
+            query += " INNER JOIN employee_position ep ON e.employee_id = ep.employee_id"
+
+        query += " WHERE 1=1"
         
         if candidate_status:
             query += " AND e.status = :status"
@@ -344,6 +356,12 @@ async def candidate_report(
                 query += f" AND e.county_id IN ({placeholders})"
                 for i, cid in enumerate(valid_counties):
                     params[f"c{i}"] = cid
+
+        if valid_positions:
+            placeholders = ', '.join([f':p{i}' for i in range(len(valid_positions))])
+            query += f" AND ep.position_id IN ({placeholders}) AND (ep.eligible = 0 OR ep.eligible IS NULL)"
+            for i, pid in enumerate(valid_positions):
+                params[f"p{i}"] = pid
                     
         if created_start:
             query += " AND DATE(e.created_on) >= :created_start"
