@@ -190,7 +190,7 @@
     <div class="p-6 border-t border-gray-200">
       <p class="text-sm text-gray-600 mb-4">Export Candidate Contact details from the database based on the selected filters.</p>
       <form class="space-y-4" method="post" action="/text-blast-filter/candidate-report">
-        <div class="grid md:grid-cols-3 gap-4">
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label class="block text-sm font-medium mb-1" for="candidate_status">Candidate Status</label>
             <select class="border rounded-lg p-2 w-full bg-white" id="candidate_status" name="candidate_status">
@@ -218,6 +218,23 @@
             <p class="text-xs text-gray-500 mt-1">Leave unselected to include all counties. Multi-select allowed.</p>
           </div>
           <div>
+            <label class="block text-sm font-medium mb-1" for="positionSearch">Non-Eligible Positions</label>
+            <div class="border rounded-lg overflow-hidden bg-white flex flex-col">
+              <div class="p-2 border-b">
+                <input type="text" id="positionSearch" placeholder="Search positions..." class="w-full text-sm outline-none px-1" onkeyup="filterPositions()" />
+              </div>
+              <div class="max-h-48 overflow-y-auto p-2 space-y-1" id="positionList">
+                {% for pid, pname in position_choices %}
+                <label class="flex items-center gap-2 px-1 py-1 hover:bg-gray-50 rounded position-item cursor-pointer">
+                  <input type="checkbox" name="positions" value="{{ pid }}" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                  <span class="text-sm text-gray-700 position-name">{{ pname }}</span>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">Filter by pending (non-eligible) positions. Leave unselected to include all.</p>
+          </div>
+          <div>
             <label class="block text-sm font-medium mb-1" for="created_start">Created On Range</label>
             <div class="grid gap-2">
               <input class="border rounded-lg p-2 w-full bg-white" type="date" id="created_start" name="created_start" />
@@ -242,6 +259,23 @@
 
     for (let i = 0; i < items.length; i++) {
         const span = items[i].getElementsByClassName('county-name')[0];
+        const txtValue = span.textContent || span.innerText;
+        if (txtValue.toLowerCase().indexOf(filter) > -1) {
+            items[i].style.display = "";
+        } else {
+            items[i].style.display = "none";
+        }
+    }
+  }
+
+  function filterPositions() {
+    const input = document.getElementById('positionSearch');
+    const filter = input.value.toLowerCase();
+    const list = document.getElementById('positionList');
+    const items = list.getElementsByClassName('position-item');
+
+    for (let i = 0; i < items.length; i++) {
+        const span = items[i].getElementsByClassName('position-name')[0];
         const txtValue = span.textContent || span.innerText;
         if (txtValue.toLowerCase().indexOf(filter) > -1) {
             items[i].style.display = "";

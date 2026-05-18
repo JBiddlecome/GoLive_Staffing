@@ -56,11 +56,2213 @@
     ],
     "2026-05-18": [
       "18226",
+      "19173",
+      "39969",
+      "45914",
       "45941",
-      "46121"
+      "46040",
+      "46096",
+      "46121",
+      "46122",
+      "46125",
+      "46131",
+      "46135",
+      "46163",
+      "46167"
     ]
   },
   "records": [
+    {
+      "review_id": "2026-05-18:46096",
+      "review_date": "2026-05-18",
+      "employee_id": 46096,
+      "employee_name": "Justin McGrath",
+      "first_name": "Justin",
+      "last_name": "McGrath",
+      "email": "mcgjustin@gmail.com",
+      "phone": "727-254-6787",
+      "hire_date": "2026-05-18",
+      "rehire_date": "",
+      "resume_file": "w05eexn2xvd6ueyp_Justin McGrath - GoLive Staffing - Resume.pdf",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/w05eexn2xvd6ueyp_Justin%20McGrath%20-%20GoLive%20Staffing%20-%20Resume.pdf",
+      "status": "No New Positions",
+      "recommendations": [],
+      "ai_summary": {
+        "hospitality_experience_overview": "Experience includes catering staff at Method Staffing and event check-in at Ritual Events, totaling approximately 2.5 years in hospitality-related roles. No fast-food or quick-service experience was noted.",
+        "total_hospitality_years_estimate": 2.5,
+        "notable_venues": [
+          "Method Staffing",
+          "Ritual Events"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "No fast-food or non-qualifying experience found."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Experience includes catering staff at Method Staffing and event check-in at Ritual Events, totaling approximately 2.5 years in hospitality-related roles. No fast-food or quick-service experience was noted.",
+          "total_hospitality_years_estimate": 2.5,
+          "notable_venues": [
+            "Method Staffing",
+            "Ritual Events"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "No fast-food or non-qualifying experience found."
+        },
+        "positions": {
+          "cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "Roles listed are catering and event check-in, not cooking roles."
+            ]
+          },
+          "prep_cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No relevant experience in food prep or cooking roles."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No experience related to dishwashing or utility roles."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No utility or support staff experience listed."
+            ]
+          },
+          "server": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No serving or hospitality front-of-house experience noted."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "Event check-in role does not qualify as hosting."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No runner experience listed."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No bussing experience noted."
+            ]
+          },
+          "bartender": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No bartending experience listed."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barback experience noted."
+            ]
+          },
+          "cashier": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No cashier experience listed."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No pastry experience listed."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No baking experience listed."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No sushi experience listed."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No concessions experience listed."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barista experience listed."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No valet experience listed."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "Event check-in role does not qualify as supervisory experience."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "Justin\n \nM cGrath\n \n \n707\n \nE\n \nGrand\n \nAve\n \nApt\n \n2\n \nEl\n \nSegundo,\n \nCA\n \n90245\n \n(727)\n \n254-6787\n \nmcgjustin@gmail.com\n \nEXPERIENCE\n \nPostm ates/DoorDash\n \nDelivery\n \nDriver\n \nJan\n \n2017\n \n-\n \nSeptember\n \n2020\n \nM ethod\n \nStaf\ufb01ng\n \n\u2014\n \nGeneral\n \nCatering\n \nStaff\n \nDecember\n \n2019\n \n-\n \nMay\n \n2021\n \nRitual\n \nEvents\n \n\u2014\n \nArtist\n \nCam ping\n \nCheck-IN\n \nOctober\n  \n2018\n \n&\n \nOctober\n \n2019\n \n \n \nEDUCATION\n \nUniversity\n \nof\n \nSouth\n \nFlorida,\n \nTampa,\n \nFL\n \n\u2014\n \nBS\n \nBusiness\n \nSeptember\n \n2003\n \n-\n \nMay\n \n2005\n \n \n \nSKILLS\n \n \n \nVIP\n \nClient\n \nRelations\n \n \n \nDiscretion\n \n&\n \nCon\ufb01dentiality\n \n \n \nCrisis\n \nManagement\n \n \n \nLogistics\n \n&\n \nRouting\n \n \n \nHigh-Volume\n \nInventory\n \nControl\n \n \n \nTime-Critical\n \nScheduling\n \n \n \nCross-Functional\n \nCollaboration\n \n \n \nStress\n \nTolerance\n \n \n \nHealth\n \n&\n \nSafety\n \nCompliance\n \n \n \nActive\n \nListening",
+      "error": "",
+      "created_at": "2026-05-18T10:51:52-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
+    {
+      "review_id": "2026-05-18:46040",
+      "review_date": "2026-05-18",
+      "employee_id": 46040,
+      "employee_name": "Jose Gonzalez",
+      "first_name": "Jose",
+      "last_name": "Gonzalez",
+      "email": "Jgonzalez3090@gmail.com",
+      "phone": "818-806-5382",
+      "hire_date": "2026-05-18",
+      "rehire_date": "",
+      "resume_file": "v25p631qj7vrsn59_Resume202402220450.pdf",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/v25p631qj7vrsn59_Resume202402220450.pdf",
+      "status": "No New Positions",
+      "recommendations": [],
+      "ai_summary": {
+        "hospitality_experience_overview": "Over 13 years of culinary management experience, primarily in senior living, catering, and institutional food service, with some roles involving menu development, staff training, and operations management.",
+        "total_hospitality_years_estimate": 13.0,
+        "notable_venues": [
+          "Cadence Senior Living",
+          "Nikkei Senior Gardens",
+          "Califreshness Meal Prep & Event Catering",
+          "Compass Group USA - Chartwells",
+          "Ireland\u2019s"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "No fast-food or non-hospitality roles present; all experience is in senior living, catering, or institutional food service, qualifying for higher levels."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Over 13 years of culinary management experience, primarily in senior living, catering, and institutional food service, with some roles involving menu development, staff training, and operations management.",
+          "total_hospitality_years_estimate": 13.0,
+          "notable_venues": [
+            "Cadence Senior Living",
+            "Nikkei Senior Gardens",
+            "Califreshness Meal Prep & Event Catering",
+            "Compass Group USA - Chartwells",
+            "Ireland\u2019s"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "No fast-food or non-hospitality roles present; all experience is in senior living, catering, or institutional food service, qualifying for higher levels."
+        },
+        "positions": {
+          "cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No roles explicitly listed as cook or similar kitchen staff; experience is in culinary management and operations."
+            ]
+          },
+          "prep_cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No roles listed as prep cook; focus on management and culinary program development."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No mention of dishwashing or similar entry-level kitchen roles."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No utility or support roles listed."
+            ]
+          },
+          "server": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No server experience listed; roles are managerial and culinary-focused."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No hosting roles mentioned."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No runner roles listed."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No bussing experience listed."
+            ]
+          },
+          "bartender": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No bartending experience listed."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No barback roles listed."
+            ]
+          },
+          "cashier": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No cashier roles listed."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No pastry-specific roles listed."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No baking roles listed."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No sushi-specific experience listed."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No concessions roles listed."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No barista roles listed."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No valet experience listed."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No supervisory roles in hotel, food & beverage, or hospital industry listed."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "VIce President of CulinaryJOSE GONZALEZ\nEDUCATION\nThe Art Institute of California,\nLos Angeles\n2010 \nSKILLS\nServ-Safe Managers Certification\nManu & Recipe Development\nStaff training and retention\nspecialist\nFood service operations\nmanagement\nProcurement specialist\nBilingual in English and Spanish\nMicrosoft Word, Powerpoint and\nExcelWORK EXPERIENCE\nSkilled Management\nMarch 2023 - PresentVICE PRESIDENT OF CULINARY\nCogir USA/ Cadence Senior Living\nMarch 2022 - March 2023REGIONAL DIRECTOR OF CULINARY-WEST\nManaged over 30 properties in the West\nCollaborated on development of new builds &\nrenovations\nResponsible for entire culinary operations within\nwestern portfolio\nOnboard Culinary Directors\nWork closely with SVPC & COO on execution of capital\nexpenditure projects\nStandardized SOP\u2019s for entire Culinary ProgramPROFILE\nI\u2019m a culinary professional based in Los Angeles, Cailfornia\nwith thirteen years of experience throughout the many\navenues of the food industry. My goal is to bring culinary\nvisions to life by creating quality experiences, optimizing\nwork environments, and serving up delicious food.747-304-4223\nReferences available upon requestjgonzalez3090@gmail.com\nAWARDS &\nCERTIFICATIONS\nBest Teen Chef Los Angeles,\n2008\nTop 5 International Best Teen\nChef, 2008\n1st Place Winner of C-CAP 2008,\nFull scholarship to The Art\nInstituteAssociate of Science, Culinary Arts,\nHonors with GPA 3.5CONTACT\nDirectly responsible for entire culinary operations in\nthe company\nDeveloped company\u2019s culinary program\nEstablished and monitor purchasing standards \nAssist on ongoing menu development, testing and cost\nanalysis\nWork closely with COO & CEO to develop budgets, per\ncommunity\nPlan and execute capital expenditure projects, working\nwith COO & CEO\nOnboard Culinary Directors on all dining department\nstandards; finances, menus, sop\u2018s and recruitmentLos Angeles Mission College\n2007\nHospitality and Management\nCertification\n\nWORK EXPERIENCE\nSR. DIRECTOR OF CULINARY EXPERIENCE\nNikkei Senior Gardens-Cadence Senior Living\nMay 2018 - February 2022\nSupported all accounts in Souther California, including\nmy community\nResponsible for dining department operations; finances,\nmenus, sop\u2019s, recruiting, catering & onboarding all new\nteam members\nCollaberated with Marketing Director on developing\nevents on/off site, focused around culinary\nEnhanced menu offerings that were culturally based to\ncater our clientele\nProven track record of creating a profitable department\nand exceeding expectations\nOWNER\nCalifreshness Meal Prep & Event Catering\nJune 2016 - June 2018\nDeveloped a food service company that delivered bi-\nweekly personalized meals to a wide-range audience\nGrew my company to a loyal customer base of 80+\nclients\nCatered weekly to client, Keyes Automotive\u2019s dealerships\nExpanded my services into a cafe, offering a variety of\nhealth-focused meals & beverages\nDeveloped an interactive online ordering platform for\nmeal orders with partnering web-site developer\nDISTRICT CHEF\nCompass Group USA- Chartwells\nAugust 2014 - June 2018\nManaged a team of 20+ employees to successfully\nproduce and cater to a community of 500-1,200\nstudents and faculty members\nFacilitated the process of opening new stations\nthroughout the campuses\nOpened new accounts and provided support to existing\nproperities\nResponsible for all dining services financials, menus,\nrecruiting and ordering\nMet financial targets at all accounts within my district\nAREA EXECTUIVE CHEF- LAKE BALBOA ACUTE 2013-2014\nLEAD CHEF- CALTECH 2011-2013\nKITCHEN SUPERVISOR-IRELAND\u2019S 32 2007-2011",
+      "error": "",
+      "created_at": "2026-05-18T10:51:40-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
+    {
+      "review_id": "2026-05-18:45914",
+      "review_date": "2026-05-18",
+      "employee_id": 45914,
+      "employee_name": "Rocio Caballero",
+      "first_name": "Rocio",
+      "last_name": "Caballero",
+      "email": "rocaballero7578@gmail.com",
+      "phone": "323-812-6855",
+      "hire_date": "2026-05-18",
+      "rehire_date": "",
+      "resume_file": "jch13mcnwfxuhdmt_Screenshot_20260509_100113_Word.jpg",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/jch13mcnwfxuhdmt_Screenshot_20260509_100113_Word.jpg",
+      "status": "No New Positions",
+      "recommendations": [],
+      "ai_summary": {
+        "hospitality_experience_overview": "The candidate has extensive warehouse and shipping experience, with roles in warehouse operations, shipping, packing, and inventory management at multiple companies from 2016 to 2026. No direct hospitality or restaurant experience is evident.",
+        "total_hospitality_years_estimate": 0.0,
+        "notable_venues": [],
+        "notes_on_fast_food_or_non_qualifying_experience": "All experience is in warehouse and shipping roles, which are non-hospitality. No fast-food or restaurant experience is present."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "The candidate has extensive warehouse and shipping experience, with roles in warehouse operations, shipping, packing, and inventory management at multiple companies from 2016 to 2026. No direct hospitality or restaurant experience is evident.",
+          "total_hospitality_years_estimate": 0.0,
+          "notable_venues": [],
+          "notes_on_fast_food_or_non_qualifying_experience": "All experience is in warehouse and shipping roles, which are non-hospitality. No fast-food or restaurant experience is present."
+        },
+        "positions": {
+          "cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No roles related to cooking or food preparation are listed."
+            ]
+          },
+          "prep_cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No roles related to food prep or cooking are listed."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No dishwashing or related roles are listed."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No utility or general hospitality support roles are listed."
+            ]
+          },
+          "server": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No serving or restaurant front-of-house roles are listed."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No hosting or front-desk roles are listed."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No runner or similar roles are listed."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No bussing roles are listed."
+            ]
+          },
+          "bartender": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No bartending roles are listed."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No barback roles are listed."
+            ]
+          },
+          "cashier": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No cashier roles are listed."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No pastry roles are listed."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No baking roles are listed."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No sushi or related roles are listed."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No concessions or similar roles are listed."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No barista roles are listed."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No valet roles are listed."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No management or supervisory roles in hospitality are listed."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "Resume was evaluated from an image.",
+      "error": "",
+      "created_at": "2026-05-18T10:51:23-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
+    {
+      "review_id": "2026-05-18:19173",
+      "review_date": "2026-05-18",
+      "employee_id": 19173,
+      "employee_name": "Jessica Marsh",
+      "first_name": "Jessica",
+      "last_name": "Marsh",
+      "email": "Jessmariahm24@gmail.com",
+      "phone": "310-848-0498",
+      "hire_date": "2011-03-16",
+      "rehire_date": "2026-05-18",
+      "resume_file": "cbuzl348vwlkcjdd_Jessica Marsh.docx",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/cbuzl348vwlkcjdd_Jessica%20Marsh.docx",
+      "status": "Review Error",
+      "recommendations": [],
+      "ai_summary": {},
+      "ai_payload": {},
+      "resume_text_preview": "",
+      "error": "No text could be extracted from the resume.",
+      "created_at": "2026-05-18T10:51:11-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
+    {
+      "review_id": "2026-05-18:46135",
+      "review_date": "2026-05-18",
+      "employee_id": 46135,
+      "employee_name": "Ricardo Martinez",
+      "first_name": "Ricardo",
+      "last_name": "Martinez",
+      "email": "RfaustoM@gmail.com",
+      "phone": "213-577-4533",
+      "hire_date": "2026-05-18",
+      "rehire_date": "",
+      "resume_file": "oer5gc824qctudv2_Rick_Martinez_Manager_Resume.pdf",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/oer5gc824qctudv2_Rick_Martinez_Manager_Resume.pdf",
+      "status": "Recommended",
+      "recommendations": [
+        {
+          "key": "server",
+          "label": "Server 2",
+          "base_name": "Server",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 4.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Managed front-of-house operations, supervised and trained FOH staff, executed private events and VIP service, in high-volume fine dining and casino environments."
+          ],
+          "position_id": 285,
+          "position_description": "Server 1",
+          "match_found": true
+        },
+        {
+          "key": "server",
+          "label": "Server 2",
+          "base_name": "Server",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 4.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Managed front-of-house operations, supervised and trained FOH staff, executed private events and VIP service, in high-volume fine dining and casino environments."
+          ],
+          "position_id": 115,
+          "position_description": "Server 2",
+          "match_found": true
+        }
+      ],
+      "ai_summary": {
+        "hospitality_experience_overview": "Over 20 years of experience in high-volume fine dining, luxury restaurants, hotels, and casino environments, managing large teams and executing high-profile events.",
+        "total_hospitality_years_estimate": 20.0,
+        "notable_venues": [
+          "Mozza Restaurant Group",
+          "Commerce Casino",
+          "Wolfgang Puck Bar & Grill",
+          "Spago",
+          "Bottega Louie WeHo"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "No fast-food experience; all roles are in high-volume, fine dining, or casino environments, qualifying for Level 2 or 3 depending on role."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Over 20 years of experience in high-volume fine dining, luxury restaurants, hotels, and casino environments, managing large teams and executing high-profile events.",
+          "total_hospitality_years_estimate": 20.0,
+          "notable_venues": [
+            "Mozza Restaurant Group",
+            "Commerce Casino",
+            "Wolfgang Puck Bar & Grill",
+            "Spago",
+            "Bottega Louie WeHo"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "No fast-food experience; all roles are in high-volume, fine dining, or casino environments, qualifying for Level 2 or 3 depending on role."
+        },
+        "positions": {
+          "cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles explicitly listed as cook or similar kitchen-only roles."
+            ]
+          },
+          "prep_cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles explicitly listed as prep cook or similar."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles listed as dishwasher or similar entry-level kitchen roles."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles listed as utility staff."
+            ]
+          },
+          "server": {
+            "status": "level_2",
+            "estimated_years": 4.0,
+            "confidence": 0.8,
+            "reasons": [
+              "Managed front-of-house operations, supervised and trained FOH staff, executed private events and VIP service, in high-volume fine dining and casino environments."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No specific host roles listed."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles listed as runner."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles listed as busser."
+            ]
+          },
+          "bartender": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No bartender roles listed."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barback roles listed."
+            ]
+          },
+          "cashier": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No cashier roles listed."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No pastry roles listed."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No baker roles listed."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No sushi roles listed."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No concessions roles listed."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barista roles listed."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No valet roles listed."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles listed as event supervisor or similar management roles in event settings."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "RICK F. MARTINEZ\nFood & Beverage Opera\u000eons Leader\nLos Angeles, CA 90032\n(213) 577-4533 | RfaustoM@gmail.com | linkedin.com/ in/rickmar\u000enez/\nPROFESSIONAL PROFILE\nSeasoned hospitality opera\u000eons leader with 20+ year s of experience driving service execu\u000eon across hig h-volume \n\ufb01ne dining, luxury restaurants, hotels, and casino environments. Proven ability to lead mul\u000e-unit and mul\u000e-outlet \nopera\u000eons, stabilize high-pressure service environm ents, and deliver consistent guest experience and \ufb01 nancial \nperformance. Known for taking full opera\u000eonal owner ship, leading teams through execu\u000eon challenges in real \u000eme, \nand maintaining standards under peak volume condi\u000eo ns. Bilingual (English/Spanish) and experienced in \nautonomous, high-accountability environments.\nCORE COMPETENCIES\n\u2022 Team Leadership & Sta\ufb00 Development (50+ employees  in high-volume environments)\n\u2022 Cost Control & Vendor Nego\u000ea\u000eon (up to 10% reduc\u000e on while maintaining service quality)\n\u2022 High-Volume Luxury, Fine Dining & Casino Opera\u000eon s\n\u2022 Large-Scale Event Execu\u000eon (up to 2,500 guests in  single service environments)\n\u2022 P&L Ownership & Financial Repor\u000eng (mul\u000e-million- dollar opera\u000eons)\n\u2022 Crisis Management & Service Recovery in live serv ice environments\n\u2022 POS & Workforce Systems (Micros, Toast, Squirrel,  7ShiEs)\n\u2022 Bilingual Opera\u000eons (English/Spanish)\nKEY ACHIEVEMENTS\nRevenue Growth \u2013 Delivered 20% revenue growth at Mo zza Restaurant Group through opera\u000eonal redesign an d \nservice \ufb02ow op\u000emiza\u000eon.\nCost Reduc\u000eon \u2013 Achieved 10% reduc\u000eon in food and b everage costs at Commerce Casino through vendor \nrestructuring and cost control measures.\nGuest Experience \u2013 Increased guest sa\u000esfac\u000eon score s by 15% at Commerce Casino through structured trai ning and \nservice standardiza\u000eon.\nHigh-Volume Execu\u000eon \u2013 Directed luxury event execu\u000e on for up to 2,500 VIP guests at Spago under peak s ervice \ncondi\u000eons.\nPROFESSIONAL EXPERIENCE\nBo\u0018ega Louie WeHo \u2013 F&B Lead Manager\nApril 2025 \u2013 March 2026\n\u2022 Lead front-of-house opera\u000eons in a high-volume, u pscale dining environment\n\u2022 Oversee service standards, sta\ufb03ng coordina\u000eon, an d guest experience during peak service\n\u2022 Support daily execu\u000eon in a fast-paced, high-tra\ufb03 c seLng\nCommerce Casino \u2013 F&B Opera(ons Manage r\nJune 2022 \u2013 April 2025\n\u2022 Managed 50+ sta\ufb00 across high-volume casino and ho tel opera\u000eons\n\u2022 Implemented training programs improving guest sa\u000e sfac\u000eon by 15%\n\u2022 Oversaw budge\u000eng, inventory, and \ufb01nancial repor\u000en g\n\u2022 Nego\u000eated vendor contracts reducing food costs by  10%\n\nMozza Restaurant Group \u2013 General Manager / Manager\nFebruary 2015 \u2013 June 2019\n\u2022 Managed \ufb02agship restaurants under execu\u000eve leader ship\n\u2022 Supervised and trained 40+ FOH sta\ufb00\n\u2022 Executed high-pro\ufb01le private events and VIP servi ce opera\u000eons\nWolfgang Puck Bar & Grill \u2013 Assistant General Manag er\nFebruary 2012 \u2013 October 2014\n\u2022 Supported service opera\u000eons for up to 1,100 guest s daily\n\u2022 Implemented cost-control and opera\u000eonal e\ufb03ciency systems\n\u2022 Executed private dining events up to 300 guests\nSpago \u2013 Manager\nOctober 1997 \u2013 February 2003\n\u2022 Managed Michelin-level service opera\u000eons under Wo lfgang Puck\n\u2022 Directed events for up to 2,500 VIP guests\n\u2022 Oversaw inventory, budge\u000eng, and \ufb01nancial repor\u000en g\nPROFESSIONAL DEVELOPMENT\n\u2022 ServSafe Food Manager Cer\u000e\ufb01ca\u000eon (2022)\n\u2022 Hospitality Management Workshops (2023)\n\u2022 WSET Level 1 Award in Wines (2017)\nREFERENCES\nAvailable upon request",
+      "error": "",
+      "created_at": "2026-05-18T10:40:29-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
+    {
+      "review_id": "2026-05-18:46167",
+      "review_date": "2026-05-18",
+      "employee_id": 46167,
+      "employee_name": "Lucrecia Peyrefitte",
+      "first_name": "Lucrecia",
+      "last_name": "Peyrefitte",
+      "email": "Lucreciapeyrefitte@outlook.com",
+      "phone": "951-441-1863",
+      "hire_date": "2026-05-18",
+      "rehire_date": "",
+      "resume_file": "v7tlx41pxktnjf3n_Lucrecia%20Resume.PDF",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/v7tlx41pxktnjf3n_Lucrecia%2520Resume.PDF",
+      "status": "Recommended",
+      "recommendations": [
+        {
+          "key": "baker",
+          "label": "Baker",
+          "base_name": "Baker",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 0.5,
+          "confidence": 0.8,
+          "reasons": [
+            "Same as Pastry, coursework includes advanced baking and bread making, totaling about 0.5 years."
+          ],
+          "position_id": 130,
+          "position_description": "Baker",
+          "match_found": true
+        },
+        {
+          "key": "cook",
+          "label": "Cook 2",
+          "base_name": "Cook",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 1.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Cook role at The Pub (Nov 2025 - Mar 2026) and Knotts Berry Farm (May 2024 - Apr 2025) counted as fine dining/upscale restaurant experience, totaling about 1 year."
+          ],
+          "position_id": 288,
+          "position_description": "Cook 1",
+          "match_found": true
+        },
+        {
+          "key": "cook",
+          "label": "Cook 2",
+          "base_name": "Cook",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 1.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Cook role at The Pub (Nov 2025 - Mar 2026) and Knotts Berry Farm (May 2024 - Apr 2025) counted as fine dining/upscale restaurant experience, totaling about 1 year."
+          ],
+          "position_id": 102,
+          "position_description": "Cook 2",
+          "match_found": true
+        },
+        {
+          "key": "pastry",
+          "label": "Pastry",
+          "base_name": "Pastry",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 0.5,
+          "confidence": 0.8,
+          "reasons": [
+            "Enrolled in Escoffier School of Culinary Arts for Baking/Pastries (June 2025 - Present), with core competencies in French Pastry and Baking Techniques, approximately 0.5 years."
+          ],
+          "position_id": 121,
+          "position_description": "Pastry Cook",
+          "match_found": true
+        },
+        {
+          "key": "server",
+          "label": "Server 1",
+          "base_name": "Server",
+          "ai_level": 1,
+          "ai_status": "level_1",
+          "estimated_years": 0.25,
+          "confidence": 0.7,
+          "reasons": [
+            "Served as part of event staff at The Service Company (Aug-Sep 2025), approximately 2 months, matching target role."
+          ],
+          "position_id": 285,
+          "position_description": "Server 1",
+          "match_found": true
+        }
+      ],
+      "ai_summary": {
+        "hospitality_experience_overview": "Extensive experience in high-volume food production, kitchen operations, and food safety across school districts, restaurants, and event venues, with roles including Nutritional Worker, Cook, and Event Staff.",
+        "total_hospitality_years_estimate": 3.0,
+        "notable_venues": [
+          "Brea Olinda School District",
+          "The Pub Lake Forest",
+          "The Service Company",
+          "Knotts Berry Farm",
+          "Long Beach Unified School District"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "Experience at school districts, restaurants, and event venues counts as hospitality; no fast-food experience is present or disqualifying."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Extensive experience in high-volume food production, kitchen operations, and food safety across school districts, restaurants, and event venues, with roles including Nutritional Worker, Cook, and Event Staff.",
+          "total_hospitality_years_estimate": 3.0,
+          "notable_venues": [
+            "Brea Olinda School District",
+            "The Pub Lake Forest",
+            "The Service Company",
+            "Knotts Berry Farm",
+            "Long Beach Unified School District"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "Experience at school districts, restaurants, and event venues counts as hospitality; no fast-food experience is present or disqualifying."
+        },
+        "positions": {
+          "cook": {
+            "status": "level_2",
+            "estimated_years": 1.0,
+            "confidence": 0.8,
+            "reasons": [
+              "Cook role at The Pub (Nov 2025 - Mar 2026) and Knotts Berry Farm (May 2024 - Apr 2025) counted as fine dining/upscale restaurant experience, totaling about 1 year."
+            ]
+          },
+          "prep_cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No specific prep cook roles identified; experience as Nutritional Worker and cook does not specify prep cook duties."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles explicitly involving dishwashing or sanitation roles as primary responsibility."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No experience explicitly in utility roles."
+            ]
+          },
+          "server": {
+            "status": "level_1",
+            "estimated_years": 0.25,
+            "confidence": 0.7,
+            "reasons": [
+              "Served as part of event staff at The Service Company (Aug-Sep 2025), approximately 2 months, matching target role."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No hosting roles identified."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No runner roles identified."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No busser roles identified."
+            ]
+          },
+          "bartender": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No bartender experience."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barback experience."
+            ]
+          },
+          "cashier": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No cashier roles identified."
+            ]
+          },
+          "pastry": {
+            "status": "level_2",
+            "estimated_years": 0.5,
+            "confidence": 0.8,
+            "reasons": [
+              "Enrolled in Escoffier School of Culinary Arts for Baking/Pastries (June 2025 - Present), with core competencies in French Pastry and Baking Techniques, approximately 0.5 years."
+            ]
+          },
+          "baker": {
+            "status": "level_2",
+            "estimated_years": 0.5,
+            "confidence": 0.8,
+            "reasons": [
+              "Same as Pastry, coursework includes advanced baking and bread making, totaling about 0.5 years."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No sushi-specific experience."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No concessions experience."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barista experience."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No valet experience."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No management or supervisory experience in hotel, food & beverage, or hospital industry."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "Lucrecia\n \nPeyrefitte\n \nDetail-oriented\n \nculinary\n \nprofessional\n \nand\n \nBaking/Pastries\n \nstudent\n \nwith\n \nextensive\n \nexperience\n \nin\n \nhigh-volume\n \nfood\n \nproduction,\n \nkitchen\n \noperations,\n \nand\n \nfood\n \nsafety .\n \nProven\n \nability\n \nto\n \nmaintain\n \nrigorous\n \nsanitation\n \nstandards\n \nwhile\n \ndelivering\n \nhigh-quality\n \nservice\n \nin\n \nfast-paced\n \nschool\n \ndistricts,\n \nrestaurants,\n \nand\n \nevent\n \nvenues.\n \n310\n \nS.\n \nJefferson\n \nSt.\n \n#\n \n45B\n \nPlacentia,\n \nCA\n \n92870\n \n(951)\n \n441-1863\n \nLucreciaPeyrefitte@outlook.com\n \n \nEXPERIENCE\n \nBrea\n \nOlinda\n \nSchool\n \nDistrict\n \n\u2014\n \nNutritional\n \nworker\n \nAugust\n \n2024\n \n-\n \nPRESENT\n \nFood\n \nPreparation:\n \nPrepare\n \nand\n \nserve\n \nnutritional\n \nmeals\n \nfor\n \n950+\n \nstudents\n \ndaily,\n \nensuring\n \ncompliance\n \nwith\n \nstrict\n \nHACCP\n \nguidelines\n \nand\n \nsanitary\n \nstandards.\n \nKitchen\n \nManagement:\n \nExpertly\n \noperate\n \nindustrial\n \nkitchen\n \nequipment\n \nand\n \nmanage\n \ninventory\n \ncontrol\n \nto\n \nminimize\n \nwaste\n \nand\n \noptimize\n \nfood\n \nservice\n \nefficiency .\n \nThe\n \nPub,\n \nLake\n \nForest\n \n\u2014\n \nCook\n \nNovember\n \n2025\n \n-\n \nMarch\n \n2026\n \nCulinary\n \nProduction:\n \nHand-crafted\n \nauthentic\n \nNew\n \nJersey-style\n \npizzas\n \nin\n \na\n \nhigh-pressure\n \nenvironment,\n \nmaintaining\n \nspeed\n \nand\n \nquality\n \ncontrol.\n \nTeam\n \nCollaboration:\n \nCoordinated\n \nwith\n \nfront-of-house\n \nstaff\n \nto\n \nensure\n \nconsistent\n \nplating\n \nand\n \ntimely\n \ndelivery\n \nof\n \norders.\n \nThe\n \nService\n \nCompany-\n \nOnCall\n \n \nAugust\n \n2025\n \n-\n \nSeptember\n \n2025\n \nEvent\n \nOperations:\n \nAdapted\n \nto\n \nmultiple\n \nroles\n \nincluding\n \nPrep\n \nCook,\n \nServer ,\n \nand\n \nBusser\n \nfor\n \nlarge-scale\n \nevents\n \nlike\n \nNFL\n \ngames,\n \nair\n \nshows,\n \nand\n \nbanquets.\n \nKnotts\n \nBerry\n \nFarm\n \n\u2014\n \nCook\n \nMay\n \n2024\n \n-\n \nApril\n \n2025\n \nStation\n \nManagement:\n \nManaged\n \ngrill,\n \nfry,\n \nand\n \ndessert\n \nstations\n \nduring\n \npeak\n \nseasonal\n \nhours,\n \nupholding\n \nhigh\n \nfood\n \nsafety\n \nand\n \ncleanliness\n \nstandards.\n \nWorkstation\n \nSanitation:\n \nExecuted\n \ndeep-cleaning\n \nprotocols\n \nto\n \nmaintain\n \na\n \nsanitized\n \nenvironment\n \nin\n \ncompliance\n \nwith\n \nCalifornia\n \nhealth\n \ncodes.\n \nLong\n \nBeach\n \nUnified\n \nSchool\n \nDistrict\n \n\u2014\n \nNutritional\n \nworker\n \nFebruary\n \n2022-\n \nMay\n \n2024\n \nEDUCA TION\n \nEscoffier\n \nSchool\n \nOf\n \nCulinary\n \nArts\n \n\u2014\n \nBaking/Pastries\n \nJune\n \n2025-\n \nCurrently\n \nEnrolled\n \nCore\n \nCompetencies:\n \nTraditional\n \nFrench\n \nPastry ,\n \nAdvanced\n \nBaking\n \nTechniques.\n \nAA\n \nin\n \nCulinary\n \nArts\n \n \n\u2014\n \nLong\n \nBeach\n \nCity\n \nCollege,\n \nCA\n \nAugust\n \n2021-\n \nJune\n \n2024\n \nCore\n \nCompetencies:\n \nFine\n \nDining,\n \nRestaurant\n \nManagement,\n \nModern\n \nCulinary\n \nTechniques.\n \nFocus\n \non\n \nFrench,\n \nItalian,\n \nMediterranean,\n  \nAmerican,\n \nand\n \nLatin\n \ncuisines.\n \n \n \nCERTIFICATIONS\n \n&\n \nSKILLS\n \nCertifications\n:\n \nServSafe\n \nCertified,\n \nCA\n \nFood\n \nHandlers\n \nCard,\n \nFirst\n \nAid/CPR,\n \nCA\n \nABC\n \nCertification.\n \n \nTechnical\n \nSkills:\n \nKnife\n \nSkills,\n \nPizza\n \nMaking,\n \nBread\n \nMaking,\n \nFine\n \nDining,\n \nAllergen\n \nAwareness,\n \nEquipment\n \nOperation.\n \n \nOperational\n \nSkills:\n \nInventory\n \nManagement,\n \nHospitality,\n \nCustomer\n \nService,\n \nAdaptability.\n \n \n \n \n \nLANGUAGES:\n                    \nEnglish\n \n(Fluent)\n \n,\n             \nSpanish\n \n(Beginner)",
+      "error": "",
+      "created_at": "2026-05-18T10:25:14-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
+    {
+      "review_id": "2026-05-18:46163",
+      "review_date": "2026-05-18",
+      "employee_id": 46163,
+      "employee_name": "Erin Whittaker",
+      "first_name": "Erin",
+      "last_name": "Whittaker",
+      "email": "Bookwhittaker@gmail.com",
+      "phone": "425-344-6533",
+      "hire_date": "2026-05-18",
+      "rehire_date": "",
+      "resume_file": "s0fgqkcl2l6kub6a_Erin%20Whittaker%20Restaurant%20Resume%20.pdf",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/s0fgqkcl2l6kub6a_Erin%2520Whittaker%2520Restaurant%2520Resume%2520.pdf",
+      "status": "Recommended",
+      "recommendations": [
+        {
+          "key": "host",
+          "label": "Host",
+          "base_name": "Host",
+          "ai_level": 1,
+          "ai_status": "level_1",
+          "estimated_years": 1.0,
+          "confidence": 1.0,
+          "reasons": [
+            "Host role at Red Robin for several years, primarily early in career."
+          ],
+          "position_id": 126,
+          "position_description": "Host",
+          "match_found": true
+        },
+        {
+          "key": "server",
+          "label": "Server 2",
+          "base_name": "Server",
+          "ai_level": 3,
+          "ai_status": "level_3",
+          "estimated_years": 10.0,
+          "confidence": 1.0,
+          "reasons": [
+            "Multiple server roles at high-end and high-volume venues over several years, including opening and managing large service operations."
+          ],
+          "position_id": 285,
+          "position_description": "Server 1",
+          "match_found": true
+        },
+        {
+          "key": "server",
+          "label": "Server 2",
+          "base_name": "Server",
+          "ai_level": 3,
+          "ai_status": "level_3",
+          "estimated_years": 10.0,
+          "confidence": 1.0,
+          "reasons": [
+            "Multiple server roles at high-end and high-volume venues over several years, including opening and managing large service operations."
+          ],
+          "position_id": 115,
+          "position_description": "Server 2",
+          "match_found": true
+        }
+      ],
+      "ai_summary": {
+        "hospitality_experience_overview": "Extensive server experience at various restaurants, including fine dining (Barton G), high-end concepts (Meat on Ocean), and high-volume venues (Saddle Ranch). Experience includes opening new restaurants, catering, and hosting events. No non-hospitality jobs listed.",
+        "total_hospitality_years_estimate": 12.0,
+        "notable_venues": [
+          "Barton G",
+          "Meat on Ocean",
+          "Saddle Ranch",
+          "Red Robin",
+          "P.F. Chang\u2019s",
+          "Tesse",
+          "Carmel Melrose"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "No fast-food experience; all roles are hospitality-related, primarily servers at upscale and high-volume venues."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Extensive server experience at various restaurants, including fine dining (Barton G), high-end concepts (Meat on Ocean), and high-volume venues (Saddle Ranch). Experience includes opening new restaurants, catering, and hosting events. No non-hospitality jobs listed.",
+          "total_hospitality_years_estimate": 12.0,
+          "notable_venues": [
+            "Barton G",
+            "Meat on Ocean",
+            "Saddle Ranch",
+            "Red Robin",
+            "P.F. Chang\u2019s",
+            "Tesse",
+            "Carmel Melrose"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "No fast-food experience; all roles are hospitality-related, primarily servers at upscale and high-volume venues."
+        },
+        "positions": {
+          "cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No roles listed as cook or kitchen staff."
+            ]
+          },
+          "prep_cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No roles listed as prep cook or similar kitchen prep roles."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No dishwasher roles mentioned."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No utility or support kitchen roles listed."
+            ]
+          },
+          "server": {
+            "status": "level_3",
+            "estimated_years": 10.0,
+            "confidence": 1.0,
+            "reasons": [
+              "Multiple server roles at high-end and high-volume venues over several years, including opening and managing large service operations."
+            ]
+          },
+          "host": {
+            "status": "level_1",
+            "estimated_years": 1.0,
+            "confidence": 1.0,
+            "reasons": [
+              "Host role at Red Robin for several years, primarily early in career."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No runner roles listed."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No busser roles listed."
+            ]
+          },
+          "bartender": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No bartender roles listed."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No barback roles listed."
+            ]
+          },
+          "cashier": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No cashier roles listed."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No pastry roles listed."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No baker roles listed."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No sushi roles listed."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No concessions roles listed."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No barista roles listed."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No valet roles listed."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No supervisory roles listed, and experience is primarily as a server."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "ERIN WHITTAKER PROFILE I\u2019m a high-energy server with a knack for welcoming guests, fostering positive relationships with the staff, and effectively managing server loads to optimize operations. I\u2019m collaborative, hardworking, and ef\ufb01cient at prioritizing and handling multiple tasks simultaneously to ensure a delightful dining experience. I aspire to work in an engaging and passionate environment where I can contribute to the company\u2019s growth and development. EXPERIENCE SERVER, CARMEL, MELROSE 2024-2026 Second time opening a brand new restaurant and creating a unique experience with a dedicated team. We\u2019re constantly changing our monthly menu to introduce new items. We also collaborate closely with our sommelier team to curate a wine-themed dining experience. Additionally, we handle catering events both on-site and off-site, and we even host buyouts for special events.   SERVER, TESSE,  WEST HOLLYWOOD 2020-2024 Provided a cultivated customer experience to ensure guest satisfaction. Displayed enthusiasm and knowledge about the restaurant\u2019s menu and products. Collaborated with other restaurant staff members to ensure ef\ufb01cient operations. Stayed informed about daily specials, new menu items, and promotions. SERVER, MEAT ON OCEAN, SANTA MONICA 2017-2020 I had the privilege of opening a brand-new concept restaurant under the umbrella of a high-end corporation. Throughout my tenure, I provided exceptional service to a large number of daily customers. I ensured that each guest was served courteously, promptly, and ef\ufb01ciently. I kept myself updated with the current menu items, garnishes, ingredients, and preparation methods. Furthermore, I played a crucial role in training new servers, helping them become pro\ufb01cient in their roles. SERVER, P .F. CHANG\u2019S, SHERMAN OAKS 2017-2019 Greeted customers, answered their questions, and recommended specials to boost pro\ufb01ts.  I communicated effectively with the kitchen staff about customer allergies and special requests. I also delivered food orders promptly and courteously.  Finally, I assisted new servers with closing duties, to-go procedures, and POS applications. SERVER, BARTON G, WEST HOLLYWOOD 2016-2018 This \ufb01ne dining establishment, located in a high-traf\ufb01c area, offers a theatrical dining experience. They showcase innovative and creative ways to enjoy a meal, with specialty cocktails and seasonal dishes featuring extravagant pieces.  COCKTAIL WAITRESS, SADDLE RANCH, HOLLYWOOD 2013-2016 I worked at a high-volume restaurant on the Sunset Strip during peak tourist season for several years. As a lead server, I was responsible for closing duties and handling money. I ensured that side work and closing duties were completed ef\ufb01ciently and effectively. Additionally, I worked multiple buyout events at the restaurant for high-end clients and promoted their merchandise by wearing it during our shifts.  HOST & SERVER, RED ROBIN, SEATTLE & GLENDALE, 2007-2015 I joined the company after high school and worked my way up from a host to a lead server and a certi\ufb01ed trainer. I\u2019ve received the Employee of the Month award multiple times. The restaurant is a gourmet burger establishment.  EDUCATION WASHINGTON STATE UNIVERSITY -BACHELOR OF HUMANITIES & MINOR IN THEATRE CLASS 2011 SKILLS Guest engagement, service prioritization, banquet coordination, wine pairings, liquor, wine, and food service, high-volume dining, and ensuring a positive and professional experience while maintaining safe food handling practices are key aspects of a successful dining establishment. Sherman Oaks, CA 91403      425-344-6533      bookwhittaker@gmail.com",
+      "error": "",
+      "created_at": "2026-05-18T10:24:59-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
+    {
+      "review_id": "2026-05-18:46131",
+      "review_date": "2026-05-18",
+      "employee_id": 46131,
+      "employee_name": "Travis Johnson",
+      "first_name": "Travis",
+      "last_name": "Johnson",
+      "email": "Travisej22@yahoo.com",
+      "phone": "714-710-2771",
+      "hire_date": "2026-05-18",
+      "rehire_date": "",
+      "resume_file": "9j0q37letzwq6v2l_2026%20resumes.docx",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/9j0q37letzwq6v2l_2026%2520resumes.docx",
+      "status": "Recommended",
+      "recommendations": [
+        {
+          "key": "cashier",
+          "label": "Cashier",
+          "base_name": "Cashier",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 1.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Cashier experience at IHOP and Sam\u2019s Club, totaling about 1 year. Counts as Level 2 due to non-fast-food restaurant cashier roles."
+          ],
+          "position_id": 101,
+          "position_description": "Cashier",
+          "match_found": true
+        },
+        {
+          "key": "concessions",
+          "label": "Concessions",
+          "base_name": "Concessions",
+          "ai_level": 1,
+          "ai_status": "level_1",
+          "estimated_years": 0.5,
+          "confidence": 0.7,
+          "reasons": [
+            "Concessions vendor at ARAMARK for about 1 year, qualifies for Level 1. Experience involved food sales at stadiums."
+          ],
+          "position_id": 229,
+          "position_description": "Concessions Worker",
+          "match_found": true
+        },
+        {
+          "key": "server",
+          "label": "Server 2",
+          "base_name": "Server",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 4.0,
+          "confidence": 0.9,
+          "reasons": [
+            "Multiple server roles at IHOP, XANTERRA PARKS AND RESORTS, American Cruise Line, and Red Robin totaling approximately 4 years. Experience at casual dining and cruise line qualifies for Level 2."
+          ],
+          "position_id": 285,
+          "position_description": "Server 1",
+          "match_found": true
+        },
+        {
+          "key": "server",
+          "label": "Server 2",
+          "base_name": "Server",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 4.0,
+          "confidence": 0.9,
+          "reasons": [
+            "Multiple server roles at IHOP, XANTERRA PARKS AND RESORTS, American Cruise Line, and Red Robin totaling approximately 4 years. Experience at casual dining and cruise line qualifies for Level 2."
+          ],
+          "position_id": 115,
+          "position_description": "Server 2",
+          "match_found": true
+        }
+      ],
+      "ai_summary": {
+        "hospitality_experience_overview": "Extensive experience in restaurant management, food service, and concessions at various venues including IHOP, XANTERRA PARKS AND RESORTS, American Cruise Line, Red Robin, and ARAMARK. No fine-dining or hotel/club experience noted, but significant restaurant and food service roles.",
+        "total_hospitality_years_estimate": 8.0,
+        "notable_venues": [
+          "IHOP",
+          "XANTERRA PARKS AND RESORTS",
+          "American Cruise Line",
+          "Red Robin",
+          "SAM'S CLUB",
+          "ARAMARK"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "Experience at IHOP and Red Robin counts as restaurant/food service, not fast food. Concessions work at ARAMARK is not considered fine dining or hotel/club, but is hospitality-related. No hotel or upscale restaurant experience noted."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Extensive experience in restaurant management, food service, and concessions at various venues including IHOP, XANTERRA PARKS AND RESORTS, American Cruise Line, Red Robin, and ARAMARK. No fine-dining or hotel/club experience noted, but significant restaurant and food service roles.",
+          "total_hospitality_years_estimate": 8.0,
+          "notable_venues": [
+            "IHOP",
+            "XANTERRA PARKS AND RESORTS",
+            "American Cruise Line",
+            "Red Robin",
+            "SAM'S CLUB",
+            "ARAMARK"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "Experience at IHOP and Red Robin counts as restaurant/food service, not fast food. Concessions work at ARAMARK is not considered fine dining or hotel/club, but is hospitality-related. No hotel or upscale restaurant experience noted."
+        },
+        "positions": {
+          "cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles explicitly involving cooking or food prep at fine dining or upscale venues."
+            ]
+          },
+          "prep_cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No evidence of prep cook duties or experience at relevant venues."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No mention of dishwashing roles or related experience."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles involving utility or support kitchen functions at hospitality venues."
+            ]
+          },
+          "server": {
+            "status": "level_2",
+            "estimated_years": 4.0,
+            "confidence": 0.9,
+            "reasons": [
+              "Multiple server roles at IHOP, XANTERRA PARKS AND RESORTS, American Cruise Line, and Red Robin totaling approximately 4 years. Experience at casual dining and cruise line qualifies for Level 2."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No explicit host roles documented."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles explicitly described as runner."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No mention of busser duties."
+            ]
+          },
+          "bartender": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No bartender experience noted."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barback roles documented."
+            ]
+          },
+          "cashier": {
+            "status": "level_2",
+            "estimated_years": 1.0,
+            "confidence": 0.8,
+            "reasons": [
+              "Cashier experience at IHOP and Sam\u2019s Club, totaling about 1 year. Counts as Level 2 due to non-fast-food restaurant cashier roles."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No pastry-specific roles or experience."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No baking roles documented."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No sushi-specific experience."
+            ]
+          },
+          "concessions": {
+            "status": "level_1",
+            "estimated_years": 0.5,
+            "confidence": 0.7,
+            "reasons": [
+              "Concessions vendor at ARAMARK for about 1 year, qualifies for Level 1. Experience involved food sales at stadiums."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barista roles or coffee shop experience noted."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No valet experience documented."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No supervisory roles at hotel, food & beverage, or hospitality venues."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "Travis Johnson\tAdministrative Support\n\n10691 Alderson Ave\n\nGarden Grove Ca 92840.                                                                            \t714.710.2771  \tTravisej22@yahoo.com\n\nCareer Objective\n\nSeeking a career opportunity as FOOD SERVER AND OR RESTURANT MANAGER where I may apply my recently upgraded technical training in business administration and computerized accounting as well as my previous experience in restaurant management.\n\nProfessional Qualifications\n\nServe Food and Beverage\n\nBe able to communicate effectively with customers\n\nBe Friendly, Courteous, and Accommodating\n\nWork well with others\n\nContribute to the business mission of making customers happy\n\nPrioritize tasks and handle multiple tables simultaneously\n\nLeadership Skills\n\nMotivate, inspire, and guide your staff\n\nPOS\n\nSERVER BANKING\n\nEducation and Technical Training\n\nVENTURA ADULT AND CONTINUING EDUCATION\tVentura, CA\t1/19 - 8/19\n\nCareer Technical Certification: Business Administration and Management\n\nVENTURA ADULT AND CONTINUING EDUCATION\tVentura, CA\t11/18 - 1/19\n\nDiploma Graduate\n\nEmployment Experience\n\nTravis Johnson\tPagestaffS\n\nFood Server, XANTERRA PARKS AND RESORTS\n\nSetup each shift Breakfast, Lunch, and Dinner\n\nTake Beverage order, drop off drink order then take food order\n\nRun the food, clear plates as they are done with them, check up on them\n\nOffer desserts and or coffee or wine, clean up everything after they leave\n\nPolish all silverware, do all the side work that assigned to you\n\nManager/Host/Cashier/Crew Chief/Cook, IHOP\tSan Antonio, TX\t2/16 - 3/25\n\nManaged staff of 20-25 and all facets of 24/7 operations at busy International House of Pancakes franchise to ensure efficient, high-volume customer service.\n\nRecruited, interviewed, hired, trained, scheduled, and supervised new employees\n\nTrained wait staff in quality customer service and trained kitchen crew in food prep, food safety regulations, sanitation, and OSHA workplace safety procedures\n\nResponsible for planning special events plus catering needs and food cost budgeting\n\nMonitored and re-ordered inventories of food, equipment, and smallware\n\nReceived incoming deliveries from food purveyors, vendors, and suppliers\n\nTransacted POS cash and credit payments, reconciled cash drawers, processed accounts receivable, conducted safe drops every four hours, and final drop at 4:00 a.m.\n\nGenerated reports of daily sales totals by 4:00 a.m. and transmitted to corporate office\n\nVerified accuracy of staff timesheets, and prepared paperwork for weekly payroll\n\nResolved issues regarding quality of food and/or service to ensure customer satisfaction\n\nEvaluated employee performance, and completed disciplinary write-ups when necessary\n\nSupervised cleaning and sanitizing of kitchen and dining areas as well as facilities\n\nDuring peak busy periods, greeted/seated patrons, assisted kitchen crew, expedited food and beverage orders, and provided table service\n\nFood Server, AMERICAN CRUISE LINE\tGuilford, CT 2/24 - 6/24\n\nStart each shift with a meeting by the Restaurant Manager and hotel manager\n\nSetup each shift Breakfast, Lunch, and Dinner\n\nTake Beverage order, drop off drink order then take food order\n\nRun the food, clear plates as they are done with them, check up on them\n\nOffer desserts and or coffee or wine, clean up everything after they leave\n\nPolish all silverware, do all the side work that assigned to you\n\nSERVER, RED ROBIN\tGarden Grove, CA 5/21 - 2/24\n\nReport to the manager on duty to see where your assign area is.\n\nFind out if there are any new items or if item is discontinued\n\nSetup your section making sure it ready for guest\n\nUsed a handheld device to take orders.\n\nMake sure drinks are refilled, and orders is correct before sending\n\nClean your section, then sidework, then silverware\n\nOvernight Merchandiser, SAM\u2019S CLUB\tDenham Springs, LA\t7/14 - 10/15\n\nAttended nightly Manager\u2019s meeting for briefing on designated work area assignments\n\nUnloaded incoming shipments and transported to proper warehouse zones for receiving\n\nOperated forklift and pallet jack to move goods out to sales floor departments\n\nMonitored inventory levels for paper products and beverages and restocked displays\n\nCleared away packing debris and cleaned aisles before store opened to Club Members\n\nConcessions Vendor/Ball Park Hawker, ARAMARK\tAnaheim, CA\t2/02 - 10/13\n\nWorked as commission-based vendor (independent contractor) selling concessions at major sporting venues throughout SoCal, including the 2002 World Series at Angel Stadium!\n\nHawked hot dogs, peanuts, and souvenirs independently throughout the stadium\n\nWorked collaboratively as a team member at the concessions stands\n\nNavigated portable beer dispenser through stadium and transacted purchases\n\nConducted inventory counts on all products before and after the shift\n\nMaintained compliance with food safety and health code regulations\n\nPersonal References\n\nFLORENCE RINI\n\n714.914.9848\n\nFlorencerini@gmail.com\n\nSteve Klippert\n\n714.323.2046\n\nKlip7@hotmail.c",
+      "error": "",
+      "created_at": "2026-05-18T10:09:42-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
+    {
+      "review_id": "2026-05-18:39969",
+      "review_date": "2026-05-18",
+      "employee_id": 39969,
+      "employee_name": "DeJoan Moore",
+      "first_name": "DeJoan",
+      "last_name": "Moore",
+      "email": "dejoanmoore@gmail.com",
+      "phone": "323-632-9715",
+      "hire_date": "2026-05-18",
+      "rehire_date": "",
+      "resume_file": "yemvfu35257jw8og_IMG_1887.jpeg",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/yemvfu35257jw8og_IMG_1887.jpeg",
+      "status": "Recommended",
+      "recommendations": [
+        {
+          "key": "cashier",
+          "label": "Cashier",
+          "base_name": "Cashier",
+          "ai_level": 1,
+          "ai_status": "level_1",
+          "estimated_years": 2.0,
+          "confidence": 0.9,
+          "reasons": [
+            "Cashier roles at Home Depot, Amazon Fresh, Whole Foods Market, and Instawork, with experience from 2021 to present. Amazon cashier role qualifies as Level 1 fast-food experience."
+          ],
+          "position_id": 101,
+          "position_description": "Cashier",
+          "match_found": true
+        }
+      ],
+      "ai_summary": {
+        "hospitality_experience_overview": "Candidate has multiple cashier roles at various venues including Home Depot, Amazon Fresh, Whole Foods Market, and Instawork, with experience spanning from 2021 to present. The roles are primarily cashier and general labor/cashier at grocery and retail venues, with some fast-food experience at Amazon (which qualifies as Level 1).",
+        "total_hospitality_years_estimate": 2.0,
+        "notable_venues": [
+          "Home Depot",
+          "Amazon Fresh",
+          "Whole Foods Market",
+          "Instawork"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "Fast-food experience at Amazon (cashier role) counts as Level 1. Other roles are retail or grocery, which do not qualify for hospitality experience."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Candidate has multiple cashier roles at various venues including Home Depot, Amazon Fresh, Whole Foods Market, and Instawork, with experience spanning from 2021 to present. The roles are primarily cashier and general labor/cashier at grocery and retail venues, with some fast-food experience at Amazon (which qualifies as Level 1).",
+          "total_hospitality_years_estimate": 2.0,
+          "notable_venues": [
+            "Home Depot",
+            "Amazon Fresh",
+            "Whole Foods Market",
+            "Instawork"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "Fast-food experience at Amazon (cashier role) counts as Level 1. Other roles are retail or grocery, which do not qualify for hospitality experience."
+        },
+        "positions": {
+          "cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No roles listed as cook or kitchen-related positions."
+            ]
+          },
+          "prep_cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No roles listed as prep cook or similar kitchen roles."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No dishwasher roles listed."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No utility roles listed."
+            ]
+          },
+          "server": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No server roles listed."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No host roles listed."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No runner roles listed."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No busser roles listed."
+            ]
+          },
+          "bartender": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No bartender roles listed."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No barback roles listed."
+            ]
+          },
+          "cashier": {
+            "status": "level_1",
+            "estimated_years": 2.0,
+            "confidence": 0.9,
+            "reasons": [
+              "Cashier roles at Home Depot, Amazon Fresh, Whole Foods Market, and Instawork, with experience from 2021 to present. Amazon cashier role qualifies as Level 1 fast-food experience."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No pastry roles listed."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No baker roles listed."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No sushi roles listed."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No concessions roles listed."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No barista roles listed."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No valet roles listed."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No event supervisor roles listed."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "Resume was evaluated from an image.",
+      "error": "",
+      "created_at": "2026-05-18T10:09:30-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
+    {
+      "review_id": "2026-05-18:46125",
+      "review_date": "2026-05-18",
+      "employee_id": 46125,
+      "employee_name": "Crystal Hale",
+      "first_name": "Crystal",
+      "last_name": "Hale",
+      "email": "cryshale@icloud.com",
+      "phone": "281-253-6395",
+      "hire_date": "2026-05-18",
+      "rehire_date": "",
+      "resume_file": "3wt5yauer9r31kks_8a474be4-cdd2-4b89-b5fe-f84510f164db%206.pdf",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/3wt5yauer9r31kks_8a474be4-cdd2-4b89-b5fe-f84510f164db%25206.pdf",
+      "status": "Recommended",
+      "recommendations": [
+        {
+          "key": "bartender",
+          "label": "Bartender 2",
+          "base_name": "Bartender",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 4.0,
+          "confidence": 0.9,
+          "reasons": [
+            "Bartender roles at Cypress Point Country Club and as a bartender/shift manager at other venues, totaling approximately 4 years at hospitality venues."
+          ],
+          "position_id": 278,
+          "position_description": "Bartender 1",
+          "match_found": true
+        },
+        {
+          "key": "bartender",
+          "label": "Bartender 2",
+          "base_name": "Bartender",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 4.0,
+          "confidence": 0.9,
+          "reasons": [
+            "Bartender roles at Cypress Point Country Club and as a bartender/shift manager at other venues, totaling approximately 4 years at hospitality venues."
+          ],
+          "position_id": 98,
+          "position_description": "Bartender 2",
+          "match_found": true
+        }
+      ],
+      "ai_summary": {
+        "hospitality_experience_overview": "Experience as a bartender and shift manager at country club and private club venues, totaling approximately 4 years. No fast-food or non-hospitality roles noted.",
+        "total_hospitality_years_estimate": 4.0,
+        "notable_venues": [
+          "Cypress Point Country Club"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "No fast-food or non-qualifying experience present."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Experience as a bartender and shift manager at country club and private club venues, totaling approximately 4 years. No fast-food or non-hospitality roles noted.",
+          "total_hospitality_years_estimate": 4.0,
+          "notable_venues": [
+            "Cypress Point Country Club"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "No fast-food or non-qualifying experience present."
+        },
+        "positions": {
+          "cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No roles related to cooking or kitchen work at hospitality venues or fast-food chains."
+            ]
+          },
+          "prep_cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No prep cook or kitchen assistant roles listed."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No dishwashing or utility roles mentioned."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No utility or cleaning staff roles listed."
+            ]
+          },
+          "server": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No server roles at restaurants or similar venues listed."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No hosting or front desk roles noted."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No runner roles or similar support staff roles listed."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No busser or similar roles listed."
+            ]
+          },
+          "bartender": {
+            "status": "level_2",
+            "estimated_years": 4.0,
+            "confidence": 0.9,
+            "reasons": [
+              "Bartender roles at Cypress Point Country Club and as a bartender/shift manager at other venues, totaling approximately 4 years at hospitality venues."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No barback roles listed."
+            ]
+          },
+          "cashier": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No cashier roles at fast-food or retail venues listed."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No pastry or baking roles listed."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No baking or pastry roles listed."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No sushi or related roles listed."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No concessions or stadium/arena roles listed."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No barista roles listed."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No valet or parking attendant roles listed."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No event supervisor or management roles at hotel, food & beverage, or hospital industry listed."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "PROFESSIONAL SUMMARY\nEnthusiastic service industry professional with experience in\ncreating innovative cocktails and managing busy bar settings.\nPossesses a thorough knowledge of spirits and beer, excellent\nmultitasking and problem-solving skills, and a passion for\ncreating an enjoyable environment for guests. Highly organized\nand able to handle multiple tasks in a fast-paced environment\nwith a commitment to professionalism and customer\nsatisfaction.\nEXPERIENCE\nBartender\nJune 2024  - March 2026 Cypress Point Country Club , Virginia\nBeach , VA\nDelivery Driver\nNovember 2022  - June 2024 Uber Eats , Virginia Beach , VA\nBartender/Shift Manager\nJanuary 2017  - May 2021 A.J.Cunningham , San Diego , CA\n\u2502Developed strong working relationships with customers and\nsta\ufb00.\u2022\nE\ufb03ciently managed multiple tasks simultaneously while\nmaintaining a professional demeanor.\u2022\nKept bar organized and clean during busy hours. \u2022\n\u2502\nEnsured customers received their orders in a timely manner,\nproviding excellent customer service at every opportunity.\u2022\nChecked delivery addresses and veri\ufb01ed correct package\ndelivery.\u2022\nManaged multiple tasks simultaneously while delivering goods\nwithin speci\ufb01ed time frames.\u2022\n\u2502\nManaged day-to-day operations of the bar including stocking\nshelves, coolers, fridges and restocking supplies as needed.\u2022\nProvided superior customer service while managing a fast-paced\nbar environment.\u2022\nTrained and mentored new team members in proper bar\noperations.\u2022\nE\ufb00ectively managed inventory levels of liquor, beer, wine, \u2022CONTACT\n(281) 253-6395\ncryshale@icloud.com\nAnaheim , CA 92806\nSKILLS\nCustomer service \u2022\nStrong multitasking \u2022\nHighly reliable \u2022\nOutgoing personality \u2022\nTeam player attitude \u2022\nResponsible alcohol service \u2022\nAlcohol awareness \u2022\nClear and e\ufb00ective communication \u2022\nProfessional appearance \u2022CRYSTAL  HALE\nHOSPITALITY TEAM MEMBER\n\nglassware, ice.\nAssessed bar inventory and completed requisition sheets to\nrestock supplies.\u2022\nFollowed alcohol awareness procedures for preventing\nintoxication and dealing with intoxicated guests.\u2022\nEDUCATION\nGeneral Education\nMiraCosta College ,Cardi\ufb00 By The Sea\nCERTIFICATIONS\nT.I.P.S. Certi\ufb01ed \u2022\nRBS Certi\ufb01ed #313810247 \u2022\nREFERENCES\nKeith  King \u2014Cypress Point Country Club\nOwner/Operator\n(757) 641-6395\nkeith@cypresspointcc.com\nBrenda Delatorre \u2014Cypress Point Country Club\nHead Banquet\n(270) 605-4072\ntromboneplayersmom@yahoo.com\nKeith  Marlin \u2014Unknown\nManager\n(619) 727-3281\ncherylturner12@gmail.com\nBoss\nCo-worker\nEx Manager",
+      "error": "",
+      "created_at": "2026-05-18T09:54:17-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
+    {
+      "review_id": "2026-05-18:46122",
+      "review_date": "2026-05-18",
+      "employee_id": 46122,
+      "employee_name": "Jason Luke",
+      "first_name": "Jason",
+      "last_name": "Luke",
+      "email": "lukejason422@gmail.com",
+      "phone": "661-603-0501",
+      "hire_date": "2026-05-18",
+      "rehire_date": "",
+      "resume_file": "39fnoi5sprkn0uak_20260516_151727.jpg",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/39fnoi5sprkn0uak_20260516_151727.jpg",
+      "status": "No New Positions",
+      "recommendations": [],
+      "ai_summary": {
+        "hospitality_experience_overview": "The candidate has experience in education, community college, and a supervisory role in a science and technology institute, but no direct hospitality experience.",
+        "total_hospitality_years_estimate": 0.0,
+        "notable_venues": [],
+        "notes_on_fast_food_or_non_qualifying_experience": "No fast-food or hospitality-specific experience was mentioned or identified."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "The candidate has experience in education, community college, and a supervisory role in a science and technology institute, but no direct hospitality experience.",
+          "total_hospitality_years_estimate": 0.0,
+          "notable_venues": [],
+          "notes_on_fast_food_or_non_qualifying_experience": "No fast-food or hospitality-specific experience was mentioned or identified."
+        },
+        "positions": {
+          "cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No roles or venues related to cooking or culinary work were mentioned."
+            ]
+          },
+          "prep_cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No roles or venues related to food preparation were mentioned."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No roles or venues related to dishwashing or cleaning in hospitality were mentioned."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No roles or venues related to utility or support roles in hospitality were mentioned."
+            ]
+          },
+          "server": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No experience in serving or restaurant roles was mentioned."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No experience in hosting or front-of-house roles was mentioned."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No experience related to running or support roles in hospitality was mentioned."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No experience in bussing or related roles was mentioned."
+            ]
+          },
+          "bartender": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No bartending or beverage service experience was mentioned."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No barback or similar experience was mentioned."
+            ]
+          },
+          "cashier": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No cashier or retail experience was mentioned."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No pastry or baking experience was mentioned."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No baking or related experience was mentioned."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No sushi or related culinary experience was mentioned."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No concessions or similar experience was mentioned."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No barista or coffee shop experience was mentioned."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No valet or parking attendant experience was mentioned."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No supervisory experience in hospitality or event management was mentioned."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "Resume was evaluated from an image.",
+      "error": "",
+      "created_at": "2026-05-18T09:54:05-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
     {
       "review_id": "2026-05-18:46121",
       "review_date": "2026-05-18",
@@ -8218,6 +10420,6 @@
       "dismissed_reason": ""
     }
   ],
-  "last_scan_at": "2026-05-18T09:38:40-07:00",
-  "last_scan_message": "Checked 2 new employee(s); added 1 recommendation record(s)."
+  "last_scan_at": "2026-05-18T11:06:18-07:00",
+  "last_scan_message": "No new active employees with resumes found for 2026-05-18."
 }
