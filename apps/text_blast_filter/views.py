@@ -71,9 +71,17 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 def _load_dataframe(path: Path) -> pd.DataFrame:
     try:
-        df = pd.read_excel(path, skiprows=3)
-    except ValueError as exc:  # pragma: no cover - pandas specific error
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        peek = pd.read_excel(path, header=None, nrows=20)
+        header_row_index = 0
+        for idx, row in peek.iterrows():
+            row_values = [str(val).strip() for val in row.values if pd.notnull(val)]
+            if "Shift Position Title" in row_values and "Shift Start" in row_values:
+                header_row_index = idx
+                break
+                
+        df = pd.read_excel(path, header=header_row_index)
+    except Exception as exc:  # pragma: no cover
+        raise HTTPException(status_code=400, detail=f"Failed to read file: {str(exc)}") from exc
 
     if df.empty:
         raise HTTPException(status_code=400, detail="Uploaded file does not contain any data.")
@@ -101,8 +109,7 @@ def _collect_filter_options(df: pd.DataFrame) -> Dict[str, List[str]]:
     }
 
 
-@router.get("")
-async def page(request: Request):
+def _get_base_context(request: Request) -> Dict[str, object]:
     context: Dict[str, object] = {"request": request}
     context.update(default_text_blast_context())
     context.update(default_employee_filter_context())
@@ -123,8 +130,12 @@ async def page(request: Request):
         "candidate_statuses": CANDIDATE_STATUSES,
         "county_choices": county_choices
     })
+    return context
 
-    return templates.TemplateResponse("apps/text_blast_filter.html", context)
+
+@router.get("")
+async def page(request: Request):
+    return templates.TemplateResponse("apps/text_blast_filter.html", _get_base_context(request))
 
 
 @router.post("/upload")
@@ -133,9 +144,7 @@ async def upload(
     file: UploadFile = File(...),
 ):
     if not file.filename.lower().endswith(".xlsx"):
-        context: Dict[str, object] = {"request": request}
-        context.update(default_text_blast_context())
-        context.update(default_employee_filter_context())
+        context = _get_base_context(request)
         context.update({"text_error": "Please upload an .xlsx file exported from the event."})
 
         return templates.TemplateResponse(
@@ -146,9 +155,7 @@ async def upload(
 
     file_contents = await file.read()
     if not file_contents:
-        context: Dict[str, object] = {"request": request}
-        context.update(default_text_blast_context())
-        context.update(default_employee_filter_context())
+        context = _get_base_context(request)
         context.update({"text_error": "The uploaded file was empty."})
 
         return templates.TemplateResponse(
@@ -166,9 +173,7 @@ async def upload(
         dataframe = _load_dataframe(saved_path)
     except HTTPException as exc:
         saved_path.unlink(missing_ok=True)
-        context: Dict[str, object] = {"request": request}
-        context.update(default_text_blast_context())
-        context.update(default_employee_filter_context())
+        context = _get_base_context(request)
         context.update({"text_error": exc.detail})
 
         return templates.TemplateResponse(
@@ -179,9 +184,7 @@ async def upload(
 
     options = _collect_filter_options(dataframe)
 
-    context = {"request": request}
-    context.update(default_text_blast_context())
-    context.update(default_employee_filter_context())
+    context = _get_base_context(request)
     context.update(
         {
             "text_options": options,

@@ -11,6 +11,7 @@ from fastapi.responses import RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 
 from apps.context import default_employee_filter_context, default_text_blast_context
+from apps.text_blast_filter.views import _get_base_context
 
 
 templates = Jinja2Templates(directory="templates")
@@ -34,9 +35,17 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 def _load_dataframe(path: Path) -> pd.DataFrame:
     try:
-        dataframe = pd.read_excel(path)
-    except ValueError as exc:  # pragma: no cover - pandas specific error
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        peek = pd.read_excel(path, header=None, nrows=20)
+        header_row_index = 0
+        for idx, row in peek.iterrows():
+            row_values = [str(val).strip() for val in row.values if pd.notnull(val)]
+            if "Employee ID" in row_values and "Status" in row_values:
+                header_row_index = idx
+                break
+                
+        dataframe = pd.read_excel(path, header=header_row_index)
+    except Exception as exc:  # pragma: no cover
+        raise HTTPException(status_code=400, detail=f"Failed to read file: {str(exc)}") from exc
 
     if dataframe.empty:
         raise HTTPException(status_code=400, detail="Uploaded file does not contain any data.")
@@ -89,8 +98,8 @@ def _collect_filter_options(df: pd.DataFrame) -> Dict[str, List[str]]:
         "states": _options_for("State"),
         "positions": positions,
         "counties": _options_for("County of Residence"),
-        "start_date_min": start_date_min.strftime("%Y-%m-%d") if start_date_min is not None else "",
-        "start_date_max": start_date_max.strftime("%Y-%m-%d") if start_date_max is not None else "",
+        "start_date_min": start_date_min.strftime("%Y-%m-%d") if pd.notnull(start_date_min) else "",
+        "start_date_max": start_date_max.strftime("%Y-%m-%d") if pd.notnull(start_date_max) else "",
     }
 
 
@@ -167,9 +176,7 @@ async def page():
 @router.post("/upload")
 async def upload(request: Request, file: UploadFile = File(...)):
     if not file.filename.lower().endswith(".xlsx"):
-        context: Dict[str, object] = {"request": request}
-        context.update(default_text_blast_context())
-        context.update(default_employee_filter_context())
+        context = _get_base_context(request)
         context.update({"employee_error": "Please upload an .xlsx file."})
 
         return templates.TemplateResponse(
@@ -180,9 +187,7 @@ async def upload(request: Request, file: UploadFile = File(...)):
 
     file_contents = await file.read()
     if not file_contents:
-        context = {"request": request}
-        context.update(default_text_blast_context())
-        context.update(default_employee_filter_context())
+        context = _get_base_context(request)
         context.update({"employee_error": "The uploaded file was empty."})
 
         return templates.TemplateResponse(
@@ -200,9 +205,7 @@ async def upload(request: Request, file: UploadFile = File(...)):
         dataframe = _prepare_dataframe(_load_dataframe(saved_path))
     except HTTPException as exc:
         saved_path.unlink(missing_ok=True)
-        context = {"request": request}
-        context.update(default_text_blast_context())
-        context.update(default_employee_filter_context())
+        context = _get_base_context(request)
         context.update({"employee_error": exc.detail})
 
         return templates.TemplateResponse(
@@ -213,9 +216,7 @@ async def upload(request: Request, file: UploadFile = File(...)):
 
     options = _collect_filter_options(dataframe)
 
-    context = {"request": request}
-    context.update(default_text_blast_context())
-    context.update(default_employee_filter_context())
+    context = _get_base_context(request)
     context.update(
         {
             "employee_options": options,

@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+{% block title %}Orders App — GoLive Staffing{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-8 pb-12 relative">
+    
+    <!-- Header -->
+    <div class="text-center space-y-3 relative z-10">
+        <p class="text-sm uppercase tracking-[0.3em] text-emerald-600 font-semibold">Staffing Tools</p>
+        <h1 class="brand-serif text-4xl md:text-5xl font-semibold text-slate-900 tracking-tight">Orders</h1>
+        <p class="text-lg text-slate-600 max-w-2xl mx-auto">
+            Automate your order entry. Paste an email or speak an order into the microphone, and our AI will extract all necessary details to create the event and publish shifts.
+        </p>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="grid lg:grid-cols-2 gap-8 relative z-10">
+        
+        <!-- Input Section -->
+        <div class="glass-card rounded-3xl p-6 md:p-8 border border-white/40 shadow-2xl bg-white/60 backdrop-blur-xl relative overflow-hidden transition-all duration-300 hover:shadow-emerald-900/5">
+            <div class="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-teal-50/50 -z-10"></div>
+            
+            <h2 class="text-2xl font-semibold text-slate-800 mb-6 flex items-center gap-2">
+                <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                Input Order
+            </h2>
+            
+            <div class="space-y-4">
+                <label class="block text-sm font-medium text-slate-700">Order Text or Email Content</label>
+                <textarea id="orderInput" rows="10" class="w-full rounded-2xl border-slate-200 bg-white/80 shadow-inner focus:border-emerald-500 focus:ring-emerald-500 transition-shadow p-4 resize-none" placeholder="E.g., Hi GoLive! We need 5 Servers and 2 Bartenders for the Summer Gala at the Convention Center on June 15th from 4pm to 11pm. Thanks, ACME Catering."></textarea>
+            </div>
+            
+            <div class="mt-6 flex flex-wrap gap-4 items-center justify-between">
+                <button id="micBtn" class="flex items-center justify-center gap-2 px-6 py-3 rounded-full border-2 border-slate-200 bg-white text-slate-700 font-medium hover:border-emerald-500 hover:text-emerald-600 transition-all shadow-sm active:scale-95 group">
+                    <svg class="w-5 h-5 group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                    Dictate Order
+                </button>
+                <button id="extractBtn" class="flex items-center justify-center gap-2 px-8 py-3 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold hover:from-emerald-500 hover:to-teal-500 transition-all shadow-lg hover:shadow-emerald-500/25 active:scale-95">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    Extract Details
+                </button>
+            </div>
+        </div>
+
+        <!-- Extraction Preview Section -->
+        <div class="glass-card rounded-3xl p-6 md:p-8 border border-white/40 shadow-2xl bg-slate-50/80 backdrop-blur-xl relative">
+            <h2 class="text-2xl font-semibold text-slate-800 mb-6 flex items-center gap-2">
+                <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Parsed Order
+            </h2>
+            
+            <div id="loadingState" class="hidden flex-col items-center justify-center py-12 space-y-4">
+                <div class="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+                <p class="text-slate-500 font-medium animate-pulse">Analyzing with AI...</p>
+            </div>
+
+            <div id="emptyState" class="flex flex-col items-center justify-center py-12 text-center space-y-3">
+                <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mb-2">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                </div>
+                <p class="text-slate-500 font-medium">No order extracted yet.</p>
+                <p class="text-sm text-slate-400">Enter details on the left and click Extract.</p>
+            </div>
+
+            <div id="resultsState" class="hidden space-y-6">
+                <!-- Basic Information -->
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4 border-b border-slate-100 pb-2">Basic Information</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Client</p>
+                            <p class="font-medium text-slate-900" id="resClient">-</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Event Name</p>
+                            <p class="font-medium text-slate-900" id="resEvent">-</p>
+                        </div>
+                        <div class="col-span-2">
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Venue</p>
+                            <p class="font-medium text-slate-900" id="resVenue">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shift Information -->
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4 border-b border-slate-100 pb-2">Shift Information</h3>
+                    
+                    <div id="shiftsContainer" class="space-y-4">
+                        <!-- Shifts will be injected here -->
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-200 flex justify-end">
+                    <button class="px-6 py-2.5 rounded-xl bg-slate-900 text-white font-medium hover:bg-slate-800 transition-colors shadow-md">
+                        Confirm & Push to GoLive
+                    </button>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<script>
+    const extractBtn = document.getElementById('extractBtn');
+    const orderInput = document.getElementById('orderInput');
+    const emptyState = document.getElementById('emptyState');
+    const loadingState = document.getElementById('loadingState');
+    const resultsState = document.getElementById('resultsState');
+    
+    extractBtn.addEventListener('click', async () => {
+        const text = orderInput.value.trim();
+        if (!text) {
+            alert('Please enter some text or dictate an order first.');
+            return;
+        }
+        
+        emptyState.classList.add('hidden');
+        resultsState.classList.add('hidden');
+        loadingState.classList.remove('hidden');
+        loadingState.classList.add('flex');
+        
+        try {
+            const response = await fetch('/orders/extract', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            });
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                renderResults(result.data);
+                loadingState.classList.add('hidden');
+                loadingState.classList.remove('flex');
+                resultsState.classList.remove('hidden');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('An error occurred while extracting the order.');
+            loadingState.classList.add('hidden');
+            loadingState.classList.remove('flex');
+            emptyState.classList.remove('hidden');
+        }
+    });
+
+    function renderField(value, placeholder, isRequired = false) {
+        if (!value && isRequired) {
+            return `<input type="text" class="w-full text-sm border border-red-300 bg-red-50 text-red-900 rounded-md p-1 focus:ring-red-500 focus:border-red-500 placeholder-red-300" placeholder="${placeholder} (Required)">`;
+        } else if (!value) {
+            return `<input type="text" class="w-full text-sm border border-slate-200 rounded-md p-1 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-300" placeholder="${placeholder}">`;
+        }
+        return `<input type="text" class="w-full text-sm border-transparent bg-transparent hover:border-slate-200 focus:border-emerald-500 focus:bg-white rounded-md p-1 transition-colors" value="${value}">`;
+    }
+
+    function renderResults(data) {
+        const basic = data.basic_information || {};
+        
+        document.getElementById('resClient').innerHTML = renderField(basic.client_name, "Client Name", true);
+        document.getElementById('resEvent').innerHTML = renderField(basic.event_name, "Event Name");
+        // Removed global date: document.getElementById('resDate').innerHTML = renderField(basic.date, "Date (YYYY-MM-DD)", true);
+        document.getElementById('resVenue').innerHTML = renderField(basic.venue_name, "Venue Address", true);
+
+        const shiftsContainer = document.getElementById('shiftsContainer');
+        shiftsContainer.innerHTML = '';
+
+        const shifts = data.shift_information || [];
+        if (shifts.length === 0) {
+            shiftsContainer.innerHTML = '<p class="text-sm text-slate-500 italic">No shifts detected.</p>';
+            return;
+        }
+
+        shifts.forEach(shift => {
+            const details = shift.details || {};
+            const tools = Array.isArray(details.tools) ? details.tools.join(', ') : '';
+            const certs = Array.isArray(details.certifications) ? details.certifications.join(', ') : '';
+            
+            const shiftEl = document.createElement('div');
+            shiftEl.className = 'border border-slate-200 rounded-xl overflow-hidden';
+            shiftEl.innerHTML = `
+                <div class="bg-slate-50 p-4 flex justify-between items-center cursor-pointer hover:bg-slate-100 transition-colors" onclick="this.nextElementSibling.classList.toggle('hidden')">
+                    <div class="flex items-center gap-4 flex-1 mr-4">
+                        <div class="bg-indigo-100 text-indigo-700 font-bold px-3 py-1 rounded-lg text-sm min-w-[3rem] text-center">
+                            ${shift.staff_count || '?'}x
+                        </div>
+                        <div class="flex-1 grid grid-cols-3 gap-2">
+                            <div>${renderField(shift.date, "Date (YYYY-MM-DD)", true)}</div>
+                            <div>${renderField(shift.position, "Position", true)}</div>
+                            <div class="flex items-center gap-2">
+                                ${renderField(shift.start_time, "Start", true)}
+                                <span class="text-slate-400">to</span>
+                                ${renderField(shift.end_time, "End", true)}
+                            </div>
+                        </div>
+                    </div>
+                    <svg class="w-5 h-5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+                <!-- Expandable Details -->
+                <div class="hidden p-4 bg-white border-t border-slate-200 space-y-3 text-sm">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <span class="text-slate-400 font-medium block mb-1">Grooming</span>
+                            ${renderField(details.grooming, "e.g. Standard Black")}
+                        </div>
+                        <div>
+                            <span class="text-slate-400 font-medium block mb-1">Tools</span>
+                            ${renderField(tools, "e.g. Wine Key")}
+                        </div>
+                        <div>
+                            <span class="text-slate-400 font-medium block mb-1">Certifications</span>
+                            ${renderField(certs, "e.g. Food Handler")}
+                        </div>
+                        <div>
+                            <span class="text-slate-400 font-medium block mb-1">Publication Rule</span>
+                            ${renderField(details.publication_rules, "e.g. Preferred First")}
+                        </div>
+                    </div>
+                </div>
+            `;
+            shiftsContainer.appendChild(shiftEl);
+        });
+    }
+
+    // Basic Web Speech API mock/setup
+    const micBtn = document.getElementById('micBtn');
+    let recognition = null;
+    if ('webkitSpeechRecognition' in window) {
+        recognition = new webkitSpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            orderInput.value += (orderInput.value ? ' ' : '') + transcript;
+            micBtn.classList.remove('bg-red-50', 'border-red-500', 'text-red-600');
+            micBtn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg> Dictate Order`;
+        };
+        
+        recognition.onerror = function(event) {
+            console.error('Speech recognition error', event.error);
+            micBtn.classList.remove('bg-red-50', 'border-red-500', 'text-red-600');
+            micBtn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg> Dictate Order`;
+        };
+    }
+
+    micBtn.addEventListener('click', () => {
+        if (!recognition) {
+            alert('Speech recognition is not supported in this browser.');
+            return;
+        }
+        
+        micBtn.classList.add('bg-red-50', 'border-red-500', 'text-red-600');
+        micBtn.innerHTML = `<span class="relative flex h-3 w-3 mr-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span></span> Listening...`;
+        recognition.start();
+    });
+</script>
+
+<style>
+    .glass-card {
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+    }
+</style>
+{% endblock %}
