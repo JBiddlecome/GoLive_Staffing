@@ -22,7 +22,7 @@ Return ONLY a valid JSON object matching this exact schema:
     "basic_information": {
         "client_name": "string (Fuzzy match to the client context if possible)",
         "client_id": "integer (From client context)",
-        "event_name": "string (The title of the event, default to venue name if not specified)",
+        "event_name": "string (The title of the event, default to the venue name, e.g. 'Convention Center', if not specified. NEVER default to the client name.)",
         "venue_name": "string (The location. Predict based on client context if missing, but if completely ambiguous or multiple venues exist, leave it EMPTY string so the UI can flag it)",
         "purchase_order": "string (If specified)"
     },

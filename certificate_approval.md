@@ -233,7 +233,7 @@ Examples of provider certificates that may qualify when those conditions are met
 
 **What to look for:**
 Two valid formats:
-1. **StateFoodSafety-issued** "Riverside County Food Handler Certificate" with the Riverside County Department of Environmental Health seal and a Certificate No.
+1. **StateFoodSafety-issued** certificate — acceptable as long as the title or body says **"Riverside County Food Handler Certificate"**. The Riverside County Department of Environmental Health seal and a Certificate No. may also appear but are not required — the key is that the certificate explicitly references Riverside County. StateFoodSafety is an approved third-party provider for Riverside County.
 2. **Physical card** issued directly by **Riverside County Department of Environmental Health** ("County of Riverside Department of Environmental Health"), with an expiration date stamped on it and a handwritten signature.
 
 **Hard exclusions — DECLINE:**

@@ -7,7 +7,9 @@
       "Bash(ls venv *)",
       "Bash(ls .venv)",
       "Bash(./venv/Scripts/python.exe -c ' *)",
-      "Bash(./.venv/Scripts/python.exe -c ' *)"
+      "Bash(./.venv/Scripts/python.exe -c ' *)",
+      "Read(//c/Users/jakeb/Downloads/**)",
+      "Bash(.venvScriptspython.exe -c ' *)"
     ]
   }
 }
