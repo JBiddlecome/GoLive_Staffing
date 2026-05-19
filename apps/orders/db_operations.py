@@ -30,12 +30,11 @@ def create_order(data: dict, user_id: int) -> dict:
                     v.venue_id, v.address1, v.city, v.state, v.zip,
                     v.timeclock, v.timeclock_code_holder, v.timeclock_tolerance, v.timeclock_prestart_interval, v.timeclock_limit,
                     v.admin_notes, v.venue_details, v.description, 
-                    COALESCE(p.name, v.parking) as parking, 
+                    COALESCE(CAST(v.parkings AS CHAR), v.parking) as parking, 
                     v.parking_note, v.directions, v.check_in,
                     v.county_id, c.no_break_penalty
                 FROM venue v
                 JOIN client c ON c.client_id = v.client_id
-                LEFT JOIN parking p ON p.parking_id = v.parkings
                 WHERE v.client_id = :client_id AND v.name = :v_name 
                 LIMIT 1
             """)
