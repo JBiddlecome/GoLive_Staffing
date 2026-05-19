@@ -64,21 +64,79 @@ def create_order(data: dict, user_id: int) -> dict:
                 
             created_event_ids = []
             
+            # Get custom event address fields from basic information
+            event_address1 = basic.get('event_address1', '').strip()
+            event_address2 = basic.get('event_address2', '').strip()
+            event_city = basic.get('event_city', '').strip()
+            event_state = basic.get('event_state', '').strip()
+            event_zip = basic.get('event_zip', '').strip()
+
+            has_custom_address = bool(event_address1 or event_city or event_state or event_zip)
+            has_address = 1 if has_custom_address else 0
+
+            # Construct special_address string for legacy/compatibility support
+            if has_custom_address:
+                parts = [event_address1]
+                if event_address2:
+                    parts.append(event_address2)
+                if event_city:
+                    parts.append(event_city)
+                if event_state or event_zip:
+                    state_zip = " ".join(filter(None, [event_state, event_zip]))
+                    parts.append(state_zip)
+                special_address = ", ".join(parts)
+            else:
+                special_address = None
+
+            final_address1 = event_address1 if event_address1 else address1
+            final_address2 = event_address2 if event_address2 else None
+            final_city = event_city if event_city else city
+            final_state = event_state if event_state else state
+            final_zip = event_zip if event_zip else zip_code
+
+            # Geocode the address to resolve latitude and longitude
+            from apps.similar_client_report.database import geocode_location
+            import re
+
+            # Clean address1 of any suite, apartment, unit, floor, building or # references for high geocoding accuracy
+            suite_pat = re.compile(r'\b(suite|ste|apt|apartment|unit|room|rm|floor|fl|building|bldg)\b.*$|\s*#.*$', re.IGNORECASE)
+            geocode_street = suite_pat.sub('', final_address1).strip()
+            geocode_street = re.sub(r'[\s,]+$', '', geocode_street) # strip trailing spaces or commas
+
+            # 1. Try full address (excluding address2/suite information)
+            full_address_str = f"{geocode_street}, {final_city}, {final_state} {final_zip}"
+            lat, lon = geocode_location(full_address_str)
+
+            # 2. Fallback to city, state, zip level if full address geocoding fails
+            if lat is None or lon is None:
+                city_zip_str = f"{final_city}, {final_state} {final_zip}".strip()
+                if city_zip_str:
+                    lat, lon = geocode_location(city_zip_str)
+
+            # 3. Fallback to city, state level if that fails
+            if lat is None or lon is None:
+                city_state_str = f"{final_city}, {final_state}".strip()
+                if city_state_str:
+                    lat, lon = geocode_location(city_state_str)
+
+            latitude = lat if lat is not None else 0.0
+            longitude = lon if lon is not None else 0.0
+
             for event_date, day_shifts in shifts_by_date.items():
                 
                 # 2. Create Event (event represents a single day)
                 ev_sql = text("""
                     INSERT INTO event (
-                        client_id, venue_id, title, date, address1, city, state, zip, created_by,
+                        client_id, venue_id, title, date, address1, address2, city, state, zip, latitude, longitude, created_by,
                         timeclock, timeclock_code_holder, timeclock_tolerance, timeclock_prestart_interval, timeclock_limit,
                         admin_notes, venue_details, description, parking, parking_note, directions, check_in,
-                        county_id, no_break_penalty
+                        county_id, no_break_penalty, has_address, special_address
                     )
                     VALUES (
-                        :client_id, :venue_id, :title, :date, :address1, :city, :state, :zip, :user_id,
+                        :client_id, :venue_id, :title, :date, :address1, :address2, :city, :state, :zip, :latitude, :longitude, :user_id,
                         :tc, :tc_holder, :tc_tol, :tc_pre, :tc_lim,
                         :admin_notes, :v_details, :desc, :parking, :parking_note, :directions, :check_in,
-                        :county_id, :no_break_penalty
+                        :county_id, :no_break_penalty, :has_address, :special_address
                     )
                 """)
                 res = conn.execute(ev_sql, {
@@ -86,10 +144,13 @@ def create_order(data: dict, user_id: int) -> dict:
                     "venue_id": venue_id,
                     "title": event_name,
                     "date": event_date,
-                    "address1": address1,
-                    "city": city,
-                    "state": state,
-                    "zip": zip_code,
+                    "address1": final_address1,
+                    "address2": final_address2,
+                    "city": final_city,
+                    "state": final_state,
+                    "zip": final_zip,
+                    "latitude": latitude,
+                    "longitude": longitude,
                     "user_id": user_id,
                     "tc": timeclock or 'DISABLED',
                     "tc_holder": tc_holder,
@@ -104,7 +165,9 @@ def create_order(data: dict, user_id: int) -> dict:
                     "directions": directions,
                     "check_in": check_in,
                     "county_id": county_id,
-                    "no_break_penalty": no_break_penalty or 1
+                    "no_break_penalty": no_break_penalty or 1,
+                    "has_address": has_address,
+                    "special_address": special_address
                 })
                 event_id = res.lastrowid
                 created_event_ids.append(event_id)
