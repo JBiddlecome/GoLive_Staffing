@@ -500,6 +500,51 @@
         width: 15px; height: 15px;
         cursor: pointer;
     }
+
+    /* BT Tier Tag */
+    .bt-tier-tag {
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 0.1rem 0.35rem;
+        border-radius: 4px;
+        background: rgba(251, 146, 60, 0.18);
+        color: #fb923c;
+        border: 1px solid rgba(251, 146, 60, 0.3);
+        cursor: pointer;
+        margin-left: 0.4rem;
+        letter-spacing: 0.03em;
+        vertical-align: middle;
+        transition: background 0.15s ease, border-color 0.15s ease;
+        user-select: none;
+    }
+    .bt-tier-tag:hover {
+        background: rgba(251, 146, 60, 0.35);
+        border-color: rgba(251, 146, 60, 0.55);
+    }
+    .bt-tier-option {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--pt-text-muted);
+        padding: 0.3rem 0.65rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.15s ease;
+        white-space: nowrap;
+    }
+    .bt-tier-option:hover {
+        border-color: #fb923c;
+        color: #fb923c;
+    }
+    .bt-tier-option.active {
+        background: rgba(251, 146, 60, 0.2);
+        border-color: #fb923c;
+        color: #fb923c;
+    }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <div class="pt-wrapper-main">
@@ -743,6 +788,16 @@
 </div>
 </div>
 
+<!-- BT Tier Selector Popover -->
+<div id="btTierPopover" style="display: none; position: absolute; z-index: 2000; background: rgba(15, 23, 42, 0.97); border: 1px solid rgba(251, 146, 60, 0.35); border-radius: 8px; padding: 0.4rem 0.5rem; box-shadow: 0 8px 24px rgba(0,0,0,0.55);">
+    <div style="display: flex; gap: 0.35rem; align-items: center;">
+        <span style="font-size: 0.7rem; color: #94a3b8; padding: 0 0.2rem; white-space: nowrap;">BT Fee:</span>
+        <button class="bt-tier-option" data-tier="T1" onclick="selectTier('T1')">T1 (1.95%)</button>
+        <button class="bt-tier-option" data-tier="T2" onclick="selectTier('T2')">T2 (2.93%)</button>
+        <button class="bt-tier-option" data-tier="T3" onclick="selectTier('T3')">T3 (3.9%)</button>
+    </div>
+</div>
+
 <script>
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
@@ -759,6 +814,9 @@
     let globalOtherWork = 0;
     let currentSortKey = 'total_bill';
     let currentSortDir = 'desc';
+
+    const tierRates = { T1: 0.0195, T2: 0.0293, T3: 0.039 };
+    let clientTiers = {}; // clientName -> 'T1' | 'T2' | 'T3'
 
     // ── Column visibility ──
     const ALL_COLUMNS = [
@@ -802,13 +860,47 @@
         dd.classList.toggle('open');
     }
 
-    // Close dropdown on outside click
+    // Close dropdowns on outside click
     document.addEventListener('click', (e) => {
         const wrap = document.querySelector('.pt-col-toggle-wrap');
         if (wrap && !wrap.contains(e.target)) {
             document.getElementById('colDropdown').classList.remove('open');
         }
+        if (!e.target.closest('#btTierPopover') && !e.target.closest('.bt-tier-tag')) {
+            hideTierPopover();
+        }
     });
+
+    function showTierPopover(clientName, anchorEl) {
+        const popover = document.getElementById('btTierPopover');
+        popover.dataset.clientName = clientName;
+        const rect = anchorEl.getBoundingClientRect();
+        popover.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+        popover.style.left = rect.left + 'px';
+        const currentTier = clientTiers[clientName] || 'T2';
+        popover.querySelectorAll('.bt-tier-option').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tier === currentTier);
+        });
+        popover.style.display = 'block';
+    }
+
+    function hideTierPopover() {
+        const p = document.getElementById('btTierPopover');
+        if (p) p.style.display = 'none';
+    }
+
+    function selectTier(tier) {
+        const popover = document.getElementById('btTierPopover');
+        const clientName = popover.dataset.clientName;
+        clientTiers[clientName] = tier;
+        hideTierPopover();
+        renderClientTable();
+        fetch('/profit-tracker/api/bt-tiers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ client_name: clientName, tier })
+        }).catch(err => console.error('Failed to persist BT tier:', err));
+    }
 
     function applyColumnVisibility() {
         // Toggle header visibility
@@ -878,11 +970,17 @@
     function renderClientTable() {
         let list = getFilteredBreakdown();
 
-        // Add profit_pct to each item for sorting
-        list = list.map(c => ({
-            ...c,
-            profit_pct: c.total_bill > 0 ? (c.profit / c.total_bill) * 100 : 0
-        }));
+        // Add profit_pct and apply tier-based BT fee adjustments
+        list = list.map(c => {
+            let bt_fee = c.bt_fee;
+            let profit = c.profit;
+            if (c.has_bt_fee) {
+                const tier = clientTiers[c.client_name] || 'T2';
+                bt_fee = c.total_bill * tierRates[tier];
+                profit = c.total_bill - c.gross_pay - c.msp_fee - c.wc_fee - c.cc_fee - bt_fee - c.commissions - c.payroll_tax;
+            }
+            return { ...c, bt_fee, profit, profit_pct: c.total_bill > 0 ? (profit / c.total_bill) * 100 : 0 };
+        });
 
         // Sort
         list.sort((a, b) => {
@@ -907,7 +1005,9 @@
         list.forEach(client => {
             const tr = document.createElement('tr');
             tr.style.cursor = 'pointer';
-            tr.onclick = () => {
+            tr.onclick = (e) => {
+                const tag = e.target.closest('.bt-tier-tag');
+                if (tag) { showTierPopover(client.client_name, tag); return; }
                 showClientOptionsModal(client.client_name);
             };
             const pp = client.profit_pct.toFixed(1);
@@ -935,10 +1035,14 @@
                 ? `<span style="font-size: 0.75rem; padding: 0.15rem 0.4rem; border-radius: 4px; background: ${badgeBg}; margin-left: 0.5rem; color: ${badgeColor};" title="3-Month Fill Rate">${client.fill_rate_3m}%</span>`
                 : '';
 
+            const tierTag = client.has_bt_fee
+                ? `<span class="bt-tier-tag">${clientTiers[client.client_name] || 'T2'}</span>`
+                : '';
+
             const wcPct = client.total_bill > 0 ? (client.wc_fee / client.total_bill * 100).toFixed(2) : 0;
 
             const cells = [
-                { key: 'client_name', html: `<td class="font-medium text-white" data-col="client_name">${client.client_name}${fillRateBadge}</td>` },
+                { key: 'client_name', html: `<td class="font-medium text-white" data-col="client_name">${client.client_name}${fillRateBadge}${tierTag}</td>` },
                 { key: 'msp_name', html: `<td class="text-right" data-col="msp_name" style="color:${client.msp_name ? '#f472b6' : 'var(--pt-text-muted)'}">${client.msp_name || '—'}</td>` },
                 { key: 'total_bill', html: `<td class="text-right" data-col="total_bill">${formatCurrency(client.total_bill)}</td>` },
                 { key: 'gross_pay', html: `<td class="text-right text-blue-400" data-col="gross_pay">${formatCurrency(client.gross_pay)}</td>` },
@@ -1026,25 +1130,30 @@
             const startFillDate = startFillDateObj.toISOString().split('T')[0];
             const endFillDate = endFillDateObj.toISOString().split('T')[0];
 
-            const [response, fillRatesResponse] = await Promise.all([
+            const [response, fillRatesResponse, btTiersResponse] = await Promise.all([
                 fetch('/profit-tracker/api/data', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ start_date: startDate, end_date: endDate })
                 }),
-                fetch(`/reports/api/client-fill-rates?start_date=${startFillDate}&end_date=${endFillDate}`)
+                fetch(`/reports/api/client-fill-rates?start_date=${startFillDate}&end_date=${endFillDate}`),
+                fetch('/profit-tracker/api/bt-tiers')
             ]);
 
             if (!response.ok) throw new Error("Failed to fetch profit data");
-            
+
             const data = await response.json();
-            
+
             let fillRatesMap = {};
             if (fillRatesResponse.ok) {
                 const fillRatesData = await fillRatesResponse.json();
                 fillRatesData.forEach(fr => {
                     fillRatesMap[fr.client_name] = fr.fill_rate;
                 });
+            }
+
+            if (btTiersResponse.ok) {
+                clientTiers = await btTiersResponse.json();
             }
 
             if (data.client_breakdown) {
@@ -1278,10 +1387,16 @@
     function exportTableToExcel() {
         let list = getFilteredBreakdown();
 
-        list = list.map(c => ({
-            ...c,
-            profit_pct: c.total_bill > 0 ? (c.profit / c.total_bill) * 100 : 0
-        }));
+        list = list.map(c => {
+            let bt_fee = c.bt_fee;
+            let profit = c.profit;
+            if (c.has_bt_fee) {
+                const tier = clientTiers[c.client_name] || 'T2';
+                bt_fee = c.total_bill * tierRates[tier];
+                profit = c.total_bill - c.gross_pay - c.msp_fee - c.wc_fee - c.cc_fee - bt_fee - c.commissions - c.payroll_tax;
+            }
+            return { ...c, bt_fee, profit, profit_pct: c.total_bill > 0 ? (profit / c.total_bill) * 100 : 0 };
+        });
 
         list.sort((a, b) => {
             let va = a[currentSortKey], vb = b[currentSortKey];
