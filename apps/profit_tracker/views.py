@@ -1,6 +1,8 @@
+import json
 import os
 import pandas as pd
-from typing import Any
+from pathlib import Path
+from typing import Any, Optional
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -8,11 +10,30 @@ from pydantic import BaseModel
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import URL
 from datetime import date
-from typing import Any, Optional
 from apps.profit_tracker.billing import calculate_total_bill
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+
+BT_TIERS_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "bt_client_tiers.json"
+
+
+def _load_bt_tiers() -> dict:
+    if BT_TIERS_PATH.exists():
+        try:
+            with open(BT_TIERS_PATH, "r") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            pass
+    return {}
+
+
+def _save_bt_tiers(tiers: dict) -> None:
+    BT_TIERS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    tmp = BT_TIERS_PATH.with_suffix(".tmp")
+    with open(tmp, "w") as f:
+        json.dump(tiers, f, indent=2)
+    tmp.replace(BT_TIERS_PATH)
 
 def _db_url_from_env() -> URL:
     host = os.getenv("DB_HOST")
@@ -72,6 +93,29 @@ async def get_msps():
             return [{"id": r["id"], "name": r["name"]} for r in rows]
     finally:
         engine.dispose()
+
+
+@router.get("/api/bt-tiers")
+async def get_bt_tiers():
+    """Return the persisted billing-type tier assignments for all clients."""
+    return JSONResponse(_load_bt_tiers())
+
+
+class BtTierPayload(BaseModel):
+    client_name: str
+    tier: str
+
+
+@router.post("/api/bt-tiers")
+async def set_bt_tier(payload: BtTierPayload):
+    """Persist a billing-type tier assignment for a client."""
+    if payload.tier not in ("T1", "T2", "T3"):
+        raise HTTPException(status_code=400, detail="Invalid tier. Must be T1, T2, or T3.")
+    tiers = _load_bt_tiers()
+    tiers[payload.client_name] = payload.tier
+    _save_bt_tiers(tiers)
+    return JSONResponse({"status": "ok"})
+
 
 class ProfitPayload(BaseModel):
     start_date: str
@@ -462,11 +506,13 @@ async def get_profit_data(payload: ProfitPayload):
         except (ValueError, TypeError):
             cc_fee = 0.0
 
-        # Billing type fee: 2.93% of total_bill for billing_type_id=7 clients
+        # Billing type fee: 2.93% (Tier 2 default) of total_bill for billing_type_id=7 clients
         billing_type = row.get("billing_type_id")
         try:
-            bt_fee = total_bill * 0.0293 if (pd.notna(billing_type) and int(float(billing_type)) == 7) else 0.0
+            has_bt_fee = bool(pd.notna(billing_type) and int(float(billing_type)) in (6, 7, 11))
+            bt_fee = total_bill * 0.0293 if has_bt_fee else 0.0
         except (ValueError, TypeError):
+            has_bt_fee = False
             bt_fee = 0.0
 
         commissions = 0.0
@@ -495,7 +541,8 @@ async def get_profit_data(payload: ProfitPayload):
             "wc_fee": wc_fee,
             "cc_fee": cc_fee,
             "bt_fee": bt_fee,
-            "commissions": commissions
+            "commissions": commissions,
+            "has_bt_fee": has_bt_fee
         })
 
     calc_df = df.apply(process_row, axis=1)
@@ -520,7 +567,11 @@ async def get_profit_data(payload: ProfitPayload):
         if cname not in msp_lookup or (not msp_lookup[cname] and mname):
             msp_lookup[cname] = mname if pd.notna(mname) else ""
 
-    client_group = calc_df.groupby("client_name")[["total_bill", "total_pay", "msp_fee", "wc_fee", "cc_fee", "bt_fee", "commissions"]].sum().reset_index()
+    client_group = calc_df.groupby("client_name").agg({
+        "total_bill": "sum", "total_pay": "sum", "msp_fee": "sum",
+        "wc_fee": "sum", "cc_fee": "sum", "bt_fee": "sum",
+        "commissions": "sum", "has_bt_fee": "max"
+    }).reset_index()
     client_breakdown = []
     for _, r in client_group.iterrows():
         c_bill = float(r["total_bill"])
@@ -543,7 +594,8 @@ async def get_profit_data(payload: ProfitPayload):
             "bt_fee": round(c_bt, 2),
             "commissions": round(c_commissions, 2),
             "payroll_tax": round(c_tax, 2),
-            "profit": round(c_profit, 2)
+            "profit": round(c_profit, 2),
+            "has_bt_fee": bool(r["has_bt_fee"])
         })
     
     client_breakdown.sort(key=lambda x: x["total_bill"], reverse=True)
@@ -837,7 +889,7 @@ async def get_weekly_client_data(payload: ProfitPayload):
         # Billing type fee: 2.93% of total_bill for billing_type_id=7 clients
         billing_type = row.get("billing_type_id")
         try:
-            bt_fee = total_bill * 0.0293 if (pd.notna(billing_type) and int(float(billing_type)) == 7) else 0.0
+            bt_fee = total_bill * 0.0293 if (pd.notna(billing_type) and int(float(billing_type)) in (6, 7, 11)) else 0.0
         except (ValueError, TypeError):
             bt_fee = 0.0
 
@@ -1181,7 +1233,7 @@ async def get_position_breakdown(payload: ProfitPayload):
         # Billing type fee: 2.93% of total_bill for billing_type_id=7 clients
         billing_type = row.get("billing_type_id")
         try:
-            bt_fee = total_bill * 0.0293 if (pd.notna(billing_type) and int(float(billing_type)) == 7) else 0.0
+            bt_fee = total_bill * 0.0293 if (pd.notna(billing_type) and int(float(billing_type)) in (6, 7, 11)) else 0.0
         except (ValueError, TypeError):
             bt_fee = 0.0
 
