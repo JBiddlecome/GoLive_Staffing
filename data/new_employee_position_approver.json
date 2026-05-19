@@ -71,10 +71,296 @@
       "46167"
     ],
     "2026-05-19": [
-      "46146"
+      "46146",
+      "46213"
     ]
   },
   "records": [
+    {
+      "review_id": "2026-05-19:46213",
+      "review_date": "2026-05-19",
+      "employee_id": 46213,
+      "employee_name": "Erick Garcia",
+      "first_name": "Erick",
+      "last_name": "Garcia",
+      "email": "Garcia47erick@gmail.com",
+      "phone": "310-384-6319",
+      "hire_date": "2026-05-19",
+      "rehire_date": "",
+      "resume_file": "fm9y3bhf8crhe8u1_School_Resume_Erick_Garcia.docx",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/fm9y3bhf8crhe8u1_School_Resume_Erick_Garcia.docx",
+      "status": "Recommended",
+      "recommendations": [
+        {
+          "key": "cook",
+          "label": "Cook 2",
+          "base_name": "Cook",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 1.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Worked as line cook at The Stalking Horse for about 1.5 years, assisting in high-volume kitchen operations."
+          ],
+          "position_id": 288,
+          "position_description": "Cook 1",
+          "match_found": true
+        },
+        {
+          "key": "cook",
+          "label": "Cook 2",
+          "base_name": "Cook",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 1.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Worked as line cook at The Stalking Horse for about 1.5 years, assisting in high-volume kitchen operations."
+          ],
+          "position_id": 102,
+          "position_description": "Cook 2",
+          "match_found": true
+        },
+        {
+          "key": "dishwasher",
+          "label": "Dishwasher",
+          "base_name": "Dishwasher",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 2.0,
+          "confidence": 0.9,
+          "reasons": [
+            "Performed dishwashing and kitchen utility roles at The Aster Hotel, The Stalking Horse, and other venues for over 2 years."
+          ],
+          "position_id": 105,
+          "position_description": "Dishwasher",
+          "match_found": true
+        },
+        {
+          "key": "prep_cook",
+          "label": "Prep Cook 2",
+          "base_name": "Prep Cook",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 1.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Handled food prep at Sweetgreen and assisted chefs at The Aster Hotel, totaling about 1 year."
+          ],
+          "position_id": 302,
+          "position_description": "Prep Cook 1",
+          "match_found": true
+        },
+        {
+          "key": "prep_cook",
+          "label": "Prep Cook 2",
+          "base_name": "Prep Cook",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 1.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Handled food prep at Sweetgreen and assisted chefs at The Aster Hotel, totaling about 1 year."
+          ],
+          "position_id": 110,
+          "position_description": "Prep Cook 2",
+          "match_found": true
+        },
+        {
+          "key": "utility",
+          "label": "Utility",
+          "base_name": "Utility",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 2.0,
+          "confidence": 0.9,
+          "reasons": [
+            "Worked in utility and dishwashing roles at multiple venues including Sweetgreen, The Aster Hotel, and The Stalking Horse."
+          ],
+          "position_id": 118,
+          "position_description": "Utility",
+          "match_found": true
+        }
+      ],
+      "ai_summary": {
+        "hospitality_experience_overview": "Experience in hotel dishwashing and kitchen utility, restaurant line cook, deli clerk, and salad prep roles in Los Angeles venues, including The Aster Hotel and The Stalking Horse, with additional front-of-house and food prep roles at Canter\u2019s Deli, Simply Salad, and Sweetgreen.",
+        "total_hospitality_years_estimate": 3.0,
+        "notable_venues": [
+          "The Aster Hotel",
+          "The Stalking Horse",
+          "Canter\u2019s Deli",
+          "Simply Salad",
+          "Sweetgreen"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "Experience at Sweetgreen and Simply Salad counts as hospitality experience; fast-food experience is not present, so no Level 1 fast-food experience applied."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Experience in hotel dishwashing and kitchen utility, restaurant line cook, deli clerk, and salad prep roles in Los Angeles venues, including The Aster Hotel and The Stalking Horse, with additional front-of-house and food prep roles at Canter\u2019s Deli, Simply Salad, and Sweetgreen.",
+          "total_hospitality_years_estimate": 3.0,
+          "notable_venues": [
+            "The Aster Hotel",
+            "The Stalking Horse",
+            "Canter\u2019s Deli",
+            "Simply Salad",
+            "Sweetgreen"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "Experience at Sweetgreen and Simply Salad counts as hospitality experience; fast-food experience is not present, so no Level 1 fast-food experience applied."
+        },
+        "positions": {
+          "cook": {
+            "status": "level_2",
+            "estimated_years": 1.0,
+            "confidence": 0.8,
+            "reasons": [
+              "Worked as line cook at The Stalking Horse for about 1.5 years, assisting in high-volume kitchen operations."
+            ]
+          },
+          "prep_cook": {
+            "status": "level_2",
+            "estimated_years": 1.0,
+            "confidence": 0.8,
+            "reasons": [
+              "Handled food prep at Sweetgreen and assisted chefs at The Aster Hotel, totaling about 1 year."
+            ]
+          },
+          "dishwasher": {
+            "status": "level_2",
+            "estimated_years": 2.0,
+            "confidence": 0.9,
+            "reasons": [
+              "Performed dishwashing and kitchen utility roles at The Aster Hotel, The Stalking Horse, and other venues for over 2 years."
+            ]
+          },
+          "utility": {
+            "status": "level_2",
+            "estimated_years": 2.0,
+            "confidence": 0.9,
+            "reasons": [
+              "Worked in utility and dishwashing roles at multiple venues including Sweetgreen, The Aster Hotel, and The Stalking Horse."
+            ]
+          },
+          "server": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No direct server experience listed; front-of-house roles at Canter\u2019s Deli involved customer service but not explicitly serving."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No hosting or front-of-house management experience documented."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles explicitly involving running food or similar duties."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No busser roles listed."
+            ]
+          },
+          "bartender": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No bartending experience listed."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "Assisted barbacks with liquor transport at The Aster Hotel, but this does not constitute barback experience."
+            ]
+          },
+          "cashier": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No cashier roles documented."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No pastry experience listed."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No baking roles listed."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No sushi experience listed."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No concessions experience listed."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barista experience listed."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No valet experience listed."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No supervisory experience in hospitality venues documented."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "ERICK GARCIA\ngarcia47erick@gmail.com\n310-384-6319\n\nSUMMARY\n\nHardworking and detail-oriented professional with experience in fast-paced, hands-on environments. Adept at organization, teamwork, and problem-solving. Eager to apply my skills and contribute to help grow the team and make an impact.\n\nWORK EXPERIENCE\n\nThe Aster Hotel \u2013 Los Angeles, CA\nDishwasher / Kitchen Utility (05/2025 \u2013 Present)\n\n\u2022 Check cafeteria each morning, restock utensils/plates, and transport bus bins to dish pit.\n\n\u2022 Take out trash and cardboard throughout the day to designated areas.\n\n\u2022 Assist chefs with basic ingredient preparation.\n\n\u2022 Assemble washing machines, wash dishes, maintain clean workstations.\n\n\u2022 Organize and clean walk\u2011in refrigerators; sweep and mop.\n\n\u2022 Clean fridge shelves and reassemble properly.\n\n\u2022 Stock fridges and dry storage using FIFO standards.\n\n\u2022 Assist barbacks with liquor order transport.\n\n\u2022 Collect room\u2011service trays from all floors.\n\nThe Stalking Horse - Los Angeles, CA\nLine Cook / Dishwasher (08/2023 \u2013 03/2025)\n\nMaintained cleanliness and organization in a high-volume kitchen.\n\nAssisted in event setup and front-of-house support.\n\nFollowed strict food safety and FIFO inventory standards.\n\nWorked efficiently in a fast-paced team environment.\n\nCanter\u2019s Deli - Los Angeles, CA\nFront of House / Deli Clerk (12/2021 - 02/2023)\n\nProvided excellent customer service and food recommendations.\n\nOperated deli slicers and other kitchen equipment.\n\nMaintained a clean and organized work environment.\n\nSimply Salad - Los Angeles, CA\nFront & Back of House (06/2021 - 12/2021)\n\nHandled food prep, dishwashing, and kitchen organization.\n\nAssisted in receiving and stocking deliveries.\n\nMaintained hygiene and safety standards in food handling.\n\nProvided friendly and efficient customer service.\n\nSweetgreen - Los Angeles, CA\nCold Prep / Utility Dishwasher (11/2019 - 05/2021)\n\nPrepared fresh ingredients and ensured quality control.\n\nFollowed strict sanitation and food handling procedures.\n\nOrganized and maintained kitchen stations.\n\nAssisted in dishwashing and kitchen upkeep.\n\nEDUCATION\n\nGED - Boyle Heights Tech Center (08/2013)\nLATC Ocupational Center (present)\n\nSTRENGTHS\n\nStrong work ethic and reliability\n\nFast learner who adapts quickly in busy environments\n\nExcellent organization and attention to detail\n\nTeam-oriented with great communication skills\n\nWEAKNESSES\n\nCan be overly detail-focused; learning to balance speed with precision\n\nContinuing to build confidence speaking up with new teams\n\nWorking on improving time estimates for tasks during peak hours",
+      "error": "",
+      "created_at": "2026-05-19T09:31:52-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
     {
       "review_id": "2026-05-19:46146",
       "review_date": "2026-05-19",
@@ -10642,6 +10928,6 @@
       "dismissed_reason": ""
     }
   ],
-  "last_scan_at": "2026-05-19T09:16:34-07:00",
-  "last_scan_message": "Checked 1 new employee(s); added 1 recommendation record(s)."
+  "last_scan_at": "2026-05-19T11:02:53-07:00",
+  "last_scan_message": "No new active employees with resumes found for 2026-05-19."
 }

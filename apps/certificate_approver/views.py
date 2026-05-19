@@ -293,16 +293,14 @@ Please verify the attached pages (The User Submission) according to the rules fo
 
         if file_doc is not None:
             for page_num, page in enumerate(file_doc):
-                # Use a low DPI (50) to dramatically reduce image resolution and token consumption
-                pix = page.get_pixmap(dpi=50)
+                pix = page.get_pixmap(dpi=100)
                 b64 = base64.b64encode(pix.tobytes("png")).decode('utf-8')
                 if is_pdf:
                     content.append({"type": "text", "text": f"Page {page_num + 1} of {len(file_doc)}:"})
-                # Add detail: low to ensure minimum token cost
-                content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}", "detail": "low"}})
+                content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}", "detail": "auto"}})
         else:
             # Fallback if fitz failed
-            content.append({"type": "image_url", "image_url": {"url": cert_url, "detail": "low"}})
+            content.append({"type": "image_url", "image_url": {"url": cert_url, "detail": "auto"}})
             
         content.append({"type": "text", "text": "--- END OF USER SUBMISSION ---"})
         
@@ -319,19 +317,19 @@ Please verify the attached pages (The User Submission) according to the rules fo
                     try:
                         doc = fitz.open(baseline_path)
                         for page_num, page in enumerate(doc):
-                            pix = page.get_pixmap(dpi=50)
+                            pix = page.get_pixmap(dpi=100)
                             b64 = base64.b64encode(pix.tobytes("png")).decode('utf-8')
                             content.append({"type": "text", "text": f"Baseline Page {page_num + 1}:"})
-                            content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}", "detail": "low"}})
+                            content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}", "detail": "auto"}})
                     except Exception as e:
                         print("Failed to parse PDF baseline:", e)
                 else:
                     try:
                         doc = fitz.open(baseline_path)
                         for page_num, page in enumerate(doc):
-                            pix = page.get_pixmap(dpi=50)
+                            pix = page.get_pixmap(dpi=100)
                             b64 = base64.b64encode(pix.tobytes("png")).decode('utf-8')
-                            content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}", "detail": "low"}})
+                            content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}", "detail": "auto"}})
                     except Exception as e:
                         print("Failed to parse IMAGE baseline:", e)
                 

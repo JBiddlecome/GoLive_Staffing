@@ -15,8 +15,11 @@ def create_order(data: dict, user_id: int) -> dict:
         shifts = data.get('shift_information', [])
         
         client_id = basic.get('client_id')
+        client_name = basic.get('client_name')
         venue_name = basic.get('venue_name')
-        event_name = basic.get('event_name') or venue_name
+        event_name = basic.get('event_name')
+        if not event_name or event_name == client_name:
+            event_name = venue_name
         po_number = basic.get('purchase_order', '')
         
         if not client_id or not venue_name:
@@ -106,6 +109,29 @@ def create_order(data: dict, user_id: int) -> dict:
                 event_id = res.lastrowid
                 created_event_ids.append(event_id)
                 
+                # 2.5 Pull and copy venue documents to event if visible to employees
+                vdoc_sql = text("""
+                    SELECT vd.id, vd.filename, vd.description
+                    FROM venue_document vd
+                    JOIN document_type dt ON dt.id = vd.document_type_id
+                    WHERE vd.venue_id = :venue_id
+                      AND vd.deleted_at IS NULL
+                      AND dt.visible_when IS NOT NULL
+                      AND dt.visible_when LIKE '%EMPLOYEE%'
+                """)
+                vdocs = conn.execute(vdoc_sql, {"venue_id": venue_id}).fetchall()
+                for vd in vdocs:
+                    conn.execute(text("""
+                        INSERT INTO event_document (event_id, venue_document_id, filename, description, created_by)
+                        VALUES (:event_id, :vdoc_id, :filename, :description, :user_id)
+                    """), {
+                        "event_id": event_id,
+                        "vdoc_id": vd.id,
+                        "filename": vd.filename,
+                        "description": vd.description,
+                        "user_id": user_id
+                    })
+                
                 for s in day_shifts:
                     # Resolve position_id, along with current rates (checking effective date amounts), uniform, and tools
                     pos_name = s.get('position')
@@ -126,9 +152,11 @@ def create_order(data: dict, user_id: int) -> dict:
                                 cp.del_bill_rate, 
                                 0
                             ) as bill_rate,
-                            COALESCE(vp.del_uniform, cp.del_uniform_types, '') as uniform,
+                            COALESCE(vp.del_uniform, vp.del_uniform_types, cp.del_uniform_types, '') as uniform,
                             COALESCE(vp.del_tools, '') as tools,
-                            COALESCE(vp.del_grooming_tools, '') as grooming_tools
+                            COALESCE(vp.del_grooming_tools, '') as grooming_tools,
+                            vp.venue_position_id,
+                            cp.id as client_position_id
                         FROM position p
                         LEFT JOIN client_position cp ON cp.position_id = p.position_id AND cp.client_id = :c_id
                         LEFT JOIN venue_position vp ON vp.position_id = p.position_id AND vp.venue_id = :v_id
@@ -144,7 +172,7 @@ def create_order(data: dict, user_id: int) -> dict:
                     
                     if not pos_record:
                         raise Exception(f"Position '{pos_name}' is invalid or not found.")
-                    position_id, pay_rate, bill_rate, uniform, tools, grooming = pos_record
+                    position_id, pay_rate, bill_rate, uniform, tools, grooming, venue_position_id, client_position_id = pos_record
                     
                     shift_start = f"{event_date} {s['start_time']}:00"
                     shift_end = f"{event_date} {s['end_time']}:00"
@@ -169,7 +197,7 @@ def create_order(data: dict, user_id: int) -> dict:
                         VALUES 
                         (:s_id, :p_id, :count, :rate, :rate, :b_rate, :b_rate, :uniform, :tools, :grooming)
                     """)
-                    conn.execute(sp_sql, {
+                    sp_res = conn.execute(sp_sql, {
                         "s_id": shift_id,
                         "p_id": position_id,
                         "count": s.get('staff_count', 1),
@@ -179,9 +207,297 @@ def create_order(data: dict, user_id: int) -> dict:
                         "tools": tools,
                         "grooming": grooming
                     })
+                    shift_position_id = sp_res.lastrowid
                     
-                    # Note: Grooming, Tools, Certifications, and Publishing links would go here.
-                    # We will add them in sub-phases.
+                    # 4.5.1 Copy Uniforms hierarchically (venue -> client -> position default)
+                    uniforms = []
+                    if venue_position_id:
+                        uniforms = conn.execute(text("""
+                            SELECT vpu.uniform_id, u.name 
+                            FROM venue_position_uniform vpu
+                            JOIN uniform u ON u.id = vpu.uniform_id
+                            WHERE vpu.venue_position_id = :vp_id
+                        """), {"vp_id": venue_position_id}).fetchall()
+                    
+                    if not uniforms and client_position_id:
+                        uniforms = conn.execute(text("""
+                            SELECT cpu.uniform_id, u.name 
+                            FROM client_position_uniform cpu
+                            JOIN uniform u ON u.id = cpu.uniform_id
+                            WHERE cpu.client_position_id = :cp_id
+                        """), {"cp_id": client_position_id}).fetchall()
+                        
+                    if not uniforms:
+                        uniforms = conn.execute(text("""
+                            SELECT pu.uniform_id, u.name 
+                            FROM position_uniform pu
+                            JOIN uniform u ON u.id = pu.uniform_id
+                            WHERE pu.position_id = :pos_id
+                        """), {"pos_id": position_id}).fetchall()
+                        
+                    uniform_names = []
+                    for uni in uniforms:
+                        uniform_names.append(uni.name)
+                        conn.execute(text("""
+                            INSERT INTO shift_position_uniform (shift_position_id, uniform_id, created_by)
+                            VALUES (:sp_id, :uniform_id, :user_id)
+                        """), {
+                            "sp_id": shift_position_id,
+                            "uniform_id": uni.uniform_id,
+                            "user_id": user_id
+                        })
+                    
+                    # 4.5.2 Copy Tools hierarchically (venue -> client -> position default)
+                    tools_list = []
+                    if venue_position_id:
+                        tools_list = conn.execute(text("""
+                            SELECT vpt.tool_id, t.name 
+                            FROM venue_position_tool vpt
+                            JOIN tool t ON t.id = vpt.tool_id
+                            WHERE vpt.venue_position_id = :vp_id
+                        """), {"vp_id": venue_position_id}).fetchall()
+                    
+                    if not tools_list and client_position_id:
+                        tools_list = conn.execute(text("""
+                            SELECT cpt.tool_id, t.name 
+                            FROM client_position_tool cpt
+                            JOIN tool t ON t.id = cpt.tool_id
+                            WHERE cpt.client_position_id = :cp_id
+                        """), {"cp_id": client_position_id}).fetchall()
+                        
+                    if not tools_list:
+                        tools_list = conn.execute(text("""
+                            SELECT pt.tool_id, t.name 
+                            FROM position_tool pt
+                            JOIN tool t ON t.id = pt.tool_id
+                            WHERE pt.position_id = :pos_id
+                        """), {"pos_id": position_id}).fetchall()
+                        
+                    tool_names = []
+                    for t_item in tools_list:
+                        tool_names.append(t_item.name)
+                        conn.execute(text("""
+                            INSERT INTO shift_position_tool (shift_position_id, tool_id, created_by)
+                            VALUES (:sp_id, :tool_id, :user_id)
+                        """), {
+                            "sp_id": shift_position_id,
+                            "tool_id": t_item.tool_id,
+                            "user_id": user_id
+                        })
+                        
+                    # 4.5.3 Copy Grooming Tools hierarchically (venue -> client -> position default)
+                    grooming_list = []
+                    if venue_position_id:
+                        grooming_list = conn.execute(text("""
+                            SELECT vpg.grooming_tool_id, g.name 
+                            FROM venue_position_grooming_tool vpg
+                            JOIN grooming_tool g ON g.id = vpg.grooming_tool_id
+                            WHERE vpg.venue_position_id = :vp_id
+                        """), {"vp_id": venue_position_id}).fetchall()
+                    
+                    if not grooming_list and client_position_id:
+                        grooming_list = conn.execute(text("""
+                            SELECT cpg.grooming_tool_id, g.name 
+                            FROM client_position_grooming_tool cpg
+                            JOIN grooming_tool g ON g.id = cpg.grooming_tool_id
+                            WHERE cpg.client_position_id = :cp_id
+                        """), {"cp_id": client_position_id}).fetchall()
+                        
+                    if not grooming_list:
+                        grooming_list = conn.execute(text("""
+                            SELECT pg.grooming_tool_id, g.name 
+                            FROM position_grooming_tool pg
+                            JOIN grooming_tool g ON g.id = pg.grooming_tool_id
+                            WHERE pg.position_id = :pos_id
+                        """), {"pos_id": position_id}).fetchall()
+                        
+                    grooming_names = []
+                    for g_item in grooming_list:
+                        grooming_names.append(g_item.name)
+                        conn.execute(text("""
+                            INSERT INTO shift_position_grooming_tool (shift_position_id, grooming_tool_id, created_by)
+                            VALUES (:sp_id, :grooming_tool_id, :user_id)
+                        """), {
+                            "sp_id": shift_position_id,
+                            "grooming_tool_id": g_item.grooming_tool_id,
+                            "user_id": user_id
+                        })
+                        
+                    # 4.5.4 Copy Certifications hierarchically (venue -> client -> position default)
+                    certs = []
+                    if venue_position_id:
+                        certs = conn.execute(text("""
+                            SELECT certification_id 
+                            FROM venue_position_certification 
+                            WHERE venue_position_id = :vp_id
+                        """), {"vp_id": venue_position_id}).fetchall()
+                    
+                    if not certs and client_position_id:
+                        certs = conn.execute(text("""
+                            SELECT certification_id 
+                            FROM client_position_certification 
+                            WHERE client_position_id = :cp_id
+                        """), {"cp_id": client_position_id}).fetchall()
+                        
+                    if not certs:
+                        certs = conn.execute(text("""
+                            SELECT certification_id 
+                            FROM position_certification 
+                            WHERE position_id = :pos_id
+                        """), {"pos_id": position_id}).fetchall()
+                        
+                    for cert in certs:
+                        conn.execute(text("""
+                            INSERT INTO shift_position_certification (shift_position_id, certification_id, created_by)
+                            VALUES (:sp_id, :cert_id, :user_id)
+                        """), {
+                            "sp_id": shift_position_id,
+                            "cert_id": cert.certification_id,
+                            "user_id": user_id
+                        })
+
+                    # 4.5.5 Update shift_position text fields with dynamic comma-separated summaries
+                    if uniform_names or tool_names or grooming_names:
+                        conn.execute(text("""
+                            UPDATE shift_position
+                            SET 
+                                uniform = :uniform,
+                                tools = :tools,
+                                grooming_tools = :grooming
+                            WHERE shift_position_id = :sp_id
+                        """), {
+                            "uniform": ", ".join(uniform_names) if uniform_names else "",
+                            "tools": ", ".join(tool_names) if tool_names else "",
+                            "grooming": ", ".join(grooming_names) if grooming_names else "",
+                            "sp_id": shift_position_id
+                        })
+                
+                # 5. Update Event Stat Columns to color-code event correctly in GoLive (red/gray/white)
+                update_stats_sql = text("""
+                    UPDATE event e
+                    SET 
+                        e.stat_shifts_count = (
+                            SELECT COUNT(*) 
+                            FROM shift s 
+                            WHERE s.event_id = e.event_id 
+                              AND s.deleted_at IS NULL
+                        ),
+                        e.stat_shifts_positions_count = (
+                            SELECT COALESCE(SUM(sp.count), 0)
+                            FROM shift s
+                            JOIN shift_position sp ON sp.shift_id = s.shift_id
+                            WHERE s.event_id = e.event_id
+                              AND s.deleted_at IS NULL
+                              AND sp.deleted_at IS NULL
+                        ),
+                        e.stat_shifts_filled_count = (
+                            SELECT COUNT(*)
+                            FROM shift s
+                            JOIN shift_position sp ON sp.shift_id = s.shift_id
+                            JOIN shift_employee se ON se.shift_position_id = sp.shift_position_id
+                            WHERE s.event_id = e.event_id
+                              AND s.deleted_at IS NULL
+                              AND sp.deleted_at IS NULL
+                              AND se.deleted_at IS NULL
+                        ),
+                        e.stat_shifts_filled_confirmed_count = (
+                            SELECT COUNT(*)
+                            FROM shift s
+                            JOIN shift_position sp ON sp.shift_id = s.shift_id
+                            JOIN shift_employee se ON se.shift_position_id = sp.shift_position_id
+                            WHERE s.event_id = e.event_id
+                              AND s.deleted_at IS NULL
+                              AND sp.deleted_at IS NULL
+                              AND se.deleted_at IS NULL
+                              AND se.confirmed = 1
+                        ),
+                        e.stat_employees_count = (
+                            SELECT COUNT(*)
+                            FROM shift s
+                            JOIN shift_position sp ON sp.shift_id = s.shift_id
+                            JOIN shift_employee se ON se.shift_position_id = sp.shift_position_id
+                            WHERE s.event_id = e.event_id
+                              AND s.deleted_at IS NULL
+                              AND sp.deleted_at IS NULL
+                              AND se.deleted_at IS NULL
+                        ),
+                        e.stat_employees_confirmed_count = (
+                            SELECT COUNT(*)
+                            FROM shift s
+                            JOIN shift_position sp ON sp.shift_id = s.shift_id
+                            JOIN shift_employee se ON se.shift_position_id = sp.shift_position_id
+                            WHERE s.event_id = e.event_id
+                              AND s.deleted_at IS NULL
+                              AND sp.deleted_at IS NULL
+                              AND se.deleted_at IS NULL
+                              AND se.confirmed = 1
+                        ),
+                        e.stat_filled = IF(
+                            (
+                                SELECT COALESCE(SUM(sp.count), 0) 
+                                FROM shift s 
+                                JOIN shift_position sp ON sp.shift_id = s.shift_id 
+                                WHERE s.event_id = e.event_id 
+                                  AND s.deleted_at IS NULL 
+                                  AND sp.deleted_at IS NULL
+                            ) > 0
+                            AND 
+                            (
+                                SELECT COALESCE(SUM(sp.count), 0) 
+                                FROM shift s 
+                                JOIN shift_position sp ON sp.shift_id = s.shift_id 
+                                WHERE s.event_id = e.event_id 
+                                  AND s.deleted_at IS NULL 
+                                  AND sp.deleted_at IS NULL
+                            )
+                            =
+                            (
+                                SELECT COUNT(*) 
+                                FROM shift s 
+                                JOIN shift_position sp ON sp.shift_id = s.shift_id 
+                                JOIN shift_employee se ON se.shift_position_id = sp.shift_position_id 
+                                WHERE s.event_id = e.event_id 
+                                  AND s.deleted_at IS NULL 
+                                  AND sp.deleted_at IS NULL 
+                                  AND se.deleted_at IS NULL
+                            ),
+                            1, 0
+                        ),
+                        e.stat_filled_confirmed = IF(
+                            (
+                                SELECT COALESCE(SUM(sp.count), 0) 
+                                FROM shift s 
+                                JOIN shift_position sp ON sp.shift_id = s.shift_id 
+                                WHERE s.event_id = e.event_id 
+                                  AND s.deleted_at IS NULL 
+                                  AND sp.deleted_at IS NULL
+                            ) > 0
+                            AND 
+                            (
+                                SELECT COALESCE(SUM(sp.count), 0) 
+                                FROM shift s 
+                                JOIN shift_position sp ON sp.shift_id = s.shift_id 
+                                WHERE s.event_id = e.event_id 
+                                  AND s.deleted_at IS NULL 
+                                  AND sp.deleted_at IS NULL
+                            )
+                            =
+                            (
+                                SELECT COUNT(*) 
+                                FROM shift s 
+                                JOIN shift_position sp ON sp.shift_id = s.shift_id 
+                                JOIN shift_employee se ON se.shift_position_id = sp.shift_position_id 
+                                WHERE s.event_id = e.event_id 
+                                  AND s.deleted_at IS NULL 
+                                  AND sp.deleted_at IS NULL 
+                                  AND se.deleted_at IS NULL
+                                  AND se.confirmed = 1
+                            ),
+                            1, 0
+                        )
+                    WHERE e.event_id = :event_id
+                """)
+                conn.execute(update_stats_sql, {"event_id": event_id})
 
         return {"status": "success", "event_ids": created_event_ids, "message": f"Successfully published {len(created_event_ids)} events."}
 
