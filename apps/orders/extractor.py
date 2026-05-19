@@ -24,6 +24,11 @@ Return ONLY a valid JSON object matching this exact schema:
         "client_id": "integer (From client context)",
         "event_name": "string (The title of the event, default to the venue name, e.g. 'Convention Center', if not specified. NEVER default to the client name.)",
         "venue_name": "string (The location. Predict based on client context if missing, but if completely ambiguous or multiple venues exist, leave it EMPTY string so the UI can flag it)",
+        "event_address1": "string (The physical street address of the event if explicitly provided, otherwise leave EMPTY string)",
+        "event_address2": "string (The suite, unit, or apartment number if explicitly provided, e.g., 'Suite 100', otherwise leave EMPTY string)",
+        "event_city": "string (The city of the event if explicitly provided, otherwise leave EMPTY string)",
+        "event_state": "string (The 2-letter state abbreviation if explicitly provided, otherwise leave EMPTY string)",
+        "event_zip": "string (The zip code if explicitly provided, otherwise leave EMPTY string)",
         "purchase_order": "string (If specified)"
     },
     "shift_information": [
