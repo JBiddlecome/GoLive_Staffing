@@ -56,16 +56,16 @@ def build_client_kb(client_id: int) -> dict:
             ]
             
             # 4. Preferred Employees
-            # type 1 = Preferred, type 2 = Priority (from exclusive table)
+            # Existence in exclusive table means preferred
             emp_sql = text("""
-                SELECT ex.type, e.employee_id, CONCAT(e.first_name, ' ', e.last_name) as name
+                SELECT e.employee_id, CONCAT(e.first_name, ' ', e.last_name) as name
                 FROM exclusive ex
                 JOIN employee e ON e.employee_id = ex.employee_id
                 WHERE ex.client_id = :client_id AND e.status = 1
             """)
             employees = conn.execute(emp_sql, {"client_id": client_id}).fetchall()
             preferred_employees = [
-                {"employee_id": e.employee_id, "name": e.name, "type": "Preferred" if e.type == 1 else "Priority"}
+                {"employee_id": e.employee_id, "name": e.name, "type": "Preferred"}
                 for e in employees
             ]
             

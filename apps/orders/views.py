@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from .extractor import ai_extract_order
 from .knowledge_base import build_client_kb
+from .db_operations import create_order
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -48,3 +49,18 @@ async def extract_order(request: Request):
         return JSONResponse({"status": "error", "message": "Failed to extract order data."}, status_code=500)
     
     return JSONResponse({"status": "success", "data": extracted_data})
+
+@router.post("/publish")
+async def publish_order(request: Request):
+    user = request.session.get("user")
+    if not user:
+        return JSONResponse({"status": "error", "message": "Unauthorized."}, status_code=401)
+        
+    data = await request.json()
+    # Execute the insertion logic
+    result = create_order(data, user.get('id', 1))
+    
+    if result.get("status") == "error":
+        return JSONResponse(result, status_code=400)
+        
+    return JSONResponse(result)
