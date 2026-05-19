@@ -871,6 +871,68 @@
         }
     });
 
+    function updateSummaryTotals(animate) {
+        if (!allClientBreakdown.length) return;
+        let total_bill = 0, gross_pay = 0, msp_fee = 0, wc_fee = 0, cc_fee = 0, bt_fee = 0, commissions = 0, payroll_tax = 0;
+        allClientBreakdown.forEach(c => {
+            total_bill    += c.total_bill;
+            gross_pay     += c.gross_pay;
+            msp_fee       += c.msp_fee;
+            wc_fee        += c.wc_fee;
+            cc_fee        += c.cc_fee;
+            commissions   += c.commissions;
+            payroll_tax   += c.payroll_tax;
+            bt_fee += c.has_bt_fee
+                ? c.total_bill * tierRates[clientTiers[c.client_name] || 'T2']
+                : c.bt_fee;
+        });
+        const profit = total_bill - gross_pay - msp_fee - wc_fee - cc_fee - bt_fee - commissions - payroll_tax - globalOtherWork;
+
+        setContent('valTotalBill',    formatCurrency(total_bill));
+        setContent('valGrossPay',     formatCurrency(gross_pay));
+        setContent('valMspFee',       formatCurrency(msp_fee));
+        setContent('valWcFee',        formatCurrency(wc_fee));
+        setContent('valCcFee',        formatCurrency(cc_fee));
+        setContent('valBtFee',        formatCurrency(bt_fee));
+        setContent('valCommissions',  formatCurrency(commissions));
+        setContent('valPayrollTax',   formatCurrency(payroll_tax));
+        setContent('valOtherWork',    formatCurrency(globalOtherWork));
+        setContent('valProfit',       formatCurrency(profit));
+
+        const pctGross = formatPercent(gross_pay,       total_bill);
+        const pctMsp   = formatPercent(msp_fee,         total_bill);
+        const pctWc    = formatPercent(wc_fee,          total_bill);
+        const pctCc    = formatPercent(cc_fee,          total_bill);
+        const pctBt    = formatPercent(bt_fee,          total_bill);
+        const pctComm  = formatPercent(commissions,     total_bill);
+        const pctTax   = formatPercent(payroll_tax,     total_bill);
+        const pctOther = formatPercent(globalOtherWork, total_bill);
+        const pctProfit= formatPercent(profit,          total_bill);
+
+        setContent('pctGrossPay',    pctGross);
+        setContent('pctMspFee',      pctMsp);
+        setContent('pctWcFee',       pctWc);
+        setContent('pctCcFee',       pctCc);
+        setContent('pctBtFee',       pctBt);
+        setContent('pctCommissions', pctComm);
+        setContent('pctPayrollTax',  pctTax);
+        setContent('pctOtherWork',   pctOther);
+        setContent('pctProfit',      pctProfit);
+
+        const applyBars = () => {
+            setWidth('barGross',       pctGross);
+            setWidth('barMsp',         pctMsp);
+            setWidth('barWc',          pctWc);
+            setWidth('barCc',          pctCc);
+            setWidth('barBt',          pctBt);
+            setWidth('barCommissions', pctComm);
+            setWidth('barTax',         pctTax);
+            setWidth('barOther',       pctOther);
+            setWidth('barProfit',      pctProfit);
+        };
+        if (animate) setTimeout(applyBars, 100); else applyBars();
+    }
+
     function showTierPopover(clientName, anchorEl) {
         const popover = document.getElementById('btTierPopover');
         popover.dataset.clientName = clientName;
@@ -894,6 +956,7 @@
         const clientName = popover.dataset.clientName;
         clientTiers[clientName] = tier;
         hideTierPopover();
+        updateSummaryTotals(false);
         renderClientTable();
         fetch('/profit-tracker/api/bt-tiers', {
             method: 'POST',
@@ -1162,50 +1225,6 @@
                 });
             }
 
-            const total = data.total_bill;
-
-            setContent('valTotalBill', formatCurrency(data.total_bill));
-            setContent('valGrossPay', formatCurrency(data.gross_pay));
-            setContent('valMspFee', formatCurrency(data.msp_fee));
-            setContent('valWcFee', formatCurrency(data.wc_fee));
-            setContent('valCcFee', formatCurrency(data.cc_fee));
-            setContent('valBtFee', formatCurrency(data.bt_fee));
-            setContent('valCommissions', formatCurrency(data.commissions));
-            setContent('valPayrollTax', formatCurrency(data.payroll_tax));
-            setContent('valOtherWork', formatCurrency(data.other_work));
-            setContent('valProfit', formatCurrency(data.profit));
-
-            const pctGross = formatPercent(data.gross_pay, total);
-            const pctMsp = formatPercent(data.msp_fee, total);
-            const pctWc = formatPercent(data.wc_fee, total);
-            const pctCc = formatPercent(data.cc_fee, total);
-            const pctBt = formatPercent(data.bt_fee, total);
-            const pctCommissions = formatPercent(data.commissions, total);
-            const pctTax = formatPercent(data.payroll_tax, total);
-            const pctOther = formatPercent(data.other_work, total);
-            const pctProfit = formatPercent(data.profit, total);
-
-            setContent('pctGrossPay', pctGross);
-            setContent('pctMspFee', pctMsp);
-            setContent('pctWcFee', pctWc);
-            setContent('pctCcFee', pctCc);
-            setContent('pctBtFee', pctBt);
-            setContent('pctCommissions', pctCommissions);
-            setContent('pctPayrollTax', pctTax);
-            setContent('pctOtherWork', pctOther);
-            setContent('pctProfit', pctProfit);
-
-            setTimeout(() => {
-                setWidth('barGross', pctGross);
-                setWidth('barMsp', pctMsp);
-                setWidth('barWc', pctWc);
-                setWidth('barCc', pctCc);
-                setWidth('barBt', pctBt);
-                setWidth('barCommissions', pctCommissions);
-                setWidth('barTax', pctTax);
-                setWidth('barOther', pctOther);
-                setWidth('barProfit', pctProfit);
-            }, 100);
 
             // Client select dropdown
             const clientSelect = document.getElementById('clientSelect');
@@ -1237,6 +1256,7 @@
             // Store and render table
             allClientBreakdown = data.client_breakdown || [];
             globalOtherWork = data.other_work || 0;
+            updateSummaryTotals(true);
             renderClientTable();
 
             document.getElementById('loader').style.display = 'none';

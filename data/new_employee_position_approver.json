@@ -69,9 +69,231 @@
       "46135",
       "46163",
       "46167"
+    ],
+    "2026-05-19": [
+      "46146"
     ]
   },
   "records": [
+    {
+      "review_id": "2026-05-19:46146",
+      "review_date": "2026-05-19",
+      "employee_id": 46146,
+      "employee_name": "Jesus Angeles",
+      "first_name": "Jesus",
+      "last_name": "Angeles",
+      "email": "Jesus.angeles0928@gmail.com",
+      "phone": "626-601-9751",
+      "hire_date": "2026-05-19",
+      "rehire_date": "",
+      "resume_file": "tus3suxlp7bvlcpv_cook_%20butcher_%20server%20Resume.pdf",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/tus3suxlp7bvlcpv_cook_%2520butcher_%2520server%2520Resume.pdf",
+      "status": "Recommended",
+      "recommendations": [
+        {
+          "key": "server",
+          "label": "Server 2",
+          "base_name": "Server",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 1.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Shift manager role involved guest interaction and serving tables at Jasmine Mediterranean."
+          ],
+          "position_id": 285,
+          "position_description": "Server 1",
+          "match_found": true
+        },
+        {
+          "key": "server",
+          "label": "Server 2",
+          "base_name": "Server",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 1.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Shift manager role involved guest interaction and serving tables at Jasmine Mediterranean."
+          ],
+          "position_id": 115,
+          "position_description": "Server 2",
+          "match_found": true
+        }
+      ],
+      "ai_summary": {
+        "hospitality_experience_overview": "Experience includes food service, restaurant, butcher, and shift management roles, with some supervisory and guest service duties.",
+        "total_hospitality_years_estimate": 3.0,
+        "notable_venues": [
+          "88 Korean BBQ",
+          "Jasmine Mediterranean"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "No fast-food experience; roles are primarily in casual dining and food service, with some supervisory experience."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Experience includes food service, restaurant, butcher, and shift management roles, with some supervisory and guest service duties.",
+          "total_hospitality_years_estimate": 3.0,
+          "notable_venues": [
+            "88 Korean BBQ",
+            "Jasmine Mediterranean"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "No fast-food experience; roles are primarily in casual dining and food service, with some supervisory experience."
+        },
+        "positions": {
+          "cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No roles explicitly as cook or in a professional kitchen; butcher role involved food prep but not as a cook."
+            ]
+          },
+          "prep_cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No specific prep cook experience mentioned."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No dishwasher or cleaning staff roles specified."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No roles identified as utility staff."
+            ]
+          },
+          "server": {
+            "status": "level_2",
+            "estimated_years": 1.0,
+            "confidence": 0.8,
+            "reasons": [
+              "Shift manager role involved guest interaction and serving tables at Jasmine Mediterranean."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No hosting experience mentioned."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No runner roles specified."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No busser roles specified."
+            ]
+          },
+          "bartender": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No bartender experience."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No barback experience."
+            ]
+          },
+          "cashier": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No cashier roles specified."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No pastry experience."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No baking experience."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No sushi experience."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No concessions experience."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No barista experience."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No valet experience."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No supervisory experience in hotel, food & beverage, or hospital industry."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "11/2018\n01/2021 - 12/2024\n05/2022 - 07/2024\n08/2017 - 01/2021Education\nRowland high school\nchild development \u2022 Rowland Heights, CA\nSkills\nFood service, Restaurant experience, Bilingual, Tim e m anagem ent, Com m unication skills, English, Guest services,\nCustom er service\nExperience\nstride logistics\nsupervisor \u2022 La Puente, CA\nensured productivity, reports any dam age products re count and re lable and supervise other workers and ensured\nen\ufb01cency from  m oning to close and have to lock up facility also an certi\ufb01ed to drive all 4 types of forklifts\n88 Korean BBQ\nbutcher \u2022 Rowland Heights, CA\nwas responsible for ensuring dishes com e out with cleanlyness and ensured the food was spectacular for the costom ers\neverything sanitary and we we had to shape cones for our m eats to m ake them  look higher quality \u00a0\njasmine Mediterranean\nShift Manager \u2022 Rowland Heights, CA\nwas responible for serving tables preping condim ents and com unicating with costom ers and kept everything clean for next\nday usage and preped for next days sales and counts up all the sales of the day\u00a0jesus angeles\nRowland Heights, CA\njesus.angeles0928@ gm ial.com\n16265023757",
+      "error": "",
+      "created_at": "2026-05-19T09:16:33-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
     {
       "review_id": "2026-05-18:46096",
       "review_date": "2026-05-18",
@@ -10420,6 +10642,6 @@
       "dismissed_reason": ""
     }
   ],
-  "last_scan_at": "2026-05-18T18:04:17-07:00",
-  "last_scan_message": "No new active employees with resumes found for 2026-05-18."
+  "last_scan_at": "2026-05-19T09:16:34-07:00",
+  "last_scan_message": "Checked 1 new employee(s); added 1 recommendation record(s)."
 }
