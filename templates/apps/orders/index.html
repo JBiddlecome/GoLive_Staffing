@@ -91,8 +91,8 @@
                     </div>
                 </div>
 
-                <div class="pt-4 border-t border-slate-200 flex justify-end">
-                    <button class="px-6 py-2.5 rounded-xl bg-slate-900 text-white font-medium hover:bg-slate-800 transition-colors shadow-md">
+                <div id="confirmBtnContainer" class="pt-4 border-t border-slate-200 flex justify-end hidden">
+                    <button id="confirmBtn" class="px-6 py-2.5 rounded-xl bg-slate-900 text-white font-medium hover:bg-slate-800 transition-colors shadow-md">
                         Confirm & Push to GoLive
                     </button>
                 </div>
@@ -144,22 +144,23 @@
         }
     });
 
-    function renderField(value, placeholder, isRequired = false) {
+    function renderField(value, placeholder, isRequired = false, idStr = "", classStr = "") {
+        const idAttr = idStr ? `id="${idStr}"` : '';
         if (!value && isRequired) {
-            return `<input type="text" class="w-full text-sm border border-red-300 bg-red-50 text-red-900 rounded-md p-1 focus:ring-red-500 focus:border-red-500 placeholder-red-300" placeholder="${placeholder} (Required)">`;
+            return `<input type="text" ${idAttr} class="${classStr} w-full text-sm border border-red-300 bg-red-50 text-red-900 rounded-md p-1 focus:ring-red-500 focus:border-red-500 placeholder-red-300" placeholder="${placeholder} (Required)">`;
         } else if (!value) {
-            return `<input type="text" class="w-full text-sm border border-slate-200 rounded-md p-1 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-300" placeholder="${placeholder}">`;
+            return `<input type="text" ${idAttr} class="${classStr} w-full text-sm border border-slate-200 rounded-md p-1 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-300" placeholder="${placeholder}">`;
         }
-        return `<input type="text" class="w-full text-sm border-transparent bg-transparent hover:border-slate-200 focus:border-emerald-500 focus:bg-white rounded-md p-1 transition-colors" value="${value}">`;
+        return `<input type="text" ${idAttr} class="${classStr} w-full text-sm border-transparent bg-transparent hover:border-slate-200 focus:border-emerald-500 focus:bg-white rounded-md p-1 transition-colors" value="${value}">`;
     }
 
     function renderResults(data) {
         const basic = data.basic_information || {};
         
-        document.getElementById('resClient').innerHTML = renderField(basic.client_name, "Client Name", true);
-        document.getElementById('resEvent').innerHTML = renderField(basic.event_name, "Event Name");
+        document.getElementById('resClient').innerHTML = renderField(basic.client_name, "Client Name", true, "field-client_name") + `<input type="hidden" id="field-client_id" value="${basic.client_id || ''}">`;
+        document.getElementById('resEvent').innerHTML = renderField(basic.event_name, "Event Name", false, "field-event_name");
         // Removed global date: document.getElementById('resDate').innerHTML = renderField(basic.date, "Date (YYYY-MM-DD)", true);
-        document.getElementById('resVenue').innerHTML = renderField(basic.venue_name, "Venue Address", true);
+        document.getElementById('resVenue').innerHTML = renderField(basic.venue_name, "Venue Address", true, "field-venue_name");
 
         const shiftsContainer = document.getElementById('shiftsContainer');
         shiftsContainer.innerHTML = '';
@@ -176,7 +177,8 @@
             const certs = Array.isArray(details.certifications) ? details.certifications.join(', ') : '';
             
             const shiftEl = document.createElement('div');
-            shiftEl.className = 'border border-slate-200 rounded-xl overflow-hidden';
+            shiftEl.className = 'border border-slate-200 rounded-xl overflow-hidden shift-row-data';
+            shiftEl.dataset.count = shift.staff_count || 1;
             shiftEl.innerHTML = `
                 <div class="bg-slate-50 p-4 flex justify-between items-center cursor-pointer hover:bg-slate-100 transition-colors" onclick="this.nextElementSibling.classList.toggle('hidden')">
                     <div class="flex items-center gap-4 flex-1 mr-4">
@@ -184,12 +186,12 @@
                             ${shift.staff_count || '?'}x
                         </div>
                         <div class="flex-1 grid grid-cols-3 gap-2">
-                            <div>${renderField(shift.date, "Date (YYYY-MM-DD)", true)}</div>
-                            <div>${renderField(shift.position, "Position", true)}</div>
-                            <div class="flex items-center gap-2">
-                                ${renderField(shift.start_time, "Start", true)}
+                            <div onclick="event.stopPropagation()">${renderField(shift.date, "Date (YYYY-MM-DD)", true, "", "field-date")}</div>
+                            <div onclick="event.stopPropagation()">${renderField(shift.position, "Position", true, "", "field-position")}</div>
+                            <div class="flex items-center gap-2" onclick="event.stopPropagation()">
+                                ${renderField(shift.start_time, "Start", true, "", "field-start")}
                                 <span class="text-slate-400">to</span>
-                                ${renderField(shift.end_time, "End", true)}
+                                ${renderField(shift.end_time, "End", true, "", "field-end")}
                             </div>
                         </div>
                     </div>
@@ -219,7 +221,64 @@
             `;
             shiftsContainer.appendChild(shiftEl);
         });
+        
+        // Show confirm button
+        document.getElementById('confirmBtnContainer').classList.remove('hidden');
     }
+
+    document.getElementById('confirmBtn').addEventListener('click', async () => {
+        // Collect the final values from the inputs
+        const btn = document.getElementById('confirmBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = 'Publishing...';
+        btn.disabled = true;
+
+        const dataToSubmit = {
+            basic_information: {
+                client_id: document.getElementById('field-client_id').value,
+                client_name: document.getElementById('field-client_name').value,
+                event_name: document.getElementById('field-event_name').value,
+                venue_name: document.getElementById('field-venue_name').value
+            },
+            shift_information: []
+        };
+
+        const shiftElements = document.querySelectorAll('.shift-row-data');
+        shiftElements.forEach(el => {
+            dataToSubmit.shift_information.push({
+                date: el.querySelector('.field-date').value,
+                position: el.querySelector('.field-position').value,
+                start_time: el.querySelector('.field-start').value,
+                end_time: el.querySelector('.field-end').value,
+                staff_count: el.dataset.count
+            });
+        });
+
+        try {
+            const response = await fetch('/orders/publish', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dataToSubmit)
+            });
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                alert(result.message);
+                // Reset UI
+                resultsState.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                orderInput.value = '';
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('A network error occurred.');
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    });
 
     // Basic Web Speech API mock/setup
     const micBtn = document.getElementById('micBtn');
