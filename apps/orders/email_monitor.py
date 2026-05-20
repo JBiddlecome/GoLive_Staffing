@@ -11,18 +11,18 @@ from apps.orders.knowledge_base import detect_client_from_text, build_client_kb
 
 _STATE_FILE = Path("data/orders_inbox.json")
 PT = ZoneInfo("America/Los_Angeles")
-TARGET_MAILBOX = "jake@golivestaffing.com"
+TARGET_MAILBOXES = ["jake@golivestaffing.com", "michael@culinarystaffing.com", "marlen@culinarystaffing.com"]
 
 # The schema for the AI classifier
 CLASSIFICATION_PROMPT = """You are an email analyzer for a staffing agency.
-Read the email subject and body. Determine if this email contains a NEW staffing order/request for staff, or if it is an UPDATE to an existing order.
+Read the email subject and body. Determine if this email contains a NEW staffing order/request for staff, or if it is an UPDATE to an existing order (such as adding a shift, removing a shift, or updating/changing shifts).
 Return ONLY valid JSON matching this schema:
 {
     "is_order": boolean,
     "is_update": boolean,
     "confidence": float (0.0 to 1.0)
 }
-If it is neither an order nor an update, set both to false.
+If it is neither a new order nor an update/change to an order, set both to false.
 """
 
 def _load_state() -> dict:
@@ -68,16 +68,19 @@ def _get_access_token() -> str | None:
         print(f"[Orders Email Monitor] Token fetch failed: {e}")
         return None
 
-def _fetch_recent_messages(token: str) -> list[dict]:
+def _fetch_recent_messages(token: str, mailbox: str) -> list[dict]:
     cutoff_utc = (datetime.now(timezone.utc) - timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
     url = (
-        f"https://graph.microsoft.com/v1.0/users/{TARGET_MAILBOX}/mailFolders/inbox/messages"
+        f"https://graph.microsoft.com/v1.0/users/{mailbox}/mailFolders/inbox/messages"
         f"?$filter=receivedDateTime ge {cutoff_utc}"
         f"&$select=id,subject,from,receivedDateTime,bodyPreview,body"
         f"&$top=50"
         f"&$orderby=receivedDateTime desc"
     )
-    headers = {"Authorization": f"Bearer {token}"}
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Prefer": 'outlook.body-content-type="text"'
+    }
     try:
         r = requests.get(url, headers=headers, timeout=20)
         r.raise_for_status()
@@ -108,8 +111,7 @@ async def classify_email(subject: str, body: str) -> dict:
 async def email_monitoring_loop():
     await asyncio.sleep(10) # Wait for startup
     if os.getenv("RENDER", "").lower() != "true":
-        print("[Orders Email Monitor] Local environment detected. Skipping loop to avoid duplicates.")
-        return
+        print("[Orders Email Monitor] Local environment detected. Running monitor locally.")
 
     print("[Orders Email Monitor] Started.")
 
@@ -121,46 +123,53 @@ async def email_monitoring_loop():
             
             token = _get_access_token()
             if token:
-                messages = _fetch_recent_messages(token)
-                for msg in messages:
-                    msg_id = msg.get("id")
-                    if not msg_id or msg_id in processed_ids:
-                        continue
-                        
-                    sender_email = msg.get("from", {}).get("emailAddress", {}).get("address", "").lower()
-                    sender_name = msg.get("from", {}).get("emailAddress", {}).get("name", "Unknown")
-                    subject = msg.get("subject", "(no subject)")
-                    body_preview = msg.get("bodyPreview", "")
-                    body_content = msg.get("body", {}).get("content", "")
-                    received = msg.get("receivedDateTime", "")
-                    
-                    # See if this sender matches an active client
-                    client_id = detect_client_from_text(sender_email)
-                    if client_id:
-                        # Call AI to classify if it's an order
-                        classification = await classify_email(subject, body_content)
-                        if classification.get("is_order") or classification.get("is_update"):
-                            # Get client info to save name
-                            kb = build_client_kb(client_id)
-                            client_name = kb.get("name", "Unknown Client")
+                for mailbox in TARGET_MAILBOXES:
+                    messages = _fetch_recent_messages(token, mailbox)
+                    for msg in messages:
+                        msg_id = msg.get("id")
+                        if not msg_id or msg_id in processed_ids:
+                            continue
                             
-                            new_ticket = {
-                                "id": msg_id,
-                                "client_id": client_id,
-                                "client_name": client_name,
-                                "sender_name": sender_name,
-                                "sender_email": sender_email,
-                                "subject": subject,
-                                "preview": body_preview,
-                                "body": body_content,
-                                "received": received,
-                                "is_update": classification.get("is_update", False)
-                            }
-                            pending_tickets.append(new_ticket)
-                            print(f"[Orders Email Monitor] Added new ticket for {client_name} from {sender_email}")
-                    
-                    # Always mark as processed so we don't hit the DB/AI for it again
-                    processed_ids.append(msg_id)
+                        sender_email = msg.get("from", {}).get("emailAddress", {}).get("address", "").lower()
+                        sender_name = msg.get("from", {}).get("emailAddress", {}).get("name", "Unknown")
+                        subject = msg.get("subject", "(no subject)")
+                        body_preview = msg.get("bodyPreview", "")
+                        body_content = msg.get("body", {}).get("content", "")
+                        received = msg.get("receivedDateTime", "")
+                        
+                        ignored_emails = {"michael@culinarystaffing.com", "marlen@culinarystaffing.com", "jake@golivestaffing.com"}
+                        if sender_email in ignored_emails:
+                            processed_ids.append(msg_id)
+                            continue
+                        
+                        # See if this sender matches an active client
+                        client_id = detect_client_from_text(sender_email)
+                        if client_id:
+                            # Call AI to classify if it's an order
+                            classification = await classify_email(subject, body_content)
+                            if classification.get("is_order") or classification.get("is_update"):
+                                # Get client info to save name
+                                kb = build_client_kb(client_id)
+                                client_name = kb.get("name", "Unknown Client")
+                                
+                                new_ticket = {
+                                    "id": msg_id,
+                                    "account": mailbox,
+                                    "client_id": client_id,
+                                    "client_name": client_name,
+                                    "sender_name": sender_name,
+                                    "sender_email": sender_email,
+                                    "subject": subject,
+                                    "preview": body_preview,
+                                    "body": body_content,
+                                    "received": received,
+                                    "is_update": classification.get("is_update", False)
+                                }
+                                pending_tickets.append(new_ticket)
+                                print(f"[Orders Email Monitor] Added new ticket for {client_name} from {sender_email} (Account: {mailbox})")
+                        
+                        # Always mark as processed so we don't hit the DB/AI for it again
+                        processed_ids.append(msg_id)
             
             # Trim processed_ids to keep file small (last 1000)
             if len(processed_ids) > 1000:

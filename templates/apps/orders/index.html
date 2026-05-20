@@ -13,25 +13,7 @@
     </div>
 
     <!-- Main Grid -->
-    <div class="grid lg:grid-cols-[25%_35%_40%] gap-6 relative z-10">
-        
-        <!-- Inbox Section -->
-        <div class="glass-card rounded-3xl p-6 border border-white/40 shadow-2xl bg-white/60 backdrop-blur-xl relative flex flex-col max-h-[800px]">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-semibold text-slate-800 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                    Email Inbox
-                </h2>
-                <span id="inboxCount" class="bg-indigo-100 text-indigo-800 text-xs font-bold px-2.5 py-0.5 rounded-full">0</span>
-            </div>
-            
-            <div id="inboxList" class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-                <!-- Inbox items will be injected here -->
-                <div class="text-center py-8 text-slate-500 text-sm">
-                    Checking for emails...
-                </div>
-            </div>
-        </div>
+    <div class="grid lg:grid-cols-[40%_60%] gap-8 relative z-10">
         
         <!-- Input Section -->
         <div class="glass-card rounded-3xl p-6 md:p-8 border border-white/40 shadow-2xl bg-white/60 backdrop-blur-xl relative overflow-hidden transition-all duration-300 hover:shadow-emerald-900/5">
@@ -152,6 +134,33 @@
                 </div>
             </div>
             
+        </div>
+    </div>
+
+    <!-- Inbox Section Below -->
+    <div class="glass-card rounded-3xl p-6 md:p-8 border border-white/40 shadow-2xl bg-white/60 backdrop-blur-xl relative z-10 mt-8">
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+            <h2 class="text-2xl font-semibold text-slate-800 flex items-center gap-2">
+                <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                Email Inbox
+            </h2>
+            <div class="flex items-center gap-3 bg-white/50 px-3 py-1.5 rounded-full border border-slate-200">
+                <label for="inboxAccountFilter" class="text-sm text-slate-500 font-medium">Filter:</label>
+                <select id="inboxAccountFilter" onchange="renderFilteredInbox()" class="text-sm bg-transparent border-none text-slate-700 font-semibold focus:ring-0 cursor-pointer">
+                    <option value="all">All Accounts</option>
+                    <option value="jake@golivestaffing.com">jake@golivestaffing.com</option>
+                    <option value="michael@culinarystaffing.com">michael@culinarystaffing.com</option>
+                    <option value="marlen@culinarystaffing.com">marlen@culinarystaffing.com</option>
+                </select>
+                <span id="inboxCount" class="bg-indigo-100 text-indigo-800 text-xs font-bold px-2.5 py-0.5 rounded-full">0</span>
+            </div>
+        </div>
+        
+        <div id="inboxList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+            <!-- Inbox items will be injected here -->
+            <div class="col-span-full text-center py-12 text-slate-500">
+                Checking for emails...
+            </div>
         </div>
     </div>
 </div>
@@ -568,24 +577,32 @@
     }
 
     // --- Inbox Logic ---
+    let allInboxTickets = [];
+    
     async function fetchInbox() {
         try {
             const res = await fetch('/orders/inbox');
             const data = await res.json();
             if (data.status === 'success') {
-                renderInbox(data.data);
+                allInboxTickets = data.data;
+                renderFilteredInbox();
             }
         } catch (err) {
             console.error("Failed to fetch inbox", err);
         }
     }
 
-    function renderInbox(tickets) {
+    window.renderFilteredInbox = function() {
+        const filterVal = document.getElementById('inboxAccountFilter').value;
+        const tickets = filterVal === 'all' 
+            ? allInboxTickets 
+            : allInboxTickets.filter(t => t.account === filterVal);
+            
         const inboxList = document.getElementById('inboxList');
         document.getElementById('inboxCount').textContent = tickets.length;
         
         if (tickets.length === 0) {
-            inboxList.innerHTML = `<div class="text-center py-8 text-slate-500 text-sm">No pending emails found.</div>`;
+            inboxList.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500">No pending emails found.</div>`;
             return;
         }
 
@@ -595,24 +612,29 @@
             const isUpdateHtml = t.is_update ? `<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Update</span>` : `<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">New</span>`;
             
             // store raw ticket in data attr
-            const escBody = t.body.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-            const escSub = t.subject.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            const escBody = t.body.replace(/\\/g, '\\\\').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+            const escSub = t.subject.replace(/\\/g, '\\\\').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
             
             return `
-            <div class="bg-white rounded-xl p-4 border border-slate-100 shadow-sm hover:shadow-md transition-shadow relative group">
-                <div class="flex justify-between items-start mb-1">
-                    <span class="text-xs font-semibold text-slate-500">${t.client_name}</span>
-                    <span class="text-[10px] text-slate-400">${dateStr} ${timeStr}</span>
+            <div class="bg-white/80 rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow relative flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <div class="text-xs font-semibold text-slate-700">${t.client_name}</div>
+                            <div class="text-[10px] text-slate-400 font-medium">via ${t.account.split('@')[0]}</div>
+                        </div>
+                        <span class="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">${dateStr} ${timeStr}</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-slate-800 leading-tight mb-2 line-clamp-2">${t.subject}</h3>
+                    <p class="text-xs text-slate-500 line-clamp-3 mb-4">${t.preview}</p>
                 </div>
-                <h3 class="text-sm font-bold text-slate-800 leading-tight mb-1 truncate">${t.subject}</h3>
-                <p class="text-xs text-slate-500 line-clamp-2 mb-3">${t.preview}</p>
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between mt-auto pt-3 border-t border-slate-100">
                     ${isUpdateHtml}
                     <div class="flex gap-2">
-                        <button onclick="dismissTicket('${t.id}')" class="text-slate-400 hover:text-red-500 transition-colors p-1" title="Dismiss">
+                        <button onclick="dismissTicket('${t.id}')" class="text-slate-400 hover:text-red-500 transition-colors p-1.5 rounded-md hover:bg-red-50" title="Dismiss">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
-                        <button onclick="processTicket('${t.client_id}', '${escSub}', '${escBody}', '${t.id}')" class="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-3 py-1 text-xs font-bold rounded-lg transition-colors">
+                        <button onclick="processTicket('${t.client_id}', '${escSub}', '${escBody}', '${t.id}')" class="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-4 py-1.5 text-xs font-bold rounded-lg transition-colors">
                             Process
                         </button>
                     </div>
