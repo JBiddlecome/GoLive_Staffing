@@ -88,6 +88,7 @@ from apps.certificate_approver.scheduler import certificate_approval_loop
 from apps.reports.scheduler import google_spruce_goose_report_loop
 from apps.new_employee_position_approver.scheduler import new_employee_position_approver_loop
 from apps.client_notifications.scheduler import client_notifications_loop
+from apps.orders.email_monitor import email_monitoring_loop
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -103,6 +104,7 @@ async def lifespan(app: FastAPI):
     google_report_task = asyncio.create_task(google_spruce_goose_report_loop())
     nepa_task = asyncio.create_task(new_employee_position_approver_loop())
     cn_task = asyncio.create_task(client_notifications_loop())
+    orders_email_task = asyncio.create_task(email_monitoring_loop())
     yield
     monitor_task.cancel()
     cc_monitor_task.cancel()
@@ -116,6 +118,7 @@ async def lifespan(app: FastAPI):
     google_report_task.cancel()
     nepa_task.cancel()
     cn_task.cancel()
+    orders_email_task.cancel()
 
 app = FastAPI(title="GoLive Staffing — Tools", lifespan=lifespan)
 

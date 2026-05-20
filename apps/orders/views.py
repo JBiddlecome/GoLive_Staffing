@@ -2,8 +2,11 @@ from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from .extractor import ai_extract_order
-from .knowledge_base import build_client_kb
+from .knowledge_base import build_client_kb, detect_client_from_text, get_active_clients
 from .db_operations import create_order
+from .email_monitor import _load_state, _save_state
+from sqlalchemy import text
+from apps.position_requests.scheduler import _engine
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -36,19 +39,32 @@ async def index(request: Request):
 async def extract_order(request: Request):
     data = await request.json()
     text = data.get('text', '')
+    client_id = data.get('client_id')
     
-    # In the future, this will call the LLM API (e.g. Gemini/OpenAI with STAND_ALONE key)
-    # For now, return a mocked structure to show the user the categories.
+    # If client_id is not explicitly provided, try to detect from text
+    if not client_id:
+        client_id = detect_client_from_text(text)
+        
+    if not client_id:
+        active_clients = get_active_clients()
+        return JSONResponse({
+            "status": "error", 
+            "message": "Could not auto-detect client from email. Please select a client.",
+            "requires_client_selection": True,
+            "clients": active_clients
+        }, status_code=400)
     
-    # Fuzzy matching logic placeholder (Currently hardcoded to ACME Catering - 63)
-    client_context = build_client_kb(63) or CLIENT_KB.get(63)
+    # Build knowledge base for the detected/selected client
+    client_context = build_client_kb(client_id)
+    if not client_context:
+        return JSONResponse({"status": "error", "message": "Failed to build knowledge base for client."}, status_code=500)
     
     extracted_data = await ai_extract_order(text, client_context)
     
     if not extracted_data.get('basic_information'):
         return JSONResponse({"status": "error", "message": "Failed to extract order data."}, status_code=500)
     
-    return JSONResponse({"status": "success", "data": extracted_data})
+    return JSONResponse({"status": "success", "data": extracted_data, "client_kb": client_context})
 
 @router.post("/publish")
 async def publish_order(request: Request):
@@ -64,3 +80,141 @@ async def publish_order(request: Request):
         return JSONResponse(result, status_code=400)
         
     return JSONResponse(result)
+
+@router.get("/employees/search")
+async def search_employees(request: Request, q: str = '', date: str = ''):
+    # Searches for active (1) or inactive60 (10) employees matching query
+    # Also checks if they are working on the specified date
+    engine = _engine()
+    
+    # We match first_name or last_name or CONCAT(first_name, ' ', last_name)
+    search_term = f"%{q.replace(' ', '%')}%"
+    
+    sql = text("""
+        SELECT e.employee_id, u.first_name, u.last_name,
+        (
+            SELECT COUNT(*)
+            FROM shift_employee se
+            JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
+            JOIN shift s ON sp.shift_id = s.shift_id
+            JOIN event ev ON s.event_id = ev.event_id
+            WHERE se.employee_id = e.employee_id 
+              AND ev.date = :date 
+              AND se.deleted_at IS NULL
+              AND se.cancel_reason = 0
+              AND se.confirmed = 1
+        ) as is_working
+        FROM employee e
+        JOIN user_party up ON e.employee_id = up.employee_id
+        JOIN user u ON up.user_id = u.id
+        WHERE e.status IN (1, 10)
+          AND e.deleted_at IS NULL
+          AND (
+            u.first_name LIKE :q OR 
+            u.last_name LIKE :q OR 
+            CONCAT(u.first_name, ' ', u.last_name) LIKE :q
+          )
+        ORDER BY u.last_name ASC, u.first_name ASC
+        LIMIT 20
+    """)
+    
+    with engine.connect() as conn:
+        rows = conn.execute(sql, {"q": search_term, "date": date}).fetchall()
+        
+    results = []
+    for row in rows:
+        results.append({
+            "id": row.employee_id,
+            "name": f"{row.first_name} {row.last_name}",
+            "is_working": row.is_working > 0
+        })
+        
+    return JSONResponse({"status": "success", "data": results})
+
+@router.get("/clients")
+async def get_clients(request: Request):
+    """Return all active clients for autocomplete"""
+    clients = get_active_clients()
+    return JSONResponse({"status": "success", "data": clients})
+
+@router.get("/inbox")
+async def get_inbox_tickets(request: Request):
+    """Return all pending email tickets"""
+    state = _load_state()
+    return JSONResponse({"status": "success", "data": state.get("pending_tickets", [])})
+
+@router.post("/inbox/{msg_id}/dismiss")
+async def dismiss_inbox_ticket(request: Request, msg_id: str):
+    """Remove a ticket from the inbox without processing it"""
+    state = _load_state()
+    tickets = state.get("pending_tickets", [])
+    
+    # Filter out the dismissed message
+    new_tickets = [t for t in tickets if t.get("id") != msg_id]
+    
+    if len(tickets) == len(new_tickets):
+        return JSONResponse({"status": "error", "message": "Ticket not found"}, status_code=404)
+        
+    state["pending_tickets"] = new_tickets
+    _save_state(state)
+    return JSONResponse({"status": "success", "message": "Ticket dismissed"})
+
+@router.get("/employees/suggest")
+async def suggest_employees(request: Request, client_id: int, venue_name: str, position_name: str, date: str = ''):
+    engine = _engine()
+    
+    # Query to find most frequently scheduled employees for this client + venue + position combo
+    sql = text("""
+        SELECT e.employee_id, u.first_name, u.last_name, COUNT(se.shift_employee_id) as freq,
+        (
+            SELECT COUNT(*)
+            FROM shift_employee se_check
+            JOIN shift_position sp_check ON se_check.shift_position_id = sp_check.shift_position_id
+            JOIN shift s_check ON sp_check.shift_id = s_check.shift_id
+            JOIN event ev_check ON s_check.event_id = ev_check.event_id
+            WHERE se_check.employee_id = e.employee_id 
+              AND ev_check.date = :date 
+              AND se_check.deleted_at IS NULL
+              AND se_check.cancel_reason = 0
+              AND se_check.confirmed = 1
+        ) as is_working
+        FROM employee e
+        JOIN user_party up ON e.employee_id = up.employee_id
+        JOIN user u ON up.user_id = u.id
+        JOIN shift_employee se ON se.employee_id = e.employee_id
+        JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
+        JOIN position p ON sp.position_id = p.position_id
+        JOIN shift s ON sp.shift_id = s.shift_id
+        JOIN event ev ON s.event_id = ev.event_id
+        JOIN venue v ON ev.venue_id = v.venue_id
+        WHERE e.status IN (1, 10)
+          AND e.deleted_at IS NULL
+          AND se.deleted_at IS NULL
+          AND se.confirmed = 1
+          AND se.cancel_reason = 0
+          AND ev.client_id = :client_id
+          AND v.name = :venue_name
+          AND p.description = :position_name
+        GROUP BY e.employee_id, u.first_name, u.last_name
+        ORDER BY freq DESC
+        LIMIT 10
+    """)
+    
+    with engine.connect() as conn:
+        rows = conn.execute(sql, {
+            "client_id": client_id,
+            "venue_name": venue_name,
+            "position_name": position_name,
+            "date": date
+        }).fetchall()
+        
+    results = []
+    for row in rows:
+        results.append({
+            "id": row.employee_id,
+            "name": f"{row.first_name} {row.last_name}",
+            "is_working": row.is_working > 0,
+            "freq": row.freq
+        })
+        
+    return JSONResponse({"status": "success", "data": results})
