@@ -77,9 +77,249 @@
       "46146",
       "46213",
       "46237"
+    ],
+    "2026-05-20": [
+      "46049"
     ]
   },
   "records": [
+    {
+      "review_id": "2026-05-20:46049",
+      "review_date": "2026-05-20",
+      "employee_id": 46049,
+      "employee_name": "Quirino Santiago",
+      "first_name": "Quirino",
+      "last_name": "Santiago",
+      "email": "Keyno89@gmail.com",
+      "phone": "818-470-3441",
+      "hire_date": "2026-05-20",
+      "rehire_date": "",
+      "resume_file": "fd2zd5poyrfkyrst_Qs%20Res%202026.pdf",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/fd2zd5poyrfkyrst_Qs%2520Res%25202026.pdf",
+      "status": "Recommended",
+      "recommendations": [
+        {
+          "key": "cook",
+          "label": "Cook 2",
+          "base_name": "Cook",
+          "ai_level": 3,
+          "ai_status": "level_3",
+          "estimated_years": 8.0,
+          "confidence": 1.0,
+          "reasons": [
+            "Lead cook roles at The Peninsula Hotel, ROMEGA Catering, Animal, Bourbon Steakhouse, and other venues.",
+            "Experience with fine-dining cuisine, banquet catering, and elevated culinary experiences.",
+            "No fast-food experience; all roles are in upscale or catering environments."
+          ],
+          "position_id": 288,
+          "position_description": "Cook 1",
+          "match_found": true
+        },
+        {
+          "key": "cook",
+          "label": "Cook 2",
+          "base_name": "Cook",
+          "ai_level": 3,
+          "ai_status": "level_3",
+          "estimated_years": 8.0,
+          "confidence": 1.0,
+          "reasons": [
+            "Lead cook roles at The Peninsula Hotel, ROMEGA Catering, Animal, Bourbon Steakhouse, and other venues.",
+            "Experience with fine-dining cuisine, banquet catering, and elevated culinary experiences.",
+            "No fast-food experience; all roles are in upscale or catering environments."
+          ],
+          "position_id": 102,
+          "position_description": "Cook 2",
+          "match_found": true
+        }
+      ],
+      "ai_summary": {
+        "hospitality_experience_overview": "Over 12 years of experience in catering, fine dining, and banquet catering, including high-end clientele and exclusive events. Experience at luxury hotels and fine-dining restaurants, with leadership roles in culinary settings.",
+        "total_hospitality_years_estimate": 12.0,
+        "notable_venues": [
+          "The Peninsula Hotel",
+          "Katsuya at Americana",
+          "Waldorf Astoria",
+          "Castaway",
+          "Fundamental Catering",
+          "Romega Catering",
+          "Animal",
+          "Bourbon Steakhouse, Michael Mina Restaurant"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "No fast-food experience; all roles are in fine dining, catering, or high-end restaurants."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Over 12 years of experience in catering, fine dining, and banquet catering, including high-end clientele and exclusive events. Experience at luxury hotels and fine-dining restaurants, with leadership roles in culinary settings.",
+          "total_hospitality_years_estimate": 12.0,
+          "notable_venues": [
+            "The Peninsula Hotel",
+            "Katsuya at Americana",
+            "Waldorf Astoria",
+            "Castaway",
+            "Fundamental Catering",
+            "Romega Catering",
+            "Animal",
+            "Bourbon Steakhouse, Michael Mina Restaurant"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "No fast-food experience; all roles are in fine dining, catering, or high-end restaurants."
+        },
+        "positions": {
+          "cook": {
+            "status": "level_3",
+            "estimated_years": 8.0,
+            "confidence": 1.0,
+            "reasons": [
+              "Lead cook roles at The Peninsula Hotel, ROMEGA Catering, Animal, Bourbon Steakhouse, and other venues.",
+              "Experience with fine-dining cuisine, banquet catering, and elevated culinary experiences.",
+              "No fast-food experience; all roles are in upscale or catering environments."
+            ]
+          },
+          "prep_cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No roles explicitly titled or described as prep cook."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No dishwasher roles mentioned."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No utility roles mentioned."
+            ]
+          },
+          "server": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No server roles described."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No host roles mentioned."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No runner roles described."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No busser roles mentioned."
+            ]
+          },
+          "bartender": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No bartender roles described."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No barback roles mentioned."
+            ]
+          },
+          "cashier": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No cashier roles described."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No pastry roles mentioned."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No baker roles described."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "Experience with Japanese cuisine at Castaway, but role not specified as sushi chef or similar."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No concessions roles mentioned."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No barista roles described."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No valet roles mentioned."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 1.0,
+            "reasons": [
+              "No supervisory roles in event or hospitality management described."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "C O N T A C T\nA B O U T  M E\nW O R K  E X P E R I E N C EQ U I N O  S A N T I A G O\nS K I L L S\nNatural leader  \nStrategic and Proactive\nProblem solver\nQuick & Efficient\nAdaptable & Fast learner\nCreative\nCollaborative\nkeyno89@gmail.com\nSanta Clarita, CA\n818.470.3441\nTHE PENINSULA HOTEL\nKATSUYA AT AMERICANA  \nBeverly Hills (2017-Present)\nBeverly Hills (2015-2017)\nGlendale (2015-2016)\nBanquet Catering Cook & Belvedere Restaurant Cook\nHeavy experience with high volume banquet catering for exclusive clientele.\nFine-dining cuisine for the Belvedere restuarant.My name is Quino (key-no), short for Quirino. I am a hospitality professional with over\n12+ years of experience spread across from catering , fine dining, & so much more. I\nhave an extensive background as a lead cook executi ng elevated culinary experiences\nfor banquets, private events, and high-end clientel e. I am passionate about exceptional\nfood presentation, guest experience, and delivering  seamless food service with strong\nattention to detail, creativity, and teamwork.  \nLead Cook for In-Room Dining & Banquets. Train and oversee new co oks.\nExperience with fine-dining restaurants Jean-George & Rooftop Restaurant\nC E R T I F I C A T I O N\nSERV SAFE FOOD HANDLER\nSERV SAFE FOOD MANAGER\n2025 - Present\nFEB 2026 - FEB 2031QUIRINO SANTIAGO\nWALDORF ASTORIA  \nR E F E R E N C E S\nJeaneviv Siao\nCoworker from Hollywood Bowl  \n818.447.2136\nCameron Czkalla\nOwner of Romega Catering\n626.710.0240\nDaniel Vasquez\nHead Chef of Catering at Animal\n626.319.5623\nCook; Experience with special Japanese cuisine\nCASTAWAY  \nBurbank (2014-2015)\nLine cook Experience with contemporary cuisine\nFUNDAMENTAL CATERING\nWestwood (2016-2017)\nSous chef, experience with contemporary catering st yle. Managing staff\nschedules and lead cook training. Manage food inven tory & ordering.\nROMEGA CATERING\nPasadena (2011-2016)\nLead Cook, experience with elevated fine-dining custom catering for\nprivate parties, corporate events, & weddings  \nANIMAL\nMelrose (2014)\nLead Cook Catering; Experience with New American cuisine\nBOURBON STEAKHOUSE, MICHAEL MINA RESTUARANT\nGlendale (2014)\nLead Prep Cook. Experience with fine-dining; Steak & seafood.",
+      "error": "",
+      "created_at": "2026-05-20T09:32:43-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
     {
       "review_id": "2026-05-19:46237",
       "review_date": "2026-05-19",
@@ -11859,6 +12099,6 @@
       "dismissed_reason": ""
     }
   ],
-  "last_scan_at": "2026-05-20T08:03:58-07:00",
-  "last_scan_message": "No new active employees with resumes found for 2026-05-20."
+  "last_scan_at": "2026-05-20T09:32:50-07:00",
+  "last_scan_message": "Checked 1 new employee(s); added 1 recommendation record(s)."
 }
