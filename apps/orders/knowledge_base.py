@@ -32,8 +32,8 @@ def detect_client_from_text(order_text: str) -> int:
             if res:
                 return res.client_id
                 
-        # Second pass: Domain match (skip generic domains like gmail.com)
-        generic_domains = {'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com'}
+        # Second pass: Domain match (skip generic and internal domains)
+        generic_domains = {'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com', 'culinarystaffing.com', 'golivestaffing.com'}
         for email in emails:
             domain = email.split('@')[-1].lower()
             if domain in generic_domains:
