@@ -1308,3 +1308,187 @@ async def get_position_breakdown(payload: ProfitPayload):
 
     positions_data.sort(key=lambda x: x["total_bill"], reverse=True)
     return JSONResponse({"positions": positions_data})
+
+
+# ── ACCOUNT TRACKING SYSTEM (SQLITE PERSISTENCE) ──────────────────
+
+import sqlite3
+
+MODULE_BASE_DIR_TRACK = Path(__file__).resolve().parent.parent.parent
+RENDER_DATA_DIR_TRACK = Path("/opt/render/project/src/data")
+if any(os.getenv(env_var) for env_var in ("RENDER", "RENDER_SERVICE_ID", "RENDER_EXTERNAL_URL")):
+    DATA_DIR_TRACK = RENDER_DATA_DIR_TRACK
+elif RENDER_DATA_DIR_TRACK.exists():
+    DATA_DIR_TRACK = RENDER_DATA_DIR_TRACK
+else:
+    DATA_DIR_TRACK = MODULE_BASE_DIR_TRACK / "data"
+
+os.makedirs(DATA_DIR_TRACK, exist_ok=True)
+DB_PATH_TRACK = DATA_DIR_TRACK / "profit_tracker.db"
+
+
+def _get_db_conn():
+    conn = sqlite3.connect(DB_PATH_TRACK)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_tracking_db():
+    conn = _get_db_conn()
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS client_profile (
+            client_name TEXT PRIMARY KEY,
+            owner TEXT,
+            stuck_reason TEXT,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS client_next_actions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_name TEXT,
+            action_text TEXT,
+            completed INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            completed_at DATETIME
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+
+# Self-initialize database
+init_tracking_db()
+
+
+@router.get("/api/account-tracking")
+async def get_account_tracking():
+    init_tracking_db()
+    conn = _get_db_conn()
+    try:
+        cursor = conn.cursor()
+        
+        # Get profiles
+        cursor.execute("SELECT client_name, owner, stuck_reason FROM client_profile")
+        profiles = {
+            row["client_name"]: {
+                "owner": row["owner"],
+                "stuck_reason": row["stuck_reason"],
+                "active_next_action": None
+            }
+            for row in cursor.fetchall()
+        }
+        
+        # Get active (incomplete) next actions
+        cursor.execute("SELECT id, client_name, action_text, completed FROM client_next_actions WHERE completed = 0")
+        for row in cursor.fetchall():
+            c_name = row["client_name"]
+            if c_name not in profiles:
+                profiles[c_name] = {"owner": None, "stuck_reason": None, "active_next_action": None}
+            profiles[c_name]["active_next_action"] = {
+                "id": row["id"],
+                "action_text": row["action_text"],
+                "completed": row["completed"]
+            }
+            
+        return JSONResponse(profiles)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    finally:
+        conn.close()
+
+
+class SetOwnerPayload(BaseModel):
+    client_name: str
+    owner: Optional[str] = None
+
+
+@router.post("/api/account-tracking/owner")
+async def set_client_owner(payload: SetOwnerPayload):
+    conn = _get_db_conn()
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO client_profile (client_name, owner) 
+            VALUES (?, ?) 
+            ON CONFLICT(client_name) DO UPDATE SET owner = excluded.owner, updated_at = CURRENT_TIMESTAMP
+        ''', (payload.client_name, payload.owner))
+        conn.commit()
+        return JSONResponse({"status": "ok"})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    finally:
+        conn.close()
+
+
+class SetStuckReasonPayload(BaseModel):
+    client_name: str
+    stuck_reason: Optional[str] = None
+
+
+@router.post("/api/account-tracking/stuck-reason")
+async def set_client_stuck_reason(payload: SetStuckReasonPayload):
+    conn = _get_db_conn()
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO client_profile (client_name, stuck_reason) 
+            VALUES (?, ?) 
+            ON CONFLICT(client_name) DO UPDATE SET stuck_reason = excluded.stuck_reason, updated_at = CURRENT_TIMESTAMP
+        ''', (payload.client_name, payload.stuck_reason))
+        conn.commit()
+        return JSONResponse({"status": "ok"})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    finally:
+        conn.close()
+
+
+class SetNextActionPayload(BaseModel):
+    client_name: str
+    action_text: Optional[str] = None
+
+
+@router.post("/api/account-tracking/next-action")
+async def set_client_next_action(payload: SetNextActionPayload):
+    if not payload.action_text or not payload.action_text.strip():
+        raise HTTPException(status_code=400, detail="Action text cannot be empty.")
+        
+    conn = _get_db_conn()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM client_next_actions WHERE client_name = ? AND completed = 0", (payload.client_name,))
+        row = cursor.fetchone()
+        
+        if row:
+            cursor.execute("UPDATE client_next_actions SET action_text = ? WHERE id = ?", (payload.action_text, row["id"]))
+            action_id = row["id"]
+        else:
+            cursor.execute("INSERT INTO client_next_actions (client_name, action_text, completed) VALUES (?, ?, 0)", (payload.client_name, payload.action_text))
+            action_id = cursor.lastrowid
+            
+        conn.commit()
+        return JSONResponse({"status": "ok", "id": action_id})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    finally:
+        conn.close()
+
+
+class CompleteNextActionPayload(BaseModel):
+    action_id: int
+
+
+@router.post("/api/account-tracking/next-action/complete")
+async def complete_client_next_action(payload: CompleteNextActionPayload):
+    conn = _get_db_conn()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE client_next_actions SET completed = 1, completed_at = CURRENT_TIMESTAMP WHERE id = ?", (payload.action_id,))
+        conn.commit()
+        return JSONResponse({"status": "ok"})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    finally:
+        conn.close()

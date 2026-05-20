@@ -545,6 +545,237 @@
         border-color: #fb923c;
         color: #fb923c;
     }
+
+    /* ── ACCOUNT TRACKING MODES & SUB-ROWS ── */
+    .pt-tracking-row {
+        background: rgba(15, 23, 42, 0.4);
+        display: none;
+    }
+    .tracking-mode-active .pt-tracking-row {
+        display: table-row !important;
+    }
+    .pt-tracking-container {
+        display: grid;
+        grid-template-columns: 1fr 2fr 1fr;
+        gap: 1.5rem;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.015);
+    }
+    .pt-tracking-col {
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        transition: all 0.2s ease;
+    }
+    .pt-tracking-col:hover {
+        border-color: rgba(56, 189, 248, 0.3);
+        background: rgba(0, 0, 0, 0.35);
+    }
+    .pt-tracking-col-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--pt-text-muted);
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .pt-tracking-col-content {
+        font-size: 0.9rem;
+        color: var(--pt-text-main);
+        min-height: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+    .pt-tracking-placeholder {
+        color: rgba(255, 255, 255, 0.25);
+        font-style: italic;
+    }
+    
+    /* Inline Controls */
+    .pt-inline-select, .pt-inline-textarea, .pt-inline-input {
+        width: 100%;
+        background: rgba(15, 23, 42, 0.95) !important;
+        border: 1px solid var(--pt-accent) !important;
+        color: var(--pt-text-main) !important;
+        border-radius: 6px !important;
+        padding: 0.4rem 0.6rem !important;
+        font-size: 0.875rem !important;
+        font-family: inherit !important;
+        outline: none !important;
+        color-scheme: dark;
+    }
+    .pt-inline-textarea {
+        resize: vertical;
+        min-height: 50px;
+    }
+    .pt-inline-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        margin-top: 0.4rem;
+    }
+    .pt-inline-btn {
+        padding: 0.25rem 0.6rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: 4px;
+        cursor: pointer;
+        border: none;
+        transition: all 0.15s ease;
+    }
+    .pt-inline-btn.save {
+        background: var(--pt-success);
+        color: #0f172a;
+    }
+    .pt-inline-btn.save:hover {
+        filter: brightness(1.1);
+    }
+    .pt-inline-btn.cancel {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--pt-text-main);
+    }
+    .pt-inline-btn.cancel:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+    
+    .pt-saved-indicator {
+        font-size: 0.725rem;
+        color: var(--pt-success);
+        font-weight: bold;
+        text-transform: none;
+        animation: fadeOutToast 1.5s ease-out forwards;
+    }
+    @keyframes fadeOutToast {
+        0% { opacity: 1; transform: scale(1); }
+        80% { opacity: 1; }
+        100% { opacity: 0; transform: scale(0.95); }
+    }
+    
+    .pt-btn#btnToggleTracking {
+        background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+    }
+    .pt-btn#btnToggleTracking.tracking-active {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.45);
+    }
+
+    /* ── ACTION CENTER STYLES ── */
+    .pt-action-center {
+        background: var(--pt-glass-bg);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--pt-glass-border);
+        border-radius: var(--pt-radius);
+        padding: 1.5rem;
+        box-shadow: var(--pt-card-shadow);
+        margin-bottom: 2rem;
+        animation: fadeInUp 0.6s ease-out;
+        text-align: left;
+        display: none; /* Shown only when Tracking Mode is active */
+    }
+    .pt-action-center.active {
+        display: block;
+    }
+    .pt-action-center-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        color: var(--pt-accent);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .pt-action-center-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1rem;
+    }
+    .pt-action-item {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 0.75rem;
+        transition: all 0.2s ease;
+    }
+    .pt-action-item:hover {
+        border-color: rgba(56, 189, 248, 0.25);
+        background: rgba(0, 0, 0, 0.3);
+    }
+    .pt-action-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .pt-action-client {
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: var(--pt-text-main);
+    }
+    .pt-action-owner {
+        font-size: 0.75rem;
+        padding: 0.15rem 0.5rem;
+        border-radius: 999px;
+        background: rgba(56, 189, 248, 0.15);
+        color: var(--pt-accent);
+        font-weight: 600;
+    }
+    .pt-action-text {
+        font-size: 0.875rem;
+        color: var(--pt-text-muted);
+        line-height: 1.4;
+    }
+    .pt-action-item-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: auto;
+    }
+    .pt-action-date {
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.2);
+    }
+    .pt-action-complete-btn {
+        background: rgba(52, 211, 153, 0.15);
+        color: var(--pt-success);
+        border: 1px solid rgba(52, 211, 153, 0.3);
+        padding: 0.3rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    .pt-action-complete-btn:hover {
+        background: var(--pt-success);
+        color: #0f172a;
+        border-color: var(--pt-success);
+        box-shadow: 0 0 10px rgba(52, 211, 153, 0.3);
+    }
+    .pt-action-empty {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 2rem;
+        color: var(--pt-text-muted);
+        font-style: italic;
+        font-size: 0.9rem;
+    }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <div class="pt-wrapper-main">
@@ -576,6 +807,7 @@
                 <option value="">-- Select Client (Optional) --</option>
             </select>
         </div>
+        <button class="pt-btn" id="btnToggleTracking" onclick="toggleAccountTrackingMode()">Account Tracking</button>
         <button class="pt-btn" onclick="fetchData()">Calculate</button>
     </div>
 
@@ -705,6 +937,18 @@
             </div>
         </div>
 
+        <div class="pt-action-center" id="actionCenterSection">
+            <div class="pt-action-center-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+                Action Center
+            </div>
+            <div class="pt-action-center-grid" id="actionCenterGrid">
+                <!-- Populated via JS -->
+            </div>
+        </div>
+
         <div class="pt-table-container">
             <h2 class="pt-table-title">Client Breakdown</h2>
             <div class="pt-filter-row">
@@ -817,6 +1061,8 @@
 
     const tierRates = { T1: 0.0195, T2: 0.0293, T3: 0.039 };
     let clientTiers = {}; // clientName -> 'T1' | 'T2' | 'T3'
+    let accountTrackingModeActive = false;
+    let clientTrackingData = {}; // clientName -> { owner, stuck_reason, active_next_action }
 
     // ── Column visibility ──
     const ALL_COLUMNS = [
@@ -1120,6 +1366,57 @@
             ];
             tr.innerHTML = cells.filter(c => visibleColumns.has(c.key)).map(c => c.html).join('');
             tbody.appendChild(tr);
+
+            // Now append the tracking row!
+            const trackingTr = document.createElement('tr');
+            trackingTr.className = 'pt-tracking-row';
+            trackingTr.onclick = (e) => e.stopPropagation();
+            
+            const colSpanCount = visibleColumns.size;
+            trackingTr.innerHTML = `
+                <td colspan="${colSpanCount}" style="padding: 0; border: none;">
+                    <div class="pt-tracking-container">
+                        <!-- Owner Block -->
+                        <div class="pt-tracking-col" onclick="editOwner('${client.client_name.replace(/'/g, "\\'")}')" style="cursor: pointer;">
+                            <div class="pt-tracking-col-label">
+                                Owner
+                                <span id="owner-indicator-${client.client_name}"></span>
+                            </div>
+                            <div class="pt-tracking-col-content" id="owner-content-${client.client_name}">
+                                <!-- Owner name or placeholder -->
+                            </div>
+                        </div>
+                        
+                        <!-- Next Action Block -->
+                        <div class="pt-tracking-col" onclick="editNextAction('${client.client_name.replace(/'/g, "\\'")}')" style="cursor: pointer;">
+                            <div class="pt-tracking-col-label">
+                                Next Action
+                                <span id="next-action-indicator-${client.client_name}"></span>
+                            </div>
+                            <div class="pt-tracking-col-content" id="next-action-content-${client.client_name}">
+                                <!-- Next action text and complete button -->
+                            </div>
+                        </div>
+                        
+                        <!-- Stuck Reason Block -->
+                        <div class="pt-tracking-col" onclick="editStuckReason('${client.client_name.replace(/'/g, "\\'")}')" style="cursor: pointer;">
+                            <div class="pt-tracking-col-label">
+                                Stuck Reason
+                                <span id="stuck-indicator-${client.client_name}"></span>
+                            </div>
+                            <div class="pt-tracking-col-content" id="stuck-content-${client.client_name}">
+                                <!-- Stuck reason or placeholder -->
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(trackingTr);
+            
+            // Render content inside the blocks
+            renderOwnerContent(client.client_name);
+            renderNextActionContent(client.client_name);
+            renderStuckReasonContent(client.client_name);
         });
 
 
@@ -1193,14 +1490,15 @@
             const startFillDate = startFillDateObj.toISOString().split('T')[0];
             const endFillDate = endFillDateObj.toISOString().split('T')[0];
 
-            const [response, fillRatesResponse, btTiersResponse] = await Promise.all([
+            const [response, fillRatesResponse, btTiersResponse, trackingResponse] = await Promise.all([
                 fetch('/profit-tracker/api/data', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ start_date: startDate, end_date: endDate })
                 }),
                 fetch(`/reports/api/client-fill-rates?start_date=${startFillDate}&end_date=${endFillDate}`),
-                fetch('/profit-tracker/api/bt-tiers')
+                fetch('/profit-tracker/api/bt-tiers'),
+                fetch('/profit-tracker/api/account-tracking')
             ]);
 
             if (!response.ok) throw new Error("Failed to fetch profit data");
@@ -1217,6 +1515,10 @@
 
             if (btTiersResponse.ok) {
                 clientTiers = await btTiersResponse.json();
+            }
+
+            if (trackingResponse.ok) {
+                clientTrackingData = await trackingResponse.json();
             }
 
             if (data.client_breakdown) {
@@ -1258,6 +1560,7 @@
             globalOtherWork = data.other_work || 0;
             updateSummaryTotals(true);
             renderClientTable();
+            renderActionCenter();
 
             document.getElementById('loader').style.display = 'none';
             document.getElementById('dashboardContent').style.display = 'block';
@@ -1490,6 +1793,342 @@
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    }
+
+    // ── ACCOUNT TRACKING SYSTEM CONTROLLERS ──
+
+    function toggleAccountTrackingMode() {
+        accountTrackingModeActive = !accountTrackingModeActive;
+        const btn = document.getElementById('btnToggleTracking');
+        const container = document.getElementById('dashboardContent');
+        const actionCenter = document.getElementById('actionCenterSection');
+        
+        if (accountTrackingModeActive) {
+            btn.classList.add('tracking-active');
+            container.classList.add('tracking-mode-active');
+            actionCenter.classList.add('active');
+            fetchTrackingData();
+        } else {
+            btn.classList.remove('tracking-active');
+            container.classList.remove('tracking-mode-active');
+            actionCenter.classList.remove('active');
+        }
+    }
+
+    async function fetchTrackingData() {
+        try {
+            const res = await fetch('/profit-tracker/api/account-tracking');
+            if (res.ok) {
+                clientTrackingData = await res.json();
+                renderActionCenter();
+                renderClientTable();
+            }
+        } catch(err) {
+            console.error('Failed to fetch account tracking data:', err);
+        }
+    }
+
+    function renderActionCenter() {
+        const grid = document.getElementById('actionCenterGrid');
+        if (!grid) return;
+        
+        grid.innerHTML = '';
+        let hasActions = false;
+        
+        for (const clientName in clientTrackingData) {
+            const item = clientTrackingData[clientName];
+            if (item?.active_next_action) {
+                hasActions = true;
+                const action = item.active_next_action;
+                const owner = item.owner || 'Unassigned';
+                
+                const actionCard = document.createElement('div');
+                actionCard.className = 'pt-action-item';
+                actionCard.innerHTML = `
+                    <div class="pt-action-item-header">
+                        <span class="pt-action-client">${clientName}</span>
+                        <span class="pt-action-owner">${owner}</span>
+                    </div>
+                    <div class="pt-action-text">${action.action_text.replace(/\n/g, '<br>')}</div>
+                    <div class="pt-action-item-footer">
+                        <span class="pt-action-date">Incomplete</span>
+                        <button class="pt-action-complete-btn" onclick="completeNextAction(${action.id}, '${clientName.replace(/'/g, "\\'")}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Complete
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(actionCard);
+            }
+        }
+        
+        if (!hasActions) {
+            grid.innerHTML = `
+                <div class="pt-action-empty">
+                    All caught up! No incomplete next actions.
+                </div>
+            `;
+        }
+    }
+
+    // ── OWNER ACTIONS ──
+    function renderOwnerContent(clientName) {
+        const container = document.getElementById(`owner-content-${clientName}`);
+        if (!container) return;
+        const owner = clientTrackingData[clientName]?.owner;
+        if (owner) {
+            container.innerHTML = `<span>${owner}</span> <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="opacity: 0.5;"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>`;
+        } else {
+            container.innerHTML = `<span class="pt-tracking-placeholder">Assign Owner</span> <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="opacity: 0.3;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>`;
+        }
+    }
+
+    function editOwner(clientName) {
+        if (document.getElementById(`owner-select-${clientName}`)) return;
+        
+        const container = document.getElementById(`owner-content-${clientName}`);
+        if (!container) return;
+        const currentOwner = clientTrackingData[clientName]?.owner || '';
+        
+        container.innerHTML = `
+            <select class="pt-inline-select" id="owner-select-${clientName}" onclick="event.stopPropagation()" onchange="saveOwner('${clientName.replace(/'/g, "\\'")}')" onblur="cancelOwnerEdit('${clientName.replace(/'/g, "\\'")}')">
+                <option value="">-- Select Owner --</option>
+                <option value="Dan Stone" ${currentOwner === 'Dan Stone' ? 'selected' : ''}>Dan Stone</option>
+                <option value="Michael Guess" ${currentOwner === 'Michael Guess' ? 'selected' : ''}>Michael Guess</option>
+                <option value="Marlen Munoz" ${currentOwner === 'Marlen Munoz' ? 'selected' : ''}>Marlen Munoz</option>
+                <option value="Caleb Troy" ${currentOwner === 'Caleb Troy' ? 'selected' : ''}>Caleb Troy</option>
+                <option value="Jessica Seastead" ${currentOwner === 'Jessica Seastead' ? 'selected' : ''}>Jessica Seastead</option>
+            </select>
+        `;
+        const sel = document.getElementById(`owner-select-${clientName}`);
+        sel.focus();
+    }
+
+    function saveOwner(clientName) {
+        const sel = document.getElementById(`owner-select-${clientName}`);
+        if (!sel) return;
+        const value = sel.value;
+        
+        // Update local cache synchronously to provide instant response and avoid onblur race conditions
+        if (!clientTrackingData[clientName]) {
+            clientTrackingData[clientName] = { owner: null, stuck_reason: null, active_next_action: null };
+        }
+        clientTrackingData[clientName].owner = value || null;
+        renderOwnerContent(clientName);
+        
+        fetch('/profit-tracker/api/account-tracking/owner', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ client_name: clientName, owner: value || null })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                showIndicator(clientName, 'owner', 'Saved!');
+                renderActionCenter();
+            }
+        })
+        .catch(err => {
+            console.error('Error saving owner:', err);
+            // On error, let's keep the value but log it (or we could revert if we wanted)
+        });
+    }
+
+    function cancelOwnerEdit(clientName) {
+        setTimeout(() => {
+            renderOwnerContent(clientName);
+        }, 150);
+    }
+
+    // ── NEXT ACTION ACTIONS ──
+    function renderNextActionContent(clientName) {
+        const container = document.getElementById(`next-action-content-${clientName}`);
+        if (!container) return;
+        const action = clientTrackingData[clientName]?.active_next_action;
+        if (action) {
+            container.innerHTML = `
+                <span style="flex: 1; word-break: break-word;">${action.action_text.replace(/\n/g, '<br>')}</span>
+                <button class="pt-inline-btn save" style="background: rgba(52, 211, 153, 0.2); color: var(--pt-success); padding: 0.2rem 0.5rem; display: flex; align-items: center; gap: 0.2rem;" onclick="event.stopPropagation(); completeNextAction(${action.id}, '${clientName.replace(/'/g, "\\'")}')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Complete
+                </button>
+            `;
+        } else {
+            container.innerHTML = `<span class="pt-tracking-placeholder">Add action item</span> <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="opacity: 0.3;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>`;
+        }
+    }
+
+    function editNextAction(clientName) {
+        const container = document.getElementById(`next-action-content-${clientName}`);
+        if (!container) return;
+        const currentAction = clientTrackingData[clientName]?.active_next_action?.action_text || '';
+        
+        container.innerHTML = `
+            <div style="width: 100%;" onclick="event.stopPropagation();">
+                <textarea class="pt-inline-textarea" id="next-action-input-${clientName}" placeholder="Enter next action...">${currentAction}</textarea>
+                <div class="pt-inline-actions">
+                    <button class="pt-inline-btn cancel" onclick="cancelNextActionEdit('${clientName.replace(/'/g, "\\'")}')">Cancel</button>
+                    <button class="pt-inline-btn save" onclick="saveNextAction('${clientName.replace(/'/g, "\\'")}')">Save</button>
+                </div>
+            </div>
+        `;
+        const textarea = document.getElementById(`next-action-input-${clientName}`);
+        textarea.focus();
+        textarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                saveNextAction(clientName);
+            } else if (e.key === 'Escape') {
+                cancelNextActionEdit(clientName);
+            }
+        });
+    }
+
+    function saveNextAction(clientName) {
+        const textarea = document.getElementById(`next-action-input-${clientName}`);
+        if (!textarea) return;
+        const value = textarea.value;
+        
+        if (!value || !value.trim()) {
+            alert("Next Action text cannot be empty.");
+            return;
+        }
+        
+        fetch('/profit-tracker/api/account-tracking/next-action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ client_name: clientName, action_text: value })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                if (!clientTrackingData[clientName]) {
+                    clientTrackingData[clientName] = { owner: null, stuck_reason: null, active_next_action: null };
+                }
+                clientTrackingData[clientName].active_next_action = {
+                    id: data.id,
+                    action_text: value,
+                    completed: 0
+                };
+                renderNextActionContent(clientName);
+                showIndicator(clientName, 'next-action', 'Saved!');
+                renderActionCenter();
+            }
+        })
+        .catch(err => {
+            console.error('Error saving next action:', err);
+            renderNextActionContent(clientName);
+        });
+    }
+
+    // Global action center complete wrapper
+    window.completeNextAction = completeNextAction;
+
+    function cancelNextActionEdit(clientName) {
+        renderNextActionContent(clientName);
+    }
+
+    function completeNextAction(actionId, clientName) {
+        fetch('/profit-tracker/api/account-tracking/next-action/complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action_id: actionId })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                if (clientTrackingData[clientName]) {
+                    clientTrackingData[clientName].active_next_action = null;
+                }
+                renderNextActionContent(clientName);
+                showIndicator(clientName, 'next-action', 'Completed!');
+                renderActionCenter();
+            }
+        })
+        .catch(err => console.error('Error completing next action:', err));
+    }
+
+    // ── STUCK REASON ACTIONS ──
+    function renderStuckReasonContent(clientName) {
+        const container = document.getElementById(`stuck-content-${clientName}`);
+        if (!container) return;
+        const reason = clientTrackingData[clientName]?.stuck_reason;
+        if (reason) {
+            container.innerHTML = `<span style="flex: 1; word-break: break-word;">${reason}</span> <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="opacity: 0.5;"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>`;
+        } else {
+            container.innerHTML = `<span class="pt-tracking-placeholder">No reason specified</span> <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="opacity: 0.3;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>`;
+        }
+    }
+
+    function editStuckReason(clientName) {
+        const container = document.getElementById(`stuck-content-${clientName}`);
+        if (!container) return;
+        const currentReason = clientTrackingData[clientName]?.stuck_reason || '';
+        
+        container.innerHTML = `
+            <div style="width: 100%;" onclick="event.stopPropagation();">
+                <input type="text" class="pt-inline-input" id="stuck-input-${clientName}" value="${currentReason.replace(/"/g, '&quot;')}" placeholder="Enter stuck reason...">
+                <div class="pt-inline-actions">
+                    <button class="pt-inline-btn cancel" onclick="cancelStuckEdit('${clientName.replace(/'/g, "\\'")}')">Cancel</button>
+                    <button class="pt-inline-btn save" onclick="saveStuckReason('${clientName.replace(/'/g, "\\'")}')">Save</button>
+                </div>
+            </div>
+        `;
+        const input = document.getElementById(`stuck-input-${clientName}`);
+        input.focus();
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                saveStuckReason(clientName);
+            } else if (e.key === 'Escape') {
+                cancelStuckEdit(clientName);
+            }
+        });
+    }
+
+    function saveStuckReason(clientName) {
+        const input = document.getElementById(`stuck-input-${clientName}`);
+        if (!input) return;
+        const value = input.value;
+        
+        fetch('/profit-tracker/api/account-tracking/stuck-reason', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ client_name: clientName, stuck_reason: value || null })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                if (!clientTrackingData[clientName]) {
+                    clientTrackingData[clientName] = { owner: null, stuck_reason: null, active_next_action: null };
+                }
+                clientTrackingData[clientName].stuck_reason = value || null;
+                renderStuckReasonContent(clientName);
+                showIndicator(clientName, 'stuck', 'Saved!');
+            }
+        })
+        .catch(err => {
+            console.error('Error saving stuck reason:', err);
+            renderStuckReasonContent(clientName);
+        });
+    }
+
+    function cancelStuckEdit(clientName) {
+        renderStuckReasonContent(clientName);
+    }
+
+    function showIndicator(clientName, type, message) {
+        const ind = document.getElementById(`${type}-indicator-${clientName}`);
+        if (!ind) return;
+        
+        const newInd = document.createElement('span');
+        newInd.className = 'pt-saved-indicator';
+        newInd.id = `${type}-indicator-${clientName}`;
+        newInd.innerText = message;
+        
+        ind.parentNode.replaceChild(newInd, ind);
     }
 
     window.addEventListener('DOMContentLoaded', () => { buildColDropdown(); loadMspList(); fetchData(); });
