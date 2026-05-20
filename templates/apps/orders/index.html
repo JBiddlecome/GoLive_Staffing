@@ -274,7 +274,7 @@
         return `<input type="text" ${idAttr} class="${classStr} w-full text-sm border-transparent bg-transparent hover:border-slate-200 focus:border-emerald-500 focus:bg-white rounded-md p-1 transition-colors" value="${value}">`;
     }
 
-    function renderTimeField(value, placeholder, classStr = "") {
+    function renderTimeField(value, placeholder, classStr = "", inferred = false) {
         const hours = Array.from({length: 12}, (_, i) => i === 0 ? 12 : i);
         const minutes = ['00', '15', '30', '45'];
         
@@ -306,10 +306,15 @@
         let hourOptions = hours.map(h => `<option value="${h}" ${h.toString() === selHour ? 'selected' : ''}>${h}</option>`).join('');
         let minuteOptions = minutes.map(m => `<option value="${m}" ${m === selMin ? 'selected' : ''}>${m}</option>`).join('');
         
-        const bgClass = (!value && placeholder !== 'End') ? 'bg-red-50 border-red-300 text-red-900' : 'bg-slate-50 border-transparent text-slate-700';
+        let bgClass = (!value && placeholder !== 'End') ? 'bg-red-50 border-red-300 text-red-900' : 'bg-slate-50 border-transparent text-slate-700';
+        let titleAttr = '';
+        if (inferred) {
+            bgClass = 'bg-orange-50 border-orange-300 text-orange-900';
+            titleAttr = 'title="Time inferred by AI based on client history"';
+        }
         
         return `
-        <div class="${classStr}-picker flex items-center gap-1 hover:bg-slate-100 border hover:border-slate-200 transition-colors rounded-md p-1 px-2 cursor-pointer focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-1 focus-within:ring-emerald-500 ${bgClass}">
+        <div ${titleAttr} class="${classStr}-picker flex items-center gap-1 hover:bg-slate-100 border hover:border-slate-200 transition-colors rounded-md p-1 px-2 cursor-pointer focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-1 focus-within:ring-emerald-500 ${bgClass}">
             <select class="hour-select text-xs font-medium bg-transparent border-none p-0 focus:ring-0 cursor-pointer w-8">
                 <option value="">HH</option>
                 ${hourOptions}
@@ -402,7 +407,7 @@
                             <div class="flex items-center gap-1.5 min-w-max" onclick="event.stopPropagation()">
                                 ${renderTimeField(shift.start_time, "Start", "field-start")}
                                 <span class="text-slate-400 text-xs">to</span>
-                                ${renderTimeField(shift.end_time, "End", "field-end")}
+                                ${renderTimeField(shift.end_time, "End", "field-end", shift.end_time_inferred)}
                             </div>
                         </div>
                     </div>
@@ -426,15 +431,15 @@
                         <div>
                             <span class="text-slate-400 font-medium block mb-1">Publication Rule</span>
                             <select class="field-publication-rule w-full text-sm border border-slate-200 rounded-md p-1 focus:ring-emerald-500 focus:border-emerald-500" onchange="handlePublicationRuleChange(this)">
-                                <option value="DO_NOT_PUBLISH">Do Not Publish</option>
-                                <option value="ALL">Publish to All</option>
-                                <option value="PREFERRED">Publish to Preferred</option>
-                                <option value="WORKED_BEFORE">Publish to Worked Before</option>
-                                <option value="REQUEST_EMPLOYEE">Request Employee</option>
+                                <option value="DO_NOT_PUBLISH" ${(!details.publication_rules || details.publication_rules === 'DO_NOT_PUBLISH') && !details.requested_employee_id ? 'selected' : ''}>Do Not Publish</option>
+                                <option value="ALL" ${details.publication_rules === 'ALL' && !details.requested_employee_id ? 'selected' : ''}>Publish to All</option>
+                                <option value="PREFERRED" ${details.publication_rules === 'PREFERRED' && !details.requested_employee_id ? 'selected' : ''}>Publish to Preferred</option>
+                                <option value="WORKED_BEFORE" ${details.publication_rules === 'WORKED_BEFORE' && !details.requested_employee_id ? 'selected' : ''}>Publish to Worked Before</option>
+                                <option value="REQUEST_EMPLOYEE" ${details.requested_employee_id ? 'selected' : ''}>Request Employee</option>
                             </select>
-                            <div class="field-requested-employee-wrapper relative mt-2" style="display: none;">
-                                <input type="hidden" class="field-requested-employee-id">
-                                <input type="text" class="field-requested-employee-search w-full text-sm border border-slate-200 rounded-md p-1 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-300" placeholder="Type employee name..." onkeyup="searchEmployees(this, this.closest('.shift-row-data').querySelector('.field-date').value)" onfocus="searchEmployees(this, this.closest('.shift-row-data').querySelector('.field-date').value)">
+                            <div class="field-requested-employee-wrapper relative mt-2" style="${details.requested_employee_id ? 'display: block;' : 'display: none;'}">
+                                <input type="hidden" class="field-requested-employee-id" value="${details.requested_employee_id || ''}">
+                                <input type="text" class="field-requested-employee-search w-full text-sm border border-slate-200 rounded-md p-1 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-300" placeholder="Type employee name..." value="${details.requested_employee_name || ''}" onkeyup="searchEmployees(this, this.closest('.shift-row-data').querySelector('.field-date').value)" onfocus="searchEmployees(this, this.closest('.shift-row-data').querySelector('.field-date').value)">
                                 <div class="field-requested-employee-dropdown absolute z-50 w-full bg-white border border-slate-200 rounded-md shadow-lg max-h-48 overflow-y-auto hidden mt-1"></div>
                             </div>
                         </div>

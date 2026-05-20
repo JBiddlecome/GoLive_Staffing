@@ -36,14 +36,17 @@ Return ONLY a valid JSON object matching this exact schema:
             "id": "integer (incrementing ID starting from 1)",
             "date": "string (YYYY-MM-DD format. Each shift must have its own date if the order spans multiple days)",
             "start_time": "string (HH:MM format, 24-hour)",
-            "end_time": "string (HH:MM format, 24-hour. Leave EMPTY if not explicitly stated)",
+            "end_time": "string (HH:MM format, 24-hour. Leave EMPTY if not explicitly stated AND cannot be inferred from typical_shift_times)",
+            "end_time_inferred": "boolean (true if end_time was guessed from typical_shift_times rather than explicitly stated in the order)",
             "position": "string (Must exactly match one of the available positions in the Client Context. If vague, like 'Cook', map to the typical position used like 'Cook G' or 'Cook 2')",
             "staff_count": "integer (Number of staff needed for this position)",
             "details": {
                 "grooming": "string (Grooming or uniform requirements)",
                 "tools": ["string"] (List of required tools),
                 "certifications": ["string"] (List of required certifications),
-                "publication_rules": "string (e.g. 'Preferred Employees First', 'All Employees', etc.)"
+                "publication_rules": "string (e.g. 'Preferred Employees First', 'All Employees', etc.)",
+                "requested_employee_name": "string (Name of the employee if explicitly requested for this shift, else null)",
+                "requested_employee_id": "integer (ID of the requested employee if matched from preferred_employees in context, else null)"
             }
         }
     ]
@@ -54,7 +57,10 @@ Guidelines:
 - If an end time or venue address is missing, return an empty string (""). The UI will highlight these for the user to manually fill.
 - Support multi-day orders by creating separate shift_information objects with their respective dates.
 - Format all times in 24-hour HH:MM format.
-- IMPORTANT: When a user dictates a time range like "6 to 1:30pm", logically infer AM vs PM. (e.g. "6 to 1:30pm" usually means 6:00 AM to 1:30 PM, so return "06:00" and "13:30"). Do not assume both are PM if it doesn't make sense.
+- IMPORTANT TIME PARSING RULES:
+  1. For a range like "6-1:30pm" or "6 to 1:30pm", the first number is the start time ("06:00") and the second is the end time ("13:30").
+  2. DO NOT treat the second number as a duration.
+  3. Logically infer AM vs PM. If an end time is PM and the start time is a small number (e.g. 6, 7, 8, 9, 10, 11), the start time is almost certainly AM.
 - Do NOT return markdown formatting (no ```json).
 """
 

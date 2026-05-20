@@ -267,7 +267,7 @@ async def reportable_event_details(event_id: int) -> JSONResponse:
             # Fetch shifts for the event
             shifts_sql = text(
                 """
-                SELECT s.start, p.description as position
+                SELECT s.shift_id, s.start, p.description as position
                 FROM shift s
                 JOIN shift_position sp ON s.shift_id = sp.shift_id
                 JOIN position p ON sp.position_id = p.position_id
@@ -276,18 +276,33 @@ async def reportable_event_details(event_id: int) -> JSONResponse:
                 """
             )
             shift_results = connection.execute(shifts_sql, {"event_id": event_id}).mappings().all()
-            
+
             shifts = []
+            seen_shift_ids = set()
             for row in shift_results:
                 if row["start"]:
                     # Format time as requested: e.g., "7:00 AM"
                     time_str = row["start"].strftime("%I:%M %p").lstrip("0")
-                    shifts.append({
+                    shift_entry = {
                         "time": time_str,
                         "position": row["position"],
-                        "label": f"{time_str} {row['position']}"
-                    })
+                        "label": f"{time_str} {row['position']}",
+                        "shift_id": row["shift_id"]
+                    }
+                    shifts.append(shift_entry)
+                    seen_shift_ids.add(row["shift_id"])
             data["shifts"] = shifts
+
+            # Build unique shift links (one per shift_id)
+            unique_shifts = {}
+            for s in shifts:
+                sid = s["shift_id"]
+                if sid not in unique_shifts:
+                    unique_shifts[sid] = s["time"]
+            data["shift_links"] = [
+                {"shift_id": sid, "time": t}
+                for sid, t in unique_shifts.items()
+            ]
                 
             addr = data.get("address1", "")
             if data.get("address2"):

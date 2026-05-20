@@ -124,76 +124,95 @@ def create_order(data: dict, user_id: int) -> dict:
 
             for event_date, day_shifts in shifts_by_date.items():
                 
-                # 2. Create Event (event represents a single day)
-                ev_sql = text("""
-                    INSERT INTO event (
-                        client_id, venue_id, title, date, address1, address2, city, state, zip, latitude, longitude, created_by,
-                        timeclock, timeclock_code_holder, timeclock_tolerance, timeclock_prestart_interval, timeclock_limit,
-                        admin_notes, venue_details, description, parking, parking_note, directions, check_in,
-                        county_id, no_break_penalty, has_address, special_address
-                    )
-                    VALUES (
-                        :client_id, :venue_id, :title, :date, :address1, :address2, :city, :state, :zip, :latitude, :longitude, :user_id,
-                        :tc, :tc_holder, :tc_tol, :tc_pre, :tc_lim,
-                        :admin_notes, :v_details, :desc, :parking, :parking_note, :directions, :check_in,
-                        :county_id, :no_break_penalty, :has_address, :special_address
-                    )
+                # Check if an event already exists for this client, venue, and date
+                existing_ev_sql = text("""
+                    SELECT event_id FROM event
+                    WHERE client_id = :client_id 
+                      AND venue_id = :venue_id 
+                      AND date = :date 
+                      AND deleted_at IS NULL
+                    LIMIT 1
                 """)
-                res = conn.execute(ev_sql, {
+                existing_ev = conn.execute(existing_ev_sql, {
                     "client_id": client_id,
                     "venue_id": venue_id,
-                    "title": event_name,
-                    "date": event_date,
-                    "address1": final_address1,
-                    "address2": final_address2,
-                    "city": final_city,
-                    "state": final_state,
-                    "zip": final_zip,
-                    "latitude": latitude,
-                    "longitude": longitude,
-                    "user_id": user_id,
-                    "tc": timeclock or 'DISABLED',
-                    "tc_holder": tc_holder,
-                    "tc_tol": tc_tol,
-                    "tc_pre": tc_pre,
-                    "tc_lim": tc_lim or 0,
-                    "admin_notes": admin_notes,
-                    "v_details": venue_details,
-                    "desc": description,
-                    "parking": parking,
-                    "parking_note": parking_note,
-                    "directions": directions,
-                    "check_in": check_in,
-                    "county_id": county_id,
-                    "no_break_penalty": no_break_penalty or 1,
-                    "has_address": has_address,
-                    "special_address": special_address
-                })
-                event_id = res.lastrowid
-                created_event_ids.append(event_id)
+                    "date": event_date
+                }).fetchone()
                 
-                # 2.5 Pull and copy venue documents to event if visible to employees
-                vdoc_sql = text("""
-                    SELECT vd.id, vd.filename, vd.description
-                    FROM venue_document vd
-                    JOIN document_type dt ON dt.id = vd.document_type_id
-                    WHERE vd.venue_id = :venue_id
-                      AND vd.deleted_at IS NULL
-                      AND dt.visible_when IS NOT NULL
-                      AND dt.visible_when LIKE '%EMPLOYEE%'
-                """)
-                vdocs = conn.execute(vdoc_sql, {"venue_id": venue_id}).fetchall()
-                for vd in vdocs:
-                    conn.execute(text("""
-                        INSERT INTO event_document (event_id, venue_document_id, filename, description, created_by)
-                        VALUES (:event_id, :vdoc_id, :filename, :description, :user_id)
-                    """), {
-                        "event_id": event_id,
-                        "vdoc_id": vd.id,
-                        "filename": vd.filename,
-                        "description": vd.description,
-                        "user_id": user_id
+                if existing_ev:
+                    event_id = existing_ev[0]
+                    created_event_ids.append(event_id)
+                else:
+                    # 2. Create Event (event represents a single day)
+                    ev_sql = text("""
+                        INSERT INTO event (
+                            client_id, venue_id, title, date, address1, address2, city, state, zip, latitude, longitude, created_by,
+                            timeclock, timeclock_code_holder, timeclock_tolerance, timeclock_prestart_interval, timeclock_limit,
+                            admin_notes, venue_details, description, parking, parking_note, directions, check_in,
+                            county_id, no_break_penalty, has_address, special_address
+                        )
+                        VALUES (
+                            :client_id, :venue_id, :title, :date, :address1, :address2, :city, :state, :zip, :latitude, :longitude, :user_id,
+                            :tc, :tc_holder, :tc_tol, :tc_pre, :tc_lim,
+                            :admin_notes, :v_details, :desc, :parking, :parking_note, :directions, :check_in,
+                            :county_id, :no_break_penalty, :has_address, :special_address
+                        )
+                    """)
+                    res = conn.execute(ev_sql, {
+                        "client_id": client_id,
+                        "venue_id": venue_id,
+                        "title": event_name,
+                        "date": event_date,
+                        "address1": final_address1,
+                        "address2": final_address2,
+                        "city": final_city,
+                        "state": final_state,
+                        "zip": final_zip,
+                        "latitude": latitude,
+                        "longitude": longitude,
+                        "user_id": user_id,
+                        "tc": timeclock or 'DISABLED',
+                        "tc_holder": tc_holder,
+                        "tc_tol": tc_tol,
+                        "tc_pre": tc_pre,
+                        "tc_lim": tc_lim or 0,
+                        "admin_notes": admin_notes,
+                        "v_details": venue_details,
+                        "desc": description,
+                        "parking": parking,
+                        "parking_note": parking_note,
+                        "directions": directions,
+                        "check_in": check_in,
+                        "county_id": county_id,
+                        "no_break_penalty": no_break_penalty or 1,
+                        "has_address": has_address,
+                        "special_address": special_address
                     })
+                    event_id = res.lastrowid
+                    created_event_ids.append(event_id)
+                    
+                    # 2.5 Pull and copy venue documents to event if visible to employees
+                    vdoc_sql = text("""
+                        SELECT vd.id, vd.filename, vd.description
+                        FROM venue_document vd
+                        JOIN document_type dt ON dt.id = vd.document_type_id
+                        WHERE vd.venue_id = :venue_id
+                          AND vd.deleted_at IS NULL
+                          AND dt.visible_when IS NOT NULL
+                          AND dt.visible_when LIKE '%EMPLOYEE%'
+                    """)
+                    vdocs = conn.execute(vdoc_sql, {"venue_id": venue_id}).fetchall()
+                    for vd in vdocs:
+                        conn.execute(text("""
+                            INSERT INTO event_document (event_id, venue_document_id, filename, description, created_by)
+                            VALUES (:event_id, :vdoc_id, :filename, :description, :user_id)
+                        """), {
+                            "event_id": event_id,
+                            "vdoc_id": vd.id,
+                            "filename": vd.filename,
+                            "description": vd.description,
+                            "user_id": user_id
+                        })
                 
                 for s in day_shifts:
                     # Resolve position_id, along with current rates (checking effective date amounts), uniform, and tools

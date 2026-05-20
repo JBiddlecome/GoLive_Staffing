@@ -140,6 +140,36 @@ def build_client_kb(client_id: int) -> dict:
                 for e in employees
             ]
             
+            # 5. Typical Shift Times
+            time_sql = text("""
+                SELECT p.description as position, 
+                       TIME_FORMAT(s.start, '%H:%i') as start_time, 
+                       TIME_FORMAT(s.end, '%H:%i') as end_time,
+                       COUNT(*) as freq
+                FROM event e
+                JOIN shift s ON s.event_id = e.event_id
+                JOIN shift_position sp ON sp.shift_id = s.shift_id
+                JOIN position p ON p.position_id = sp.position_id
+                WHERE e.client_id = :client_id
+                  AND e.deleted_at IS NULL
+                  AND s.start IS NOT NULL 
+                  AND s.end IS NOT NULL
+                GROUP BY p.description, start_time, end_time
+                ORDER BY freq DESC
+                LIMIT 50
+            """)
+            times = conn.execute(time_sql, {"client_id": client_id}).fetchall()
+            typical_times = {}
+            for t in times:
+                if t.position not in typical_times:
+                    typical_times[t.position] = []
+                if len(typical_times[t.position]) < 3: # Keep top 3 times per position
+                    typical_times[t.position].append({
+                        "start_time": t.start_time,
+                        "end_time": t.end_time,
+                        "frequency": t.freq
+                    })
+            
             # Build the KB dictionary
             return {
                 "client_id": client_id,
@@ -148,7 +178,8 @@ def build_client_kb(client_id: int) -> dict:
                 "typical_venues": typical_venues,
                 "available_positions": available_positions,
                 "preferred_employees": preferred_employees,
-                "instructions": "Use exact position names from 'available_positions'. If ambiguous, use the highest frequency position that matches. If the input explicitly states a venue name, extract it. If the input DOES NOT explicitly state a venue name, default to the venue with the highest frequency in 'typical_venues'."
+                "typical_shift_times": typical_times,
+                "instructions": "Use exact position names from 'available_positions'. If ambiguous, use the highest frequency position that matches. If the input explicitly states a venue name, extract it. If the input DOES NOT explicitly state a venue name, default to the venue with the highest frequency in 'typical_venues'. If the email only specifies a start time, use 'typical_shift_times' for that position to infer the end time. If an employee is requested by name, match them against 'preferred_employees' and extract their ID."
             }
             
     except Exception as e:
