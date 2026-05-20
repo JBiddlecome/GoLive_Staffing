@@ -54,6 +54,7 @@ Guidelines:
 - If an end time or venue address is missing, return an empty string (""). The UI will highlight these for the user to manually fill.
 - Support multi-day orders by creating separate shift_information objects with their respective dates.
 - Format all times in 24-hour HH:MM format.
+- IMPORTANT: When a user dictates a time range like "6 to 1:30pm", logically infer AM vs PM. (e.g. "6 to 1:30pm" usually means 6:00 AM to 1:30 PM, so return "06:00" and "13:30"). Do not assume both are PM if it doesn't make sense.
 - Do NOT return markdown formatting (no ```json).
 """
 

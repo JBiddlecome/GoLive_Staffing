@@ -434,6 +434,58 @@ def create_order(data: dict, user_id: int) -> dict:
                             "grooming": ", ".join(grooming_names) if grooming_names else "",
                             "sp_id": shift_position_id
                         })
+                        
+                    # 4.6 Handle Publication and Employee Requests
+                    pub_rule = s.get('publication_rule', 'DO_NOT_PUBLISH')
+                    req_emp_id = s.get('requested_employee_id', '')
+
+                    if pub_rule in ['ALL', 'PREFERRED', 'WORKED_BEFORE']:
+                        # Create Publishing Record
+                        pub_sql = text("""
+                            INSERT INTO publishing (event_id, client_id, `to`, created_by, begin, employee_statuses)
+                            VALUES (:event_id, :client_id, :to_val, :user_id, :begin_val, :emp_statuses)
+                        """)
+                        pub_res = conn.execute(pub_sql, {
+                            "event_id": event_id,
+                            "client_id": client_id,
+                            "to_val": pub_rule,
+                            "user_id": user_id,
+                            "begin_val": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                            "emp_statuses": '[1,10,2,6]'
+                        })
+                        publishing_id = pub_res.lastrowid
+
+                        # Link Shift to Publishing
+                        pub_shift_sql = text("""
+                            INSERT INTO publishing_shift (publishing_id, shift_id, created_by)
+                            VALUES (:pub_id, :shift_id, :created_by)
+                        """)
+                        conn.execute(pub_shift_sql, {
+                            "pub_id": publishing_id,
+                            "shift_id": shift_id,
+                            "created_by": user_id or 35598
+                        })
+
+                    elif pub_rule == 'REQUEST_EMPLOYEE' and req_emp_id and req_emp_id.isdigit():
+                        # Create unconfirmed shift_employee record for the requested employee
+                        se_sql = text("""
+                            INSERT INTO shift_employee (
+                                event_id, shift_position_id, employee_id, request_by,
+                                rate, bill_rate, confirmed, cancel_reason
+                            )
+                            VALUES (
+                                :event_id, :sp_id, :emp_id, :user_id,
+                                :rate, :bill_rate, 0, 0
+                            )
+                        """)
+                        conn.execute(se_sql, {
+                            "event_id": event_id,
+                            "sp_id": shift_position_id,
+                            "emp_id": int(req_emp_id),
+                            "user_id": user_id,
+                            "rate": pay_rate,
+                            "bill_rate": bill_rate
+                        })
                 
                 # 5. Update Event Stat Columns to color-code event correctly in GoLive (red/gray/white)
                 update_stats_sql = text("""

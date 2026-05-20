@@ -2,9 +2,8 @@
 {% block title %}Orders App — GoLive Staffing{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto space-y-8 pb-12 relative">
+<div class="max-w-[95%] mx-auto space-y-8 pb-12 relative">
     
-    <!-- Header -->
     <div class="text-center space-y-3 relative z-10">
         <p class="text-sm uppercase tracking-[0.3em] text-emerald-600 font-semibold">Staffing Tools</p>
         <h1 class="brand-serif text-4xl md:text-5xl font-semibold text-slate-900 tracking-tight">Orders</h1>
@@ -14,7 +13,25 @@
     </div>
 
     <!-- Main Grid -->
-    <div class="grid lg:grid-cols-2 gap-8 relative z-10">
+    <div class="grid lg:grid-cols-[25%_35%_40%] gap-6 relative z-10">
+        
+        <!-- Inbox Section -->
+        <div class="glass-card rounded-3xl p-6 border border-white/40 shadow-2xl bg-white/60 backdrop-blur-xl relative flex flex-col max-h-[800px]">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-slate-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    Email Inbox
+                </h2>
+                <span id="inboxCount" class="bg-indigo-100 text-indigo-800 text-xs font-bold px-2.5 py-0.5 rounded-full">0</span>
+            </div>
+            
+            <div id="inboxList" class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                <!-- Inbox items will be injected here -->
+                <div class="text-center py-8 text-slate-500 text-sm">
+                    Checking for emails...
+                </div>
+            </div>
+        </div>
         
         <!-- Input Section -->
         <div class="glass-card rounded-3xl p-6 md:p-8 border border-white/40 shadow-2xl bg-white/60 backdrop-blur-xl relative overflow-hidden transition-all duration-300 hover:shadow-emerald-900/5">
@@ -60,6 +77,19 @@
                 </div>
                 <p class="text-slate-500 font-medium">No order extracted yet.</p>
                 <p class="text-sm text-slate-400">Enter details on the left and click Extract.</p>
+            </div>
+
+            <div id="clientSelectState" class="hidden flex-col items-center justify-center py-12 text-center space-y-4">
+                <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-500 mb-2">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <p class="text-slate-700 font-medium" id="clientSelectMsg">Could not auto-detect client from email.</p>
+                <p class="text-sm text-slate-500">Please manually select the client for this order:</p>
+                <select id="manualClientSelect" class="w-full max-w-sm text-sm border border-slate-200 rounded-md p-2 focus:ring-emerald-500 focus:border-emerald-500 mt-2">
+                </select>
+                <button id="extractWithClientBtn" class="px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-500 transition-colors shadow-md mt-4">
+                    Continue Extraction
+                </button>
             </div>
 
             <div id="resultsState" class="hidden space-y-6">
@@ -132,32 +162,46 @@
     const emptyState = document.getElementById('emptyState');
     const loadingState = document.getElementById('loadingState');
     const resultsState = document.getElementById('resultsState');
+    const clientSelectState = document.getElementById('clientSelectState');
     
-    extractBtn.addEventListener('click', async () => {
-        const text = orderInput.value.trim();
-        if (!text) {
-            alert('Please enter some text or dictate an order first.');
-            return;
-        }
-        
+    async function runExtraction(text, clientId = null) {
         emptyState.classList.add('hidden');
         resultsState.classList.add('hidden');
+        clientSelectState.classList.add('hidden');
         loadingState.classList.remove('hidden');
         loadingState.classList.add('flex');
         
         try {
+            const payload = { text };
+            if (clientId) payload.client_id = clientId;
+            
             const response = await fetch('/orders/extract', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text })
+                body: JSON.stringify(payload)
             });
             const result = await response.json();
             
             if (result.status === 'success') {
-                renderResults(result.data);
+                renderResults(result.data, result.client_kb);
                 loadingState.classList.add('hidden');
                 loadingState.classList.remove('flex');
                 resultsState.classList.remove('hidden');
+            } else if (result.requires_client_selection) {
+                loadingState.classList.add('hidden');
+                loadingState.classList.remove('flex');
+                
+                document.getElementById('clientSelectMsg').innerText = result.message;
+                const select = document.getElementById('manualClientSelect');
+                select.innerHTML = result.clients.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                
+                clientSelectState.classList.remove('hidden');
+                clientSelectState.classList.add('flex');
+            } else {
+                alert('Error: ' + result.message);
+                loadingState.classList.add('hidden');
+                loadingState.classList.remove('flex');
+                emptyState.classList.remove('hidden');
             }
         } catch (err) {
             console.error(err);
@@ -166,6 +210,21 @@
             loadingState.classList.remove('flex');
             emptyState.classList.remove('hidden');
         }
+    }
+
+    extractBtn.addEventListener('click', () => {
+        const text = orderInput.value.trim();
+        if (!text) {
+            alert('Please enter some text or dictate an order first.');
+            return;
+        }
+        runExtraction(text);
+    });
+    
+    document.getElementById('extractWithClientBtn').addEventListener('click', () => {
+        const text = orderInput.value.trim();
+        const clientId = document.getElementById('manualClientSelect').value;
+        runExtraction(text, clientId);
     });
 
     function renderField(value, placeholder, isRequired = false, idStr = "", classStr = "") {
@@ -179,38 +238,98 @@
     }
 
     function renderTimeField(value, placeholder, classStr = "") {
-        if (!value) {
-            const hours = Array.from({length: 12}, (_, i) => i + 1);
-            const minutes = ['00', '15', '30', '45'];
-            let hourOptions = hours.map(h => `<option value="${h}">${h}</option>`).join('');
-            let minuteOptions = minutes.map(m => `<option value="${m}">${m}</option>`).join('');
-            return `
-            <div class="${classStr}-picker flex items-center gap-1 bg-red-50 border border-red-300 text-red-900 rounded-md p-1">
-                <select class="hour-select text-xs bg-transparent border-none p-0 focus:ring-0 cursor-pointer">
-                    <option value="">HH</option>
-                    ${hourOptions}
-                </select>
-                <span class="text-slate-400 font-semibold">:</span>
-                <select class="minute-select text-xs bg-transparent border-none p-0 focus:ring-0 cursor-pointer">
-                    <option value="">MM</option>
-                    ${minuteOptions}
-                </select>
-                <select class="ampm-select text-xs bg-transparent border-none p-0 focus:ring-0 cursor-pointer font-medium">
-                    <option value="AM">AM</option>
-                    <option value="PM" selected>PM</option>
-                </select>
-            </div>
-            `;
+        const hours = Array.from({length: 12}, (_, i) => i === 0 ? 12 : i);
+        const minutes = ['00', '15', '30', '45'];
+        
+        let selHour = "";
+        let selMin = "";
+        let selAmPm = "";
+        
+        if (value && value.includes(':')) {
+            let [h, m] = value.split(':');
+            h = parseInt(h, 10);
+            if (!isNaN(h)) {
+                selAmPm = h >= 12 ? 'PM' : 'AM';
+                h = h % 12;
+                if (h === 0) h = 12;
+                selHour = h.toString();
+            }
+            if (minutes.includes(m)) {
+                selMin = m;
+            } else if (m) {
+                let mInt = parseInt(m, 10);
+                if (!isNaN(mInt)) {
+                    let mRound = Math.round(mInt / 15) * 15;
+                    if (mRound === 60) { mRound = 0; }
+                    selMin = mRound.toString().padStart(2, '0');
+                }
+            }
         }
-        return `<input type="text" class="${classStr} w-full text-sm border-transparent bg-transparent hover:border-slate-200 focus:border-emerald-500 focus:bg-white rounded-md p-1 transition-colors" value="${value}">`;
+        
+        let hourOptions = hours.map(h => `<option value="${h}" ${h.toString() === selHour ? 'selected' : ''}>${h}</option>`).join('');
+        let minuteOptions = minutes.map(m => `<option value="${m}" ${m === selMin ? 'selected' : ''}>${m}</option>`).join('');
+        
+        const bgClass = (!value && placeholder !== 'End') ? 'bg-red-50 border-red-300 text-red-900' : 'bg-slate-50 border-transparent text-slate-700';
+        
+        return `
+        <div class="${classStr}-picker flex items-center gap-1 hover:bg-slate-100 border hover:border-slate-200 transition-colors rounded-md p-1 px-2 cursor-pointer focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-1 focus-within:ring-emerald-500 ${bgClass}">
+            <select class="hour-select text-xs font-medium bg-transparent border-none p-0 focus:ring-0 cursor-pointer w-8">
+                <option value="">HH</option>
+                ${hourOptions}
+            </select>
+            <span class="text-slate-400 font-bold">:</span>
+            <select class="minute-select text-xs font-medium bg-transparent border-none p-0 focus:ring-0 cursor-pointer w-9">
+                <option value="">MM</option>
+                ${minuteOptions}
+            </select>
+            <select class="ampm-select text-xs font-semibold bg-transparent border-none p-0 focus:ring-0 cursor-pointer text-emerald-700">
+                <option value="">--</option>
+                <option value="AM" ${selAmPm === 'AM' ? 'selected' : ''}>AM</option>
+                <option value="PM" ${selAmPm === 'PM' ? 'selected' : ''}>PM</option>
+            </select>
+        </div>
+        `;
     }
 
-    function renderResults(data) {
+    function renderResults(data, kb) {
         const basic = data.basic_information || {};
+        const venues = (kb && kb.typical_venues) ? kb.typical_venues : [];
         
-        document.getElementById('resClient').innerHTML = renderField(basic.client_name, "Client Name", true, "field-client_name") + `<input type="hidden" id="field-client_id" value="${basic.client_id || ''}">`;
+        let venueOptions = venues.map(v => `<option value="${v.name}" data-id="${v.venue_id}">${v.name}</option>`).join('');
+        
+        let selectedVenueName = basic.venue_name;
+        if (!selectedVenueName && venues.length > 0) {
+            selectedVenueName = venues[0].name;
+        }
+
+        let venueSelectHtml = `<select id="field-venue_name" class="w-full text-sm border-transparent bg-transparent hover:border-slate-200 focus:border-emerald-500 focus:bg-white rounded-md p-1 transition-colors">
+            ${venueOptions}
+        </select>`;
+
+        document.getElementById('resClient').innerHTML = `
+            <div class="relative w-full">
+                <input type="hidden" id="field-client_id" value="${basic.client_id || (kb ? kb.client_id : '')}">
+                <input type="text" id="field-client_name" class="field-client-search w-full text-sm border-transparent bg-transparent hover:border-slate-200 focus:border-emerald-500 focus:bg-white rounded-md p-1 transition-colors" value="${basic.client_name || (kb ? kb.name : '')}" placeholder="Client Name (Required)" oninput="searchClients(this)">
+                <div class="field-client-dropdown hidden absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl overflow-y-auto max-h-60">
+                </div>
+            </div>
+        `;
+        
         document.getElementById('resEvent').innerHTML = renderField(basic.event_name, "Event Name", false, "field-event_name");
-        document.getElementById('resVenue').innerHTML = renderField(basic.venue_name, "Venue", true, "field-venue_name");
+        document.getElementById('resVenue').innerHTML = venueSelectHtml;
+        
+        if (venues.length === 0) {
+            document.getElementById('resVenue').innerHTML = renderField(selectedVenueName, "Venue", true, "field-venue_name");
+        } else {
+            const selectEl = document.getElementById('field-venue_name');
+            const matchingOption = Array.from(selectEl.options).find(o => o.value.toLowerCase().includes(selectedVenueName.toLowerCase()) || selectedVenueName.toLowerCase().includes(o.value.toLowerCase()));
+            if (matchingOption) {
+                selectEl.value = matchingOption.value;
+            } else {
+                selectEl.selectedIndex = 0;
+            }
+        }
+
         document.getElementById('resAddress1').innerHTML = renderField(basic.event_address1, "Address 1 (Optional)", false, "field-event_address1");
         document.getElementById('resAddress2').innerHTML = renderField(basic.event_address2, "Address 2 (Optional)", false, "field-event_address2");
         document.getElementById('resCity').innerHTML = renderField(basic.event_city, "City (Optional)", false, "field-event_city");
@@ -232,7 +351,7 @@
             const certs = Array.isArray(details.certifications) ? details.certifications.join(', ') : '';
             
             const shiftEl = document.createElement('div');
-            shiftEl.className = 'border border-slate-200 rounded-xl overflow-hidden shift-row-data';
+            shiftEl.className = 'border border-slate-200 rounded-xl shift-row-data';
             shiftEl.dataset.count = shift.staff_count || 1;
             shiftEl.innerHTML = `
                 <div class="bg-slate-50 p-4 flex justify-between items-center cursor-pointer hover:bg-slate-100 transition-colors" onclick="this.nextElementSibling.classList.toggle('hidden')">
@@ -240,12 +359,12 @@
                         <div class="bg-indigo-100 text-indigo-700 font-bold px-3 py-1 rounded-lg text-sm min-w-[3rem] text-center">
                             ${shift.staff_count || '?'}x
                         </div>
-                        <div class="flex-1 grid grid-cols-3 gap-2">
+                        <div class="flex-1 grid grid-cols-[1fr_1fr_2fr] gap-3 items-center">
                             <div onclick="event.stopPropagation()">${renderField(shift.date, "Date (YYYY-MM-DD)", true, "", "field-date")}</div>
                             <div onclick="event.stopPropagation()">${renderField(shift.position, "Position", true, "", "field-position")}</div>
-                            <div class="flex items-center gap-2" onclick="event.stopPropagation()">
+                            <div class="flex items-center gap-1.5 min-w-max" onclick="event.stopPropagation()">
                                 ${renderTimeField(shift.start_time, "Start", "field-start")}
-                                <span class="text-slate-400">to</span>
+                                <span class="text-slate-400 text-xs">to</span>
                                 ${renderTimeField(shift.end_time, "End", "field-end")}
                             </div>
                         </div>
@@ -269,7 +388,18 @@
                         </div>
                         <div>
                             <span class="text-slate-400 font-medium block mb-1">Publication Rule</span>
-                            ${renderField(details.publication_rules, "e.g. Preferred First")}
+                            <select class="field-publication-rule w-full text-sm border border-slate-200 rounded-md p-1 focus:ring-emerald-500 focus:border-emerald-500" onchange="handlePublicationRuleChange(this)">
+                                <option value="DO_NOT_PUBLISH">Do Not Publish</option>
+                                <option value="ALL">Publish to All</option>
+                                <option value="PREFERRED">Publish to Preferred</option>
+                                <option value="WORKED_BEFORE">Publish to Worked Before</option>
+                                <option value="REQUEST_EMPLOYEE">Request Employee</option>
+                            </select>
+                            <div class="field-requested-employee-wrapper relative mt-2" style="display: none;">
+                                <input type="hidden" class="field-requested-employee-id">
+                                <input type="text" class="field-requested-employee-search w-full text-sm border border-slate-200 rounded-md p-1 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-300" placeholder="Type employee name..." onkeyup="searchEmployees(this, this.closest('.shift-row-data').querySelector('.field-date').value)" onfocus="searchEmployees(this, this.closest('.shift-row-data').querySelector('.field-date').value)">
+                                <div class="field-requested-employee-dropdown absolute z-50 w-full bg-white border border-slate-200 rounded-md shadow-lg max-h-48 overflow-y-auto hidden mt-1"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -277,12 +407,10 @@
             shiftsContainer.appendChild(shiftEl);
         });
         
-        // Show confirm button
         document.getElementById('confirmBtnContainer').classList.remove('hidden');
     }
 
     document.getElementById('confirmBtn').addEventListener('click', async () => {
-        // Collect the final values from the inputs
         const btn = document.getElementById('confirmBtn');
         const originalText = btn.innerHTML;
         btn.innerHTML = 'Publishing...';
@@ -307,45 +435,19 @@
         for (let i = 0; i < shiftElements.length; i++) {
             const el = shiftElements[i];
             
-            let startVal = '';
-            const startInput = el.querySelector('.field-start');
-            if (startInput) {
-                startVal = startInput.value.trim();
-            } else {
-                const picker = el.querySelector('.field-start-picker');
-                if (picker) {
-                    const hh = picker.querySelector('.hour-select').value;
-                    const mm = picker.querySelector('.minute-select').value;
-                    const ampm = picker.querySelector('.ampm-select').value;
-                    if (hh && mm) {
-                        let hour = parseInt(hh);
-                        if (ampm === 'PM' && hour !== 12) hour += 12;
-                        if (ampm === 'AM' && hour === 12) hour = 0;
-                        const hrStr = String(hour).padStart(2, '0');
-                        startVal = `${hrStr}:${mm}`;
-                    }
-                }
-            }
+            const parseTime = (picker) => {
+                const hh = picker.querySelector('.hour-select').value;
+                const mm = picker.querySelector('.minute-select').value;
+                const ampm = picker.querySelector('.ampm-select').value;
+                if (!hh || !mm || !ampm) return null;
+                let hour = parseInt(hh);
+                if (ampm === 'PM' && hour !== 12) hour += 12;
+                if (ampm === 'AM' && hour === 12) hour = 0;
+                return `${String(hour).padStart(2, '0')}:${mm}`;
+            };
 
-            let endVal = '';
-            const endInput = el.querySelector('.field-end');
-            if (endInput) {
-                endVal = endInput.value.trim();
-            } else {
-                const picker = el.querySelector('.field-end-picker');
-                if (picker) {
-                    const hh = picker.querySelector('.hour-select').value;
-                    const mm = picker.querySelector('.minute-select').value;
-                    const ampm = picker.querySelector('.ampm-select').value;
-                    if (hh && mm) {
-                        let hour = parseInt(hh);
-                        if (ampm === 'PM' && hour !== 12) hour += 12;
-                        if (ampm === 'AM' && hour === 12) hour = 0;
-                        const hrStr = String(hour).padStart(2, '0');
-                        endVal = `${hrStr}:${mm}`;
-                    }
-                }
-            }
+            const startVal = parseTime(el.querySelector('.field-start-picker'));
+            const endVal = parseTime(el.querySelector('.field-end-picker'));
 
             if (!startVal || !endVal) {
                 alert('Please enter both start and end times for all shifts.');
@@ -359,7 +461,9 @@
                 position: el.querySelector('.field-position').value,
                 start_time: startVal,
                 end_time: endVal,
-                staff_count: el.dataset.count
+                staff_count: el.dataset.count,
+                publication_rule: el.querySelector('.field-publication-rule') ? el.querySelector('.field-publication-rule').value : 'DO_NOT_PUBLISH',
+                requested_employee_id: el.querySelector('.field-requested-employee-id') ? el.querySelector('.field-requested-employee-id').value.trim() : ''
             });
         }
 
@@ -373,7 +477,6 @@
             
             if (result.status === 'success') {
                 alert(result.message);
-                // Reset UI
                 resultsState.classList.add('hidden');
                 emptyState.classList.remove('hidden');
                 orderInput.value = '';
@@ -389,7 +492,6 @@
         }
     });
 
-    // Basic Web Speech API mock/setup
     const micBtn = document.getElementById('micBtn');
     let recognition = null;
     if ('webkitSpeechRecognition' in window) {
@@ -421,6 +523,230 @@
         micBtn.innerHTML = `<span class="relative flex h-3 w-3 mr-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span></span> Listening...`;
         recognition.start();
     });
+
+    let allClients = [];
+    async function fetchAllClients() {
+        if (allClients.length === 0) {
+            try {
+                const res = await fetch('/orders/clients');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    allClients = data.data;
+                }
+            } catch (err) {}
+        }
+    }
+    fetchAllClients();
+
+    function searchClients(inputEl) {
+        const query = inputEl.value.toLowerCase().trim();
+        const dropdown = inputEl.nextElementSibling;
+        
+        if (!query) {
+            dropdown.classList.add('hidden');
+            return;
+        }
+        
+        const matches = allClients.filter(c => c.name.toLowerCase().includes(query)).slice(0, 15);
+        
+        if (matches.length > 0) {
+            dropdown.innerHTML = matches.map(c => `
+                <div class="px-3 py-2 hover:bg-slate-50 cursor-pointer flex items-center justify-between text-sm" onclick="selectClient('${c.id}', '${c.name.replace(/'/g, "\\'")}')">
+                    <span class="font-medium text-slate-700">${c.name}</span>
+                </div>
+            `).join('');
+            dropdown.classList.remove('hidden');
+        } else {
+            dropdown.classList.add('hidden');
+        }
+    }
+
+    window.selectClient = function(id, name) {
+        document.getElementById('field-client_id').value = id;
+        document.getElementById('field-client_name').value = name;
+        document.querySelector('.field-client-dropdown').classList.add('hidden');
+    }
+
+    // --- Inbox Logic ---
+    async function fetchInbox() {
+        try {
+            const res = await fetch('/orders/inbox');
+            const data = await res.json();
+            if (data.status === 'success') {
+                renderInbox(data.data);
+            }
+        } catch (err) {
+            console.error("Failed to fetch inbox", err);
+        }
+    }
+
+    function renderInbox(tickets) {
+        const inboxList = document.getElementById('inboxList');
+        document.getElementById('inboxCount').textContent = tickets.length;
+        
+        if (tickets.length === 0) {
+            inboxList.innerHTML = `<div class="text-center py-8 text-slate-500 text-sm">No pending emails found.</div>`;
+            return;
+        }
+
+        inboxList.innerHTML = tickets.map(t => {
+            const timeStr = new Date(t.received).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const dateStr = new Date(t.received).toLocaleDateString([], {month: 'short', day: 'numeric'});
+            const isUpdateHtml = t.is_update ? `<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Update</span>` : `<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">New</span>`;
+            
+            // store raw ticket in data attr
+            const escBody = t.body.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            const escSub = t.subject.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            
+            return `
+            <div class="bg-white rounded-xl p-4 border border-slate-100 shadow-sm hover:shadow-md transition-shadow relative group">
+                <div class="flex justify-between items-start mb-1">
+                    <span class="text-xs font-semibold text-slate-500">${t.client_name}</span>
+                    <span class="text-[10px] text-slate-400">${dateStr} ${timeStr}</span>
+                </div>
+                <h3 class="text-sm font-bold text-slate-800 leading-tight mb-1 truncate">${t.subject}</h3>
+                <p class="text-xs text-slate-500 line-clamp-2 mb-3">${t.preview}</p>
+                <div class="flex items-center justify-between">
+                    ${isUpdateHtml}
+                    <div class="flex gap-2">
+                        <button onclick="dismissTicket('${t.id}')" class="text-slate-400 hover:text-red-500 transition-colors p-1" title="Dismiss">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                        <button onclick="processTicket('${t.client_id}', '${escSub}', '${escBody}', '${t.id}')" class="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-3 py-1 text-xs font-bold rounded-lg transition-colors">
+                            Process
+                        </button>
+                    </div>
+                </div>
+            </div>
+            `;
+        }).join('');
+    }
+
+    window.dismissTicket = async function(id) {
+        if (!confirm("Are you sure you want to dismiss this order email?")) return;
+        try {
+            await fetch(`/orders/inbox/${id}/dismiss`, {method: 'POST'});
+            fetchInbox();
+        } catch (err) {}
+    }
+
+    window.processTicket = function(clientId, subject, body, id) {
+        // Set the input field
+        const fullText = `Subject: ${subject}\n\n${body}`;
+        document.getElementById('orderInput').value = fullText;
+        
+        // Trigger extraction with client ID
+        runExtraction(fullText, clientId);
+        
+        // Auto-dismiss from queue
+        fetch(`/orders/inbox/${id}/dismiss`, {method: 'POST'}).then(() => fetchInbox());
+    }
+
+    // Poll inbox every 10 seconds
+    fetchInbox();
+    setInterval(fetchInbox, 10000);
+
+    let searchTimeout = null;
+    
+    async function handlePublicationRuleChange(selectEl) {
+        const wrapper = selectEl.nextElementSibling;
+        if (selectEl.value === 'REQUEST_EMPLOYEE') {
+            wrapper.style.display = 'block';
+            
+            // Auto fetch suggestions
+            const shiftRow = selectEl.closest('.shift-row-data');
+            const dateStr = shiftRow.querySelector('.field-date').value;
+            const positionStr = shiftRow.querySelector('.field-position').value;
+            const clientEl = document.getElementById('field-client_id');
+            const venueEl = document.getElementById('field-venue_name');
+            
+            if (clientEl && clientEl.value && venueEl && positionStr) {
+                const clientId = clientEl.value;
+                const venueName = venueEl.value; // It's a select or input
+                const dropdown = wrapper.querySelector('.field-requested-employee-dropdown');
+                
+                try {
+                    const res = await fetch(`/orders/employees/suggest?client_id=${clientId}&venue_name=${encodeURIComponent(venueName)}&position_name=${encodeURIComponent(positionStr)}&date=${encodeURIComponent(dateStr)}`);
+                    const data = await res.json();
+                    
+                    if (data.status === 'success' && data.data.length > 0) {
+                        dropdown.innerHTML = `
+                            <div class="px-3 py-1.5 bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase">Top Suggestions</div>
+                            ${data.data.map(emp => `
+                                <div class="px-3 py-2 hover:bg-slate-50 cursor-pointer flex items-center justify-between text-sm" onclick="selectEmployee(this, '${emp.id}', '${emp.name.replace(/'/g, "\\'")}')">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-medium text-slate-700">${emp.name}</span>
+                                        <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 rounded">Used ${emp.freq}x</span>
+                                    </div>
+                                    <div class="flex items-center gap-1">
+                                        <span class="w-2.5 h-2.5 rounded-full ${emp.is_working ? 'bg-red-500' : 'bg-green-500'}"></span>
+                                        <span class="text-xs text-slate-400">${emp.is_working ? 'Working' : 'Available'}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        `;
+                        dropdown.classList.remove('hidden');
+                    }
+                } catch (err) {
+                    console.error("Suggest failed", err);
+                }
+            }
+            
+        } else {
+            wrapper.style.display = 'none';
+        }
+    }
+
+    async function searchEmployees(inputEl, dateStr) {
+        const query = inputEl.value.trim();
+        const dropdown = inputEl.nextElementSibling;
+        
+        if (query.length < 2) {
+            dropdown.classList.add('hidden');
+            return;
+        }
+
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(async () => {
+            try {
+                const res = await fetch(`/orders/employees/search?q=${encodeURIComponent(query)}&date=${encodeURIComponent(dateStr)}`);
+                const data = await res.json();
+                
+                if (data.status === 'success' && data.data.length > 0) {
+                    dropdown.innerHTML = data.data.map(emp => `
+                        <div class="px-3 py-2 hover:bg-slate-50 cursor-pointer flex items-center justify-between text-sm" onclick="selectEmployee(this, '${emp.id}', '${emp.name.replace(/'/g, "\\'")}')">
+                            <span class="font-medium text-slate-700">${emp.name}</span>
+                            <div class="flex items-center gap-1">
+                                <span class="w-2.5 h-2.5 rounded-full ${emp.is_working ? 'bg-red-500' : 'bg-green-500'}"></span>
+                                <span class="text-xs text-slate-400">${emp.is_working ? 'Working' : 'Available'}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                    dropdown.classList.remove('hidden');
+                } else {
+                    dropdown.innerHTML = '<div class="px-3 py-2 text-sm text-slate-400 italic">No matching employees</div>';
+                    dropdown.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error("Search failed", err);
+            }
+        }, 300);
+    }
+
+    function selectEmployee(rowEl, empId, empName) {
+        const wrapper = rowEl.closest('.field-requested-employee-wrapper');
+        wrapper.querySelector('.field-requested-employee-id').value = empId;
+        wrapper.querySelector('.field-requested-employee-search').value = empName;
+        wrapper.querySelector('.field-requested-employee-dropdown').classList.add('hidden');
+    }
+    
+    // Hide dropdowns when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.field-requested-employee-wrapper')) {
+            document.querySelectorAll('.field-requested-employee-dropdown').forEach(el => el.classList.add('hidden'));
+        }
+    });
+
 </script>
 
 <style>
