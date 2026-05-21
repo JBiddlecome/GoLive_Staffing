@@ -90,10 +90,472 @@
       "46269"
     ],
     "2026-05-21": [
+      "46088",
+      "46255",
       "46284"
     ]
   },
   "records": [
+    {
+      "review_id": "2026-05-21:46255",
+      "review_date": "2026-05-21",
+      "employee_id": 46255,
+      "employee_name": "Martha Matu",
+      "first_name": "Martha",
+      "last_name": "Matu",
+      "email": "Marthamatu1984@gmail.com",
+      "phone": "323-251-0245",
+      "hire_date": "2026-05-21",
+      "rehire_date": "",
+      "resume_file": "3wltty1ajsuzck7m_IMG_0699.jpeg",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/3wltty1ajsuzck7m_IMG_0699.jpeg",
+      "status": "Recommended",
+      "recommendations": [
+        {
+          "key": "cashier",
+          "label": "Cashier",
+          "base_name": "Cashier",
+          "ai_level": 1,
+          "ai_status": "level_1",
+          "estimated_years": 2.0,
+          "confidence": 1.0,
+          "reasons": [
+            "Roles at 99 Cents Only Stores, TJ Maxx, and Goodwill involved cashier duties for 2 years."
+          ],
+          "position_id": 101,
+          "position_description": "Cashier",
+          "match_found": true
+        },
+        {
+          "key": "dishwasher",
+          "label": "Dishwasher",
+          "base_name": "Dishwasher",
+          "ai_level": 1,
+          "ai_status": "level_1",
+          "estimated_years": 3.0,
+          "confidence": 1.0,
+          "reasons": [
+            "Role as Dishwasher/Food Service Worker at Martin Luther King Jr. Community Hospital for 3 years."
+          ],
+          "position_id": 105,
+          "position_description": "Dishwasher",
+          "match_found": true
+        }
+      ],
+      "ai_summary": {
+        "hospitality_experience_overview": "Extensive experience in food service and hospitality, primarily in food service roles at hospitals, retail, and custodial work at various venues.",
+        "total_hospitality_years_estimate": 9.0,
+        "notable_venues": [
+          "Martin Luther King Jr. Community Hospital",
+          "99 Cents Only Stores",
+          "TJ Maxx",
+          "Goodwill Southern California"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "Experience at fast-food chains (e.g., 99 Cents Only Stores, TJ Maxx, Goodwill) is non-qualifying for hospitality roles but counts as Level 1 if roles match target positions."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Extensive experience in food service and hospitality, primarily in food service roles at hospitals, retail, and custodial work at various venues.",
+          "total_hospitality_years_estimate": 9.0,
+          "notable_venues": [
+            "Martin Luther King Jr. Community Hospital",
+            "99 Cents Only Stores",
+            "TJ Maxx",
+            "Goodwill Southern California"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "Experience at fast-food chains (e.g., 99 Cents Only Stores, TJ Maxx, Goodwill) is non-qualifying for hospitality roles but counts as Level 1 if roles match target positions."
+        },
+        "positions": {
+          "cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles explicitly related to cooking or culinary work."
+            ]
+          },
+          "prep_cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles explicitly related to food prep or culinary work."
+            ]
+          },
+          "dishwasher": {
+            "status": "level_1",
+            "estimated_years": 3.0,
+            "confidence": 1.0,
+            "reasons": [
+              "Role as Dishwasher/Food Service Worker at Martin Luther King Jr. Community Hospital for 3 years."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No specific utility roles identified."
+            ]
+          },
+          "server": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles explicitly related to serving."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles explicitly related to hosting."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles explicitly related to running food or assisting servers."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles explicitly related to bussing."
+            ]
+          },
+          "bartender": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No bartender roles identified."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barback roles identified."
+            ]
+          },
+          "cashier": {
+            "status": "level_1",
+            "estimated_years": 2.0,
+            "confidence": 1.0,
+            "reasons": [
+              "Roles at 99 Cents Only Stores, TJ Maxx, and Goodwill involved cashier duties for 2 years."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No pastry-specific roles identified."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No baking roles identified."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No sushi roles identified."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No concessions roles identified."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barista roles identified."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No valet roles identified."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No supervisory roles in hospitality industry identified."
+            ]
+          },
+          "sous_chef_2": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No culinary supervisory experience, less than 3 years."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "Resume was evaluated from an image.",
+      "error": "",
+      "created_at": "2026-05-21T11:32:05-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
+    {
+      "review_id": "2026-05-21:46088",
+      "review_date": "2026-05-21",
+      "employee_id": 46088,
+      "employee_name": "Maureen Antonio",
+      "first_name": "Maureen",
+      "last_name": "Antonio",
+      "email": "Mcantonio@antoniodesign.com",
+      "phone": "310-739-0413",
+      "hire_date": "2026-05-21",
+      "rehire_date": "",
+      "resume_file": "zzcyjiek0q3rlece_Maureen_Antonio_Restaurant_Resume_2026.pdf",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/zzcyjiek0q3rlece_Maureen_Antonio_Restaurant_Resume_2026.pdf",
+      "status": "Recommended",
+      "recommendations": [
+        {
+          "key": "server",
+          "label": "Server 2",
+          "base_name": "Server",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 10.0,
+          "confidence": 1.0,
+          "reasons": [
+            "Over 10 years as a Dinner Server at restaurants, including The Whale\u2019s Tail Restaurant, qualifies for server at Level 2."
+          ],
+          "position_id": 285,
+          "position_description": "Server 1",
+          "match_found": true
+        },
+        {
+          "key": "server",
+          "label": "Server 2",
+          "base_name": "Server",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 10.0,
+          "confidence": 1.0,
+          "reasons": [
+            "Over 10 years as a Dinner Server at restaurants, including The Whale\u2019s Tail Restaurant, qualifies for server at Level 2."
+          ],
+          "position_id": 115,
+          "position_description": "Server 2",
+          "match_found": true
+        }
+      ],
+      "ai_summary": {
+        "hospitality_experience_overview": "Maureen Antonio has over 10 years of experience as a Dinner Server in restaurants, including The Whale\u2019s Tail Restaurant, which is a hospitality venue. She has recent food handler certification but no recent or extensive hospitality venue experience beyond serving.",
+        "total_hospitality_years_estimate": 10.0,
+        "notable_venues": [
+          "The Whale\u2019s Tail Restaurant",
+          "DiMillo\u2019s on the Water",
+          "The Clocktower Cafe"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "No fast-food experience; all hospitality experience is from restaurants. Her experience is primarily as a server, which qualifies for server roles at Level 2 based on her 10+ years of experience."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Maureen Antonio has over 10 years of experience as a Dinner Server in restaurants, including The Whale\u2019s Tail Restaurant, which is a hospitality venue. She has recent food handler certification but no recent or extensive hospitality venue experience beyond serving.",
+          "total_hospitality_years_estimate": 10.0,
+          "notable_venues": [
+            "The Whale\u2019s Tail Restaurant",
+            "DiMillo\u2019s on the Water",
+            "The Clocktower Cafe"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "No fast-food experience; all hospitality experience is from restaurants. Her experience is primarily as a server, which qualifies for server roles at Level 2 based on her 10+ years of experience."
+        },
+        "positions": {
+          "cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No cooking roles or venue experience related to cooking."
+            ]
+          },
+          "prep_cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No prep cook roles or relevant venue experience."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No dishwasher roles or venue experience."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No utility roles or relevant experience."
+            ]
+          },
+          "server": {
+            "status": "level_2",
+            "estimated_years": 10.0,
+            "confidence": 1.0,
+            "reasons": [
+              "Over 10 years as a Dinner Server at restaurants, including The Whale\u2019s Tail Restaurant, qualifies for server at Level 2."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No host roles or venue experience mentioned."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No runner roles or venue experience mentioned."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No busser roles or venue experience mentioned."
+            ]
+          },
+          "bartender": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No bartender roles or venue experience mentioned."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barback roles or venue experience mentioned."
+            ]
+          },
+          "cashier": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No cashier roles or venue experience mentioned."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No pastry roles or relevant experience."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No baking roles or experience mentioned."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No sushi experience or venue experience mentioned."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No concessions experience or venue experience mentioned."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barista experience or venue experience mentioned."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No valet experience or venue experience mentioned."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No event supervisor experience or venue experience mentioned."
+            ]
+          },
+          "sous_chef_2": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No culinary or chef experience mentioned, and less than 3 years of relevant experience."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "Maureen Antonio  Santa Monica, California \u2022 Mobile: 310.739.0413 \u2022 Email: mcantonio@antoniodesign.com Qualifications and Skills Summary:  I have been an award-winning Digital Designer and Project Manager for the past 15 years and I am now returning to a career in Food Service and Hospitality. I was a Dinner Server for over 10 years; working in restaurants such as \u201cDiMillo\u2019s on the Water\u201d in Portland, Maine and as a Head Server at \u201cThe Clocktower Cafe\u201d in Ventura, CA. While I was a Dinner Server at \u201cThe Whale\u2019s Tail Restaurant\u201d in Channel Islands Harbor, CA, I received excellent training. I could turn my five-table station four or five times, provide great service and sometimes win the monthly wine, shellfish or dessert selling contest. I also have a recent California Food Handler Certificate. Professional Experience:  Antonio Design, Santa Monica, CA 2/12 \u2013 Present Owner, Art Director, Designer, Project Manager Clients included Prodege LLC, The Gilt Groupe and Air New Zealand. Following brand guidelines and adhering to strict deadlines, I\u2019ve created HTML5 banner ads in all standard IAB sizes, animated gif banners for mobile, landing pages, magazine ads, print pieces, email blasts, websites, social media, OOH, a trade show booth, a truck skin, swag, logos, icons, etc. Intelligent Beauty, Manhattan Beach, CA 4/08 \u2013 2/12 Designer and Project Manager \u2013 Justfab.com  With the company President, I was one of two designers who helped launch the Acquisition Marketing Department for this new monthly shoe subscription start-up brand. I also helped hire and train new designers. Finally, I project managed all Department Acquisition creative. Sony Pictures Home Entertainment, Culver City, CA 10/06 \u2013 12/07 Project Manager/Full-time Contractor \u2013 Digital Marketing I project managed the creation of deadline-driven title sites, standard and rich media banners, emails and games for about 70 movie and television titles.  Education:  Bachelor of Fine Arts Degree Awarded with Honors University of Southern Maine, Portland Associate of Arts Degree University of Maine at Orono",
+      "error": "",
+      "created_at": "2026-05-21T11:12:50-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
     {
       "review_id": "2026-05-21:46284",
       "review_date": "2026-05-21",
@@ -14268,6 +14730,6 @@
       "dismissed_reason": ""
     }
   ],
-  "last_scan_at": "2026-05-21T10:19:35-07:00",
+  "last_scan_at": "2026-05-21T11:37:32-07:00",
   "last_scan_message": "No new active employees with resumes found for 2026-05-21."
 }
