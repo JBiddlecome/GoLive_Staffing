@@ -17,7 +17,18 @@ from pathlib import Path
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
-_completed_shifts_file = Path("apps/msp_dashboard/msp_completed_shifts.json")
+def _resolve_data_dir() -> Path:
+    env_dir = os.getenv("DATA_DIR") or os.getenv("RENDER_DISK_PATH")
+    if env_dir:
+        return Path(env_dir)
+    if Path("/var/data").exists():
+        return Path("/var/data")
+    if any(os.getenv(e) for e in ("RENDER", "RENDER_SERVICE_ID")):
+        return Path("/opt/render/project/src/data")
+    return Path("data")
+
+_completed_shifts_file = _resolve_data_dir() / "msp_completed_shifts.json"
+_completed_shifts_file.parent.mkdir(parents=True, exist_ok=True)
 
 def _load_completed_shifts():
     if _completed_shifts_file.exists():

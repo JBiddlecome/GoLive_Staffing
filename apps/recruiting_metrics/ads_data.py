@@ -4,8 +4,18 @@ from pathlib import Path
 from typing import List, Dict, Optional
 
 # Define the data file path within the project root / data directory
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-DATA_FILE = REPO_ROOT / "data" / "recruiting_ads.json"
+def _resolve_data_dir() -> Path:
+    import os
+    env_dir = os.getenv("DATA_DIR") or os.getenv("RENDER_DISK_PATH")
+    if env_dir:
+        return Path(env_dir)
+    if Path("/var/data").exists():
+        return Path("/var/data")
+    if any(os.getenv(e) for e in ("RENDER", "RENDER_SERVICE_ID")):
+        return Path("/opt/render/project/src/data")
+    return Path(__file__).resolve().parent.parent.parent / "data"
+
+DATA_FILE = _resolve_data_dir() / "recruiting_ads.json"
 
 def _ensure_data_file() -> None:
     """Ensure the data file exists."""

@@ -14,8 +14,18 @@ from datetime import datetime
 # ---------------------------------------------------------------------------
 # Persistent MySQL DB for daily coverage history (shared across instances)
 # ---------------------------------------------------------------------------
-_history_table_ensured = False
-_HISTORY_DB = Path("data/staffing_coverage_history.db")
+def _resolve_data_dir() -> Path:
+    env_dir = os.getenv("DATA_DIR") or os.getenv("RENDER_DISK_PATH")
+    if env_dir:
+        return Path(env_dir)
+    if Path("/var/data").exists():
+        return Path("/var/data")
+    if any(os.getenv(e) for e in ("RENDER", "RENDER_SERVICE_ID")):
+        return Path("/opt/render/project/src/data")
+    return Path("data")
+
+_HISTORY_DB = _resolve_data_dir() / "staffing_coverage_history.db"
+_HISTORY_DB.parent.mkdir(parents=True, exist_ok=True)
 
 def _ensure_history_table(connection) -> None:
     global _history_table_ensured

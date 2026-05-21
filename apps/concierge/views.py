@@ -14,7 +14,17 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
 
-DATA_FILE = Path("data/concierge_records.json")
+def _resolve_data_dir() -> Path:
+    env_dir = os.getenv("DATA_DIR") or os.getenv("RENDER_DISK_PATH")
+    if env_dir:
+        return Path(env_dir)
+    if Path("/var/data").exists():
+        return Path("/var/data")
+    if any(os.getenv(e) for e in ("RENDER", "RENDER_SERVICE_ID")):
+        return Path("/opt/render/project/src/data")
+    return Path("data")
+
+DATA_FILE = _resolve_data_dir() / "concierge_records.json"
 DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 LAST_SYNC_TIMES: dict[tuple[pd.Timestamp | None, pd.Timestamp | None], float] = {}

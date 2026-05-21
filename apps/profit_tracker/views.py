@@ -15,7 +15,17 @@ from apps.profit_tracker.billing import calculate_total_bill
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
-BT_TIERS_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "bt_client_tiers.json"
+def _resolve_data_dir() -> Path:
+    env_dir = os.getenv("DATA_DIR") or os.getenv("RENDER_DISK_PATH")
+    if env_dir:
+        return Path(env_dir)
+    if Path("/var/data").exists():
+        return Path("/var/data")
+    if any(os.getenv(e) for e in ("RENDER", "RENDER_SERVICE_ID")):
+        return Path("/opt/render/project/src/data")
+    return Path(__file__).resolve().parent.parent.parent / "data"
+
+BT_TIERS_PATH = _resolve_data_dir() / "bt_client_tiers.json"
 
 
 def _load_bt_tiers() -> dict:
@@ -1314,15 +1324,7 @@ async def get_position_breakdown(payload: ProfitPayload):
 
 import sqlite3
 
-MODULE_BASE_DIR_TRACK = Path(__file__).resolve().parent.parent.parent
-RENDER_DATA_DIR_TRACK = Path("/opt/render/project/src/data")
-if any(os.getenv(env_var) for env_var in ("RENDER", "RENDER_SERVICE_ID", "RENDER_EXTERNAL_URL")):
-    DATA_DIR_TRACK = RENDER_DATA_DIR_TRACK
-elif RENDER_DATA_DIR_TRACK.exists():
-    DATA_DIR_TRACK = RENDER_DATA_DIR_TRACK
-else:
-    DATA_DIR_TRACK = MODULE_BASE_DIR_TRACK / "data"
-
+DATA_DIR_TRACK = _resolve_data_dir()
 os.makedirs(DATA_DIR_TRACK, exist_ok=True)
 DB_PATH_TRACK = DATA_DIR_TRACK / "profit_tracker.db"
 

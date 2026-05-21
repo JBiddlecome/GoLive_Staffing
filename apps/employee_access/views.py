@@ -14,7 +14,18 @@ from fastapi.templating import Jinja2Templates
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
-DATA_FILE = Path("data/employee_access.json")
+def _resolve_data_dir() -> Path:
+    import os
+    env_dir = os.getenv("DATA_DIR") or os.getenv("RENDER_DISK_PATH")
+    if env_dir:
+        return Path(env_dir)
+    if Path("/var/data").exists():
+        return Path("/var/data")
+    if any(os.getenv(e) for e in ("RENDER", "RENDER_SERVICE_ID")):
+        return Path("/opt/render/project/src/data")
+    return Path("data")
+
+DATA_FILE = _resolve_data_dir() / "employee_access.json"
 DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 DEPARTMENTS = [

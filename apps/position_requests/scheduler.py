@@ -184,7 +184,18 @@ POSITION_KEY_TO_NAME = {
 }
 from sqlalchemy.engine import URL
 
-DATA_FILE = Path("data/position_requests.json")
+def _resolve_data_dir() -> Path:
+    import os
+    env_dir = os.getenv("DATA_DIR") or os.getenv("RENDER_DISK_PATH")
+    if env_dir:
+        return Path(env_dir)
+    if Path("/var/data").exists():
+        return Path("/var/data")
+    if any(os.getenv(e) for e in ("RENDER", "RENDER_SERVICE_ID")):
+        return Path("/opt/render/project/src/data")
+    return Path("data")
+
+DATA_FILE = _resolve_data_dir() / "position_requests.json"
 SEED_FILE = Path("apps/position_requests/seed_data.json")
 
 def load_records():
@@ -550,7 +561,7 @@ async def fetch_submissions():
 
         records = load_records()
         
-        reprocess_flag = Path("data/reprocess_event_supervisor.flag")
+        reprocess_flag = _resolve_data_dir() / "reprocess_event_supervisor.flag"
         _is_render = any(os.getenv(v) for v in ("RENDER", "RENDER_SERVICE_ID", "RENDER_EXTERNAL_URL"))
         
         if _is_render and not reprocess_flag.exists():

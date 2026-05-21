@@ -265,10 +265,22 @@ def _get_client_drop_off_summary(is_staffing_manager: bool, manager_name: str | 
             all_clients = [c for c in all_clients if c.get("Staffing Manager") == manager_name]
 
         # 3. Load local state (Notes and Contacted) from SQLite
-        db_path = Path("data/client_drop_off.db")
+        def _resolve_data_dir() -> Path:
+            import os
+            env_dir = os.getenv("DATA_DIR") or os.getenv("RENDER_DISK_PATH")
+            if env_dir:
+                return Path(env_dir)
+            if Path("/var/data").exists():
+                return Path("/var/data")
+            if any(os.getenv(e) for e in ("RENDER", "RENDER_SERVICE_ID")):
+                return Path("/opt/render/project/src/data")
+            return Path("data")
+
+        data_dir = _resolve_data_dir()
+        db_path = data_dir / "client_drop_off.db"
         if not db_path.exists():
             # Fallback to v2 if that's what's used
-            db_path = Path("data/client_drop_off_v2.db")
+            db_path = data_dir / "client_drop_off_v2.db"
             
         notes_map = {}
         contacted_map = {}
