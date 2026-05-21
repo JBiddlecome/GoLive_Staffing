@@ -109,7 +109,7 @@
       "rehire_date": "",
       "resume_file": "3wltty1ajsuzck7m_IMG_0699.jpeg",
       "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/3wltty1ajsuzck7m_IMG_0699.jpeg",
-      "status": "Recommended",
+      "status": "Approved",
       "recommendations": [
         {
           "key": "cashier",
@@ -323,9 +323,13 @@
       "resume_text_preview": "Resume was evaluated from an image.",
       "error": "",
       "created_at": "2026-05-21T11:32:05-07:00",
-      "completed": false,
-      "approved_positions": [],
-      "dismissed_reason": ""
+      "completed": true,
+      "approved_positions": [
+        "Cashier",
+        "Dishwasher"
+      ],
+      "dismissed_reason": "",
+      "approved_at": "2026-05-21T11:50:55-07:00"
     },
     {
       "review_id": "2026-05-21:46088",
@@ -340,7 +344,7 @@
       "rehire_date": "",
       "resume_file": "zzcyjiek0q3rlece_Maureen_Antonio_Restaurant_Resume_2026.pdf",
       "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/zzcyjiek0q3rlece_Maureen_Antonio_Restaurant_Resume_2026.pdf",
-      "status": "Recommended",
+      "status": "Approved",
       "recommendations": [
         {
           "key": "server",
@@ -552,9 +556,13 @@
       "resume_text_preview": "Maureen Antonio  Santa Monica, California \u2022 Mobile: 310.739.0413 \u2022 Email: mcantonio@antoniodesign.com Qualifications and Skills Summary:  I have been an award-winning Digital Designer and Project Manager for the past 15 years and I am now returning to a career in Food Service and Hospitality. I was a Dinner Server for over 10 years; working in restaurants such as \u201cDiMillo\u2019s on the Water\u201d in Portland, Maine and as a Head Server at \u201cThe Clocktower Cafe\u201d in Ventura, CA. While I was a Dinner Server at \u201cThe Whale\u2019s Tail Restaurant\u201d in Channel Islands Harbor, CA, I received excellent training. I could turn my five-table station four or five times, provide great service and sometimes win the monthly wine, shellfish or dessert selling contest. I also have a recent California Food Handler Certificate. Professional Experience:  Antonio Design, Santa Monica, CA 2/12 \u2013 Present Owner, Art Director, Designer, Project Manager Clients included Prodege LLC, The Gilt Groupe and Air New Zealand. Following brand guidelines and adhering to strict deadlines, I\u2019ve created HTML5 banner ads in all standard IAB sizes, animated gif banners for mobile, landing pages, magazine ads, print pieces, email blasts, websites, social media, OOH, a trade show booth, a truck skin, swag, logos, icons, etc. Intelligent Beauty, Manhattan Beach, CA 4/08 \u2013 2/12 Designer and Project Manager \u2013 Justfab.com  With the company President, I was one of two designers who helped launch the Acquisition Marketing Department for this new monthly shoe subscription start-up brand. I also helped hire and train new designers. Finally, I project managed all Department Acquisition creative. Sony Pictures Home Entertainment, Culver City, CA 10/06 \u2013 12/07 Project Manager/Full-time Contractor \u2013 Digital Marketing I project managed the creation of deadline-driven title sites, standard and rich media banners, emails and games for about 70 movie and television titles.  Education:  Bachelor of Fine Arts Degree Awarded with Honors University of Southern Maine, Portland Associate of Arts Degree University of Maine at Orono",
       "error": "",
       "created_at": "2026-05-21T11:12:50-07:00",
-      "completed": false,
-      "approved_positions": [],
-      "dismissed_reason": ""
+      "completed": true,
+      "approved_positions": [
+        "Server 1",
+        "Server 2"
+      ],
+      "dismissed_reason": "",
+      "approved_at": "2026-05-21T11:56:08-07:00"
     },
     {
       "review_id": "2026-05-21:46284",
@@ -569,7 +577,7 @@
       "rehire_date": "",
       "resume_file": "s62204vupaupax7d_AndrewJacksonResume.pdf",
       "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/s62204vupaupax7d_AndrewJacksonResume.pdf",
-      "status": "Recommended",
+      "status": "Approved",
       "recommendations": [
         {
           "key": "sous_chef_2",
@@ -774,9 +782,12 @@
       "resume_text_preview": "Andrew  Thomas  Jackson  \n21571 Mayan Drive  | Chatsworth, CA 91311  | (818) 515 -9351  | chefatj1@gmail.com  \nObjective  \nAs a culinary professional , I have dedicated my life to the hospitality \nindustry focused on creating amazing food , upkeeping health code \nstandards  and ensuring guests have a memorable experience while \ndining .  I am seeking an employment opportunity to utilize my 17 years \nof kitchen experience along with 12 years of kitchen management \nranging from overseeing a staff as small as 6 to as large as 20.   I am \nable to adapt to any kitchen environment  and find where I can best be \nutilized; whether that be working a station as a line cook, se rving food, \nexpo and quality control , following recipes as a prep cook, catching up \na busy dish pit, or overseeing the whole operation.  \nExperience  \n06/2025 - Present  \nChef/Garde Manger  | Sherwood Country Club  | Thousand Oaks , CA \nAs the Garde Manger of the  Men\u2019s Lounge, my responsibility is to make salads, cold appetizers, \ndeserts, and specialty pizzas  that change monthly  along with weekly specials.  I also assist \nbanquets and have experience in working the slicing station  serving prime rib , turkey, ham, and \nchicken for service.  i am also trained in handling and serving caviar . \n08/2024 \u2013 06/2025  \nLead Line Cook | Dark Horse Tavern | Tarzana, CA  \nI had just moved back to CA from NC and took the first job that was available.   With my \nexperience, I made major changes, added menu items, put an emphasis on cleanliness  and did \nmy best to bring the kitchen up to speed.  I eventually left when Sherwood offered me a job.  \n \n\n2   \n 06/20 23 \u2013 07/20 24 \nKitchen Manager  | 1841 Cafe  | Lenoir, NC  \nAs kitchen manager, I reported directly to the head chef and owner.  My responsibilities were to \nprimarily run the grill, quality control, inventory, training staff and assisting with catering events.   I \nalso assisted the head chef in creating weekly specials.   I left this position because I relocated to \nLos Angeles.  \n07/2023 \u2013 12/2023  \nLine Cook | Bistro Roca | Blowing Rock, NC  \nMy primary responsibility was running the wood fire pizza oven .  This included starting and \nmaintaining the fire throughout service, add wood as needed to maintain about 800 degrees.  \nPrep included pizza dough, pizza sauce, shredding chees e, cleaning mussels, preparing trout \nand weekly specials.  \n06/20 13 \u2013 02/202 3 \nExecutive Chef  | The One Up  | Sherman Oaks, CA  \nAs Executive Chef, I was responsible for the menu creation and following the \u201celevated pub grub\u201d \nmentality of the restaurant .  A high-volume  operation of roughly $3  million a year in sales, I was \nresponsible for the hiring and firing of kitchen staff along with training and delegation of duties.  \nResponsibilities  also included ordering product for various venders including US foods, Premier \nMeats, Santa Monica Seafood, Worldwide Produce, M ission Linens and Restaurant Tea Service.   \nAs a working chef, I would regularly schedule myself to work saut\u00e9 , grill, fry, salads or expo .  I ran \nthe kitchen for 9.5 years, until our lease was up and rent was raised too high to make it profitable.  \n02/2016  \u2013 01/2017  \nSous Chef  | Paper or Plastik Cafe  | Los Angeles, CA  \nI took this job while running The One Up to assist one of my cooks who was promoted to \nExecutive Chef  here.  This was a scratch kitchen and I was responsible for handling daily prep, \noverseeing the morning shift , preparing for night service and closing the kitchen.   My friend I was \nassisting was eventually fired and I was not in a position to take over so I stayed on long enough \nto assist the new chef and help with a seamless  transition  \n03/2018 \u2013 12/2018 \nLine Cook  | On The Thirty  | Sherman Oaks , CA \nA well-known  pizza joint in Sherman Oaks, I took this job because I wanted to learn  the art of  \npizza making.   I was more like a paid stage.  I ran the pizza oven on evenings, and learned pizza \ndough making in the mornings.  All this while still Executive Chef of The One Up .   \n\n3   \n  \nCertifications  \n\u2022 Serv-safe Food Protection Manager Certification exp 0 3/04/2027 \n\u2022 Responsible Beverage Sales Certification  \n\u2022 Sexual Harassment Prevention certification  \n\u2022 CPR/AED training certification  \nReferences  \n\u2022 Murphy Michaels \u2013 The One Up \u2013 Owner \u2013 (619) 259 -8765  \n\u2022 Chef Aaron \u2013 Sherwood Country Club  \u2013 Chef de Cuisine  \u2013 (720) 323-0407  \n\u2022 Chef Colin \u2013 Sherwood Country Club  \u2013 Director of Culinary  \u2013 (831) 521-4403  \n\u2022 Chef Nick Ware \u2013 Paper or Plastik Cafe  \u2013 Executive Chef  \u2013 (502) 544-0553  \n\u2022 Vicki Setzer  \u2013 1841 Cafe  \u2013 Owner \u2013 (828) 850-3857 \n\u2022 Francisco  \u2013 On the Thirty  \u2013 Head Chef  \u2013 (818) 568-8582  \n\u2022 Chef Seth  \u2013 Bistro Roca  \u2013 Executive Chef  \u2013 (828) 406-1117  \n\u2022 Javier  Soto \u2013 The Last Call  \u2013 Owner \u2013 (909) 419-9288  \u2013 I worked a taco cart for him for about \n3 years  on and off",
       "error": "",
       "created_at": "2026-05-21T08:58:20-07:00",
-      "completed": false,
-      "approved_positions": [],
-      "dismissed_reason": ""
+      "completed": true,
+      "approved_positions": [
+        "Sous Chef 2"
+      ],
+      "dismissed_reason": "",
+      "approved_at": "2026-05-21T11:56:19-07:00"
     },
     {
       "review_id": "2026-05-20:46269",
@@ -1263,54 +1274,8 @@
       "rehire_date": "",
       "resume_file": "u72uv6h70a6iqxia_Resume (1).pdf",
       "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/u72uv6h70a6iqxia_Resume%20%281%29.pdf",
-      "status": "Recommended",
-      "recommendations": [
-        {
-          "key": "cashier",
-          "label": "Cashier",
-          "base_name": "Cashier",
-          "ai_level": 1,
-          "ai_status": "level_1",
-          "estimated_years": 0.75,
-          "confidence": 0.9,
-          "reasons": [
-            "Cashier role at Desano's Pizza and Marugame Udon, totaling about 1.5 years, but only counting the first role for Level 1."
-          ],
-          "position_id": 101,
-          "position_description": "Cashier",
-          "match_found": true
-        },
-        {
-          "key": "server",
-          "label": "Server 2",
-          "base_name": "Server",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 3.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Server roles at Olive Garden and Kitakata Ramen, both busy restaurants, totaling approximately 3 years."
-          ],
-          "position_id": 285,
-          "position_description": "Server 1",
-          "match_found": true
-        },
-        {
-          "key": "server",
-          "label": "Server 2",
-          "base_name": "Server",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 3.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Server roles at Olive Garden and Kitakata Ramen, both busy restaurants, totaling approximately 3 years."
-          ],
-          "position_id": 115,
-          "position_description": "Server 2",
-          "match_found": true
-        }
-      ],
+      "status": "No New Positions",
+      "recommendations": [],
       "ai_summary": {
         "hospitality_experience_overview": "Experience as a server and cashier at busy restaurants, including Olive Garden and Kitakata Ramen, with a focus on guest service and order handling.",
         "total_hospitality_years_estimate": 4.0,
@@ -1486,7 +1451,8 @@
       "created_at": "2026-05-20T13:16:28-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:28-07:00"
     },
     {
       "review_id": "2026-05-20:46235",
@@ -1503,36 +1469,6 @@
       "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/9k937eajdx041ral_Resume%20%281%29.pdf",
       "status": "Recommended",
       "recommendations": [
-        {
-          "key": "barback",
-          "label": "Barback",
-          "base_name": "Barback",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 2.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Experience as a Barback at restaurant venues, approximately 5 years total, counted as Level 2."
-          ],
-          "position_id": 96,
-          "position_description": "Barback",
-          "match_found": true
-        },
-        {
-          "key": "runner",
-          "label": "Runner",
-          "base_name": "Runner",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 2.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Experience as Food Runner at restaurant venues for about 5 years, counted as Level 2."
-          ],
-          "position_id": 112,
-          "position_description": "Runner",
-          "match_found": true
-        },
         {
           "key": "server",
           "label": "Server 2",
@@ -1735,7 +1671,8 @@
       "created_at": "2026-05-20T12:16:06-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:28-07:00"
     },
     {
       "review_id": "2026-05-20:46221",
@@ -1763,53 +1700,8 @@
           "reasons": [
             "Bartender at Boardner\u2019s nightclub, a hospitality venue, for approximately 1 year."
           ],
-          "position_id": 278,
-          "position_description": "Bartender 1",
-          "match_found": true
-        },
-        {
-          "key": "bartender",
-          "label": "Bartender 2",
-          "base_name": "Bartender",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 1.0,
-          "confidence": 0.9,
-          "reasons": [
-            "Bartender at Boardner\u2019s nightclub, a hospitality venue, for approximately 1 year."
-          ],
           "position_id": 98,
           "position_description": "Bartender 2",
-          "match_found": true
-        },
-        {
-          "key": "server",
-          "label": "Server 2",
-          "base_name": "Server",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 1.0,
-          "confidence": 0.9,
-          "reasons": [
-            "Server role at Russell House Tavern, a high-volume restaurant, for approximately 1 year."
-          ],
-          "position_id": 285,
-          "position_description": "Server 1",
-          "match_found": true
-        },
-        {
-          "key": "server",
-          "label": "Server 2",
-          "base_name": "Server",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 1.0,
-          "confidence": 0.9,
-          "reasons": [
-            "Server role at Russell House Tavern, a high-volume restaurant, for approximately 1 year."
-          ],
-          "position_id": 115,
-          "position_description": "Server 2",
           "match_found": true
         }
       ],
@@ -1984,7 +1876,8 @@
       "created_at": "2026-05-20T12:15:53-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:28-07:00"
     },
     {
       "review_id": "2026-05-20:46090",
@@ -2727,43 +2620,8 @@
       "rehire_date": "",
       "resume_file": "fd2zd5poyrfkyrst_Qs%20Res%202026.pdf",
       "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/fd2zd5poyrfkyrst_Qs%2520Res%25202026.pdf",
-      "status": "Recommended",
-      "recommendations": [
-        {
-          "key": "cook",
-          "label": "Cook 2",
-          "base_name": "Cook",
-          "ai_level": 3,
-          "ai_status": "level_3",
-          "estimated_years": 8.0,
-          "confidence": 1.0,
-          "reasons": [
-            "Lead cook roles at The Peninsula Hotel, ROMEGA Catering, Animal, Bourbon Steakhouse, and other venues.",
-            "Experience with fine-dining cuisine, banquet catering, and elevated culinary experiences.",
-            "No fast-food experience; all roles are in upscale or catering environments."
-          ],
-          "position_id": 288,
-          "position_description": "Cook 1",
-          "match_found": true
-        },
-        {
-          "key": "cook",
-          "label": "Cook 2",
-          "base_name": "Cook",
-          "ai_level": 3,
-          "ai_status": "level_3",
-          "estimated_years": 8.0,
-          "confidence": 1.0,
-          "reasons": [
-            "Lead cook roles at The Peninsula Hotel, ROMEGA Catering, Animal, Bourbon Steakhouse, and other venues.",
-            "Experience with fine-dining cuisine, banquet catering, and elevated culinary experiences.",
-            "No fast-food experience; all roles are in upscale or catering environments."
-          ],
-          "position_id": 102,
-          "position_description": "Cook 2",
-          "match_found": true
-        }
-      ],
+      "status": "No New Positions",
+      "recommendations": [],
       "ai_summary": {
         "hospitality_experience_overview": "Over 12 years of experience in catering, fine dining, and banquet catering, including high-end clientele and exclusive events. Experience at luxury hotels and fine-dining restaurants, with leadership roles in culinary settings.",
         "total_hospitality_years_estimate": 12.0,
@@ -2949,7 +2807,8 @@
       "created_at": "2026-05-20T09:32:43-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:28-07:00"
     },
     {
       "review_id": "2026-05-19:46237",
@@ -2979,21 +2838,6 @@
           ],
           "position_id": 281,
           "position_description": "Barista 1",
-          "match_found": true
-        },
-        {
-          "key": "prep_cook",
-          "label": "Prep Cook 1",
-          "base_name": "Prep Cook",
-          "ai_level": 1,
-          "ai_status": "level_1",
-          "estimated_years": 0.5,
-          "confidence": 1.0,
-          "reasons": [
-            "Prep cook role at Klatch Coffee, a coffee shop, qualifies for Level 1."
-          ],
-          "position_id": 302,
-          "position_description": "Prep Cook 1",
           "match_found": true
         }
       ],
@@ -3166,7 +3010,8 @@
       "created_at": "2026-05-19T16:12:28-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:28-07:00"
     },
     {
       "review_id": "2026-05-19:46021",
@@ -3199,81 +3044,6 @@
           "match_found": true
         },
         {
-          "key": "cook",
-          "label": "Cook 2",
-          "base_name": "Cook",
-          "ai_level": 3,
-          "ai_status": "level_3",
-          "estimated_years": 6.5,
-          "confidence": 1.0,
-          "reasons": [
-            "Multiple roles as line cook and food prep at upscale and casual restaurants from 2019-2025, including management of kitchen stations, food prep, and cooking."
-          ],
-          "position_id": 288,
-          "position_description": "Cook 1",
-          "match_found": true
-        },
-        {
-          "key": "cook",
-          "label": "Cook 2",
-          "base_name": "Cook",
-          "ai_level": 3,
-          "ai_status": "level_3",
-          "estimated_years": 6.5,
-          "confidence": 1.0,
-          "reasons": [
-            "Multiple roles as line cook and food prep at upscale and casual restaurants from 2019-2025, including management of kitchen stations, food prep, and cooking."
-          ],
-          "position_id": 102,
-          "position_description": "Cook 2",
-          "match_found": true
-        },
-        {
-          "key": "dishwasher",
-          "label": "Dishwasher",
-          "base_name": "Dishwasher",
-          "ai_level": 1,
-          "ai_status": "level_1",
-          "estimated_years": 2.0,
-          "confidence": 1.0,
-          "reasons": [
-            "Dishwashing duties at Katsuya Brentwood and during closing at other restaurants, primarily as secondary tasks."
-          ],
-          "position_id": 105,
-          "position_description": "Dishwasher",
-          "match_found": true
-        },
-        {
-          "key": "prep_cook",
-          "label": "Prep Cook 2",
-          "base_name": "Prep Cook",
-          "ai_level": 3,
-          "ai_status": "level_3",
-          "estimated_years": 6.5,
-          "confidence": 1.0,
-          "reasons": [
-            "Consistent food prep roles at various restaurants, including Katsuya, Bistro 45, and Tam O'Shanter, with responsibilities in ingredient prep and station setup."
-          ],
-          "position_id": 302,
-          "position_description": "Prep Cook 1",
-          "match_found": true
-        },
-        {
-          "key": "prep_cook",
-          "label": "Prep Cook 2",
-          "base_name": "Prep Cook",
-          "ai_level": 3,
-          "ai_status": "level_3",
-          "estimated_years": 6.5,
-          "confidence": 1.0,
-          "reasons": [
-            "Consistent food prep roles at various restaurants, including Katsuya, Bistro 45, and Tam O'Shanter, with responsibilities in ingredient prep and station setup."
-          ],
-          "position_id": 110,
-          "position_description": "Prep Cook 2",
-          "match_found": true
-        },
-        {
           "key": "sushi",
           "label": "Sushi",
           "base_name": "Sushi",
@@ -3286,21 +3056,6 @@
           ],
           "position_id": 312,
           "position_description": "Sushi Chef 1",
-          "match_found": true
-        },
-        {
-          "key": "utility",
-          "label": "Utility",
-          "base_name": "Utility",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 4.0,
-          "confidence": 1.0,
-          "reasons": [
-            "Involved in cleaning, sanitation, and kitchen organization at multiple venues, including food prep stations and storage areas."
-          ],
-          "position_id": 118,
-          "position_description": "Utility",
           "match_found": true
         }
       ],
@@ -3483,7 +3238,8 @@
       "created_at": "2026-05-19T15:16:51-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:28-07:00"
     },
     {
       "review_id": "2026-05-19:44585",
@@ -4176,39 +3932,8 @@
       "rehire_date": "",
       "resume_file": "tus3suxlp7bvlcpv_cook_%20butcher_%20server%20Resume.pdf",
       "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/tus3suxlp7bvlcpv_cook_%2520butcher_%2520server%2520Resume.pdf",
-      "status": "Recommended",
-      "recommendations": [
-        {
-          "key": "server",
-          "label": "Server 2",
-          "base_name": "Server",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 1.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Shift manager role involved guest interaction and serving tables at Jasmine Mediterranean."
-          ],
-          "position_id": 285,
-          "position_description": "Server 1",
-          "match_found": true
-        },
-        {
-          "key": "server",
-          "label": "Server 2",
-          "base_name": "Server",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 1.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Shift manager role involved guest interaction and serving tables at Jasmine Mediterranean."
-          ],
-          "position_id": 115,
-          "position_description": "Server 2",
-          "match_found": true
-        }
-      ],
+      "status": "No New Positions",
+      "recommendations": [],
       "ai_summary": {
         "hospitality_experience_overview": "Experience includes food service, restaurant, butcher, and shift management roles, with some supervisory and guest service duties.",
         "total_hospitality_years_estimate": 3.0,
@@ -4380,7 +4105,8 @@
       "created_at": "2026-05-19T09:16:33-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:29-07:00"
     },
     {
       "review_id": "2026-05-18:46096",
@@ -4983,39 +4709,8 @@
       "rehire_date": "",
       "resume_file": "oer5gc824qctudv2_Rick_Martinez_Manager_Resume.pdf",
       "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/oer5gc824qctudv2_Rick_Martinez_Manager_Resume.pdf",
-      "status": "Recommended",
-      "recommendations": [
-        {
-          "key": "server",
-          "label": "Server 2",
-          "base_name": "Server",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 4.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Managed front-of-house operations, supervised and trained FOH staff, executed private events and VIP service, in high-volume fine dining and casino environments."
-          ],
-          "position_id": 285,
-          "position_description": "Server 1",
-          "match_found": true
-        },
-        {
-          "key": "server",
-          "label": "Server 2",
-          "base_name": "Server",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 4.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Managed front-of-house operations, supervised and trained FOH staff, executed private events and VIP service, in high-volume fine dining and casino environments."
-          ],
-          "position_id": 115,
-          "position_description": "Server 2",
-          "match_found": true
-        }
-      ],
+      "status": "No New Positions",
+      "recommendations": [],
       "ai_summary": {
         "hospitality_experience_overview": "Over 20 years of experience in high-volume fine dining, luxury restaurants, hotels, and casino environments, managing large teams and executing high-profile events.",
         "total_hospitality_years_estimate": 20.0,
@@ -5193,7 +4888,8 @@
       "created_at": "2026-05-18T10:40:29-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:29-07:00"
     },
     {
       "review_id": "2026-05-18:46167",
@@ -5478,54 +5174,8 @@
       "rehire_date": "",
       "resume_file": "s0fgqkcl2l6kub6a_Erin%20Whittaker%20Restaurant%20Resume%20.pdf",
       "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/s0fgqkcl2l6kub6a_Erin%2520Whittaker%2520Restaurant%2520Resume%2520.pdf",
-      "status": "Recommended",
-      "recommendations": [
-        {
-          "key": "host",
-          "label": "Host",
-          "base_name": "Host",
-          "ai_level": 1,
-          "ai_status": "level_1",
-          "estimated_years": 1.0,
-          "confidence": 1.0,
-          "reasons": [
-            "Host role at Red Robin for several years, primarily early in career."
-          ],
-          "position_id": 126,
-          "position_description": "Host",
-          "match_found": true
-        },
-        {
-          "key": "server",
-          "label": "Server 2",
-          "base_name": "Server",
-          "ai_level": 3,
-          "ai_status": "level_3",
-          "estimated_years": 10.0,
-          "confidence": 1.0,
-          "reasons": [
-            "Multiple server roles at high-end and high-volume venues over several years, including opening and managing large service operations."
-          ],
-          "position_id": 285,
-          "position_description": "Server 1",
-          "match_found": true
-        },
-        {
-          "key": "server",
-          "label": "Server 2",
-          "base_name": "Server",
-          "ai_level": 3,
-          "ai_status": "level_3",
-          "estimated_years": 10.0,
-          "confidence": 1.0,
-          "reasons": [
-            "Multiple server roles at high-end and high-volume venues over several years, including opening and managing large service operations."
-          ],
-          "position_id": 115,
-          "position_description": "Server 2",
-          "match_found": true
-        }
-      ],
+      "status": "No New Positions",
+      "recommendations": [],
       "ai_summary": {
         "hospitality_experience_overview": "Extensive server experience at various restaurants, including fine dining (Barton G), high-end concepts (Meat on Ocean), and high-volume venues (Saddle Ranch). Experience includes opening new restaurants, catering, and hosting events. No non-hospitality jobs listed.",
         "total_hospitality_years_estimate": 12.0,
@@ -5707,7 +5357,8 @@
       "created_at": "2026-05-18T10:24:59-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:29-07:00"
     },
     {
       "review_id": "2026-05-18:46131",
@@ -6187,39 +5838,8 @@
       "rehire_date": "",
       "resume_file": "3wt5yauer9r31kks_8a474be4-cdd2-4b89-b5fe-f84510f164db%206.pdf",
       "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/3wt5yauer9r31kks_8a474be4-cdd2-4b89-b5fe-f84510f164db%25206.pdf",
-      "status": "Recommended",
-      "recommendations": [
-        {
-          "key": "bartender",
-          "label": "Bartender 2",
-          "base_name": "Bartender",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 4.0,
-          "confidence": 0.9,
-          "reasons": [
-            "Bartender roles at Cypress Point Country Club and as a bartender/shift manager at other venues, totaling approximately 4 years at hospitality venues."
-          ],
-          "position_id": 278,
-          "position_description": "Bartender 1",
-          "match_found": true
-        },
-        {
-          "key": "bartender",
-          "label": "Bartender 2",
-          "base_name": "Bartender",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 4.0,
-          "confidence": 0.9,
-          "reasons": [
-            "Bartender roles at Cypress Point Country Club and as a bartender/shift manager at other venues, totaling approximately 4 years at hospitality venues."
-          ],
-          "position_id": 98,
-          "position_description": "Bartender 2",
-          "match_found": true
-        }
-      ],
+      "status": "No New Positions",
+      "recommendations": [],
       "ai_summary": {
         "hospitality_experience_overview": "Experience as a bartender and shift manager at country club and private club venues, totaling approximately 4 years. No fast-food or non-hospitality roles noted.",
         "total_hospitality_years_estimate": 4.0,
@@ -6389,7 +6009,8 @@
       "created_at": "2026-05-18T09:54:17-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:30-07:00"
     },
     {
       "review_id": "2026-05-18:46122",
@@ -6613,36 +6234,6 @@
       "status": "Recommended",
       "recommendations": [
         {
-          "key": "cook",
-          "label": "Cook 1",
-          "base_name": "Cook",
-          "ai_level": 1,
-          "ai_status": "level_1",
-          "estimated_years": 0.5,
-          "confidence": 0.7,
-          "reasons": [
-            "Cook role at Boomtown Casino & Hotel involved food prep and cooking, with promotion from prep cook to cook, totaling about 3 years. Fast-food roles at Wendy's and Burger King count as Level 1."
-          ],
-          "position_id": 288,
-          "position_description": "Cook 1",
-          "match_found": true
-        },
-        {
-          "key": "prep_cook",
-          "label": "Prep Cook 1",
-          "base_name": "Prep Cook",
-          "ai_level": 1,
-          "ai_status": "level_1",
-          "estimated_years": 0.5,
-          "confidence": 0.7,
-          "reasons": [
-            "Started as prep cook at Boomtown Casino & Hotel, promoted to cook, total about 3 years. Fast-food prep roles at Wendy's and Burger King count as Level 1."
-          ],
-          "position_id": 302,
-          "position_description": "Prep Cook 1",
-          "match_found": true
-        },
-        {
           "key": "server",
           "label": "Server 1",
           "base_name": "Server",
@@ -6837,7 +6428,8 @@
       "created_at": "2026-05-18T09:38:25-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:30-07:00"
     },
     {
       "review_id": "2026-05-18:45941",
@@ -6852,69 +6444,8 @@
       "rehire_date": "",
       "resume_file": "yx3qazapdis1lwnk_Jordan%20Davis%20Resume%20.pdf",
       "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/yx3qazapdis1lwnk_Jordan%2520Davis%2520Resume%2520.pdf",
-      "status": "Recommended",
-      "recommendations": [
-        {
-          "key": "cook",
-          "label": "Cook 2",
-          "base_name": "Cook",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 4.0,
-          "confidence": 0.9,
-          "reasons": [
-            "Experience as prep cook at Los Angeles Country Club and snack bar, totaling about 4 years at upscale venues."
-          ],
-          "position_id": 288,
-          "position_description": "Cook 1",
-          "match_found": true
-        },
-        {
-          "key": "cook",
-          "label": "Cook 2",
-          "base_name": "Cook",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 4.0,
-          "confidence": 0.9,
-          "reasons": [
-            "Experience as prep cook at Los Angeles Country Club and snack bar, totaling about 4 years at upscale venues."
-          ],
-          "position_id": 102,
-          "position_description": "Cook 2",
-          "match_found": true
-        },
-        {
-          "key": "prep_cook",
-          "label": "Prep Cook 2",
-          "base_name": "Prep Cook",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 4.0,
-          "confidence": 0.9,
-          "reasons": [
-            "Multiple prep cook roles at Los Angeles Country Club and snack bar, totaling about 4 years."
-          ],
-          "position_id": 302,
-          "position_description": "Prep Cook 1",
-          "match_found": true
-        },
-        {
-          "key": "prep_cook",
-          "label": "Prep Cook 2",
-          "base_name": "Prep Cook",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 4.0,
-          "confidence": 0.9,
-          "reasons": [
-            "Multiple prep cook roles at Los Angeles Country Club and snack bar, totaling about 4 years."
-          ],
-          "position_id": 110,
-          "position_description": "Prep Cook 2",
-          "match_found": true
-        }
-      ],
+      "status": "No New Positions",
+      "recommendations": [],
       "ai_summary": {
         "hospitality_experience_overview": "Experience at Los Angeles Country Club and Los Angeles Athletic Club as a prep cook and caf\u00e9 manager, totaling approximately 4 years of hospitality experience at upscale venues. Fast-food experience is not present.",
         "total_hospitality_years_estimate": 4.0,
@@ -7086,7 +6617,8 @@
       "created_at": "2026-05-18T09:23:10-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:30-07:00"
     },
     {
       "review_id": "2026-05-17:31629",
@@ -7514,66 +7046,6 @@
       "status": "Recommended",
       "recommendations": [
         {
-          "key": "cashier",
-          "label": "Cashier",
-          "base_name": "Cashier",
-          "ai_level": 1,
-          "ai_status": "level_1",
-          "estimated_years": 2.0,
-          "confidence": 0.9,
-          "reasons": [
-            "Cash handling and register experience at Subway and restaurant roles, qualifying for Level 1."
-          ],
-          "position_id": 101,
-          "position_description": "Cashier",
-          "match_found": true
-        },
-        {
-          "key": "cook",
-          "label": "Cook 2",
-          "base_name": "Cook",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 4.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Multiple line cook roles at restaurant venues (True Food Kitchen, Joeys DTLA), including station-specific experience, totaling approximately 4 years. No fast-food experience counted for this role."
-          ],
-          "position_id": 288,
-          "position_description": "Cook 1",
-          "match_found": true
-        },
-        {
-          "key": "cook",
-          "label": "Cook 2",
-          "base_name": "Cook",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 4.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Multiple line cook roles at restaurant venues (True Food Kitchen, Joeys DTLA), including station-specific experience, totaling approximately 4 years. No fast-food experience counted for this role."
-          ],
-          "position_id": 102,
-          "position_description": "Cook 2",
-          "match_found": true
-        },
-        {
-          "key": "dishwasher",
-          "label": "Dishwasher",
-          "base_name": "Dishwasher",
-          "ai_level": 1,
-          "ai_status": "level_1",
-          "estimated_years": 1.0,
-          "confidence": 0.9,
-          "reasons": [
-            "Dishwashing duties at Subway and during restaurant roles, qualifying for Level 1."
-          ],
-          "position_id": 105,
-          "position_description": "Dishwasher",
-          "match_found": true
-        },
-        {
           "key": "server",
           "label": "Server 2",
           "base_name": "Server",
@@ -7783,7 +7255,8 @@
       "created_at": "2026-05-15T15:02:37-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:30-07:00"
     },
     {
       "review_id": "2026-05-15:30038",
@@ -8209,36 +7682,6 @@
       "status": "Recommended",
       "recommendations": [
         {
-          "key": "cook",
-          "label": "Cook 2",
-          "base_name": "Cook",
-          "ai_level": 3,
-          "ai_status": "level_3",
-          "estimated_years": 4.0,
-          "confidence": 0.9,
-          "reasons": [
-            "Roles as dietary cook, prep cook, and kitchen skills indicate extensive culinary experience at professional venues, totaling approximately 6-10 years."
-          ],
-          "position_id": 288,
-          "position_description": "Cook 1",
-          "match_found": true
-        },
-        {
-          "key": "cook",
-          "label": "Cook 2",
-          "base_name": "Cook",
-          "ai_level": 3,
-          "ai_status": "level_3",
-          "estimated_years": 4.0,
-          "confidence": 0.9,
-          "reasons": [
-            "Roles as dietary cook, prep cook, and kitchen skills indicate extensive culinary experience at professional venues, totaling approximately 6-10 years."
-          ],
-          "position_id": 102,
-          "position_description": "Cook 2",
-          "match_found": true
-        },
-        {
           "key": "dishwasher",
           "label": "Dishwasher",
           "base_name": "Dishwasher",
@@ -8251,51 +7694,6 @@
           ],
           "position_id": 105,
           "position_description": "Dishwasher",
-          "match_found": true
-        },
-        {
-          "key": "pastry",
-          "label": "Pastry",
-          "base_name": "Pastry",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 1.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Pastry experience listed, with some culinary skills, but limited to about 1 year."
-          ],
-          "position_id": 121,
-          "position_description": "Pastry Cook",
-          "match_found": true
-        },
-        {
-          "key": "prep_cook",
-          "label": "Prep Cook 2",
-          "base_name": "Prep Cook",
-          "ai_level": 3,
-          "ai_status": "level_3",
-          "estimated_years": 2.0,
-          "confidence": 0.9,
-          "reasons": [
-            "Multiple prep cook roles at Dnata Inflight Catering and Dave & Buster's, with detailed prep tasks, totaling about 2 years."
-          ],
-          "position_id": 302,
-          "position_description": "Prep Cook 1",
-          "match_found": true
-        },
-        {
-          "key": "prep_cook",
-          "label": "Prep Cook 2",
-          "base_name": "Prep Cook",
-          "ai_level": 3,
-          "ai_status": "level_3",
-          "estimated_years": 2.0,
-          "confidence": 0.9,
-          "reasons": [
-            "Multiple prep cook roles at Dnata Inflight Catering and Dave & Buster's, with detailed prep tasks, totaling about 2 years."
-          ],
-          "position_id": 110,
-          "position_description": "Prep Cook 2",
           "match_found": true
         },
         {
@@ -8519,7 +7917,8 @@
       "created_at": "2026-05-14T15:22:51-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:30-07:00"
     },
     {
       "review_id": "2026-05-14:45527",
@@ -8536,141 +7935,6 @@
       "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/fyt9d2utc5slgtyd_Resume%20parking%20.pdf",
       "status": "Recommended",
       "recommendations": [
-        {
-          "key": "baker",
-          "label": "Baker",
-          "base_name": "Baker",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 1.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Baking at Cali love pie cheescakes and general baking skills listed."
-          ],
-          "position_id": 130,
-          "position_description": "Baker",
-          "match_found": true
-        },
-        {
-          "key": "cashier",
-          "label": "Cashier",
-          "base_name": "Cashier",
-          "ai_level": 1,
-          "ai_status": "level_1",
-          "estimated_years": 0.5,
-          "confidence": 0.9,
-          "reasons": [
-            "Cashier at 10/10 burger (August 2024-present) counts as Level 1 fast-food experience."
-          ],
-          "position_id": 101,
-          "position_description": "Cashier",
-          "match_found": true
-        },
-        {
-          "key": "cook",
-          "label": "Cook 2",
-          "base_name": "Cook",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 1.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Pastry Cook at Cali love pie cheescakes (May 2024-May 2025), private chef at Patina (Jan 2023-Feb 2025), sous chef at Gearys Beverly Hills, and Hero Eats Catering involve cooking and food prep at fine dining or upscale venues."
-          ],
-          "position_id": 288,
-          "position_description": "Cook 1",
-          "match_found": true
-        },
-        {
-          "key": "cook",
-          "label": "Cook 2",
-          "base_name": "Cook",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 1.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Pastry Cook at Cali love pie cheescakes (May 2024-May 2025), private chef at Patina (Jan 2023-Feb 2025), sous chef at Gearys Beverly Hills, and Hero Eats Catering involve cooking and food prep at fine dining or upscale venues."
-          ],
-          "position_id": 102,
-          "position_description": "Cook 2",
-          "match_found": true
-        },
-        {
-          "key": "pastry",
-          "label": "Pastry",
-          "base_name": "Pastry",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 1.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Pastry cook at Cali love pie cheescakes (May 2024-May 2025) involves baking and pastry skills at a culinary venue."
-          ],
-          "position_id": 121,
-          "position_description": "Pastry Cook",
-          "match_found": true
-        },
-        {
-          "key": "prep_cook",
-          "label": "Prep Cook 2",
-          "base_name": "Prep Cook",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 1.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Roles at Cali love pie cheescakes, Patina, Gearys, and Hero Eats include food prep and baking, indicating prep cook experience."
-          ],
-          "position_id": 302,
-          "position_description": "Prep Cook 1",
-          "match_found": true
-        },
-        {
-          "key": "prep_cook",
-          "label": "Prep Cook 2",
-          "base_name": "Prep Cook",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 1.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Roles at Cali love pie cheescakes, Patina, Gearys, and Hero Eats include food prep and baking, indicating prep cook experience."
-          ],
-          "position_id": 110,
-          "position_description": "Prep Cook 2",
-          "match_found": true
-        },
-        {
-          "key": "server",
-          "label": "Server 2",
-          "base_name": "Server",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 1.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Served at Patina, and provided customer service at Cali love pie cheescakes, indicating server experience."
-          ],
-          "position_id": 285,
-          "position_description": "Server 1",
-          "match_found": true
-        },
-        {
-          "key": "server",
-          "label": "Server 2",
-          "base_name": "Server",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 1.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Served at Patina, and provided customer service at Cali love pie cheescakes, indicating server experience."
-          ],
-          "position_id": 115,
-          "position_description": "Server 2",
-          "match_found": true
-        },
         {
           "key": "valet",
           "label": "Valet",
@@ -8864,7 +8128,8 @@
       "created_at": "2026-05-14T12:33:12-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:30-07:00"
     },
     {
       "review_id": "2026-05-14:46086",
@@ -9099,21 +8364,6 @@
       "status": "Recommended",
       "recommendations": [
         {
-          "key": "cashier",
-          "label": "Cashier",
-          "base_name": "Cashier",
-          "ai_level": 1,
-          "ai_status": "level_1",
-          "estimated_years": 3.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Handled cashier duties at fast-food and grocery venues, qualifying for Level 1 cashier experience."
-          ],
-          "position_id": 101,
-          "position_description": "Cashier",
-          "match_found": true
-        },
-        {
           "key": "cook",
           "label": "Cook 1",
           "base_name": "Cook",
@@ -9332,7 +8582,8 @@
       "created_at": "2026-05-14T12:17:19-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:31-07:00"
     },
     {
       "review_id": "2026-05-14:43166",
@@ -9350,21 +8601,6 @@
       "status": "Recommended",
       "recommendations": [
         {
-          "key": "cashier",
-          "label": "Cashier",
-          "base_name": "Cashier",
-          "ai_level": 1,
-          "ai_status": "level_1",
-          "estimated_years": 1.0,
-          "confidence": 0.7,
-          "reasons": [
-            "Cashier role at Del Taco, qualifies for Level 1."
-          ],
-          "position_id": 101,
-          "position_description": "Cashier",
-          "match_found": true
-        },
-        {
           "key": "cook",
           "label": "Cook 1",
           "base_name": "Cook",
@@ -9377,21 +8613,6 @@
           ],
           "position_id": 288,
           "position_description": "Cook 1",
-          "match_found": true
-        },
-        {
-          "key": "host",
-          "label": "Host",
-          "base_name": "Host",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 1.0,
-          "confidence": 0.7,
-          "reasons": [
-            "Greet and check-in at LA Fitness, hospitality-related, estimated 1 year."
-          ],
-          "position_id": 126,
-          "position_description": "Host",
           "match_found": true
         }
       ],
@@ -9566,7 +8787,8 @@
       "created_at": "2026-05-14T11:31:48-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:31-07:00"
     },
     {
       "review_id": "2026-05-14:45980",
@@ -9581,69 +8803,8 @@
       "rehire_date": "",
       "resume_file": "c1a5zicp4xe9ydcs_ReneOrtiz2026resume.pdf",
       "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/c1a5zicp4xe9ydcs_ReneOrtiz2026resume.pdf",
-      "status": "Recommended",
-      "recommendations": [
-        {
-          "key": "cook",
-          "label": "Cook 2",
-          "base_name": "Cook",
-          "ai_level": 3,
-          "ai_status": "level_3",
-          "estimated_years": 7.0,
-          "confidence": 1.0,
-          "reasons": [
-            "Roles as Lead Cook, Line Cook, and Jr. Sous Chef at high-volume and fine dining venues, with over 7 years of experience."
-          ],
-          "position_id": 288,
-          "position_description": "Cook 1",
-          "match_found": true
-        },
-        {
-          "key": "cook",
-          "label": "Cook 2",
-          "base_name": "Cook",
-          "ai_level": 3,
-          "ai_status": "level_3",
-          "estimated_years": 7.0,
-          "confidence": 1.0,
-          "reasons": [
-            "Roles as Lead Cook, Line Cook, and Jr. Sous Chef at high-volume and fine dining venues, with over 7 years of experience."
-          ],
-          "position_id": 102,
-          "position_description": "Cook 2",
-          "match_found": true
-        },
-        {
-          "key": "prep_cook",
-          "label": "Prep Cook 2",
-          "base_name": "Prep Cook",
-          "ai_level": 3,
-          "ai_status": "level_3",
-          "estimated_years": 7.0,
-          "confidence": 1.0,
-          "reasons": [
-            "Experience supporting prep and station work in multiple high-volume kitchens, over 7 years."
-          ],
-          "position_id": 302,
-          "position_description": "Prep Cook 1",
-          "match_found": true
-        },
-        {
-          "key": "prep_cook",
-          "label": "Prep Cook 2",
-          "base_name": "Prep Cook",
-          "ai_level": 3,
-          "ai_status": "level_3",
-          "estimated_years": 7.0,
-          "confidence": 1.0,
-          "reasons": [
-            "Experience supporting prep and station work in multiple high-volume kitchens, over 7 years."
-          ],
-          "position_id": 110,
-          "position_description": "Prep Cook 2",
-          "match_found": true
-        }
-      ],
+      "status": "No New Positions",
+      "recommendations": [],
       "ai_summary": {
         "hospitality_experience_overview": "Over 7 years in high-volume and fine dining kitchens, including roles such as Jr. Sous Chef, Sous Chef, Lead Cook, and Line Cook in various reputable venues.",
         "total_hospitality_years_estimate": 7.0,
@@ -9831,7 +8992,8 @@
       "created_at": "2026-05-14T09:46:16-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:31-07:00"
     },
     {
       "review_id": "2026-05-14:29088",
@@ -9846,54 +9008,8 @@
       "rehire_date": "2026-05-14",
       "resume_file": "bj6efmpphp1vv09q_Bar%20Resume.pdf",
       "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/bj6efmpphp1vv09q_Bar%2520Resume.pdf",
-      "status": "Recommended",
-      "recommendations": [
-        {
-          "key": "bartender",
-          "label": "Bartender 2",
-          "base_name": "Bartender",
-          "ai_level": 3,
-          "ai_status": "level_3",
-          "estimated_years": 3.0,
-          "confidence": 1.0,
-          "reasons": [
-            "Bartending experience aboard cruise ship (American Cruise Line) for 6 months and at airport lounge for 6 months, totaling 1 year, qualifies for Level 3."
-          ],
-          "position_id": 278,
-          "position_description": "Bartender 1",
-          "match_found": true
-        },
-        {
-          "key": "bartender",
-          "label": "Bartender 2",
-          "base_name": "Bartender",
-          "ai_level": 3,
-          "ai_status": "level_3",
-          "estimated_years": 3.0,
-          "confidence": 1.0,
-          "reasons": [
-            "Bartending experience aboard cruise ship (American Cruise Line) for 6 months and at airport lounge for 6 months, totaling 1 year, qualifies for Level 3."
-          ],
-          "position_id": 98,
-          "position_description": "Bartender 2",
-          "match_found": true
-        },
-        {
-          "key": "server",
-          "label": "Server 2",
-          "base_name": "Server",
-          "ai_level": 3,
-          "ai_status": "level_3",
-          "estimated_years": 4.0,
-          "confidence": 1.0,
-          "reasons": [
-            "Fine dining server experience aboard cruise ship (American Cruise Line) for 6 months, more than 2 years, qualifies for Level 3."
-          ],
-          "position_id": 115,
-          "position_description": "Server 2",
-          "match_found": true
-        }
-      ],
+      "status": "No New Positions",
+      "recommendations": [],
       "ai_summary": {
         "hospitality_experience_overview": "Over 5 years of restaurant and fine dining service, including cruise ship and airport lounge bartending, with additional experience in high-volume and international environments.",
         "total_hospitality_years_estimate": 8.0,
@@ -10065,7 +9181,8 @@
       "created_at": "2026-05-14T09:30:52-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:31-07:00"
     },
     {
       "review_id": "2026-05-14:45994",
@@ -11092,51 +10209,6 @@
       "status": "Recommended",
       "recommendations": [
         {
-          "key": "cashier",
-          "label": "Cashier",
-          "base_name": "Cashier",
-          "ai_level": 1,
-          "ai_status": "level_1",
-          "estimated_years": 0.5,
-          "confidence": 1.0,
-          "reasons": [
-            "Cash handling at Denny's and Applebee's, totaling about 0.5 years, qualifies for Level 1."
-          ],
-          "position_id": 101,
-          "position_description": "Cashier",
-          "match_found": true
-        },
-        {
-          "key": "server",
-          "label": "Server 2",
-          "base_name": "Server",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 2.0,
-          "confidence": 1.0,
-          "reasons": [
-            "Served at Denny's (2019-2020) and Applebee's (2017-2018), totaling approximately 2 years in hospitality serving roles."
-          ],
-          "position_id": 285,
-          "position_description": "Server 1",
-          "match_found": true
-        },
-        {
-          "key": "server",
-          "label": "Server 2",
-          "base_name": "Server",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 2.0,
-          "confidence": 1.0,
-          "reasons": [
-            "Served at Denny's (2019-2020) and Applebee's (2017-2018), totaling approximately 2 years in hospitality serving roles."
-          ],
-          "position_id": 115,
-          "position_description": "Server 2",
-          "match_found": true
-        },
-        {
           "key": "valet",
           "label": "Valet",
           "base_name": "Valet",
@@ -11323,7 +10395,8 @@
       "created_at": "2026-05-13T09:54:58-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:31-07:00"
     },
     {
       "review_id": "2026-05-13:46077",
@@ -11338,39 +10411,8 @@
       "rehire_date": "",
       "resume_file": "nxf2qahs68369lpu_My%20Updated%20Resume%2005.08.25.pdf",
       "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/nxf2qahs68369lpu_My%2520Updated%2520Resume%252005.08.25.pdf",
-      "status": "Recommended",
-      "recommendations": [
-        {
-          "key": "server",
-          "label": "Server 2",
-          "base_name": "Server",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 4.0,
-          "confidence": 0.9,
-          "reasons": [
-            "Served as banquet server at 24 Carrots and as a server at Denny\u2019s, totaling approximately 4 years of direct serving experience in hospitality venues."
-          ],
-          "position_id": 285,
-          "position_description": "Server 1",
-          "match_found": true
-        },
-        {
-          "key": "server",
-          "label": "Server 2",
-          "base_name": "Server",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 4.0,
-          "confidence": 0.9,
-          "reasons": [
-            "Served as banquet server at 24 Carrots and as a server at Denny\u2019s, totaling approximately 4 years of direct serving experience in hospitality venues."
-          ],
-          "position_id": 115,
-          "position_description": "Server 2",
-          "match_found": true
-        }
-      ],
+      "status": "No New Positions",
+      "recommendations": [],
       "ai_summary": {
         "hospitality_experience_overview": "Experience as a banquet server, overnight manager/server, and housekeeping supervisor at various venues, totaling approximately 4 years of hospitality experience, mostly in restaurant and event settings.",
         "total_hospitality_years_estimate": 4.0,
@@ -11544,7 +10586,8 @@
       "created_at": "2026-05-13T09:09:35-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:32-07:00"
     },
     {
       "review_id": "2026-05-13:46069",
@@ -11574,21 +10617,6 @@
           ],
           "position_id": 101,
           "position_description": "Cashier",
-          "match_found": true
-        },
-        {
-          "key": "dishwasher",
-          "label": "Dishwasher",
-          "base_name": "Dishwasher",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 0.33,
-          "confidence": 0.8,
-          "reasons": [
-            "Worked as a dishwasher at Legends stadium from August to November 2024, approximately 3 months."
-          ],
-          "position_id": 105,
-          "position_description": "Dishwasher",
           "match_found": true
         }
       ],
@@ -11763,7 +10791,8 @@
       "created_at": "2026-05-13T08:54:10-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:32-07:00"
     },
     {
       "review_id": "2026-05-13:46066",
@@ -11960,39 +10989,8 @@
       "rehire_date": "",
       "resume_file": "md70qlxvtd9ltmhl_Frank%20G%20Higuera%20-%20Resume%20for%20AV-Events%20W%20-%20Coverletter.pdf",
       "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/md70qlxvtd9ltmhl_Frank%2520G%2520Higuera%2520-%2520Resume%2520for%2520AV-Events%2520W%2520-%2520Coverletter.pdf",
-      "status": "Recommended",
-      "recommendations": [
-        {
-          "key": "cashier",
-          "label": "Cashier",
-          "base_name": "Cashier",
-          "ai_level": 1,
-          "ai_status": "level_1",
-          "estimated_years": 0.5,
-          "confidence": 0.8,
-          "reasons": [
-            "Cashier duties at Adya qualify for Level 1 cashier role, based on fast-food experience."
-          ],
-          "position_id": 101,
-          "position_description": "Cashier",
-          "match_found": true
-        },
-        {
-          "key": "prep_cook",
-          "label": "Prep Cook 1",
-          "base_name": "Prep Cook",
-          "ai_level": 1,
-          "ai_status": "level_1",
-          "estimated_years": 0.5,
-          "confidence": 0.8,
-          "reasons": [
-            "Food prep at Adya and Aramark qualifies as fast-food or quick-service prep roles, counted as Level 1."
-          ],
-          "position_id": 302,
-          "position_description": "Prep Cook 1",
-          "match_found": true
-        }
-      ],
+      "status": "No New Positions",
+      "recommendations": [],
       "ai_summary": {
         "hospitality_experience_overview": "Experience includes food prep, cashiering, catering, and event support roles, with some fast-food duties at Adya. No extensive fine-dining or upscale venue experience is evident.",
         "total_hospitality_years_estimate": 1.5,
@@ -12164,7 +11162,8 @@
       "created_at": "2026-05-13T08:53:40-07:00",
       "completed": false,
       "approved_positions": [],
-      "dismissed_reason": ""
+      "dismissed_reason": "",
+      "catalog_refreshed_at": "2026-05-21T11:49:32-07:00"
     },
     {
       "review_id": "2026-05-13:32085",
@@ -13441,24 +12440,8 @@
       "rehire_date": "",
       "resume_file": "xjk5xxd04w44ekua_Resume202503310143.pdf",
       "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/xjk5xxd04w44ekua_Resume202503310143.pdf",
-      "status": "Recommended",
-      "recommendations": [
-        {
-          "key": "cashier",
-          "label": "Cashier",
-          "base_name": "Cashier",
-          "ai_level": 1,
-          "ai_status": "level_1",
-          "estimated_years": 0.5,
-          "confidence": 0.8,
-          "reasons": [
-            "Experience at quick-serve restaurants (fast-food chains) in cashier roles, qualifies for Level 1."
-          ],
-          "position_id": 101,
-          "position_description": "Cashier",
-          "match_found": true
-        }
-      ],
+      "status": "No New Positions",
+      "recommendations": [],
       "ai_summary": {
         "hospitality_experience_overview": "Over 20 years of restaurant experience including quick-serve, upscale dining, buffet, bakery, and hospitality, with roles in management and operations.",
         "total_hospitality_years_estimate": 20.0,
@@ -13631,7 +12614,7 @@
       "completed": false,
       "approved_positions": [],
       "dismissed_reason": "",
-      "catalog_refreshed_at": "2026-05-12T14:56:56-07:00"
+      "catalog_refreshed_at": "2026-05-21T11:49:32-07:00"
     },
     {
       "review_id": "2026-05-12:46045",
@@ -13646,54 +12629,8 @@
       "rehire_date": "",
       "resume_file": "z9btb7nze4yxegx6_Luis _Jimenez_Resume.pdf",
       "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/z9btb7nze4yxegx6_Luis%20_Jimenez_Resume.pdf",
-      "status": "Recommended",
-      "recommendations": [
-        {
-          "key": "cashier",
-          "label": "Cashier",
-          "base_name": "Cashier",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 2.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Cashier team lead at Sunset Oil Mini Mart for nearly 2 years, qualifies for Level 2."
-          ],
-          "position_id": 101,
-          "position_description": "Cashier",
-          "match_found": true
-        },
-        {
-          "key": "server",
-          "label": "Server 2",
-          "base_name": "Server",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 3.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Server shift leader at Tatsu Ramen for nearly 4 years, managing and coaching staff, qualifies for Level 2."
-          ],
-          "position_id": 285,
-          "position_description": "Server 1",
-          "match_found": true
-        },
-        {
-          "key": "server",
-          "label": "Server 2",
-          "base_name": "Server",
-          "ai_level": 2,
-          "ai_status": "level_2",
-          "estimated_years": 3.0,
-          "confidence": 0.8,
-          "reasons": [
-            "Server shift leader at Tatsu Ramen for nearly 4 years, managing and coaching staff, qualifies for Level 2."
-          ],
-          "position_id": 115,
-          "position_description": "Server 2",
-          "match_found": true
-        }
-      ],
+      "status": "No New Positions",
+      "recommendations": [],
       "ai_summary": {
         "hospitality_experience_overview": "Experience includes roles as a cashier team lead, server shift leader, and packing/shipping assembler. Fast-food or quick-service venues are not explicitly mentioned, but cashier and server roles at restaurants qualify for Level 2.",
         "total_hospitality_years_estimate": 4.0,
@@ -13868,7 +12805,7 @@
       "completed": false,
       "approved_positions": [],
       "dismissed_reason": "",
-      "catalog_refreshed_at": "2026-05-12T14:56:56-07:00"
+      "catalog_refreshed_at": "2026-05-21T11:49:32-07:00"
     },
     {
       "review_id": "2026-05-12:46043",
@@ -14730,6 +13667,6 @@
       "dismissed_reason": ""
     }
   ],
-  "last_scan_at": "2026-05-21T11:37:32-07:00",
+  "last_scan_at": "2026-05-21T12:08:12-07:00",
   "last_scan_message": "No new active employees with resumes found for 2026-05-21."
 }

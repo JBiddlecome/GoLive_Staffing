@@ -12,6 +12,7 @@ from apps.new_employee_position_approver.scheduler import (
     scan_for_new_employees,
     get_automation_enabled,
     set_automation_enabled,
+    _today,
 )
 
 router = APIRouter()
@@ -22,7 +23,8 @@ templates = Jinja2Templates(directory="templates")
 async def page(request: Request) -> HTMLResponse:
     refresh_pending_records_against_allowed_catalog()
     state = load_state()
-    records = state.get("records", [])
+    today_str = _today()
+    records = [r for r in state.get("records", []) if r.get("review_date") == today_str]
     return templates.TemplateResponse(
         "apps/new_employee_position_approver.html",
         {

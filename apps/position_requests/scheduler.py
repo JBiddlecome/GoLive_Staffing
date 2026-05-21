@@ -458,7 +458,7 @@ async def ai_analyze(resume_text, experience_text, requested_positions):
     full_analysis = header + detail_text
     return status, full_analysis, approved
 
-async def evaluate_candidate(phone, resume_url, experience_text, requested_positions):
+async def evaluate_candidate(name, phone, resume_url, experience_text, requested_positions):
     engine = _engine()
     status = "Consider"
     ai_analysis = ""
@@ -467,26 +467,38 @@ async def evaluate_candidate(phone, resume_url, experience_text, requested_posit
     if len(clean_phone) > 10:
         clean_phone = clean_phone[-10:]
         
-    if not clean_phone or len(clean_phone) < 10:
-        engine.dispose()
-        return "Consider", "No valid 10-digit phone number provided for matching. Marked as Consider."
-
+    emp_id = None
     try:
         with engine.connect() as conn:
-            emp_sql = text("""
-                SELECT employee_id 
-                FROM employee 
-                WHERE REPLACE(REPLACE(REPLACE(REPLACE(mobile, ' ', ''), '-', ''), '(', ''), ')', '') LIKE :phone
-                   OR REPLACE(REPLACE(REPLACE(REPLACE(home, ' ', ''), '-', ''), '(', ''), ')', '') LIKE :phone
-                   OR REPLACE(REPLACE(REPLACE(REPLACE(work, ' ', ''), '-', ''), '(', ''), ')', '') LIKE :phone
-                LIMIT 1
-            """)
-            emp_res = conn.execute(emp_sql, {"phone": f"%{clean_phone}%"}).fetchone()
+            if clean_phone and len(clean_phone) >= 10:
+                emp_sql = text("""
+                    SELECT employee_id 
+                    FROM employee 
+                    WHERE REPLACE(REPLACE(REPLACE(REPLACE(mobile, ' ', ''), '-', ''), '(', ''), ')', '') LIKE :phone
+                       OR REPLACE(REPLACE(REPLACE(REPLACE(home, ' ', ''), '-', ''), '(', ''), ')', '') LIKE :phone
+                       OR REPLACE(REPLACE(REPLACE(REPLACE(work, ' ', ''), '-', ''), '(', ''), ')', '') LIKE :phone
+                    LIMIT 1
+                """)
+                emp_res = conn.execute(emp_sql, {"phone": f"%{clean_phone}%"}).fetchone()
+                
+                if emp_res:
+                    emp_id = emp_res[0]
             
-            if not emp_res:
-                return "Consider", "Employee not found in database. Marked as Consider."
+            if not emp_id and name and name != "Unknown":
+                name_sql = text("""
+                    SELECT employee_id 
+                    FROM employee 
+                    WHERE CONCAT(first_name, ' ', last_name) = :name
+                      AND status IN (1, 3, 6, 10, 14)
+                    LIMIT 1
+                """)
+                name_res = conn.execute(name_sql, {"name": name}).fetchone()
+                if name_res:
+                    emp_id = name_res[0]
+
+            if not emp_id:
+                return "Consider", "Employee not found in database by phone or name. Marked as Consider."
             
-            emp_id = emp_res[0]
             
             dnr_sql = text("""
                 SELECT employee_id FROM dnr WHERE employee_id = :emp_id AND created_at >= DATE_SUB(NOW(), INTERVAL 2 YEAR) LIMIT 1
@@ -630,7 +642,27 @@ async def fetch_submissions():
 
             recruiter = random.choices(["Piyush", "Mercedes"], weights=[60, 40], k=1)[0]
             
-            status, ai_analysis = await evaluate_candidate(phone, resume_link, experience, positions)
+            status, ai_analysis = await evaluate_candidate(name, phone, resume_link, experience, positions)
+
+            completed = False
+            if status == "Approved" and _is_render:
+                settings_file = _resolve_data_dir() / "position_requests_settings.json"
+                auto_add = False
+                if settings_file.exists():
+                    try:
+                        settings = json.loads(settings_file.read_text())
+                        auto_add = settings.get("auto_add_approved", False)
+                    except:
+                        pass
+                
+                if auto_add:
+                    from apps.position_requests.utils import add_position_to_employee
+                    success, msg = add_position_to_employee(phone, positions, name)
+                    if success:
+                        completed = True
+                        ai_analysis += f"\n\n[Automation] Successfully added position(s)."
+                    else:
+                        ai_analysis += f"\n\n[Automation Error] Failed to add position(s): {msg}"
 
             new_record = {
                 "message_id": sub_id,  # Using submission id as message_id for compatibility
@@ -640,7 +672,7 @@ async def fetch_submissions():
                 "experience": experience,
                 "resume_link": resume_link,
                 "recruiter": recruiter,
-                "completed": False,
+                "completed": completed,
                 "status": status,
                 "ai_analysis": ai_analysis,
                 "received_date": sub.get("created_at", "")
@@ -653,6 +685,7 @@ async def fetch_submissions():
             if record.get("status") in [None, "", "Pending"] or "Database error during checking" in record.get("ai_analysis", ""):
                 try:
                     status, ai_analysis = await evaluate_candidate(
+                        record.get("employee_name", ""),
                         record.get("phone", ""), 
                         record.get("resume_link", ""), 
                         record.get("experience", ""), 
