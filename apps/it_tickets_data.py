@@ -30,5 +30,18 @@ def save_ticket(*, submitted_by: str, department: str, request_details: str, pri
         "request_details": request_details,
         "priority": priority,
         "submitted_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+        "estimated_completion": None,
     })
     DATA_FILE.write_text(json.dumps(data, indent=2))
+
+
+def set_ticket_estimate(ticket_id: str, estimated_completion: str | None) -> bool:
+    _ensure_data_file()
+    with DATA_FILE.open() as f:
+        data = json.load(f)
+    for ticket in data.get("tickets", []):
+        if ticket["id"] == ticket_id:
+            ticket["estimated_completion"] = estimated_completion or None
+            DATA_FILE.write_text(json.dumps(data, indent=2))
+            return True
+    return False
