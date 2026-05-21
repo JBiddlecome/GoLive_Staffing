@@ -124,6 +124,11 @@ def add_position_to_employee(phone: str, positions: str, name: str = None) -> tu
 
             if not employee_id:
                 return False, "Employee not found in database."
+
+            status_sql = text("SELECT status FROM employee WHERE employee_id = :eid LIMIT 1")
+            status_row = conn.execute(status_sql, {"eid": employee_id}).fetchone()
+            if status_row and status_row[0] == 2:
+                return False, "Denied: Employee has Candidate status and is not eligible to have positions added."
                 
             # Find position_id for the given positions
             position_names = [p.strip() for p in positions.split(",") if p.strip()]
@@ -133,6 +138,7 @@ def add_position_to_employee(phone: str, positions: str, name: str = None) -> tu
                  position_names = [positions.strip()]
 
             added_positions = []
+            already_eligible_positions = []
             not_found_positions = []
 
             for pos_name in position_names:
@@ -145,7 +151,7 @@ def add_position_to_employee(phone: str, positions: str, name: str = None) -> tu
                 """)
                 # Try exact match or starts with first
                 pos_res = conn.execute(pos_sql, {"pos_name": f"{pos_name}%"}).fetchone()
-                
+
                 if not pos_res:
                     # Try partial match anywhere
                     pos_res = conn.execute(pos_sql, {"pos_name": f"%{pos_name}%"}).fetchone()
@@ -153,25 +159,30 @@ def add_position_to_employee(phone: str, positions: str, name: str = None) -> tu
                 if not pos_res:
                     not_found_positions.append(pos_name)
                     continue
-                    
+
                 position_id = pos_res[0]
-                
-                # Check if employee has that position
+
+                # Check if employee already has this position and is already eligible
                 emp_pos_sql = text("""
-                    SELECT employee_position_id FROM employee_position
+                    SELECT employee_position_id, eligible FROM employee_position
                     WHERE employee_id = :employee_id AND position_id = :position_id
                     LIMIT 1
                 """)
                 emp_pos_res = conn.execute(emp_pos_sql, {"employee_id": employee_id, "position_id": position_id}).fetchone()
-                
-                if emp_pos_res:
-                    # Update existing
+
+                if emp_pos_res and emp_pos_res[1] == 1:
+                    # Already eligible — no changes needed
+                    already_eligible_positions.append(pos_res[1])
+                elif emp_pos_res:
+                    # Exists but not eligible — update
                     update_sql = text("""
                         UPDATE employee_position
                         SET eligible = 1, status = 1
                         WHERE employee_position_id = :employee_position_id
                     """)
                     conn.execute(update_sql, {"employee_position_id": emp_pos_res[0]})
+                    conn.commit()
+                    added_positions.append(pos_res[1])
                 else:
                     # Insert new
                     insert_sql = text("""
@@ -179,28 +190,25 @@ def add_position_to_employee(phone: str, positions: str, name: str = None) -> tu
                         VALUES (:employee_id, :position_id, 1, 1, -1)
                     """)
                     conn.execute(insert_sql, {"employee_id": employee_id, "position_id": position_id})
-                
-                conn.commit()
-                added_positions.append(pos_res[1])
+                    conn.commit()
+                    added_positions.append(pos_res[1])
 
-            if not added_positions:
+            if not added_positions and not already_eligible_positions:
                 return False, f"Could not match positions: {', '.join(not_found_positions)}"
-            
-            msg = f"Successfully added/updated positions: {', '.join(added_positions)}"
-            
-            email_sent = False
-            if employee_email:
-                email_sent = send_position_added_email(employee_email, first_name, added_positions)
-                if email_sent:
-                    msg += ". Notification email sent."
-                else:
-                    msg += ". Failed to send email."
-            else:
-                msg += ". No email address found for employee."
-                
+
+            msg_parts = []
+            if already_eligible_positions:
+                msg_parts.append(f"Already eligible: {', '.join(already_eligible_positions)}")
+            if added_positions:
+                msg_parts.append(f"Newly added/updated: {', '.join(added_positions)}")
             if not_found_positions:
-                msg += f" Could not find: {', '.join(not_found_positions)}"
-                
+                msg_parts.append(f"Could not find: {', '.join(not_found_positions)}")
+            msg = ". ".join(msg_parts)
+
+            if added_positions and employee_email:
+                email_sent = send_position_added_email(employee_email, first_name, added_positions)
+                msg += ". Notification email sent." if email_sent else ". Failed to send email."
+
             return True, msg
     except Exception as e:
         return False, f"Database error: {str(e)}"

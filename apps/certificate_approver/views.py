@@ -656,8 +656,32 @@ def deny_cert_action(record_id: int, file_name: str, first_name: str, email: str
         engine = _engine()
         try:
             with engine.begin() as conn:
+                record = conn.execute(text("SELECT employee_id, certification_id FROM employee_certification WHERE id = :record_id"), {"record_id": record_id}).fetchone()
+                
                 delete_sql = text("DELETE FROM employee_certification WHERE id = :record_id")
                 conn.execute(delete_sql, {"record_id": record_id})
+                
+                if record:
+                    emp_id = record.employee_id
+                    cert_id = record.certification_id
+                    is_food_handler = cert_id in [3, 17, 18, 20, 50, 55, 60, 66] or "food handler" in cert_type_name.lower() or "food protection" in cert_type_name.lower() or "food worker" in cert_type_name.lower()
+                    
+                    if is_food_handler:
+                        pending_all_food = conn.execute(text("""
+                            SELECT id, file 
+                            FROM employee_certification 
+                            WHERE employee_id = :emp_id 
+                              AND certification_id = 45 
+                              AND approved_at IS NULL
+                        """), {"emp_id": emp_id}).fetchall()
+                        
+                        for pending_cert in pending_all_food:
+                            if pending_cert.file:
+                                try:
+                                    s3.delete_object(Bucket=S3_BUCKET, Key=f'employee/certification/{pending_cert.file}')
+                                except Exception as e:
+                                    print(f"Error deleting All Food Handlers Certificate from S3: {e}")
+                            conn.execute(text("DELETE FROM employee_certification WHERE id = :pending_id"), {"pending_id": pending_cert.id})
         finally:
             engine.dispose()
             
