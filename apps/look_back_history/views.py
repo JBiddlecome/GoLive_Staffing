@@ -29,8 +29,18 @@ CLIENT_STATUS_LABELS = {
     12: "Inactive 365 days",
 }
 
-LOOKBACK_YEARS = 5
-NOTES_FILE = Path("data/lookback_history_notes.json")
+def _resolve_data_dir() -> Path:
+    env_dir = os.getenv("DATA_DIR") or os.getenv("RENDER_DISK_PATH")
+    if env_dir:
+        return Path(env_dir)
+    if Path("/var/data").exists():
+        return Path("/var/data")
+    if any(os.getenv(e) for e in ("RENDER", "RENDER_SERVICE_ID")):
+        return Path("/opt/render/project/src/data")
+    return Path("data")
+
+NOTES_FILE = _resolve_data_dir() / "lookback_history_notes.json"
+NOTES_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 
 def _load_notes() -> dict[str, str]:

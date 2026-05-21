@@ -9,7 +9,18 @@ import openai
 
 from apps.orders.knowledge_base import detect_client_from_text, build_client_kb
 
-_STATE_FILE = Path("data/orders_inbox.json")
+def _resolve_data_dir() -> Path:
+    import os
+    env_dir = os.getenv("DATA_DIR") or os.getenv("RENDER_DISK_PATH")
+    if env_dir:
+        return Path(env_dir)
+    if Path("/var/data").exists():
+        return Path("/var/data")
+    if any(os.getenv(e) for e in ("RENDER", "RENDER_SERVICE_ID")):
+        return Path("/opt/render/project/src/data")
+    return Path("data")
+
+_STATE_FILE = _resolve_data_dir() / "orders_inbox.json"
 PT = ZoneInfo("America/Los_Angeles")
 TARGET_MAILBOXES = ["jake@golivestaffing.com", "michael@culinarystaffing.com", "marlen@culinarystaffing.com"]
 

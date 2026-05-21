@@ -92,14 +92,17 @@ def _get_staffing_engine():
     return create_engine(_db_url_from_env(), pool_pre_ping=True)
 
 # --- AI Analytics Logic ---
-MODULE_BASE_DIR = Path(__file__).resolve().parents[2]
-RENDER_DATA_DIR = Path("/opt/render/project/src/data")
-if any(os.getenv(env_var) for env_var in ("RENDER", "RENDER_SERVICE_ID", "RENDER_EXTERNAL_URL")):
-    DATA_DIR = RENDER_DATA_DIR
-elif RENDER_DATA_DIR.exists():
-    DATA_DIR = RENDER_DATA_DIR
-else:
-    DATA_DIR = MODULE_BASE_DIR / "data"
+def _resolve_data_dir() -> Path:
+    env_dir = os.getenv("DATA_DIR") or os.getenv("RENDER_DISK_PATH")
+    if env_dir:
+        return Path(env_dir)
+    if Path("/var/data").exists():
+        return Path("/var/data")
+    if any(os.getenv(e) for e in ("RENDER", "RENDER_SERVICE_ID")):
+        return Path("/opt/render/project/src/data")
+    return Path(__file__).resolve().parents[2] / "data"
+
+DATA_DIR = _resolve_data_dir()
 
 DB = duckdb.connect(database=":memory:")
 IGNORE_COLUMNS = COLUMN_DOCS["IGNORE_COLUMNS"]

@@ -24,8 +24,19 @@ from apps.resume_analyzer.views import RESUME_SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
 
-DATA_FILE = Path("data/new_employee_position_approver.json")
-CONFIG_FILE = Path("data/new_employee_position_approver_config.json")
+def _resolve_data_dir() -> Path:
+    import os
+    env_dir = os.getenv("DATA_DIR") or os.getenv("RENDER_DISK_PATH")
+    if env_dir:
+        return Path(env_dir)
+    if Path("/var/data").exists():
+        return Path("/var/data")
+    if any(os.getenv(e) for e in ("RENDER", "RENDER_SERVICE_ID")):
+        return Path("/opt/render/project/src/data")
+    return Path("data")
+
+DATA_FILE = _resolve_data_dir() / "new_employee_position_approver.json"
+CONFIG_FILE = _resolve_data_dir() / "new_employee_position_approver_config.json"
 S3_BUCKET = os.getenv("S3_BUCKET", "web-application-files")
 S3_REGION = os.getenv("S3_REGION", "us-east-1")
 S3_PREFIX = os.getenv("RESUME_S3_PREFIX", "employee/resume/")
