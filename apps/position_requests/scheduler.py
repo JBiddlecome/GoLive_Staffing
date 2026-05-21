@@ -498,8 +498,14 @@ async def evaluate_candidate(name, phone, resume_url, experience_text, requested
 
             if not emp_id:
                 return "Consider", "Employee not found in database by phone or name. Marked as Consider."
-            
-            
+
+            status_sql = text("""
+                SELECT status FROM employee WHERE employee_id = :emp_id LIMIT 1
+            """)
+            status_row = conn.execute(status_sql, {"emp_id": emp_id}).fetchone()
+            if status_row and status_row[0] == 2:
+                return "Not Approved", "Automatically denied: Employee has Candidate status and is not eligible to request new positions."
+
             dnr_sql = text("""
                 SELECT employee_id FROM dnr WHERE employee_id = :emp_id AND created_at >= DATE_SUB(NOW(), INTERVAL 2 YEAR) LIMIT 1
             """)
@@ -660,7 +666,7 @@ async def fetch_submissions():
                     success, msg = add_position_to_employee(phone, positions, name)
                     if success:
                         completed = True
-                        ai_analysis += f"\n\n[Automation] Successfully added position(s)."
+                        ai_analysis += f"\n\n[Automation] {msg}"
                     else:
                         ai_analysis += f"\n\n[Automation Error] Failed to add position(s): {msg}"
 

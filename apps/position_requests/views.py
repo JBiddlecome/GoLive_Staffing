@@ -182,7 +182,7 @@ async def add_position(
         return JSONResponse({"status": "error", "message": msg}, status_code=status_code)
 
 
-def send_position_denied_email(employee_email: str, first_name: str, requested_positions: list):
+def send_position_denied_email(employee_email: str, first_name: str, requested_positions: list, qualification_based: bool = False):
     sender_email = "golive@culinarystaffing.com"
     
     import requests
@@ -217,15 +217,15 @@ def send_position_denied_email(employee_email: str, first_name: str, requested_p
       <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #047857;">Position Request Update</h2>
         <p>Hi {first_name},</p>
-        <p>Thank you for submitting your position request. Unfortunately, you have not been approved for the following position(s) based on the uploaded resume and experience:</p>
+        <p>Thank you for submitting your position request. Unfortunately, you have not been approved for the following position(s) based on {"Culinary Staffing qualification requirements" if qualification_based else "the uploaded resume and experience"}:</p>
         <ul>
     """
     for p in requested_positions:
         html_body += f"<li><strong>{p}</strong></li>"
-        
+
     html_body += f"""
         </ul>
-        <p>If you feel this is in error, or if you have additional experience not reflected on your current resume, please update your resume and try again.</p>
+        {"" if qualification_based else "<p>If you feel this is in error, or if you have additional experience not reflected on your current resume, please update your resume and try again.</p>"}
         <p>Best regards,<br>The Culinary Staffing Team</p>
       </body>
     </html>
@@ -263,7 +263,8 @@ def send_position_denied_email(employee_email: str, first_name: str, requested_p
 async def deny_position(
     request: Request,
     phone: str = Form(...),
-    positions: str = Form(...)
+    positions: str = Form(...),
+    reason: str = Form("experience")
 ):
     clean_phone = re.sub(r'\D', '', phone)
     if len(clean_phone) > 10:
@@ -301,7 +302,7 @@ async def deny_position(
             
             email_sent = False
             if employee_email:
-                email_sent = send_position_denied_email(employee_email, first_name, position_names)
+                email_sent = send_position_denied_email(employee_email, first_name, position_names, qualification_based=(reason == "qualification"))
                 if email_sent:
                     msg += ". Notification email sent."
                 else:

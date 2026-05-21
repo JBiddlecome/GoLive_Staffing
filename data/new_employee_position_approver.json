@@ -92,10 +92,332 @@
     "2026-05-21": [
       "46088",
       "46255",
-      "46284"
+      "46284",
+      "46294"
     ]
   },
   "records": [
+    {
+      "review_id": "2026-05-21:46294",
+      "review_date": "2026-05-21",
+      "employee_id": 46294,
+      "employee_name": "Kaitlin van Rossmann",
+      "first_name": "Kaitlin",
+      "last_name": "van Rossmann",
+      "email": "Kaitvanr@gmail.com",
+      "phone": "808-280-8575",
+      "hire_date": "2026-05-21",
+      "rehire_date": "",
+      "resume_file": "45phbxcr9l0do3dy_0.PDF",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/45phbxcr9l0do3dy_0.PDF",
+      "status": "Approved",
+      "recommendations": [
+        {
+          "key": "barista",
+          "label": "Barista 2",
+          "base_name": "Barista",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 2.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Barista at Hana Harvest for about 2 years, which qualifies for Level 2."
+          ],
+          "position_id": 281,
+          "position_description": "Barista 1",
+          "match_found": true
+        },
+        {
+          "key": "barista",
+          "label": "Barista 2",
+          "base_name": "Barista",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 2.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Barista at Hana Harvest for about 2 years, which qualifies for Level 2."
+          ],
+          "position_id": 97,
+          "position_description": "Barista 2",
+          "match_found": true
+        },
+        {
+          "key": "cashier",
+          "label": "Cashier",
+          "base_name": "Cashier",
+          "ai_level": 1,
+          "ai_status": "level_1",
+          "estimated_years": 1.0,
+          "confidence": 0.9,
+          "reasons": [
+            "Crew member at Trader Joe's, which qualifies for Level 1."
+          ],
+          "position_id": 101,
+          "position_description": "Cashier",
+          "match_found": true
+        },
+        {
+          "key": "host",
+          "label": "Host",
+          "base_name": "Host",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 2.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Roles as host at GILT and 6th street, totaling about 2 years."
+          ],
+          "position_id": 126,
+          "position_description": "Host",
+          "match_found": true
+        },
+        {
+          "key": "pastry",
+          "label": "Pastry",
+          "base_name": "Pastry",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 1.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Pastry Technician role involved pastry work, contributing approximately 1 year of experience at a fine dining restaurant."
+          ],
+          "position_id": 121,
+          "position_description": "Pastry Cook",
+          "match_found": true
+        },
+        {
+          "key": "server",
+          "label": "Server 2",
+          "base_name": "Server",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 4.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Worked as a server at Dirty Habit, GILT, 6th street, and Vintner Grill, totaling approximately 4 years in fine dining and upscale venues."
+          ],
+          "position_id": 285,
+          "position_description": "Server 1",
+          "match_found": true
+        },
+        {
+          "key": "server",
+          "label": "Server 2",
+          "base_name": "Server",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 4.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Worked as a server at Dirty Habit, GILT, 6th street, and Vintner Grill, totaling approximately 4 years in fine dining and upscale venues."
+          ],
+          "position_id": 115,
+          "position_description": "Server 2",
+          "match_found": true
+        }
+      ],
+      "ai_summary": {
+        "hospitality_experience_overview": "Experience in fine dining, hotel, and upscale venues, with roles including pastry technician, room service attendant, cocktail server, host, and barista. Also has quick-service experience as a crew member at Trader Joe's, which qualifies for Level 1.",
+        "total_hospitality_years_estimate": 8.0,
+        "notable_venues": [
+          "Papa Haydns (Portland, OR)",
+          "Heathman Hotel (Portland, OR)",
+          "Dirty Habit (San Francisco, CA)",
+          "6th street (Austin, TX)",
+          "Beacon Bar (New York, NY)",
+          "GILT (New York, NY)",
+          "Vintner Grill (Las Vegas, NV)"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "Trader Joe's experience qualifies for Level 1 as a crew member. Other roles are primarily fine dining, hotel, or upscale venues, which count towards higher levels."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Experience in fine dining, hotel, and upscale venues, with roles including pastry technician, room service attendant, cocktail server, host, and barista. Also has quick-service experience as a crew member at Trader Joe's, which qualifies for Level 1.",
+          "total_hospitality_years_estimate": 8.0,
+          "notable_venues": [
+            "Papa Haydns (Portland, OR)",
+            "Heathman Hotel (Portland, OR)",
+            "Dirty Habit (San Francisco, CA)",
+            "6th street (Austin, TX)",
+            "Beacon Bar (New York, NY)",
+            "GILT (New York, NY)",
+            "Vintner Grill (Las Vegas, NV)"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "Trader Joe's experience qualifies for Level 1 as a crew member. Other roles are primarily fine dining, hotel, or upscale venues, which count towards higher levels."
+        },
+        "positions": {
+          "cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "Pastry Technician role involved some cooking, but not enough to qualify as a cook position."
+            ]
+          },
+          "prep_cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No specific prep cook experience identified."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No dishwasher roles listed."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No utility roles listed."
+            ]
+          },
+          "server": {
+            "status": "level_2",
+            "estimated_years": 4.0,
+            "confidence": 0.8,
+            "reasons": [
+              "Worked as a server at Dirty Habit, GILT, 6th street, and Vintner Grill, totaling approximately 4 years in fine dining and upscale venues."
+            ]
+          },
+          "host": {
+            "status": "level_2",
+            "estimated_years": 2.0,
+            "confidence": 0.8,
+            "reasons": [
+              "Roles as host at GILT and 6th street, totaling about 2 years."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No runner roles listed."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No busser roles listed."
+            ]
+          },
+          "bartender": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "Cocktail server at Dirty Habit and Badda Boom, but roles do not specify bartending duties."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barback roles listed."
+            ]
+          },
+          "cashier": {
+            "status": "level_1",
+            "estimated_years": 1.0,
+            "confidence": 0.9,
+            "reasons": [
+              "Crew member at Trader Joe's, which qualifies for Level 1."
+            ]
+          },
+          "pastry": {
+            "status": "level_2",
+            "estimated_years": 1.0,
+            "confidence": 0.8,
+            "reasons": [
+              "Pastry Technician role involved pastry work, contributing approximately 1 year of experience at a fine dining restaurant."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No baking roles listed."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No sushi-specific experience listed."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No concessions roles listed."
+            ]
+          },
+          "barista": {
+            "status": "level_2",
+            "estimated_years": 2.0,
+            "confidence": 0.8,
+            "reasons": [
+              "Barista at Hana Harvest for about 2 years, which qualifies for Level 2."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No valet experience listed."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No event supervisor roles listed."
+            ]
+          },
+          "sous_chef_2": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No sous chef experience listed, and less than 3 years of relevant experience."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "Kit van Rossmann   \n808.280.8575   \nkaitvanr@gmail.com  \n \nFormer professional ballet dancer, current international house & pet sitter with Trusted Housesitters . Looking to finally settle \ndown in Los Angeles. All gaps in resume due to either a dance gig, housesitting, odd jobs (such as house painting, greenhouse  \nvegetable gardener, magician's showgirl) or travelling.   \nAvailable full time June 5th 2026, have been housesitting in the UK and France since December 2025 - currently sitting in \nWest Hollywood.   \n \nc. 2025   \nPapa Haydns - Portland, OR  \nPastry Technician - line cook/ counter girl - fancily plated slices of cake for busy  restaurant. Can write \"congratulations\" in \nchocolate cursive  \n \nc. 2022 -2025  \nTrader Joe's - Portland, OR  \nCrew Member - & manager of dried fruits and nuts  \n \nc. 2021 -2022  \nSelf Employed - Maui, HI  \nPrivate Housekeeper - cleaned homes for several clients in the neighborhood during covid times  \n \nc. 2018 -2020  \nHana Harvest - Maui, HI  \nBarista - coffee truck off the Hana Hwy - served tourists and locals espresso beverages and locally harvested smoothies  \n \nc. 2018  \nMultnomah Athletic Club - Portland, OR  \nCater Waiter - worked (ie set up, served, tore down) private events for the second -largest private athletic club in the nation  \n \nc. 2015 -2017  \nHeathman Hotel - Portland, OR  \nIn Room Dining - swing shift room service attendant - worked all hours, served a James Beard -winning chef's  menu to guests   \n \nc. 2014  \nDirty Habit - a Kimpton Hotel - San Francisco, CA  \nCocktail Server - opening team for new rooftop bar featuring local, daily changing menu by a Michelin starred chef  \n \nc. 2013  \n6th street - Austin, TX  \nServer/Host - waitress at a bar featuring nightly live music, and host for a Mexican restaurant, both now defunct   \n \nc. 2013  \nBeacon Bar - Hotel Beacon - New York, NY  \nCocktail Waitress - part of opening team for new hotel bar on Broadway, serving both guests and theater venue -goers   \n \nc. 2010 -2013  \nGILT - New York Palace Hotel - New York, NY  \nHost, later Courtyard Server - first year spent as the host for the hotel's two -Michelin starred restaurant, then transferred to \ncourtyard and lobby service   \n \nc. 2009  \nThe Vintner Grill - Las Vegas, NV  \nHost - off-strip fine dining establishment   \n \nc. 2004  \nBadda Boom - Boise, ID  \nCocktail Waitress - my first serving job, part of opening team for a new sports bar/night club hybrid",
+      "error": "",
+      "created_at": "2026-05-21T12:52:54-07:00",
+      "completed": true,
+      "approved_positions": [
+        "Barista 1",
+        "Barista 2",
+        "Cashier",
+        "Host",
+        "Pastry Cook",
+        "Server 1",
+        "Server 2"
+      ],
+      "dismissed_reason": "",
+      "approved_at": "2026-05-21T12:52:54-07:00"
+    },
     {
       "review_id": "2026-05-21:46255",
       "review_date": "2026-05-21",
@@ -13667,6 +13989,6 @@
       "dismissed_reason": ""
     }
   ],
-  "last_scan_at": "2026-05-21T12:08:12-07:00",
+  "last_scan_at": "2026-05-21T14:35:01-07:00",
   "last_scan_message": "No new active employees with resumes found for 2026-05-21."
 }
