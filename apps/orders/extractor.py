@@ -61,6 +61,7 @@ Guidelines:
   1. For a range like "6-1:30pm" or "6 to 1:30pm", the first number is the start time ("06:00") and the second is the end time ("13:30").
   2. DO NOT treat the second number as a duration.
   3. Logically infer AM vs PM. If an end time is PM and the start time is a small number (e.g. 6, 7, 8, 9, 10, 11), the start time is almost certainly AM.
+- DATE PARSING RULE: If multiple shifts are requested in the same email (e.g. "a cook tomorrow at 7am, and a server at 12pm"), ensure they all receive the EXACT same 'date' string. Do not leave subsequent shift dates empty or guess a different date unless explicitly stated.
 - Do NOT return markdown formatting (no ```json).
 """
 

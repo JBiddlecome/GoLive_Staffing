@@ -34,17 +34,17 @@ if app_root_env:
 else:
     BASE_DIR = _MODULE_BASE_DIR
 
-RENDER_DATA_DIR = Path("/opt/render/project/src/data")
+def _resolve_data_dir() -> Path:
+    env_dir = os.getenv("DATA_DIR") or os.getenv("RENDER_DISK_PATH")
+    if env_dir:
+        return Path(env_dir)
+    if Path("/var/data").exists():
+        return Path("/var/data")
+    if any(os.getenv(e) for e in ("RENDER", "RENDER_SERVICE_ID")):
+        return Path("/opt/render/project/src/data")
+    return BASE_DIR / "data"
 
-if any(
-    os.getenv(env_var)
-    for env_var in ("RENDER", "RENDER_SERVICE_ID", "RENDER_EXTERNAL_URL")
-):
-    DATA_DIR = RENDER_DATA_DIR
-elif RENDER_DATA_DIR.exists():
-    DATA_DIR = RENDER_DATA_DIR
-else:
-    DATA_DIR = BASE_DIR / "data"
+DATA_DIR = _resolve_data_dir()
 WORKBOOK_FILENAME = "Sales and Staffing Charts.xlsx"
 
 logger = logging.getLogger("apps.sales_staffing_metrics")
