@@ -1,10 +1,12 @@
 import json
+import os
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DATA_FILE = REPO_ROOT / "data" / "it_tickets.json"
+DATA_DIR = Path(os.environ.get("DATA_DIR", str(REPO_ROOT / "data")))
+DATA_FILE = DATA_DIR / "it_tickets.json"
 
 
 def _ensure_data_file() -> None:
@@ -31,6 +33,7 @@ def save_ticket(*, submitted_by: str, department: str, request_details: str, pri
         "priority": priority,
         "submitted_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
         "estimated_completion": None,
+        "edited_at": None,
     })
     DATA_FILE.write_text(json.dumps(data, indent=2))
 
@@ -42,6 +45,21 @@ def set_ticket_estimate(ticket_id: str, estimated_completion: str | None) -> boo
     for ticket in data.get("tickets", []):
         if ticket["id"] == ticket_id:
             ticket["estimated_completion"] = estimated_completion or None
+            DATA_FILE.write_text(json.dumps(data, indent=2))
+            return True
+    return False
+
+
+def update_ticket(ticket_id: str, *, department: str, request_details: str, priority: str) -> bool:
+    _ensure_data_file()
+    with DATA_FILE.open() as f:
+        data = json.load(f)
+    for ticket in data.get("tickets", []):
+        if ticket["id"] == ticket_id:
+            ticket["department"] = department
+            ticket["request_details"] = request_details
+            ticket["priority"] = priority
+            ticket["edited_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
             DATA_FILE.write_text(json.dumps(data, indent=2))
             return True
     return False

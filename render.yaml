@@ -5,11 +5,18 @@ services:
     region: oregon
     plan: starter
 
+    disk:
+      name: golive-data
+      mountPath: /var/data
+      sizeGB: 1
+
     envVars:
       - key: PYTHON_VERSION    # <- this is how you pin Python in a Blueprint
         value: "3.12.6"
       - key: PIP_ONLY_BINARY
         value: ":all:"
+      - key: DATA_DIR
+        value: /var/data
       # optional: set this only if you want the Streamlit path by default
       # - key: APP_TYPE
       #   value: "streamlit"

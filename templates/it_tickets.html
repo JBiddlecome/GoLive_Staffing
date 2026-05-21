@@ -140,59 +140,118 @@
     <h2 class="text-lg font-semibold text-gray-800 mb-4">All Tickets <span class="ml-2 text-sm font-normal text-gray-400">({{ tickets | length }})</span></h2>
     <div class="space-y-4">
       {% for ticket in tickets | reverse %}
+      {% set can_edit = user and (is_admin or ticket.submitted_by == user.email) %}
       <div class="rounded-2xl bg-white/80 border border-gray-200 shadow-sm p-5">
-        <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
-          <div class="flex flex-wrap items-center gap-2">
-            <!-- Priority badge -->
-            {% if ticket.priority == "Urgent" %}
-            <span class="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">🚨 Urgent</span>
-            {% elif ticket.priority == "Very Important" %}
-            <span class="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-semibold text-orange-700">⚠️ Very Important</span>
-            {% elif ticket.priority == "Important" %}
-            <span class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">📌 Important</span>
-            {% else %}
-            <span class="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-semibold text-purple-700">✨ Wish List</span>
-            {% endif %}
-            <!-- Department badge -->
-            <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">{{ ticket.department }}</span>
+
+        <!-- View mode -->
+        <div id="view-{{ ticket.id }}">
+          <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
+            <div class="flex flex-wrap items-center gap-2">
+              {% if ticket.priority == "Urgent" %}
+              <span class="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">🚨 Urgent</span>
+              {% elif ticket.priority == "Very Important" %}
+              <span class="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-semibold text-orange-700">⚠️ Very Important</span>
+              {% elif ticket.priority == "Important" %}
+              <span class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">📌 Important</span>
+              {% else %}
+              <span class="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-semibold text-purple-700">✨ Wish List</span>
+              {% endif %}
+              <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">{{ ticket.department }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-gray-400">{{ ticket.submitted_at }}</span>
+              {% if can_edit %}
+              <button
+                type="button"
+                onclick="toggleEdit('{{ ticket.id }}')"
+                class="rounded-lg border border-gray-200 px-3 py-1 text-xs font-medium text-gray-500 hover:bg-gray-50 hover:border-gray-300 transition"
+              >Edit</button>
+              {% endif %}
+            </div>
           </div>
-          <span class="text-xs text-gray-400">{{ ticket.submitted_at }}</span>
-        </div>
-        <p class="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{{ ticket.request_details }}</p>
-        <div class="mt-3 flex flex-wrap items-center gap-4">
-          <p class="text-xs text-gray-400">Submitted by {{ ticket.submitted_by }}</p>
-          <!-- Estimated completion -->
-          {% if ticket.estimated_completion %}
-          <span class="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            Est. completion: {{ ticket.estimated_completion }}
-          </span>
-          {% else %}
-          <span class="text-xs text-gray-400 italic">No est. completion date</span>
+          <p class="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{{ ticket.request_details }}</p>
+          <div class="mt-3 flex flex-wrap items-center gap-4">
+            <p class="text-xs text-gray-400">
+              Submitted by {{ ticket.submitted_by }}
+              {% if ticket.edited_at %}<span class="ml-1">&middot; edited {{ ticket.edited_at }}</span>{% endif %}
+            </p>
+            {% if ticket.estimated_completion %}
+            <span class="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Est. completion: {{ ticket.estimated_completion }}
+            </span>
+            {% else %}
+            <span class="text-xs text-gray-400 italic">No est. completion date</span>
+            {% endif %}
+          </div>
+          <!-- Admin: set/update estimated completion -->
+          {% if is_admin %}
+          <form method="post" action="/it-tickets/{{ ticket.id }}/estimate" class="mt-3 flex items-center gap-2">
+            <label class="text-xs font-medium text-gray-500 whitespace-nowrap">Est. completion:</label>
+            <input
+              type="date"
+              name="estimated_completion"
+              value="{{ ticket.estimated_completion or '' }}"
+              class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+            <button type="submit" class="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 transition">Save</button>
+            {% if ticket.estimated_completion %}
+            <button type="submit" name="estimated_completion" value="" class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 transition">Clear</button>
+            {% endif %}
+          </form>
           {% endif %}
         </div>
-        <!-- Admin: set/update estimated completion -->
-        {% if is_admin %}
-        <form method="post" action="/it-tickets/{{ ticket.id }}/estimate" class="mt-3 flex items-center gap-2">
-          <label class="text-xs font-medium text-gray-500 whitespace-nowrap">Est. completion:</label>
-          <input
-            type="date"
-            name="estimated_completion"
-            value="{{ ticket.estimated_completion or '' }}"
-            class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-          />
-          <button type="submit" class="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 transition">
-            Save
-          </button>
-          {% if ticket.estimated_completion %}
-          <button type="submit" name="estimated_completion" value="" class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 transition">
-            Clear
-          </button>
-          {% endif %}
-        </form>
+
+        <!-- Edit mode (hidden by default) -->
+        {% if can_edit %}
+        <div id="edit-{{ ticket.id }}" class="hidden">
+          <form method="post" action="/it-tickets/{{ ticket.id }}/edit" class="space-y-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-semibold text-gray-700">Edit Ticket</span>
+              <button type="button" onclick="toggleEdit('{{ ticket.id }}')" class="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+            </div>
+
+            <!-- Department -->
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1">Department</label>
+              <select name="department" required class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                {% for dept in ["Staffing", "HR & Office Management", "Recruiting", "Billing & Payroll", "Sales", "Tech Support", "Owner & Operators"] %}
+                <option value="{{ dept }}" {% if ticket.department == dept %}selected{% endif %}>{{ dept }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Priority -->
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-2">Priority</label>
+              <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {% for p, emoji, color in [("Urgent","🚨","red"), ("Very Important","⚠️","orange"), ("Important","📌","blue"), ("Wish List","✨","purple")] %}
+                <label class="cursor-pointer">
+                  <input type="radio" name="priority" value="{{ p }}" {% if ticket.priority == p %}checked{% endif %} required class="sr-only peer" />
+                  <div class="rounded-xl border-2 border-gray-200 px-3 py-2 text-center text-xs font-semibold transition peer-checked:border-{{ color }}-500 peer-checked:bg-{{ color }}-50 peer-checked:text-{{ color }}-700 hover:border-{{ color }}-300">
+                    <span class="block mb-0.5">{{ emoji }}</span>{{ p }}
+                  </div>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Request Details -->
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1">Detailed Request</label>
+              <textarea name="request_details" required rows="4" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-y">{{ ticket.request_details }}</textarea>
+            </div>
+
+            <div class="flex items-center gap-2 pt-1">
+              <button type="submit" class="rounded-xl bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition">Save Changes</button>
+              <button type="button" onclick="toggleEdit('{{ ticket.id }}')" class="rounded-xl border border-gray-200 px-5 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 transition">Cancel</button>
+            </div>
+          </form>
+        </div>
         {% endif %}
+
       </div>
       {% endfor %}
     </div>
@@ -204,4 +263,15 @@
   {% endif %}
 
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function toggleEdit(ticketId) {
+    const view = document.getElementById('view-' + ticketId);
+    const edit = document.getElementById('edit-' + ticketId);
+    view.classList.toggle('hidden');
+    edit.classList.toggle('hidden');
+  }
+</script>
 {% endblock %}
