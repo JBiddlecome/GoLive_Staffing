@@ -61,45 +61,44 @@ async def page(
                     employees = [{"id": result["employee_id"], "name": f"{result['first_name']} {result['last_name']} ({result['email']})"}]
 
             if employee_id and start_date and end_date:
-                # Fetch shift history
+                # Fetch shift history — join via shift/shift_position/publishing so results
+                # are not limited to the short retention window of the event table.
                 shift_sql = text('''
-                    SELECT 
+                    SELECT
                         e.first_name,
                         e.last_name,
-                        ev.date AS event_date,
-                        ev.title AS event_title,
+                        DATE(s.start) AS event_date,
                         c.name AS client_name,
                         s.start AS shift_start,
                         s.end AS shift_end,
                         p.description AS position,
                         sp.rate AS pay_rate,
                         pe.created_on AS published_at
-                    FROM 
+                    FROM
                         publish_employee pe
-                        INNER JOIN employee e 
+                        INNER JOIN employee e
                             ON e.employee_id = pe.employee_id
-                        INNER JOIN shift_position sp 
+                        INNER JOIN shift_position sp
                             ON sp.shift_position_id = pe.shift_position_id
-                        INNER JOIN shift s 
+                        INNER JOIN shift s
                             ON s.shift_id = sp.shift_id
-                        INNER JOIN event ev 
-                            ON ev.event_id = pe.event_id
-                        INNER JOIN client c 
-                            ON c.client_id = ev.client_id
-                        INNER JOIN position p 
+                        INNER JOIN position p
                             ON p.position_id = sp.position_id
-                    WHERE 
+                        LEFT JOIN publishing pub
+                            ON pub.id = pe.publishing_id
+                        LEFT JOIN client c
+                            ON c.client_id = pub.client_id
+                    WHERE
                         pe.employee_id = :employee_id
-                        AND ev.date BETWEEN :start_date AND :end_date
-                    ORDER BY 
-                        pe.created_on DESC, ev.date, s.start;
+                        AND DATE(pe.created_on) BETWEEN :start_date AND :end_date
+                    ORDER BY
+                        pe.created_on DESC, s.start;
                 ''')
                 shift_results = conn.execute(shift_sql, {"employee_id": employee_id, "start_date": start_date, "end_date": end_date}).mappings().all()
                 for r in shift_results:
                     shifts.append({
                         "event_date": r["event_date"].isoformat() if hasattr(r["event_date"], 'isoformat') else str(r["event_date"]),
-                        "event_title": r["event_title"],
-                        "client_name": r["client_name"],
+                        "client_name": r["client_name"] or "",
                         "shift_start": r["shift_start"].strftime("%I:%M %p").lstrip("0") if hasattr(r["shift_start"], 'strftime') else str(r["shift_start"]),
                         "shift_end": r["shift_end"].strftime("%I:%M %p").lstrip("0") if hasattr(r["shift_end"], 'strftime') else str(r["shift_end"]),
                         "position": r["position"],

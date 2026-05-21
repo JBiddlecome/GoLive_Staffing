@@ -48,6 +48,7 @@ Concessions
 Barista
 Valet
 Event Supervisor
+Sous Chef 2
 
 Venue rules (VERY IMPORTANT)
 
@@ -82,6 +83,9 @@ Ignore non-hospitality jobs entirely (admin, warehouse, rideshare, retail, etc.)
 
 Special rule for Event Supervisor:
 — This position requires a minimum of 3 years of management or supervisory experience in the hotel, food & beverage, or hospital industry.
+
+Special rule for Sous Chef 2:
+— This position requires a minimum of 3 years of qualifying experience. If the candidate has less than 3 years of qualifying experience, you MUST assign "no_experience". (If they have 3-5 years, assign level_2; if >5 years, assign level_3).
 
 Experience rules
 
@@ -133,7 +137,8 @@ Return your result as valid JSON only, using this schema:
     "concessions": { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
     "barista":     { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
     "valet":       { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
-    "event_supervisor": { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] }
+    "event_supervisor": { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] },
+    "sous_chef_2": { "status": "...", "estimated_years": 0.0, "confidence": 0.0, "reasons": [] }
   }
 }
 
@@ -175,6 +180,7 @@ POSITION_KEY_TO_NAME = {
     "barista": "Barista",
     "valet": "Valet",
     "event_supervisor": "Event Supervisor",
+    "sous_chef_2": "Sous Chef 2",
 }
 from sqlalchemy.engine import URL
 

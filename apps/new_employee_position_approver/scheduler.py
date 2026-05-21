@@ -119,6 +119,7 @@ APPROVAL_POSITION_DESCRIPTIONS: dict[str, str | dict[int, str]] = {
     "barista": {1: "Barista 1", 2: "Barista 2"},
     "valet": "Valet",
     "event_supervisor": "Event Supervisor",
+    "sous_chef_2": "Sous Chef 2",
 }
 
 

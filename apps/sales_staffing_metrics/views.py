@@ -330,7 +330,12 @@ def _load_payroll_csv(path: Path | None = None) -> pd.DataFrame:
         return pd.DataFrame()
 
     try:
-        df = pd.read_csv(path, encoding="utf-8-sig", low_memory=False)
+        wanted_cols = {"Date", "Client", "Client Won Date", "Total Bill", "Industry", "Bill Rate"}
+        # Read the first row just to get columns
+        sample_df = pd.read_csv(path, encoding="utf-8-sig", nrows=0)
+        usecols = [c for c in sample_df.columns if c in wanted_cols]
+        
+        df = pd.read_csv(path, encoding="utf-8-sig", usecols=usecols, low_memory=False)
     except Exception:  # pragma: no cover - defensive
         return pd.DataFrame()
 
@@ -1192,7 +1197,16 @@ def _read_payroll(upload: UploadFile) -> pd.DataFrame:
         raise ValueError(f"Unable to read Excel file '{upload.filename}'.") from exc
 
 
+_CHART_PAYLOAD_CACHE = None
+_CHART_PAYLOAD_CACHE_TIME = 0
+_CACHE_TTL = 3600  # 1 hour
+
 def _build_chart_payload() -> Dict[str, Any]:
+    global _CHART_PAYLOAD_CACHE, _CHART_PAYLOAD_CACHE_TIME
+    import time
+    if _CHART_PAYLOAD_CACHE is not None and time.time() - _CHART_PAYLOAD_CACHE_TIME < _CACHE_TTL:
+        return _CHART_PAYLOAD_CACHE
+
     chart_payload = _load_chart_data()
 
     weeks = [
@@ -1211,6 +1225,8 @@ def _build_chart_payload() -> Dict[str, Any]:
     chart_payload["industryTotalsByWeek"] = industry_totals_by_week
     chart_payload["revenueSeries"] = _load_revenue_goal_data()
 
+    _CHART_PAYLOAD_CACHE = chart_payload
+    _CHART_PAYLOAD_CACHE_TIME = time.time()
     return chart_payload
 
 
@@ -1345,6 +1361,8 @@ async def update(
     logger.info(
         "Workbook update succeeded. Metrics: %s", result
     )
+    global _CHART_PAYLOAD_CACHE
+    _CHART_PAYLOAD_CACHE = None
     context.update({"result": result, "chart_data": _build_chart_payload()})
     return templates.TemplateResponse("apps/sales_staffing_metrics.html", context)
 

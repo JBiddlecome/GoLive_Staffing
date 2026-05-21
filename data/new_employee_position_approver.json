@@ -82,13 +82,712 @@
       "37457",
       "45861",
       "46049",
+      "46089",
       "46090",
       "46203",
       "46221",
-      "46235"
+      "46235",
+      "46269"
+    ],
+    "2026-05-21": [
+      "46284"
     ]
   },
   "records": [
+    {
+      "review_id": "2026-05-21:46284",
+      "review_date": "2026-05-21",
+      "employee_id": 46284,
+      "employee_name": "Andrew Jackson",
+      "first_name": "Andrew",
+      "last_name": "Jackson",
+      "email": "Chefatj1@gmail.com",
+      "phone": "818-515-9351",
+      "hire_date": "2026-05-21",
+      "rehire_date": "",
+      "resume_file": "s62204vupaupax7d_AndrewJacksonResume.pdf",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/s62204vupaupax7d_AndrewJacksonResume.pdf",
+      "status": "Recommended",
+      "recommendations": [
+        {
+          "key": "sous_chef_2",
+          "label": "Sous Chef 2",
+          "base_name": "Sous Chef 2",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 1.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Sous Chef role at Paper or Plastik Cafe (CA) for 1 year, which is less than 3 years, so assigned level_2."
+          ],
+          "position_id": 273,
+          "position_description": "Sous Chef 2",
+          "match_found": true
+        }
+      ],
+      "ai_summary": {
+        "hospitality_experience_overview": "Over 17 years of kitchen experience, including roles as Chef, Lead Line Cook, Kitchen Manager, and Executive Chef at various hospitality venues such as country clubs, restaurants, and cafes. Experience includes fine dining, high-volume operations, and pizza making. Fast-food experience is not explicitly mentioned; some quick-service roles are similar to casual dining but not clearly fast-food chains.",
+        "total_hospitality_years_estimate": 17.0,
+        "notable_venues": [
+          "Sherwood Country Club",
+          "Dark Horse Tavern",
+          "1841 Cafe",
+          "Bistro Roca",
+          "The One Up",
+          "Paper or Plastik Cafe",
+          "On The Thirty"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "No explicit fast-food experience is listed; most roles are at upscale or casual dining venues. Taco cart work is off-site and not counted as hospitality experience."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Over 17 years of kitchen experience, including roles as Chef, Lead Line Cook, Kitchen Manager, and Executive Chef at various hospitality venues such as country clubs, restaurants, and cafes. Experience includes fine dining, high-volume operations, and pizza making. Fast-food experience is not explicitly mentioned; some quick-service roles are similar to casual dining but not clearly fast-food chains.",
+          "total_hospitality_years_estimate": 17.0,
+          "notable_venues": [
+            "Sherwood Country Club",
+            "Dark Horse Tavern",
+            "1841 Cafe",
+            "Bistro Roca",
+            "The One Up",
+            "Paper or Plastik Cafe",
+            "On The Thirty"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "No explicit fast-food experience is listed; most roles are at upscale or casual dining venues. Taco cart work is off-site and not counted as hospitality experience."
+        },
+        "positions": {
+          "cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles explicitly listed as cook at fast-food or casual dining chains matching target positions."
+            ]
+          },
+          "prep_cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No specific prep cook roles at hospitality venues identified."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No dishwasher experience mentioned."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No utility roles listed."
+            ]
+          },
+          "server": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No server roles listed."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No host roles listed."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No runner roles listed."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No busser roles listed."
+            ]
+          },
+          "bartender": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No bartender roles listed."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barback roles listed."
+            ]
+          },
+          "cashier": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No cashier roles listed."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No pastry roles listed."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No baker roles listed."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No sushi roles listed."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No concessions experience listed."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barista experience listed."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No valet experience listed."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No event supervisor roles listed."
+            ]
+          },
+          "sous_chef_2": {
+            "status": "level_2",
+            "estimated_years": 1.0,
+            "confidence": 0.8,
+            "reasons": [
+              "Sous Chef role at Paper or Plastik Cafe (CA) for 1 year, which is less than 3 years, so assigned level_2."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "Andrew  Thomas  Jackson  \n21571 Mayan Drive  | Chatsworth, CA 91311  | (818) 515 -9351  | chefatj1@gmail.com  \nObjective  \nAs a culinary professional , I have dedicated my life to the hospitality \nindustry focused on creating amazing food , upkeeping health code \nstandards  and ensuring guests have a memorable experience while \ndining .  I am seeking an employment opportunity to utilize my 17 years \nof kitchen experience along with 12 years of kitchen management \nranging from overseeing a staff as small as 6 to as large as 20.   I am \nable to adapt to any kitchen environment  and find where I can best be \nutilized; whether that be working a station as a line cook, se rving food, \nexpo and quality control , following recipes as a prep cook, catching up \na busy dish pit, or overseeing the whole operation.  \nExperience  \n06/2025 - Present  \nChef/Garde Manger  | Sherwood Country Club  | Thousand Oaks , CA \nAs the Garde Manger of the  Men\u2019s Lounge, my responsibility is to make salads, cold appetizers, \ndeserts, and specialty pizzas  that change monthly  along with weekly specials.  I also assist \nbanquets and have experience in working the slicing station  serving prime rib , turkey, ham, and \nchicken for service.  i am also trained in handling and serving caviar . \n08/2024 \u2013 06/2025  \nLead Line Cook | Dark Horse Tavern | Tarzana, CA  \nI had just moved back to CA from NC and took the first job that was available.   With my \nexperience, I made major changes, added menu items, put an emphasis on cleanliness  and did \nmy best to bring the kitchen up to speed.  I eventually left when Sherwood offered me a job.  \n \n\n2   \n 06/20 23 \u2013 07/20 24 \nKitchen Manager  | 1841 Cafe  | Lenoir, NC  \nAs kitchen manager, I reported directly to the head chef and owner.  My responsibilities were to \nprimarily run the grill, quality control, inventory, training staff and assisting with catering events.   I \nalso assisted the head chef in creating weekly specials.   I left this position because I relocated to \nLos Angeles.  \n07/2023 \u2013 12/2023  \nLine Cook | Bistro Roca | Blowing Rock, NC  \nMy primary responsibility was running the wood fire pizza oven .  This included starting and \nmaintaining the fire throughout service, add wood as needed to maintain about 800 degrees.  \nPrep included pizza dough, pizza sauce, shredding chees e, cleaning mussels, preparing trout \nand weekly specials.  \n06/20 13 \u2013 02/202 3 \nExecutive Chef  | The One Up  | Sherman Oaks, CA  \nAs Executive Chef, I was responsible for the menu creation and following the \u201celevated pub grub\u201d \nmentality of the restaurant .  A high-volume  operation of roughly $3  million a year in sales, I was \nresponsible for the hiring and firing of kitchen staff along with training and delegation of duties.  \nResponsibilities  also included ordering product for various venders including US foods, Premier \nMeats, Santa Monica Seafood, Worldwide Produce, M ission Linens and Restaurant Tea Service.   \nAs a working chef, I would regularly schedule myself to work saut\u00e9 , grill, fry, salads or expo .  I ran \nthe kitchen for 9.5 years, until our lease was up and rent was raised too high to make it profitable.  \n02/2016  \u2013 01/2017  \nSous Chef  | Paper or Plastik Cafe  | Los Angeles, CA  \nI took this job while running The One Up to assist one of my cooks who was promoted to \nExecutive Chef  here.  This was a scratch kitchen and I was responsible for handling daily prep, \noverseeing the morning shift , preparing for night service and closing the kitchen.   My friend I was \nassisting was eventually fired and I was not in a position to take over so I stayed on long enough \nto assist the new chef and help with a seamless  transition  \n03/2018 \u2013 12/2018 \nLine Cook  | On The Thirty  | Sherman Oaks , CA \nA well-known  pizza joint in Sherman Oaks, I took this job because I wanted to learn  the art of  \npizza making.   I was more like a paid stage.  I ran the pizza oven on evenings, and learned pizza \ndough making in the mornings.  All this while still Executive Chef of The One Up .   \n\n3   \n  \nCertifications  \n\u2022 Serv-safe Food Protection Manager Certification exp 0 3/04/2027 \n\u2022 Responsible Beverage Sales Certification  \n\u2022 Sexual Harassment Prevention certification  \n\u2022 CPR/AED training certification  \nReferences  \n\u2022 Murphy Michaels \u2013 The One Up \u2013 Owner \u2013 (619) 259 -8765  \n\u2022 Chef Aaron \u2013 Sherwood Country Club  \u2013 Chef de Cuisine  \u2013 (720) 323-0407  \n\u2022 Chef Colin \u2013 Sherwood Country Club  \u2013 Director of Culinary  \u2013 (831) 521-4403  \n\u2022 Chef Nick Ware \u2013 Paper or Plastik Cafe  \u2013 Executive Chef  \u2013 (502) 544-0553  \n\u2022 Vicki Setzer  \u2013 1841 Cafe  \u2013 Owner \u2013 (828) 850-3857 \n\u2022 Francisco  \u2013 On the Thirty  \u2013 Head Chef  \u2013 (818) 568-8582  \n\u2022 Chef Seth  \u2013 Bistro Roca  \u2013 Executive Chef  \u2013 (828) 406-1117  \n\u2022 Javier  Soto \u2013 The Last Call  \u2013 Owner \u2013 (909) 419-9288  \u2013 I worked a taco cart for him for about \n3 years  on and off",
+      "error": "",
+      "created_at": "2026-05-21T08:58:20-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
+    {
+      "review_id": "2026-05-20:46269",
+      "review_date": "2026-05-20",
+      "employee_id": 46269,
+      "employee_name": "Randy Jatman",
+      "first_name": "Randy",
+      "last_name": "Jatman",
+      "email": "Rjatman80@gmail.com",
+      "phone": "386-405-7613",
+      "hire_date": "2026-05-20",
+      "rehire_date": "",
+      "resume_file": "jo6gaq11gz6lvv6t_Resume 2026_260430_103904.pdf",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/jo6gaq11gz6lvv6t_Resume%202026_260430_103904.pdf",
+      "status": "Recommended",
+      "recommendations": [
+        {
+          "key": "bartender",
+          "label": "Bartender 2",
+          "base_name": "Bartender",
+          "ai_level": 3,
+          "ai_status": "level_3",
+          "estimated_years": 15.0,
+          "confidence": 1.0,
+          "reasons": [
+            "Extensive bartending experience at high-volume venues from 2008-2026, including management roles, totaling over 15 years."
+          ],
+          "position_id": 278,
+          "position_description": "Bartender 1",
+          "match_found": true
+        },
+        {
+          "key": "bartender",
+          "label": "Bartender 2",
+          "base_name": "Bartender",
+          "ai_level": 3,
+          "ai_status": "level_3",
+          "estimated_years": 15.0,
+          "confidence": 1.0,
+          "reasons": [
+            "Extensive bartending experience at high-volume venues from 2008-2026, including management roles, totaling over 15 years."
+          ],
+          "position_id": 98,
+          "position_description": "Bartender 2",
+          "match_found": true
+        },
+        {
+          "key": "server",
+          "label": "Server 2",
+          "base_name": "Server",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 7.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Multiple roles as server at high-volume establishments from 2008-2022, totaling approximately 14 years, but considering overlapping roles and focusing on direct server experience, estimated at 7 years."
+          ],
+          "position_id": 285,
+          "position_description": "Server 1",
+          "match_found": true
+        },
+        {
+          "key": "server",
+          "label": "Server 2",
+          "base_name": "Server",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 7.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Multiple roles as server at high-volume establishments from 2008-2022, totaling approximately 14 years, but considering overlapping roles and focusing on direct server experience, estimated at 7 years."
+          ],
+          "position_id": 115,
+          "position_description": "Server 2",
+          "match_found": true
+        }
+      ],
+      "ai_summary": {
+        "hospitality_experience_overview": "Over 15 years of experience in high-volume service, bartending, and front-of-house operations, including management roles and working at various high-volume establishments.",
+        "total_hospitality_years_estimate": 15.0,
+        "notable_venues": [
+          "Crab Knight",
+          "Various High-Volume Establishments"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "No fast-food experience; all experience at high-volume seafood and hospitality venues."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Over 15 years of experience in high-volume service, bartending, and front-of-house operations, including management roles and working at various high-volume establishments.",
+          "total_hospitality_years_estimate": 15.0,
+          "notable_venues": [
+            "Crab Knight",
+            "Various High-Volume Establishments"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "No fast-food experience; all experience at high-volume seafood and hospitality venues."
+        },
+        "positions": {
+          "cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "Experience is in bartending and front-of-house roles, no mention of cooking or kitchen roles."
+            ]
+          },
+          "prep_cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No relevant kitchen or prep cook experience noted."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No dishwasher or cleaning roles mentioned."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No utility or support staff roles noted."
+            ]
+          },
+          "server": {
+            "status": "level_2",
+            "estimated_years": 7.0,
+            "confidence": 0.8,
+            "reasons": [
+              "Multiple roles as server at high-volume establishments from 2008-2022, totaling approximately 14 years, but considering overlapping roles and focusing on direct server experience, estimated at 7 years."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No specific hosting or front-desk experience mentioned."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No runner roles or similar support roles noted."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No bussing experience mentioned."
+            ]
+          },
+          "bartender": {
+            "status": "level_3",
+            "estimated_years": 15.0,
+            "confidence": 1.0,
+            "reasons": [
+              "Extensive bartending experience at high-volume venues from 2008-2026, including management roles, totaling over 15 years."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barback experience noted."
+            ]
+          },
+          "cashier": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No cashier roles mentioned."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No pastry or baking experience noted."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No baking or bakery experience mentioned."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No sushi or related experience noted."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No concessions or similar roles mentioned."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barista experience noted."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No valet or parking roles mentioned."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No supervisory experience in event or hospitality industry noted."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "RANDY JATMAN  \nLos Angeles, CA 90068 | 386 -405-7613 | rjatman80@gmail.com  \nPROFESSIONAL SUMMARY  \nHospitality professional with 15+ years of experience in high -volume service, bartending, \nand front -of-house operations, including restaurant and bar management. Recognized for \nfast, accurate service; strong menu and beverage knowledge; and consistent gues t \nsatisfaction. Experienced in staff leadership, shift execution, cash handling, and beverage \ninventory/ordering; currently based in Los Angeles while pursuing Music Production \nstudies.  \nCORE SKILLS  \n\u2022 High-volume bartending & mixology \u2022 Tableside service \u2022 Upselling \u2022 Guest recovery \n/ conflict resolution \u2022 POS (Toast, Aloha, Micros)  \n\u2022 Shift leadership & training \u2022 Cash handling & closeout \u2022 Bar inventory control \u2022 \nAlcohol ordering & vendor coordination \u2022 Health & safety compliance  \nPROFESSIONAL EXPERIENCE  \nBartender / Server  | Crab Knight \u2014 Daytona Beach, FL Aug 2022 \u2013 Mar 2026  \n\u2022 Provided fast, friendly service in a high -volume seafood bar/restaurant while \nmaintaining strong guest satisfaction.  \n\u2022 Increased average check size by 15% through menu expertise, beverage pairing \nrecommendations, and proactive upselling.  \n\u2022 Handled high -volume payments and end -of-shift closeouts with accurate reporting.  \nOwner / Operator  | Central Florida PlantLife / Coastal Repair \u2014 FL May 2024 \u2013 Oct 2024  \n\u2022 Launched and operated two service businesses; managed scheduling, client \ncommunication, and quality control end -to-end.  \n\u2022 Built a steady client base within 60 days through local outreach and targeted \nmarketing.  \nBartender / Server  | Various High -Volume Establishments \u2014 FL 2008 \u2013 2022  \n\u2022 Delivered consistent service across casual, upscale, and high -turn environments.  \n\u2022 Developed strong mixology and craft beer knowledge while building repeat business \nwith regular guests.  \nEDUCATION  \nAssociate of Science (A.S.), Music Production  Expected 2028  \n\nThe Los Angeles Film School / The Los Angeles Recording School \u2014 Los Angeles, CA  \nAdditional Coursework  \nDaytona State College \u2014 Daytona Beach, FL  \nCERTIFICATIONS  \n\u2022 California Food Handler Certificate (Current)  \n\u2022 RBS Alcohol Server Certification (Current)",
+      "error": "",
+      "created_at": "2026-05-20T15:20:53-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
+    {
+      "review_id": "2026-05-20:46089",
+      "review_date": "2026-05-20",
+      "employee_id": 46089,
+      "employee_name": "Cody Robinson",
+      "first_name": "Cody",
+      "last_name": "Robinson",
+      "email": "Codyo239@gmail.com",
+      "phone": "239-628-6994",
+      "hire_date": "2015-12-11",
+      "rehire_date": "2026-05-20",
+      "resume_file": "yex0vfelxuv7nvsd_Cody Manager Resume .pdf",
+      "resume_url": "https://web-application-files.s3.us-east-1.amazonaws.com/employee/resume/yex0vfelxuv7nvsd_Cody%20Manager%20Resume%20.pdf",
+      "status": "Recommended",
+      "recommendations": [
+        {
+          "key": "bartender",
+          "label": "Bartender 2",
+          "base_name": "Bartender",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 3.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Managed bar operations at Backyard Social and Planet Hollywood, supervising staff and delivering high-volume service, totaling approximately 3 years."
+          ],
+          "position_id": 278,
+          "position_description": "Bartender 1",
+          "match_found": true
+        },
+        {
+          "key": "bartender",
+          "label": "Bartender 2",
+          "base_name": "Bartender",
+          "ai_level": 2,
+          "ai_status": "level_2",
+          "estimated_years": 3.0,
+          "confidence": 0.8,
+          "reasons": [
+            "Managed bar operations at Backyard Social and Planet Hollywood, supervising staff and delivering high-volume service, totaling approximately 3 years."
+          ],
+          "position_id": 98,
+          "position_description": "Bartender 2",
+          "match_found": true
+        }
+      ],
+      "ai_summary": {
+        "hospitality_experience_overview": "Extensive experience in restaurant and bar management at high-volume venues, including country clubs, hotels, and restaurants, with leadership roles overseeing large teams and operations.",
+        "total_hospitality_years_estimate": 7.0,
+        "notable_venues": [
+          "North Bonita Country Club",
+          "Luminary Hotel & Co., Autograph Collection",
+          "Fresh on Sunset",
+          "Planet Hollywood"
+        ],
+        "notes_on_fast_food_or_non_qualifying_experience": "No fast-food or non-qualifying experience noted; all roles are in hospitality venues."
+      },
+      "ai_payload": {
+        "candidate_summary": {
+          "hospitality_experience_overview": "Extensive experience in restaurant and bar management at high-volume venues, including country clubs, hotels, and restaurants, with leadership roles overseeing large teams and operations.",
+          "total_hospitality_years_estimate": 7.0,
+          "notable_venues": [
+            "North Bonita Country Club",
+            "Luminary Hotel & Co., Autograph Collection",
+            "Fresh on Sunset",
+            "Planet Hollywood"
+          ],
+          "notes_on_fast_food_or_non_qualifying_experience": "No fast-food or non-qualifying experience noted; all roles are in hospitality venues."
+        },
+        "positions": {
+          "cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles explicitly involving cooking or kitchen work."
+            ]
+          },
+          "prep_cook": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles involving prep cooking or kitchen support."
+            ]
+          },
+          "dishwasher": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No mention of dishwashing or similar roles."
+            ]
+          },
+          "utility": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No roles involving utility or support kitchen functions."
+            ]
+          },
+          "server": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No direct server roles listed; managerial roles do not count."
+            ]
+          },
+          "host": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No hosting roles mentioned."
+            ]
+          },
+          "runner": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No runner roles listed."
+            ]
+          },
+          "busser": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No busser roles mentioned."
+            ]
+          },
+          "bartender": {
+            "status": "level_2",
+            "estimated_years": 3.0,
+            "confidence": 0.8,
+            "reasons": [
+              "Managed bar operations at Backyard Social and Planet Hollywood, supervising staff and delivering high-volume service, totaling approximately 3 years."
+            ]
+          },
+          "barback": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barback roles listed."
+            ]
+          },
+          "cashier": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No cashier roles mentioned."
+            ]
+          },
+          "pastry": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No pastry experience listed."
+            ]
+          },
+          "baker": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No baking roles mentioned."
+            ]
+          },
+          "sushi": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No sushi roles listed."
+            ]
+          },
+          "concessions": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No concessions experience listed."
+            ]
+          },
+          "barista": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No barista roles listed."
+            ]
+          },
+          "valet": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No valet experience listed."
+            ]
+          },
+          "event_supervisor": {
+            "status": "no_experience",
+            "estimated_years": 0.0,
+            "confidence": 0.0,
+            "reasons": [
+              "No event supervisor roles or management experience in hotel/food & beverage venues listed."
+            ]
+          }
+        }
+      },
+      "resume_text_preview": "CODY ROBINSON\n Hospitality & Bar Operations Leader\n \n\u25a0 Fort Myers, FL\n\u2709\u25a0 Codyo239@gmail.com\n\u25a0 +1 (239) 628-6994\nProfessional Experience\nRestaurant Manager\nNorth Bonita Country Club \u2013 Bonita Springs, FL (Dec 2024 \u2013 Present)\n\u007f Direct daily operations in high-volume country club dining.\n\u007f Manage FOH team: hiring, training, scheduling, and performance.\n\u007f Enhance member experience through elevated service standards.\n\u007f Control inventory, ordering, vendor relations, and cost systems.\nBar Manager\nBackyard Social \u2013 Fort Myers, FL (Nov 2023 \u2013 Present)\n\u007f Lead bar operations for the 'Market' concept.\n\u007f Oversee hiring, training, and staff scheduling.\n\u007f Manage inventory, ordering, and cost control.\n\u007f Maintain high service and product quality.\nRestaurant Manager\nLuminary Hotel & Co., Autograph Collection \u2013 Fort Myers, FL (Dec 2021 \u2013 Nov 2023)\n\u007f Managed 3 F&B; outlets generating $6M+ annually.\n\u007f Led and developed a team of 50+ employees.\n\u007f Oversaw hiring, performance, and operational standards.\n\u007f Strengthened inventory and cost-control processes.\nBar Manager\nFresh on Sunset \u2013 Los Angeles, CA (Apr 2018 \u2013 Dec 2021)\n\u007f Managed $5M+ annual revenue and 45+ staff.\n\u007f Led hiring, onboarding, and scheduling.\n\u007f Maintained sanitation, service quality, and guest satisfaction.\nBar Manager / Bartender\nPlanet Hollywood \u2013 Los Angeles, CA (Nov 2016 \u2013 Apr 2018)\n\u007f Oversaw bar operations in $6M+ venue.\n\u007f Supervised 55+ employees and training programs.\n\u007f Delivered consistent high-volume service.",
+      "error": "",
+      "created_at": "2026-05-20T15:20:29-07:00",
+      "completed": false,
+      "approved_positions": [],
+      "dismissed_reason": ""
+    },
     {
       "review_id": "2026-05-20:46203",
       "review_date": "2026-05-20",
@@ -13569,6 +14268,6 @@
       "dismissed_reason": ""
     }
   ],
-  "last_scan_at": "2026-05-20T13:27:48-07:00",
-  "last_scan_message": "No new active employees with resumes found for 2026-05-20."
+  "last_scan_at": "2026-05-21T08:58:59-07:00",
+  "last_scan_message": "No new active employees with resumes found for 2026-05-21."
 }
