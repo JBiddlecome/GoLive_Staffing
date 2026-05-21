@@ -753,12 +753,15 @@ def refresh_pending_records_against_allowed_catalog() -> None:
     if not records:
         return
 
+    today_str = _today()
     changed = False
     engine = _engine()
     try:
         with engine.connect() as conn:
             catalog = _get_allowed_catalog(conn)
             for record in records:
+                if record.get("review_date") != today_str:
+                    continue
                 if record.get("completed") or not record.get("ai_payload"):
                     continue
 

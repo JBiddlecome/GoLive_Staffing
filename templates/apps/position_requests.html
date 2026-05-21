@@ -35,6 +35,12 @@
         </select>
       </div>
     </div>
+    <div class="flex items-center gap-3">
+      <span class="text-sm font-medium text-gray-700">Auto-Add Approved Positions</span>
+      <button type="button" id="automation-toggle" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-gray-200 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2" role="switch" aria-checked="false">
+        <span aria-hidden="true" id="automation-toggle-knob" class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0"></span>
+      </button>
+    </div>
   </div>
   
   <div class="mt-4 flow-root">
@@ -471,6 +477,59 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  const automationToggle = document.getElementById('automation-toggle');
+  const automationToggleKnob = document.getElementById('automation-toggle-knob');
+  
+  if (automationToggle) {
+    fetch('/position-requests/automation-status')
+      .then(res => res.json())
+      .then(data => {
+        updateToggleVisuals(data.auto_add_approved);
+      });
+
+    automationToggle.addEventListener('click', async () => {
+      const isCurrentlyEnabled = automationToggle.getAttribute('aria-checked') === 'true';
+      const newState = !isCurrentlyEnabled;
+      
+      updateToggleVisuals(newState);
+      
+      const formData = new FormData();
+      formData.append('enabled', newState);
+      
+      try {
+        const response = await fetch('/position-requests/toggle-automation', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await response.json();
+        if (!response.ok || data.status !== 'success') {
+          updateToggleVisuals(!newState);
+          alert('Failed to update automation status.');
+        }
+      } catch (err) {
+        updateToggleVisuals(!newState);
+        console.error(err);
+      }
+    });
+
+    function updateToggleVisuals(enabled) {
+      if (enabled) {
+        automationToggle.setAttribute('aria-checked', 'true');
+        automationToggle.classList.remove('bg-gray-200');
+        automationToggle.classList.add('bg-emerald-600');
+        automationToggleKnob.classList.remove('translate-x-0');
+        automationToggleKnob.classList.add('translate-x-5');
+      } else {
+        automationToggle.setAttribute('aria-checked', 'false');
+        automationToggle.classList.add('bg-gray-200');
+        automationToggle.classList.remove('bg-emerald-600');
+        automationToggleKnob.classList.add('translate-x-0');
+        automationToggleKnob.classList.remove('translate-x-5');
+      }
+    }
+  }
 });
 </script>
 {% endblock %}
