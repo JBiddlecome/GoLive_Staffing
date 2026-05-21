@@ -71,6 +71,7 @@ from apps.new_employee_position_approver.views import router as new_employee_pos
 from apps.client_notifications.views import router as client_notifications_router
 from apps.auth.views import router as auth_router, get_current_user
 from apps.contacts_data import add_contact, load_contacts, remove_contact
+from apps.it_tickets_data import load_tickets, save_ticket
 from apps.staffing_tools_hub.views import router as staffing_tools_hub_router
 from apps.orders.views import router as orders_router
 
@@ -163,6 +164,45 @@ async def staffing_tools(request: Request):
 @app.get("/external-ai-tools", response_class=HTMLResponse)
 async def external_ai_tools(request: Request):
     return templates.TemplateResponse("external_ai_tools.html", {"request": request})
+
+
+@app.get("/it-tickets", response_class=HTMLResponse)
+async def it_tickets_page(request: Request, success: bool = False):
+    user = request.session.get("user")
+    tickets = load_tickets()
+    return templates.TemplateResponse(
+        "it_tickets.html",
+        {"request": request, "user": user, "tickets": tickets, "success": success},
+    )
+
+
+@app.post("/it-tickets", response_class=HTMLResponse)
+async def it_tickets_submit(
+    request: Request,
+    submitted_by: str = Form(...),
+    department: str = Form(...),
+    request_details: str = Form(...),
+    priority: str = Form(...),
+):
+    user = request.session.get("user")
+    if not user:
+        return RedirectResponse(url="/auth/login?next=/it-tickets", status_code=303)
+
+    valid_priorities = {"Urgent", "Very Important", "Important", "Wish List"}
+    if priority not in valid_priorities:
+        tickets = load_tickets()
+        return templates.TemplateResponse(
+            "it_tickets.html",
+            {"request": request, "user": user, "tickets": tickets, "error": "Invalid priority selected."},
+        )
+
+    save_ticket(
+        submitted_by=user["email"],
+        department=department,
+        request_details=request_details.strip(),
+        priority=priority,
+    )
+    return RedirectResponse(url="/it-tickets?success=true", status_code=303)
 
 
 @app.get("/work-in-progress", response_class=HTMLResponse)
