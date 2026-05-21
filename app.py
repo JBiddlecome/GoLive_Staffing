@@ -71,7 +71,7 @@ from apps.new_employee_position_approver.views import router as new_employee_pos
 from apps.client_notifications.views import router as client_notifications_router
 from apps.auth.views import router as auth_router, get_current_user
 from apps.contacts_data import add_contact, load_contacts, remove_contact
-from apps.it_tickets_data import load_tickets, save_ticket
+from apps.it_tickets_data import load_tickets, save_ticket, set_ticket_estimate, update_ticket
 from apps.staffing_tools_hub.views import router as staffing_tools_hub_router
 from apps.orders.views import router as orders_router
 
@@ -170,9 +170,10 @@ async def external_ai_tools(request: Request):
 async def it_tickets_page(request: Request, success: bool = False):
     user = request.session.get("user")
     tickets = load_tickets()
+    is_admin = bool(user and user["email"] == ADMIN_EMAIL)
     return templates.TemplateResponse(
         "it_tickets.html",
-        {"request": request, "user": user, "tickets": tickets, "success": success},
+        {"request": request, "user": user, "tickets": tickets, "success": success, "is_admin": is_admin},
     )
 
 
@@ -203,6 +204,52 @@ async def it_tickets_submit(
         priority=priority,
     )
     return RedirectResponse(url="/it-tickets?success=true", status_code=303)
+
+
+ADMIN_EMAIL = "jake@culinarystaffing.com"
+
+
+@app.post("/it-tickets/{ticket_id}/estimate")
+async def it_tickets_set_estimate(
+    request: Request,
+    ticket_id: str,
+    estimated_completion: str = Form(""),
+):
+    user = request.session.get("user")
+    if not user or user["email"] != ADMIN_EMAIL:
+        return RedirectResponse(url="/it-tickets", status_code=303)
+    set_ticket_estimate(ticket_id, estimated_completion.strip() or None)
+    return RedirectResponse(url="/it-tickets", status_code=303)
+
+
+@app.post("/it-tickets/{ticket_id}/edit")
+async def it_tickets_edit(
+    request: Request,
+    ticket_id: str,
+    department: str = Form(...),
+    request_details: str = Form(...),
+    priority: str = Form(...),
+):
+    user = request.session.get("user")
+    if not user:
+        return RedirectResponse(url="/auth/login?next=/it-tickets", status_code=303)
+
+    tickets = load_tickets()
+    ticket = next((t for t in tickets if t["id"] == ticket_id), None)
+    if not ticket:
+        return RedirectResponse(url="/it-tickets", status_code=303)
+
+    is_admin = user["email"] == ADMIN_EMAIL
+    is_owner = ticket["submitted_by"] == user["email"]
+    if not (is_admin or is_owner):
+        return RedirectResponse(url="/it-tickets", status_code=303)
+
+    valid_priorities = {"Urgent", "Very Important", "Important", "Wish List"}
+    if priority not in valid_priorities:
+        return RedirectResponse(url="/it-tickets", status_code=303)
+
+    update_ticket(ticket_id, department=department, request_details=request_details.strip(), priority=priority)
+    return RedirectResponse(url="/it-tickets", status_code=303)
 
 
 @app.get("/work-in-progress", response_class=HTMLResponse)
