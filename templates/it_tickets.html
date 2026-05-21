@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}IT Tickets — GoLive Staffing{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+
+  <!-- Page Header -->
+  <div class="mb-8">
+    <h1 class="brand-serif text-3xl font-bold text-gray-900">IT Tickets</h1>
+    <p class="mt-2 text-gray-500">Submit a request for GoLive tools or the GoLive Staffing app. Our team reviews all tickets and responds based on priority.</p>
+  </div>
+
+  <!-- Flash messages -->
+  {% if success %}
+  <div class="mb-6 rounded-xl bg-emerald-50 border border-emerald-200 px-5 py-4 text-emerald-800 text-sm font-medium flex items-center gap-2">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    Ticket submitted successfully! We'll be in touch soon.
+  </div>
+  {% endif %}
+
+  {% if error %}
+  <div class="mb-6 rounded-xl bg-red-50 border border-red-200 px-5 py-4 text-red-800 text-sm font-medium">
+    {{ error }}
+  </div>
+  {% endif %}
+
+  <!-- Submission Form -->
+  {% if user %}
+  <div class="rounded-2xl bg-white/80 border border-gray-200 shadow-sm p-8 mb-10">
+    <h2 class="text-lg font-semibold text-gray-800 mb-6">New Ticket</h2>
+    <form method="post" action="/it-tickets" class="space-y-6">
+
+      <!-- Submitted By (read-only) -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Submitted By</label>
+        <input
+          type="text"
+          value="{{ user.email }}"
+          readonly
+          class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-500 cursor-not-allowed"
+        />
+        <input type="hidden" name="submitted_by" value="{{ user.email }}" />
+      </div>
+
+      <!-- Department -->
+      <div>
+        <label for="department" class="block text-sm font-medium text-gray-700 mb-1">Department <span class="text-red-500">*</span></label>
+        <select
+          id="department"
+          name="department"
+          required
+          class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+        >
+          <option value="" disabled selected>Select your department…</option>
+          <option value="Staffing">Staffing</option>
+          <option value="HR &amp; Office Management">HR &amp; Office Management</option>
+          <option value="Recruiting">Recruiting</option>
+          <option value="Billing &amp; Payroll">Billing &amp; Payroll</option>
+          <option value="Sales">Sales</option>
+          <option value="Tech Support">Tech Support</option>
+          <option value="Owner &amp; Operators">Owner &amp; Operators</option>
+        </select>
+      </div>
+
+      <!-- Detailed Request -->
+      <div>
+        <label for="request_details" class="block text-sm font-medium text-gray-700 mb-1">Detailed Request <span class="text-red-500">*</span></label>
+        <textarea
+          id="request_details"
+          name="request_details"
+          required
+          rows="5"
+          placeholder="Describe your request in as much detail as possible — what you need, what problem it solves, and any relevant context…"
+          class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-y"
+        ></textarea>
+      </div>
+
+      <!-- Priority -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-3">Priority <span class="text-red-500">*</span></label>
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <label class="priority-option cursor-pointer">
+            <input type="radio" name="priority" value="Urgent" required class="sr-only peer" />
+            <div class="rounded-xl border-2 border-gray-200 px-4 py-3 text-center text-sm font-semibold transition peer-checked:border-red-500 peer-checked:bg-red-50 peer-checked:text-red-700 hover:border-red-300 hover:bg-red-50/50">
+              <span class="block text-lg mb-1">🚨</span>
+              Urgent
+            </div>
+          </label>
+          <label class="priority-option cursor-pointer">
+            <input type="radio" name="priority" value="Very Important" class="sr-only peer" />
+            <div class="rounded-xl border-2 border-gray-200 px-4 py-3 text-center text-sm font-semibold transition peer-checked:border-orange-500 peer-checked:bg-orange-50 peer-checked:text-orange-700 hover:border-orange-300 hover:bg-orange-50/50">
+              <span class="block text-lg mb-1">⚠️</span>
+              Very Important
+            </div>
+          </label>
+          <label class="priority-option cursor-pointer">
+            <input type="radio" name="priority" value="Important" class="sr-only peer" />
+            <div class="rounded-xl border-2 border-gray-200 px-4 py-3 text-center text-sm font-semibold transition peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 hover:border-blue-300 hover:bg-blue-50/50">
+              <span class="block text-lg mb-1">📌</span>
+              Important
+            </div>
+          </label>
+          <label class="priority-option cursor-pointer">
+            <input type="radio" name="priority" value="Wish List" class="sr-only peer" />
+            <div class="rounded-xl border-2 border-gray-200 px-4 py-3 text-center text-sm font-semibold transition peer-checked:border-purple-500 peer-checked:bg-purple-50 peer-checked:text-purple-700 hover:border-purple-300 hover:bg-purple-50/50">
+              <span class="block text-lg mb-1">✨</span>
+              Wish List
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="pt-2">
+        <button
+          type="submit"
+          class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition"
+        >
+          Submit Ticket
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+        </button>
+      </div>
+    </form>
+  </div>
+  {% else %}
+  <div class="rounded-2xl bg-white/80 border border-gray-200 shadow-sm p-8 mb-10 text-center">
+    <p class="text-gray-600 mb-4">You must be logged in to submit an IT ticket.</p>
+    <a href="/auth/login?next=/it-tickets" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-700 transition">
+      Log In
+    </a>
+  </div>
+  {% endif %}
+
+  <!-- Ticket List -->
+  {% if tickets %}
+  <div>
+    <h2 class="text-lg font-semibold text-gray-800 mb-4">All Tickets <span class="ml-2 text-sm font-normal text-gray-400">({{ tickets | length }})</span></h2>
+    <div class="space-y-4">
+      {% for ticket in tickets | reverse %}
+      <div class="rounded-2xl bg-white/80 border border-gray-200 shadow-sm p-5">
+        <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Priority badge -->
+            {% if ticket.priority == "Urgent" %}
+            <span class="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">🚨 Urgent</span>
+            {% elif ticket.priority == "Very Important" %}
+            <span class="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-semibold text-orange-700">⚠️ Very Important</span>
+            {% elif ticket.priority == "Important" %}
+            <span class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">📌 Important</span>
+            {% else %}
+            <span class="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-semibold text-purple-700">✨ Wish List</span>
+            {% endif %}
+            <!-- Department badge -->
+            <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">{{ ticket.department }}</span>
+          </div>
+          <span class="text-xs text-gray-400">{{ ticket.submitted_at }}</span>
+        </div>
+        <p class="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{{ ticket.request_details }}</p>
+        <p class="mt-2 text-xs text-gray-400">Submitted by {{ ticket.submitted_by }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% elif user %}
+  <div class="text-center py-12 text-gray-400 text-sm">
+    No tickets yet — be the first to submit one above.
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
