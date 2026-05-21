@@ -14,6 +14,7 @@ from fastapi.templating import Jinja2Templates
 from apps.client_drop_off_v2.app import get_drop_off_data
 
 router = APIRouter()
+templates = Jinja2Templates(directory="templates")
 def _resolve_data_dir() -> Path:
     import os
     env_dir = os.getenv("DATA_DIR") or os.getenv("RENDER_DISK_PATH")

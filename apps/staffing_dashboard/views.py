@@ -84,9 +84,12 @@ async def staffing_dashboard_page(request: Request):
             # Get list of unique staffing managers
             managers_sql = text("""
                 SELECT DISTINCT CONCAT(u.first_name, ' ', u.last_name) AS full_name
-                FROM venue v
+                FROM event e
+                JOIN venue v ON e.venue_id = v.venue_id
                 JOIN user u ON v.staffing_manager_id = u.id
-                WHERE u.first_name IS NOT NULL AND u.last_name IS NOT NULL
+                WHERE e.date >= CURDATE()
+                  AND e.deleted_at IS NULL
+                  AND u.first_name IS NOT NULL AND u.last_name IS NOT NULL
                 ORDER BY full_name
             """)
             staffing_managers = [row[0] for row in conn.execute(managers_sql).fetchall()]

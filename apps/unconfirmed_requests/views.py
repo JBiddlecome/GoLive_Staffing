@@ -172,6 +172,7 @@ async def unconfirmed_requests_data(
                 ORDER BY staffing_manager_name
             """)
             mgr_df = pd.read_sql(mgr_sql, conn, params=params)
+            mgr_df = mgr_df.astype(object).where(pd.notnull(mgr_df), None)
             staffing_managers = mgr_df.to_dict(orient='records')
 
         if staffing_manager_id:
@@ -193,6 +194,7 @@ async def unconfirmed_requests_data(
         # Clean up for JSON
         df['created_at'] = df['created_at'].astype(str)
         df['event_date'] = df['event_date'].astype(str)
+        df = df.astype(object).where(pd.notnull(df), None)
         
         records = df.to_dict(orient='records')
 
