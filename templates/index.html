@@ -359,99 +359,115 @@
           </div>
           <span class="text-emerald-600 transition-transform duration-200 group-open:rotate-90">➤</span>
         </summary>
-        <div class="border-t border-emerald-100 bg-emerald-50/40">
-          <ul class="divide-y divide-emerald-100">
-            <li>
-              <a href="/credit-card-clients"
-                class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-white transition">
-                <div>
-                  <p class="font-semibold">Credit Card Clients</p>
-                  <p class="text-sm text-gray-600">Monitor shifts cancelled by credit card clients with live email alerts.</p>
-                </div>
-                <span class="text-emerald-600">↗</span>
-              </a>
-            </li>
-            <li>
-              <a href="/msp-dashboard"
-                class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-white transition">
-                <div>
-                  <p class="font-semibold">MSP Dashboard</p>
-                  <p class="text-sm text-gray-600">Monitor newly confirmed employee shifts for MSP clients.</p>
-                </div>
-                <span class="text-emerald-600">↗</span>
-              </a>
-            </li>
-            <li>
-              <a href="/ucla-hours-tool"
-                class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-white transition">
-                <div>
-                  <p class="font-semibold">UCLA Hours Tool</p>
-                  <p class="text-sm text-gray-600">Open the UCLA Agile1 assignment and timesheet tool.</p>
-                </div>
-                <span class="text-emerald-600">↗</span>
-              </a>
-            </li>
-            <li>
-              <a href="/meal-penalty-dashboard"
-                class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-white transition">
-                <div>
-                  <p class="font-semibold">Meal Penalty Dashboard</p>
-                  <p class="text-sm text-gray-600">Identify shifts with meal penalties where a full 30-minute break was recorded.</p>
-                </div>
-                <span class="text-emerald-600">↗</span>
-              </a>
-            </li>
-            <li>
-              <a href="/payroll-notes"
-                class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-white transition">
-                <div>
-                  <p class="font-semibold">Payroll Notes</p>
-                  <p class="text-sm text-gray-600">Review all notes with a Payroll type for a date range.</p>
-                </div>
-                <span class="text-emerald-600">↗</span>
-              </a>
-            </li>
-            <li>
-              <a href="/scheduled-vs-worked-hours"
-                class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-white transition">
-                <div>
-                  <p class="font-semibold">Scheduled vs Worked Hours</p>
-                  <p class="text-sm text-gray-600">Identify shifts where scheduled hours differ from worked hours.</p>
-                </div>
-                <span class="text-emerald-600">↗</span>
-              </a>
-            </li>
-            <li>
-              <a href="/payroll-reports"
-                class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-white transition">
-                <div>
-                  <p class="font-semibold">Reports</p>
-                  <p class="text-sm text-gray-600">Run payroll-focused reports including Client Payment Terms.</p>
-                </div>
-                <span class="text-emerald-600">↗</span>
-              </a>
-            </li>
-            <li>
-              <a href="/ar-contact-updates"
-                class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-white transition">
-                <div>
-                  <p class="font-semibold">AR Contact Updates</p>
-                  <p class="text-sm text-gray-600">Track changes to client contacts with Accounts Receivable enabled.</p>
-                </div>
-                <span class="text-emerald-600">↗</span>
-              </a>
-            </li>
-            <li>
-              <a href="/client-profile-changes"
-                class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-white transition">
-                <div>
-                  <p class="font-semibold">Client Profile Changes</p>
-                  <p class="text-sm text-gray-600">Daily change tracker for client billing, payment, and venue settings.</p>
-                </div>
-                <span class="text-emerald-600">↗</span>
-              </a>
-            </li>
-          </ul>
+        <div class="border-t border-emerald-100 bg-emerald-50/40 p-6 space-y-6">
+          
+          <div>
+            <h3 class="text-sm uppercase tracking-wide text-emerald-700 font-semibold mb-3 px-2">Notifications</h3>
+            <ul class="divide-y divide-emerald-100 bg-white rounded-2xl border border-emerald-100 overflow-hidden shadow-sm">
+              <li>
+                <a href="/ar-contact-updates" class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-emerald-50 transition">
+                  <div>
+                    <p class="font-semibold">AR Contact Updates</p>
+                    <p class="text-sm text-gray-600">Track changes to client contacts with Accounts Receivable enabled.</p>
+                  </div>
+                  <span class="text-emerald-600">↗</span>
+                </a>
+              </li>
+              <li>
+                <a href="/client-profile-changes" class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-emerald-50 transition">
+                  <div>
+                    <p class="font-semibold">Client Profile Changes</p>
+                    <p class="text-sm text-gray-600">Daily change tracker for client billing, payment, and venue settings.</p>
+                  </div>
+                  <span class="text-emerald-600">↗</span>
+                </a>
+              </li>
+              <li>
+                <a href="/credit-card-clients" class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-emerald-50 transition">
+                  <div>
+                    <p class="font-semibold">Credit Card Clients</p>
+                    <p class="text-sm text-gray-600">Monitor shifts cancelled by credit card clients with live email alerts.</p>
+                  </div>
+                  <span class="text-emerald-600">↗</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 class="text-sm uppercase tracking-wide text-emerald-700 font-semibold mb-3 px-2">Reports</h3>
+            <ul class="divide-y divide-emerald-100 bg-white rounded-2xl border border-emerald-100 overflow-hidden shadow-sm">
+              <li>
+                <a href="/payroll-reports" class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-emerald-50 transition">
+                  <div>
+                    <p class="font-semibold">Reports</p>
+                    <p class="text-sm text-gray-600">Run payroll-focused reports including Client Payment Terms.</p>
+                  </div>
+                  <span class="text-emerald-600">↗</span>
+                </a>
+              </li>
+              <li>
+                <a href="/scheduled-vs-worked-hours" class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-emerald-50 transition">
+                  <div>
+                    <p class="font-semibold">Scheduled vs Worked Hours</p>
+                    <p class="text-sm text-gray-600">Identify shifts where scheduled hours differ from worked hours.</p>
+                  </div>
+                  <span class="text-emerald-600">↗</span>
+                </a>
+              </li>
+              <li>
+                <a href="/payroll-notes" class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-emerald-50 transition">
+                  <div>
+                    <p class="font-semibold">Payroll Notes</p>
+                    <p class="text-sm text-gray-600">Review all notes with a Payroll type for a date range.</p>
+                  </div>
+                  <span class="text-emerald-600">↗</span>
+                </a>
+              </li>
+              <li>
+                <a href="/open-timesheets" class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-emerald-50 transition">
+                  <div>
+                    <p class="font-semibold">Open Timesheets</p>
+                    <p class="text-sm text-gray-600">View timesheets missing start or end times.</p>
+                  </div>
+                  <span class="text-emerald-600">↗</span>
+                </a>
+              </li>
+              <li>
+                <a href="/meal-penalty-dashboard" class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-emerald-50 transition">
+                  <div>
+                    <p class="font-semibold">Meal Penalty Dashboard</p>
+                    <p class="text-sm text-gray-600">Identify shifts with meal penalties where a full 30-minute break was recorded.</p>
+                  </div>
+                  <span class="text-emerald-600">↗</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 class="text-sm uppercase tracking-wide text-emerald-700 font-semibold mb-3 px-2">Client &amp; MSP</h3>
+            <ul class="divide-y divide-emerald-100 bg-white rounded-2xl border border-emerald-100 overflow-hidden shadow-sm">
+              <li>
+                <a href="/msp-dashboard" class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-emerald-50 transition">
+                  <div>
+                    <p class="font-semibold">MSP Dashboard</p>
+                    <p class="text-sm text-gray-600">Monitor newly confirmed employee shifts for MSP clients.</p>
+                  </div>
+                  <span class="text-emerald-600">↗</span>
+                </a>
+              </li>
+              <li>
+                <a href="/ucla-hours-tool" class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-emerald-50 transition">
+                  <div>
+                    <p class="font-semibold">UCLA Hours Tool</p>
+                    <p class="text-sm text-gray-600">Open the UCLA Agile1 assignment and timesheet tool.</p>
+                  </div>
+                  <span class="text-emerald-600">↗</span>
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
       </details>
 

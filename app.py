@@ -42,6 +42,7 @@ from apps.client_cancellation_rates.views import router as client_cancellation_r
 from apps.database_update.views import router as database_update_router
 from apps.payroll_notes.views import router as payroll_notes_router
 from apps.payroll_reports.views import router as payroll_reports_router
+from apps.open_timesheets.views import router as open_timesheets_router
 from apps.scheduled_vs_worked.views import router as scheduled_vs_worked_router
 from apps.sales_rate_intelligence.views import router as sales_rate_intelligence_router
 from apps.staffing_employee_dashboard.views import router as staffing_employee_dashboard_router
@@ -417,6 +418,11 @@ app.include_router(
     payroll_reports_router,
     prefix="/payroll-reports",
     tags=["Payroll Reports"],
+)
+app.include_router(
+    open_timesheets_router,
+    prefix="/open-timesheets",
+    tags=["Open Timesheets"],
 )
 app.include_router(
     scheduled_vs_worked_router,
