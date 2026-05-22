@@ -79,7 +79,14 @@ async def get_open_timesheets_data(
               AND se.deleted_at IS NULL
               AND ev.deleted_at IS NULL
               AND ev.timeclock IN ('EMPLOYEE_CODE', 'DISABLED')
-              AND (t.employee_start IS NULL OR t.employee_end IS NULL)
+              AND (
+                  (t.employee_start IS NULL OR t.employee_end IS NULL)
+                  OR (
+                      TIMESTAMPDIFF(SECOND, t.employee_start, t.employee_end) > 18000
+                      AND (t.employee_break_start IS NULL OR t.employee_break_end IS NULL)
+                      AND (t.employee_no_break_reason IS NULL OR t.employee_no_break_reason NOT REGEXP '^[0-9]+$')
+                  )
+              )
               AND (t.client_worked NOT IN ('NOSHOW', 'SENTHOME') OR t.client_worked IS NULL)
               AND ev.date >= :start_date 
               AND ev.date <= :end_date
