@@ -131,6 +131,7 @@ async def get_dashboard_summary(request: Request):
                 
                 # Format date back to string if present
                 understaffed['next_unfilled_date'] = understaffed['next_unfilled_date'].apply(lambda x: x.isoformat() if pd.notnull(x) else None)
+                understaffed = understaffed.drop(columns=['sort_date'])
                 understaffed = understaffed.fillna(0)
                 section_1_records = understaffed.to_dict(orient='records')
                 

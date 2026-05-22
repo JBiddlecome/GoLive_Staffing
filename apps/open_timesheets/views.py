@@ -34,14 +34,11 @@ def _engine():
 
 @router.get("", response_class=HTMLResponse)
 async def open_timesheets_page(request: Request):
-    # Default date range: previous Monday to Sunday
+    # Default date range: Today only
     today = datetime.now()
-    days_since_monday = today.weekday()
-    last_monday = today - timedelta(days=days_since_monday + 7)
-    last_sunday = last_monday + timedelta(days=6)
     
-    start_date = last_monday.strftime("%Y-%m-%d")
-    end_date = last_sunday.strftime("%Y-%m-%d")
+    start_date = today.strftime("%Y-%m-%d")
+    end_date = start_date
     
     return templates.TemplateResponse(
         "apps/open_timesheets.html",
@@ -62,8 +59,10 @@ async def get_open_timesheets_data(
         sql = text("""
             SELECT 
                 ev.date AS event_date,
+                c.name AS client_name,
                 CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
                 ev.event_id,
+                s.start AS shift_start,
                 t.employee_start,
                 t.employee_end,
                 t.employee_break_start,
@@ -71,8 +70,11 @@ async def get_open_timesheets_data(
                 COALESCE(CONCAT(u.first_name, ' ', u.last_name), 'No Staffing Coordinator') AS staffing_coordinator
             FROM timesheet t
             JOIN shift_employee se ON t.shift_employee_id = se.shift_employee_id
+            JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
+            JOIN shift s ON sp.shift_id = s.shift_id
             JOIN employee e ON t.employee_id = e.employee_id
             JOIN event ev ON t.event_id = ev.event_id
+            JOIN client c ON ev.client_id = c.client_id
             LEFT JOIN venue v ON ev.venue_id = v.venue_id
             LEFT JOIN user u ON v.sales_rep_id = u.id
             WHERE se.cancel_reason = 0 
@@ -97,15 +99,50 @@ async def get_open_timesheets_data(
             result = connection.execute(sql, {"start_date": start_date, "end_date": end_date}).mappings().all()
             
             data = []
+            today_date_str = datetime.now().strftime("%Y-%m-%d")
+            now_dt = datetime.now()
+            
             for row in result:
                 item = dict(row)
+                event_date_str = ""
                 if item["event_date"]:
                     try:
-                        item["event_date"] = item["event_date"].strftime("%Y-%m-%d")
+                        event_date_str = item["event_date"].strftime("%Y-%m-%d")
+                        item["event_date"] = event_date_str
                     except AttributeError:
-                        item["event_date"] = str(item["event_date"])
+                        event_date_str = str(item["event_date"])
+                        item["event_date"] = event_date_str
                 else:
                     item["event_date"] = ""
+
+                # Format shift_start
+                shift_start_time = item.get("shift_start")
+                shift_start_dt = None
+                if shift_start_time is not None and event_date_str:
+                    if isinstance(shift_start_time, timedelta):
+                        total_seconds = int(shift_start_time.total_seconds())
+                        hours = total_seconds // 3600
+                        minutes = (total_seconds % 3600) // 60
+                        item["shift_start"] = f"{hours:02d}:{minutes:02d}:00"
+                        shift_start_dt = datetime.strptime(f"{event_date_str} {item['shift_start']}", "%Y-%m-%d %H:%M:%S")
+                    elif hasattr(shift_start_time, "strftime"):
+                        item["shift_start"] = shift_start_time.strftime("%H:%M:%S")
+                        shift_start_dt = datetime.strptime(f"{event_date_str} {item['shift_start']}", "%Y-%m-%d %H:%M:%S")
+                    else:
+                        item["shift_start"] = str(shift_start_time)
+                else:
+                    item["shift_start"] = ""
+
+                # Late calculation for today
+                item["minutes_late"] = ""
+                if event_date_str == today_date_str and shift_start_dt:
+                    employee_start_dt = item.get("employee_start")
+                    if employee_start_dt and isinstance(employee_start_dt, datetime):
+                        diff = employee_start_dt - shift_start_dt
+                        item["minutes_late"] = int(diff.total_seconds() / 60)
+                    elif not employee_start_dt:
+                        diff = now_dt - shift_start_dt
+                        item["minutes_late"] = int(diff.total_seconds() / 60)
 
                 # Format times
                 for time_field in ['employee_start', 'employee_end', 'employee_break_start', 'employee_break_end']:
@@ -115,9 +152,21 @@ async def get_open_timesheets_data(
                         item[time_field] = ""
                         
                 item["employee_name"] = item["employee_name"] if item["employee_name"] else "Unknown Employee"
+                item["client_name"] = item.get("client_name") or "Unknown Client"
                 item["timesheet_link"] = f"https://golive.culinarystaffing.com/events/{item['event_id']}/timesheets"
                 
                 data.append(item)
+                
+            def sort_key(item):
+                ml = item.get("minutes_late", "")
+                if ml == "":
+                    return (2, item.get("event_date", ""), item.get("employee_name", ""))
+                if ml > 0:
+                    return (0, ml, item.get("employee_name", ""))
+                else:
+                    return (1, -ml, item.get("employee_name", ""))
+            
+            data.sort(key=sort_key)
                 
             return JSONResponse({"data": data})
     except Exception as e:
