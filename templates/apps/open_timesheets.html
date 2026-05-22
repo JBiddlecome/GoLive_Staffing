@@ -293,7 +293,10 @@
                     
                     tr.innerHTML = `
                         <td class="whitespace-nowrap font-medium text-gray-900">${item.event_date}</td>
-                        <td class="whitespace-nowrap">${item.employee_name}</td>
+                        <td class="whitespace-nowrap">
+                            <div class="font-medium text-gray-900">${item.employee_name}</div>
+                            <div class="text-xs text-gray-500">${item.employee_phone}</div>
+                        </td>
                         <td class="whitespace-nowrap">
                             <div class="font-medium text-gray-900">${item.client_name}</div>
                             <div class="text-xs text-gray-500">${item.staffing_coordinator}</div>

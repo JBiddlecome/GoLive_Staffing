@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from datetime import datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Request, Query
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -35,7 +36,8 @@ def _engine():
 @router.get("", response_class=HTMLResponse)
 async def open_timesheets_page(request: Request):
     # Default date range: Today only
-    today = datetime.now()
+    tz = ZoneInfo(os.getenv("APP_TIMEZONE", "America/Los_Angeles"))
+    today = datetime.now(tz)
     
     start_date = today.strftime("%Y-%m-%d")
     end_date = start_date
@@ -61,6 +63,7 @@ async def get_open_timesheets_data(
                 ev.date AS event_date,
                 c.name AS client_name,
                 CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+                e.mobile AS employee_phone,
                 ev.event_id,
                 s.start AS shift_start,
                 t.employee_start,
@@ -99,8 +102,10 @@ async def get_open_timesheets_data(
             result = connection.execute(sql, {"start_date": start_date, "end_date": end_date}).mappings().all()
             
             data = []
-            today_date_str = datetime.now().strftime("%Y-%m-%d")
-            now_dt = datetime.now()
+            tz = ZoneInfo(os.getenv("APP_TIMEZONE", "America/Los_Angeles"))
+            today_date_str = datetime.now(tz).strftime("%Y-%m-%d")
+            # Convert now to naive datetime to match the naive shift_start_dt and employee_start from DB
+            now_dt = datetime.now(tz).replace(tzinfo=None)
             
             for row in result:
                 item = dict(row)
@@ -152,6 +157,7 @@ async def get_open_timesheets_data(
                         item[time_field] = ""
                         
                 item["employee_name"] = item["employee_name"] if item["employee_name"] else "Unknown Employee"
+                item["employee_phone"] = item.get("employee_phone") or ""
                 item["client_name"] = item.get("client_name") or "Unknown Client"
                 item["timesheet_link"] = f"https://golive.culinarystaffing.com/events/{item['event_id']}/timesheets"
                 
