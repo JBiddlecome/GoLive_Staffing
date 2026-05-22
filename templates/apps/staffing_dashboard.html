@@ -45,6 +45,12 @@
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </div>
         </div>
+        
+        <div class="flex items-center space-x-2">
+            <input type="checkbox" id="toggleAvgFillTime" class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500 focus:ring-2">
+            <label for="toggleAvgFillTime" class="text-sm font-medium text-gray-700">Show Avg Fill Time</label>
+        </div>
+
         <button id="refreshBtn"
             class="inline-flex items-center justify-center rounded-2xl bg-gray-900 px-8 py-3.5 font-bold text-white shadow-lg hover:bg-black transition-all active:scale-95">
             <svg id="refreshIcon" class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -66,7 +72,7 @@
                         <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-center">Events</th>
                         <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-center">Coverage (Slots)</th>
                         <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-center cursor-pointer sortable hover:text-emerald-600 transition-colors" data-sort="fill_rate">Fill Rate <span class="sort-icon ml-1">↕</span></th>
-                        <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-right cursor-pointer sortable hover:text-emerald-600 transition-colors" data-sort="avg_fill_seconds">Avg Fill Time <span class="sort-icon ml-1">↕</span></th>
+                        <th id="thAvgFillTime" class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-right cursor-pointer sortable hover:text-emerald-600 transition-colors hidden" data-sort="avg_fill_seconds">Avg Fill Time <span class="sort-icon ml-1">↕</span></th>
                         <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-left">Notes</th>
                     </tr>
                 </thead>
@@ -92,6 +98,17 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const dashboardBody = document.getElementById('dashboardBody');
+        const toggleAvgFillTime = document.getElementById('toggleAvgFillTime');
+        const thAvgFillTime = document.getElementById('thAvgFillTime');
+        
+        toggleAvgFillTime.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                thAvgFillTime.classList.remove('hidden');
+            } else {
+                thAvgFillTime.classList.add('hidden');
+            }
+            applyFilterAndSort(); // Re-render rows to show/hide the column
+        });
         const refreshBtn = document.getElementById('refreshBtn');
         const refreshIcon = document.getElementById('refreshIcon');
         const refreshText = document.getElementById('refreshText');
@@ -151,68 +168,123 @@
             totalShiftsCount.textContent = totalShifts;
         }
 
+                function createRowHTML(item) {
+            const requestedClass = item.requested_shifts > 0 ? 'text-amber-600 font-bold' : 'text-gray-400';
+            const fillRateColor = item.fill_rate >= 90 ? 'bg-emerald-500' : (item.fill_rate >= 70 ? 'bg-blue-500' : (item.fill_rate >= 40 ? 'bg-amber-500' : 'bg-rose-500'));
+            const fillRateBg = item.fill_rate >= 90 ? 'bg-emerald-50' : (item.fill_rate >= 70 ? 'bg-blue-50' : (item.fill_rate >= 40 ? 'bg-amber-50' : 'bg-rose-50'));
+            const showAvgFillTime = toggleAvgFillTime.checked;
+            
+            return `
+                <tr class="group hover:bg-emerald-50/20 transition-all duration-300 cursor-pointer" onclick="toggleDetails(${item.client_id})">
+                    <td class="px-8 py-6">
+                        <div class="font-bold text-gray-900 text-lg mb-0.5 flex items-center">
+                            <svg id="chevron-${item.client_id}" class="w-4 h-4 mr-2 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                            ${item.client_name}
+                        </div>
+                        <div class="flex items-center text-sm text-gray-500 ml-6">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 mr-2"></span>
+                            ${item.staffing_manager_name || 'No Manager Assigned'}
+                        </div>
+                    </td>
+                    <td class="px-8 py-6 text-center">
+                        <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gray-100 font-bold text-gray-700">
+                            ${item.event_count}
+                        </span>
+                    </td>
+                    <td class="px-8 py-6">
+                        <div class="flex flex-col items-center">
+                            <div class="flex gap-4 text-xs font-black uppercase tracking-tighter mb-2">
+                                <div class="text-gray-500">Total: <span class="text-gray-900">${item.total_shifts}</span></div>
+                                <div class="text-emerald-600">Filled: <span class="text-emerald-700">${item.filled_shifts}</span></div>
+                                <div class="${requestedClass}">Requested: <span>${item.requested_shifts}</span></div>
+                            </div>
+                            <div class="w-48 h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner flex">
+                                <div class="fill-rate-bar h-full ${fillRateColor}" style="width: ${item.fill_rate}%"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-8 py-6 text-center">
+                        <span class="px-4 py-1.5 rounded-full text-sm font-black ${fillRateBg} ${fillRateColor.replace('bg-', 'text-')} shadow-sm border border-current opacity-80">
+                            ${item.fill_rate}%
+                        </span>
+                    </td>
+                    <td class="px-8 py-6 text-right ${showAvgFillTime ? '' : 'hidden'}">
+                        <div class="font-bold text-gray-900">${item.avg_time_to_fill}</div>
+                        <div class="text-[10px] text-gray-400 uppercase font-bold tracking-widest mt-1">6mo average</div>
+                    </td>
+                    <td class="px-8 py-6 w-64" onclick="event.stopPropagation();">
+                        <div class="flex flex-col gap-1">
+                            <textarea 
+                                class="w-full text-sm p-2.5 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-y min-h-[70px] outline-none" 
+                                placeholder="Add a note..."
+                                onchange="saveNote(${item.client_id}, this)"
+                            >${item.client_note ? item.client_note.replace(/</g, '&lt;').replace(/>/g, '&gt;') : ''}</textarea>
+                            <span id="note-status-${item.client_id}" class="text-[10px] text-emerald-600 font-bold uppercase tracking-wider opacity-0 transition-opacity duration-300">Saved</span>
+                        </div>
+                    </td>
+                </tr>
+                <tr id="details-row-${item.client_id}" class="hidden bg-gray-50/50">
+                    <td colspan="6" class="p-0">
+                        <div id="details-content-${item.client_id}" class="px-14 py-6 border-b border-gray-100">
+                            <div class="flex justify-center py-4"><div class="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div></div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
         function renderDashboard(data) {
             if (data.length === 0) {
                 dashboardBody.innerHTML = `<tr><td colspan="6" class="px-8 py-16 text-center text-gray-500 italic">No upcoming events found.</td></tr>`;
                 return;
             }
 
-            dashboardBody.innerHTML = data.map(item => {
-                const requestedClass = item.requested_shifts > 0 ? 'text-amber-600 font-bold' : 'text-gray-400';
-                const fillRateColor = item.fill_rate >= 90 ? 'bg-emerald-500' : (item.fill_rate >= 70 ? 'bg-blue-500' : (item.fill_rate >= 40 ? 'bg-amber-500' : 'bg-rose-500'));
-                const fillRateBg = item.fill_rate >= 90 ? 'bg-emerald-50' : (item.fill_rate >= 70 ? 'bg-blue-50' : (item.fill_rate >= 40 ? 'bg-amber-50' : 'bg-rose-50'));
-                
-                return `
-                    <tr class="group hover:bg-emerald-50/20 transition-all duration-300">
-                        <td class="px-8 py-6">
-                            <div class="font-bold text-gray-900 text-lg mb-0.5">${item.client_name}</div>
-                            <div class="flex items-center text-sm text-gray-500">
-                                <span class="w-2 h-2 rounded-full bg-emerald-400 mr-2"></span>
-                                ${item.staffing_manager_name || 'No Manager Assigned'}
-                            </div>
-                        </td>
-                        <td class="px-8 py-6 text-center">
-                            <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gray-100 font-bold text-gray-700">
-                                ${item.event_count}
+            const understaffed = data.filter(item => item.fill_rate < 100);
+            const staffed = data.filter(item => item.fill_rate >= 100);
+
+            let html = understaffed.map(item => createRowHTML(item)).join('');
+            
+            if (staffed.length > 0) {
+                html += `
+                    <tr class="bg-gray-100 cursor-pointer" onclick="toggleStaffedSection()">
+                        <td colspan="6" class="px-8 py-4 font-bold text-gray-600 flex items-center justify-between">
+                            <span class="flex items-center">
+                                <svg id="staffed-chevron" class="w-5 h-5 mr-2 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                100% Filled Clients (${staffed.length})
                             </span>
-                        </td>
-                        <td class="px-8 py-6">
-                            <div class="flex flex-col items-center">
-                                <div class="flex gap-4 text-xs font-black uppercase tracking-tighter mb-2">
-                                    <div class="text-gray-500">Total: <span class="text-gray-900">${item.total_shifts}</span></div>
-                                    <div class="text-emerald-600">Filled: <span class="text-emerald-700">${item.filled_shifts}</span></div>
-                                    <div class="${requestedClass}">Requested: <span>${item.requested_shifts}</span></div>
-                                </div>
-                                <div class="w-48 h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner flex">
-                                    <div class="fill-rate-bar h-full ${fillRateColor}" style="width: ${item.fill_rate}%"></div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-8 py-6 text-center">
-                            <span class="px-4 py-1.5 rounded-full text-sm font-black ${fillRateBg} ${fillRateColor.replace('bg-', 'text-')} shadow-sm border border-current opacity-80">
-                                ${item.fill_rate}%
-                            </span>
-                        </td>
-                        <td class="px-8 py-6 text-right">
-                            <div class="font-bold text-gray-900">${item.avg_time_to_fill}</div>
-                            <div class="text-[10px] text-gray-400 uppercase font-bold tracking-widest mt-1">6mo average</div>
-                        </td>
-                        <td class="px-8 py-6 w-64">
-                            <div class="flex flex-col gap-1">
-                                <textarea 
-                                    class="w-full text-sm p-2.5 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-y min-h-[70px] outline-none" 
-                                    placeholder="Add a note..."
-                                    onchange="saveNote(${item.client_id}, this)"
-                                >${item.client_note ? item.client_note.replace(/</g, '&lt;').replace(/>/g, '&gt;') : ''}</textarea>
-                                <span id="note-status-${item.client_id}" class="text-[10px] text-emerald-600 font-bold uppercase tracking-wider opacity-0 transition-opacity duration-300">Saved</span>
-                            </div>
+                            <span class="text-sm font-normal text-gray-500">Click to expand</span>
                         </td>
                     </tr>
                 `;
-            }).join('');
+                html += staffed.map(item => {
+                    const rowHtml = createRowHTML(item);
+                    return rowHtml.replace('<tr class="', '<tr class="staffed-row hidden ');
+                }).join('');
+            }
+            
+            dashboardBody.innerHTML = html;
         }
 
-        let currentSort = { column: 'client_name', direction: 'asc' };
+        window.toggleStaffedSection = function() {
+            const rows = document.querySelectorAll('.staffed-row');
+            const chevron = document.getElementById('staffed-chevron');
+            const isHidden = rows[0] && rows[0].classList.contains('hidden');
+            
+            rows.forEach(row => {
+                if (isHidden) {
+                    row.classList.remove('hidden');
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+            
+            if (isHidden) {
+                chevron.classList.add('rotate-90');
+            } else {
+                chevron.classList.remove('rotate-90');
+            }
+        };
+let currentSort = { column: 'client_name', direction: 'asc' };
 
         function updateSortIcons() {
             document.querySelectorAll('th.sortable').forEach(th => {
@@ -321,5 +393,225 @@
             setTimeout(() => statusEl.classList.add('opacity-0'), 3000);
         }
     };
+
+    window.loadedClientDetails = {};
+
+    window.toggleDetails = async function(clientId) {
+        const row = document.getElementById(`details-row-${clientId}`);
+        const chevron = document.getElementById(`chevron-${clientId}`);
+        const contentDiv = document.getElementById(`details-content-${clientId}`);
+        
+        if (row.classList.contains('hidden')) {
+            row.classList.remove('hidden');
+            chevron.classList.add('rotate-90');
+            
+            if (!loadedClientDetails[clientId]) {
+                try {
+                    const response = await fetch(`/staffing-dashboard/client/${clientId}/details`);
+                    const result = await response.json();
+                    
+                    if (result.status === 'success') {
+                        loadedClientDetails[clientId] = result.data;
+                        renderClientDetails(clientId, result.data);
+                    } else {
+                        contentDiv.innerHTML = `<div class="text-red-500 py-4">Error loading details: ${result.message}</div>`;
+                    }
+                } catch (err) {
+                    contentDiv.innerHTML = `<div class="text-red-500 py-4">Error loading details: ${err.message}</div>`;
+                }
+            } else {
+                renderClientDetails(clientId, loadedClientDetails[clientId]);
+            }
+        } else {
+            row.classList.add('hidden');
+            chevron.classList.remove('rotate-90');
+        }
+    };
+    
+    function renderClientDetails(clientId, events) {
+        const contentDiv = document.getElementById(`details-content-${clientId}`);
+        if (!events || events.length === 0) {
+            contentDiv.innerHTML = `<div class="text-gray-500 italic py-4">No upcoming events or shifts found.</div>`;
+            return;
+        }
+        
+        // Enhance events with fill percentage to allow sorting
+        events.forEach(event => {
+            let totalPositions = 0;
+            let totalFilled = 0;
+            event.shifts.forEach(shift => {
+                totalPositions += shift.position_count;
+                totalFilled += shift.filled_count;
+            });
+            event.isFullyStaffed = (totalPositions > 0 && totalFilled >= totalPositions);
+            event.totalPositions = totalPositions;
+            event.totalFilled = totalFilled;
+        });
+
+        // Separate filled vs unfilled events
+        const unfilledEvents = events.filter(e => !e.isFullyStaffed);
+        const filledEvents = events.filter(e => e.isFullyStaffed);
+
+        // Sort both arrays by date ASC
+        const sortByDate = (a, b) => {
+            let dateA = a.date ? new Date(a.date).getTime() : Infinity;
+            let dateB = b.date ? new Date(b.date).getTime() : Infinity;
+            return dateA - dateB;
+        };
+        unfilledEvents.sort(sortByDate);
+        filledEvents.sort(sortByDate);
+
+        let html = '<div class="space-y-6">';
+        
+        function renderEventBlock(event) {
+            let dateStr = 'No Date';
+            if (event.date) {
+                // Parse date string like '2026-05-22' safely as local time to prevent timezone shift
+                const parts = event.date.split('-');
+                if (parts.length === 3) {
+                    const localDate = new Date(parts[0], parts[1] - 1, parts[2]);
+                    dateStr = localDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+                } else {
+                    dateStr = new Date(event.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+                }
+            }
+            
+            let blockHtml = `
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                    <div class="bg-gray-50 rounded-t-xl px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+                        <div>
+                            <div class="font-bold text-gray-800">${event.title}</div>
+                            <div class="text-xs text-gray-500">${dateStr} &bull; Event ID: ${event.event_id}</div>
+                        </div>
+                        <div class="text-xs font-bold px-2 py-1 rounded ${event.isFullyStaffed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
+                            ${event.totalFilled} / ${event.totalPositions} Filled
+                        </div>
+                    </div>
+                    <div class="p-0">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-white text-gray-500">
+                                <tr>
+                                    <th class="px-4 py-2 font-semibold">Shift Time</th>
+                                    <th class="px-4 py-2 font-semibold text-center">Status</th>
+                                    <th class="px-4 py-2 font-semibold text-right">Publishing</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+            `;
+            
+            event.shifts.forEach(shift => {
+                const startTime = shift.start ? new Date(shift.start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
+                const endTime = shift.end ? new Date(shift.end).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
+                const timeStr = `${startTime} - ${endTime}`;
+                
+                const isFilled = shift.filled_count >= shift.position_count;
+                const statusColor = isFilled ? 'text-emerald-600 bg-emerald-50' : 'text-amber-600 bg-amber-50';
+                
+                let publishBadge = shift.publish_types ? 
+                    `<span class="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-md">Published: ${shift.publish_types}</span>` : 
+                    `<span class="text-xs text-gray-400 italic">Not Published</span>`;
+                    
+                if (!isFilled) {
+                    let recommendation = '';
+                    const pTypes = shift.publish_types ? shift.publish_types.split(', ') : [];
+                    
+                    if (!pTypes.includes('ALL')) {
+                        if (!pTypes.includes('WORKED_BEFORE') && !pTypes.includes('ALL')) {
+                            if (!pTypes.includes('PREFERRED')) {
+                                recommendation = 'Publish to PREFERRED';
+                            } else {
+                                recommendation = 'Publish to WORKED_BEFORE';
+                            }
+                        } else {
+                            recommendation = 'Publish to ALL';
+                        }
+                    }
+                    
+                    if (recommendation) {
+                        publishBadge = `
+                            <div class="flex items-center justify-end space-x-2">
+                                <div class="group relative flex items-center cursor-help">
+                                    <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                    </svg>
+                                    <div class="absolute bottom-full right-0 mb-2 hidden group-hover:block whitespace-nowrap bg-gray-900 text-white text-xs rounded py-1.5 px-3 z-[100] shadow-xl">
+                                        Recommendation: ${recommendation}
+                                        <div class="absolute w-2 h-2 bg-gray-900 transform rotate-45 -bottom-1 right-2"></div>
+                                    </div>
+                                </div>
+                                ${publishBadge}
+                            </div>
+                        `;
+                    }
+                }
+                
+                blockHtml += `
+                    <tr class="hover:bg-gray-50/50">
+                        <td class="px-4 py-3 font-medium text-gray-700">${timeStr}</td>
+                        <td class="px-4 py-3 text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${statusColor}">
+                                ${shift.filled_count} / ${shift.position_count} Filled
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            ${publishBadge}
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            blockHtml += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            return blockHtml;
+        }
+        
+        if (unfilledEvents.length > 0) {
+            unfilledEvents.forEach(event => {
+                html += renderEventBlock(event);
+            });
+        }
+        
+        if (filledEvents.length > 0) {
+            html += `
+                <div class="mt-8 border border-gray-200 rounded-xl shadow-sm">
+                    <div class="bg-gray-100 rounded-t-xl px-4 py-3 cursor-pointer flex justify-between items-center" onclick="toggleFilledEvents(${clientId})">
+                        <div class="font-bold text-gray-700 flex items-center">
+                            <svg id="filled-events-chevron-${clientId}" class="w-4 h-4 mr-2 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                            100% Filled Events (${filledEvents.length})
+                        </div>
+                        <span class="text-xs text-gray-500">Click to expand</span>
+                    </div>
+                    <div id="filled-events-container-${clientId}" class="hidden p-4 space-y-6 bg-white">
+            `;
+            filledEvents.forEach(event => {
+                html += renderEventBlock(event);
+            });
+            html += `
+                    </div>
+                </div>
+            `;
+        }
+        
+        html += '</div>';
+        contentDiv.innerHTML = html;
+    }
+    
+    window.toggleFilledEvents = function(clientId) {
+        const container = document.getElementById(`filled-events-container-${clientId}`);
+        const chevron = document.getElementById(`filled-events-chevron-${clientId}`);
+        if (container.classList.contains('hidden')) {
+            container.classList.remove('hidden');
+            chevron.classList.add('rotate-90');
+        } else {
+            container.classList.add('hidden');
+            chevron.classList.remove('rotate-90');
+        }
+    };
+            
+
 </script>
 {% endblock %}

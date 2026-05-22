@@ -96,7 +96,7 @@
             </div>
             <div>
               <h3 class="brand-serif text-xl font-bold text-gray-900 group-hover:text-emerald-700 transition-colors">Staffing Manager Dashboard</h3>
-              <p class="text-xs text-rose-600 font-bold uppercase tracking-wider mt-0.5">Clients &lt; 90% Fill Rate</p>
+              <p class="text-xs text-rose-600 font-bold uppercase tracking-wider mt-0.5">Understaffed Clients</p>
             </div>
           </div>
           <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-white px-3 py-1.5 rounded-full shadow-sm border border-emerald-100 group-hover:bg-emerald-600 group-hover:text-white transition-all">
@@ -115,7 +115,7 @@
 
         <!-- Block Footer -->
         <div onclick="window.location.href='/staffing-dashboard'" class="px-6 py-3 bg-gray-50/60 border-t border-gray-100 text-center text-[11px] font-semibold text-gray-500 cursor-pointer hover:bg-gray-100 transition-colors">
-          Sorted by lowest fill rate percentage. Click block to expand deeper.
+          Sorted by priority. Click block to expand deeper.
         </div>
       </div>
 
@@ -432,7 +432,7 @@
         const sec1 = document.getElementById('section-1-content');
         if (sec1) {
           if (data.section_1.length === 0) {
-            sec1.innerHTML = `<div class="p-10 text-center text-sm text-gray-400 font-medium italic">No clients found with under 90% fill rate.</div>`;
+            sec1.innerHTML = `<div class="p-10 text-center text-sm text-gray-400 font-medium italic">No understaffed clients found.</div>`;
           } else {
             sec1.innerHTML = data.section_1.map(item => {
               const fillRateClass = item.fill_rate < 50 ? 'bg-rose-50 text-rose-700 border-rose-200' : (item.fill_rate < 75 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-blue-50 text-blue-700 border-blue-200');

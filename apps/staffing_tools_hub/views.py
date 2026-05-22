@@ -64,9 +64,13 @@ async def get_dashboard_summary(request: Request):
                     manager_name = res[0]
 
 
-            # 1. Staffing Manager Dashboard Data (Clients with fill rate < 90%)
+            # 1. Staffing Manager Dashboard Data (Clients with fill rate < 100%)
             # Filter by staffing manager if is_staffing_manager is True
             manager_filter = "AND u.email = :email" if is_staffing_manager else ""
+            
+            from datetime import datetime
+            from zoneinfo import ZoneInfo
+            current_pt_date = datetime.now(ZoneInfo("America/Los_Angeles")).date()
             
             metrics_sql = text(f"""
                 SELECT
@@ -75,7 +79,9 @@ async def get_dashboard_summary(request: Request):
                     COUNT(DISTINCT e.event_id) AS event_count,
                     SUM(sp.count) AS total_shifts,
                     SUM(IFNULL(se_counts.filled_cnt, 0)) AS filled_shifts,
-                    SUM(IFNULL(se_counts.requested_cnt, 0)) AS requested_shifts
+                    SUM(IFNULL(se_counts.requested_cnt, 0)) AS requested_shifts,
+                    MIN(CASE WHEN IFNULL(se_counts.filled_cnt, 0) < sp.count THEN e.date END) AS next_unfilled_date,
+                    SUM(CASE WHEN IFNULL(se_counts.filled_cnt, 0) < sp.count THEN (sp.count - IFNULL(se_counts.filled_cnt, 0)) ELSE 0 END) AS unfilled_shifts
                 FROM client c
                 JOIN event e ON c.client_id = e.client_id
                 JOIN venue v ON e.venue_id = v.venue_id
@@ -90,7 +96,7 @@ async def get_dashboard_summary(request: Request):
                     FROM shift_employee
                     GROUP BY shift_position_id
                 ) se_counts ON sp.shift_position_id = se_counts.shift_position_id
-                WHERE e.date >= CURDATE()
+                WHERE e.date >= :current_date
                   AND e.deleted_at IS NULL
                   AND s.deleted_at IS NULL
                   AND sp.deleted_at IS NULL
@@ -98,18 +104,35 @@ async def get_dashboard_summary(request: Request):
                 GROUP BY c.client_id, c.name
             """)
             
-            params = {"email": logged_in_email} if is_staffing_manager else {}
+            params = {"current_date": current_pt_date}
+            if is_staffing_manager:
+                params["email"] = logged_in_email
+                
             df = pd.read_sql(metrics_sql, conn, params=params)
             
             section_1_records = []
             if not df.empty:
                 df['fill_rate'] = (df['filled_shifts'] / df['total_shifts'] * 100).fillna(0).round(1)
-                # Filter < 90%
-                under_90 = df[df['fill_rate'] < 90.0].copy()
-                # Sort by lowest fill rate
-                under_90 = under_90.sort_values(by='fill_rate', ascending=True)
-                under_90 = under_90.fillna(0)
-                section_1_records = under_90.to_dict(orient='records')
+                
+                # Filter < 100% to match dashboard priority clients
+                understaffed = df[df['fill_rate'] < 100.0].copy()
+                
+                # Sort by next_unfilled_date ASC, unfilled_shifts DESC
+                understaffed['next_unfilled_date'] = pd.to_datetime(understaffed['next_unfilled_date']).dt.date
+                
+                # Convert NaTs to a far future date for sorting purposes if somehow they have unfilled_shifts but no date
+                future_date = datetime(2099, 1, 1).date()
+                understaffed['sort_date'] = understaffed['next_unfilled_date'].fillna(future_date)
+                
+                understaffed = understaffed.sort_values(
+                    by=['sort_date', 'unfilled_shifts'], 
+                    ascending=[True, False]
+                )
+                
+                # Format date back to string if present
+                understaffed['next_unfilled_date'] = understaffed['next_unfilled_date'].apply(lambda x: x.isoformat() if pd.notnull(x) else None)
+                understaffed = understaffed.fillna(0)
+                section_1_records = understaffed.to_dict(orient='records')
                 
             # 2. Shift Risk Dashboard Data (Critical category only)
             # We'll use a modified version of the Shift Risk query to filter for Critical status

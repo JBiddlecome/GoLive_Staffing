@@ -67,6 +67,7 @@ async def staffing_dashboard_page(request: Request):
     staffing_managers = []
     
     engine = _engine()
+    current_pt_date = datetime.now(ZoneInfo("America/Los_Angeles")).date()
     try:
         with engine.connect() as conn:
             if logged_in_email:
@@ -87,12 +88,12 @@ async def staffing_dashboard_page(request: Request):
                 FROM event e
                 JOIN venue v ON e.venue_id = v.venue_id
                 JOIN user u ON v.staffing_manager_id = u.id
-                WHERE e.date >= CURDATE()
+                WHERE e.date >= :current_date
                   AND e.deleted_at IS NULL
                   AND u.first_name IS NOT NULL AND u.last_name IS NOT NULL
                 ORDER BY full_name
             """)
-            staffing_managers = [row[0] for row in conn.execute(managers_sql).fetchall()]
+            staffing_managers = [row[0] for row in conn.execute(managers_sql, {"current_date": current_pt_date}).fetchall()]
     except Exception:
         pass
     finally:
@@ -137,7 +138,7 @@ async def staffing_dashboard_data():
                 FROM shift_employee
                 GROUP BY shift_position_id
             ) se_counts ON sp.shift_position_id = se_counts.shift_position_id
-            WHERE e.date >= CURDATE()
+            WHERE e.date >= :current_date
               AND e.deleted_at IS NULL
               AND s.deleted_at IS NULL
               AND sp.deleted_at IS NULL
@@ -157,16 +158,18 @@ async def staffing_dashboard_data():
             JOIN shift_employee se ON sp.shift_position_id = se.shift_position_id
             WHERE se.confirmed = 1
               AND se.confirmed_at IS NOT NULL
-              AND se.created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+              AND se.created_at >= DATE_SUB(:current_date, INTERVAL 6 MONTH)
               AND e.deleted_at IS NULL
               AND s.deleted_at IS NULL
               AND sp.deleted_at IS NULL
             GROUP BY c.client_id
         """)
 
+        current_pt_date = datetime.now(ZoneInfo("America/Los_Angeles")).date()
+
         with engine.connect() as conn:
-            metrics_df = pd.read_sql(metrics_sql, conn)
-            fill_time_df = pd.read_sql(fill_time_sql, conn)
+            metrics_df = pd.read_sql(metrics_sql, conn, params={"current_date": current_pt_date})
+            fill_time_df = pd.read_sql(fill_time_sql, conn, params={"current_date": current_pt_date})
 
         # Merge data
         if metrics_df.empty:
@@ -252,7 +255,7 @@ async def staffing_dashboard_client_details(client_id: int):
             LEFT JOIN publishing_shift ps ON s.shift_id = ps.shift_id
             LEFT JOIN publishing p ON ps.publishing_id = p.id
             WHERE e.client_id = :client_id
-              AND e.date >= CURDATE()
+              AND e.date >= :current_date
               AND e.deleted_at IS NULL
               AND s.deleted_at IS NULL
               AND sp.deleted_at IS NULL
@@ -260,8 +263,10 @@ async def staffing_dashboard_client_details(client_id: int):
             ORDER BY e.date ASC, s.start ASC
         """)
         
+        current_pt_date = datetime.now(ZoneInfo("America/Los_Angeles")).date()
+        
         with engine.connect() as conn:
-            df = pd.read_sql(client_sql, conn, params={"client_id": client_id})
+            df = pd.read_sql(client_sql, conn, params={"client_id": client_id, "current_date": current_pt_date})
             
         if df.empty:
             return JSONResponse({
