@@ -67,6 +67,7 @@ async def staffing_dashboard_page(request: Request):
     staffing_managers = []
     
     engine = _engine()
+    current_pt_date = datetime.now(ZoneInfo("America/Los_Angeles")).date()
     try:
         with engine.connect() as conn:
             if logged_in_email:
@@ -87,12 +88,12 @@ async def staffing_dashboard_page(request: Request):
                 FROM event e
                 JOIN venue v ON e.venue_id = v.venue_id
                 JOIN user u ON v.staffing_manager_id = u.id
-                WHERE e.date >= CURDATE()
+                WHERE e.date >= :current_date
                   AND e.deleted_at IS NULL
                   AND u.first_name IS NOT NULL AND u.last_name IS NOT NULL
                 ORDER BY full_name
             """)
-            staffing_managers = [row[0] for row in conn.execute(managers_sql).fetchall()]
+            staffing_managers = [row[0] for row in conn.execute(managers_sql, {"current_date": current_pt_date}).fetchall()]
     except Exception:
         pass
     finally:
@@ -120,7 +121,9 @@ async def staffing_dashboard_data():
                 COUNT(DISTINCT e.event_id) AS event_count,
                 SUM(sp.count) AS total_shifts,
                 SUM(IFNULL(se_counts.filled_cnt, 0)) AS filled_shifts,
-                SUM(IFNULL(se_counts.requested_cnt, 0)) AS requested_shifts
+                SUM(IFNULL(se_counts.requested_cnt, 0)) AS requested_shifts,
+                MIN(CASE WHEN IFNULL(se_counts.filled_cnt, 0) < sp.count THEN e.date END) AS next_unfilled_date,
+                SUM(CASE WHEN IFNULL(se_counts.filled_cnt, 0) < sp.count THEN (sp.count - IFNULL(se_counts.filled_cnt, 0)) ELSE 0 END) AS unfilled_shifts
             FROM client c
             JOIN event e ON c.client_id = e.client_id
             JOIN venue v ON e.venue_id = v.venue_id
@@ -135,7 +138,7 @@ async def staffing_dashboard_data():
                 FROM shift_employee
                 GROUP BY shift_position_id
             ) se_counts ON sp.shift_position_id = se_counts.shift_position_id
-            WHERE e.date >= CURDATE()
+            WHERE e.date >= :current_date
               AND e.deleted_at IS NULL
               AND s.deleted_at IS NULL
               AND sp.deleted_at IS NULL
@@ -155,16 +158,18 @@ async def staffing_dashboard_data():
             JOIN shift_employee se ON sp.shift_position_id = se.shift_position_id
             WHERE se.confirmed = 1
               AND se.confirmed_at IS NOT NULL
-              AND se.created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+              AND se.created_at >= DATE_SUB(:current_date, INTERVAL 6 MONTH)
               AND e.deleted_at IS NULL
               AND s.deleted_at IS NULL
               AND sp.deleted_at IS NULL
             GROUP BY c.client_id
         """)
 
+        current_pt_date = datetime.now(ZoneInfo("America/Los_Angeles")).date()
+
         with engine.connect() as conn:
-            metrics_df = pd.read_sql(metrics_sql, conn)
-            fill_time_df = pd.read_sql(fill_time_sql, conn)
+            metrics_df = pd.read_sql(metrics_sql, conn, params={"current_date": current_pt_date})
+            fill_time_df = pd.read_sql(fill_time_sql, conn, params={"current_date": current_pt_date})
 
         # Merge data
         if metrics_df.empty:
@@ -192,6 +197,9 @@ async def staffing_dashboard_data():
 
         df['avg_time_to_fill'] = df['avg_fill_seconds'].apply(format_duration)
         
+        if 'next_unfilled_date' in df.columns:
+            df['next_unfilled_date'] = df['next_unfilled_date'].apply(lambda x: x.isoformat() if pd.notnull(x) else None)
+        
         df = df.fillna(0)
         records = df.to_dict(orient='records')
 
@@ -217,3 +225,89 @@ async def update_staffing_dashboard_note(client_id: int, payload: dict = Body(..
         return JSONResponse({"status": "success"})
     except Exception as e:
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@router.get("/client/{client_id}/details", response_class=JSONResponse)
+async def staffing_dashboard_client_details(client_id: int):
+    engine = _engine()
+    try:
+        client_sql = text("""
+            SELECT
+                e.event_id,
+                e.date,
+                e.title,
+                s.shift_id,
+                s.start,
+                s.end,
+                sp.shift_position_id,
+                sp.count AS position_count,
+                IFNULL(se_counts.filled_cnt, 0) AS filled_count,
+                GROUP_CONCAT(DISTINCT p.`to` SEPARATOR ', ') AS publish_types
+            FROM event e
+            JOIN shift s ON e.event_id = s.event_id
+            JOIN shift_position sp ON s.shift_id = sp.shift_id
+            LEFT JOIN (
+                SELECT 
+                    shift_position_id,
+                    COUNT(CASE WHEN confirmed = 1 AND cancel_reason = 0 THEN shift_employee_id END) AS filled_cnt
+                FROM shift_employee
+                GROUP BY shift_position_id
+            ) se_counts ON sp.shift_position_id = se_counts.shift_position_id
+            LEFT JOIN publishing_shift ps ON s.shift_id = ps.shift_id
+            LEFT JOIN publishing p ON ps.publishing_id = p.id
+            WHERE e.client_id = :client_id
+              AND e.date >= :current_date
+              AND e.deleted_at IS NULL
+              AND s.deleted_at IS NULL
+              AND sp.deleted_at IS NULL
+            GROUP BY e.event_id, s.shift_id, sp.shift_position_id
+            ORDER BY e.date ASC, s.start ASC
+        """)
+        
+        current_pt_date = datetime.now(ZoneInfo("America/Los_Angeles")).date()
+        
+        with engine.connect() as conn:
+            df = pd.read_sql(client_sql, conn, params={"client_id": client_id, "current_date": current_pt_date})
+            
+        if df.empty:
+            return JSONResponse({
+                "status": "success",
+                "data": []
+            })
+            
+        # Group by event
+        events_dict = {}
+        for _, row in df.iterrows():
+            # Skip shifts with position_count == 0
+            if row['position_count'] == 0:
+                continue
+                
+            event_id = row['event_id']
+            if event_id not in events_dict:
+                events_dict[event_id] = {
+                    "event_id": event_id,
+                    "date": row['date'].isoformat() if pd.notnull(row['date']) else None,
+                    "title": row['title'],
+                    "shifts": []
+                }
+            
+            shift_data = {
+                "shift_id": row['shift_id'],
+                "start": row['start'].isoformat() if pd.notnull(row['start']) else None,
+                "end": row['end'].isoformat() if pd.notnull(row['end']) else None,
+                "position_count": int(row['position_count']),
+                "filled_count": int(row['filled_count']),
+                "publish_types": row['publish_types'] if pd.notnull(row['publish_types']) else None
+            }
+            events_dict[event_id]["shifts"].append(shift_data)
+            
+        # Filter out events with no shifts
+        result_data = [e for e in events_dict.values() if len(e["shifts"]) > 0]
+        
+        return JSONResponse({
+            "status": "success",
+            "data": result_data
+        })
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+    finally:
+        engine.dispose()

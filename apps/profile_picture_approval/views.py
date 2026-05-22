@@ -80,32 +80,22 @@ async def toggle_auto_approve(request: Request):
     return JSONResponse({"status": "success", "enabled": get_auto_approve_enabled()})
 
 AI_PROMPT = """
-You are an expert Image Content Moderator. Your task is to evaluate a user's uploaded profile picture for suitability based on strict criteria.
+Evaluate this profile picture. Approve if ALL criteria are met:
+- Face forward (deny if turned 45°+ sideways or obscured)
+- Face close to camera and in focus
+- No sunglasses or masks (hats OK if eyes visible; prescription glasses are ALWAYS OK if eyes are visible through lenses)
+- No heavy beauty filters or AR distortions
+- No nudity, hate symbols, offensive gestures, or weapons
 
-Evaluation Criteria:
-Face Position: The person should be generally facing forward. It is okay if they are slightly facing to the side, but deny the picture if they are turned sideways 45 degrees or more. Obscured views are not allowed.
-Clarity & Distance: The face must be close to the camera and in focus.
-No Accessories: No sunglasses or masks. Hats are acceptable as long as they do not cover the eyes. VERY IMPORTANT regarding glasses: If you can clearly see the person's eyes through the lenses, they MUST be considered prescription glasses and NOT sunglasses. Do not falsely reject prescription glasses as sunglasses. These are perfectly okay to approve.
-No Filters: No "beauty" filters, AR ears/noses, or heavy digital distortions.
-Safety & Ethics: Strictly reject any photo containing:
-Nudity or suggestive content.
-Hate symbols or racist imagery (e.g., swastikas, white supremacist symbols).
-Rude or offensive gestures (e.g., middle fingers).
-Violence or weapons.
-
-Output Format: Provide a JSON response with the following keys:
-{
-  "suitable": true | false,
-  "reason": "A concise, polite explanation if suitable is false (e.g., 'Please remove your sunglasses')",
-  "confidence": 0.95
-}
+Respond with JSON only:
+{"suitable": true|false, "reason": "polite explanation if false", "confidence": 0.0-1.0}
 """
 
 async def analyze_photo_ai(photo_url: str):
     try:
         client = openai.AsyncOpenAI(api_key=os.getenv("PROFILE_PICTURE_APPROVAL") or os.getenv("OPENAI_API_KEY"))
         response = await client.chat.completions.create(
-            model=os.getenv("OPENAI_MODEL_PRODUCTION", "gpt-4o"),
+            model=os.getenv("PROFILE_PICTURE_MODEL", "gpt-4o-mini"),
             messages=[
                 {
                     "role": "user",

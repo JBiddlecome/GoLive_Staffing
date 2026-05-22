@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+{% block title %}Staffing Manager Dashboard — GoLive Tools{% endblock %}
+{% block content %}
+<section class="max-w-7xl mx-auto space-y-8">
+    <header class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div class="space-y-3">
+            <p class="text-sm uppercase tracking-[0.25em] text-emerald-600 font-semibold">Staffing Tools</p>
+            <h1 class="brand-serif text-3xl md:text-4xl font-semibold text-gray-900">Staffing Manager Dashboard</h1>
+            <p class="text-gray-600 max-w-2xl">
+                Real-time visibility into client events, shift coverage, and fulfillment speed.
+                Metrics cover the current date forward, with fill times based on the last 6 months.
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-4">
+            <div class="px-5 py-3 bg-emerald-50 rounded-2xl border border-emerald-100 shadow-sm">
+                <p class="text-xs text-emerald-700 font-bold uppercase tracking-wider mb-1">Active Clients</p>
+                <p id="clientCount" class="text-3xl font-black text-emerald-900">0</p>
+            </div>
+            <div class="px-5 py-3 bg-blue-50 rounded-2xl border border-blue-100 shadow-sm">
+                <p class="text-xs text-blue-700 font-bold uppercase tracking-wider mb-1">Total Open Shifts</p>
+                <p id="totalShiftsCount" class="text-3xl font-black text-blue-900">0</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Filters & Search -->
+    <section class="rounded-3xl border border-gray-100 bg-white p-6 shadow-xl flex flex-col md:flex-row gap-6 items-center justify-between">
+        <div class="relative w-full md:max-w-md">
+            <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-400">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </span>
+            <input type="text" id="clientSearch" placeholder="Search by client..." 
+                class="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none" />
+        </div>
+        <div class="relative w-full md:max-w-xs">
+            <select id="staffingManagerFilter" class="w-full pl-4 pr-10 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none appearance-none cursor-pointer text-gray-700">
+                <option value="">All Staffing Managers</option>
+                {% for mgr in staffing_managers %}
+                    <option value="{{ mgr }}">{{ mgr }}</option>
+                {% endfor %}
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
+        </div>
+        <button id="refreshBtn"
+            class="inline-flex items-center justify-center rounded-2xl bg-gray-900 px-8 py-3.5 font-bold text-white shadow-lg hover:bg-black transition-all active:scale-95">
+            <svg id="refreshIcon" class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                </path>
+            </svg>
+            <span id="refreshText">Refresh Dashboard</span>
+        </button>
+    </section>
+
+    <!-- Dashboard Table -->
+    <section class="rounded-[2.5rem] border border-gray-100 bg-white shadow-2xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-50/80 backdrop-blur-sm">
+                        <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 cursor-pointer sortable hover:text-emerald-600 transition-colors" data-sort="client_name">Client Info <span class="sort-icon ml-1">↕</span></th>
+                        <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-center">Events</th>
+                        <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-center">Coverage (Slots)</th>
+                        <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-center cursor-pointer sortable hover:text-emerald-600 transition-colors" data-sort="fill_rate">Fill Rate <span class="sort-icon ml-1">↕</span></th>
+                        <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-right cursor-pointer sortable hover:text-emerald-600 transition-colors" data-sort="avg_fill_seconds">Avg Fill Time <span class="sort-icon ml-1">↕</span></th>
+                        <th class="px-8 py-5 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-left">Notes</th>
+                    </tr>
+                </thead>
+                <tbody id="dashboardBody" class="divide-y divide-gray-50">
+                    <tr>
+                        <td colspan="6" class="px-8 py-24 text-center">
+                            <div class="flex flex-col items-center space-y-4">
+                                <div class="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                                <p class="text-gray-500 font-medium">Analyzing staffing data...</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</section>
+
+<style>
+    .fill-rate-bar { transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const dashboardBody = document.getElementById('dashboardBody');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const refreshIcon = document.getElementById('refreshIcon');
+        const refreshText = document.getElementById('refreshText');
+        const searchInput = document.getElementById('clientSearch');
+        const staffingManagerFilter = document.getElementById('staffingManagerFilter');
+        const clientCount = document.getElementById('clientCount');
+        const totalShiftsCount = document.getElementById('totalShiftsCount');
+
+        let dashboardData = [];
+
+        async function fetchData() {
+            setLoading(true);
+            try {
+                const response = await fetch('/staffing-dashboard/data');
+                const result = await response.json();
+                if (result.status === 'success') {
+                    dashboardData = result.data;
+                    updateSortIcons();
+                    applyFilterAndSort();
+                } else {
+                    showError(result.message);
+                }
+            } catch (err) {
+                showError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function setLoading(isLoading) {
+            refreshBtn.disabled = isLoading;
+            if (isLoading) {
+                refreshIcon.classList.add('animate-spin');
+                refreshText.textContent = 'Updating...';
+            } else {
+                refreshIcon.classList.remove('animate-spin');
+                refreshText.textContent = 'Refresh Dashboard';
+            }
+        }
+
+        function showError(msg) {
+            dashboardBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="px-8 py-16 text-center">
+                        <div class="inline-flex p-4 rounded-2xl bg-red-50 border border-red-100 text-red-700">
+                            <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            <span class="font-semibold">Error: ${msg}</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        function updateCounters(data) {
+            clientCount.textContent = data.length;
+            const totalShifts = data.reduce((acc, curr) => acc + (curr.total_shifts || 0), 0);
+            totalShiftsCount.textContent = totalShifts;
+        }
+
+        function renderDashboard(data) {
+            if (data.length === 0) {
+                dashboardBody.innerHTML = `<tr><td colspan="6" class="px-8 py-16 text-center text-gray-500 italic">No upcoming events found.</td></tr>`;
+                return;
+            }
+
+            dashboardBody.innerHTML = data.map(item => {
+                const requestedClass = item.requested_shifts > 0 ? 'text-amber-600 font-bold' : 'text-gray-400';
+                const fillRateColor = item.fill_rate >= 90 ? 'bg-emerald-500' : (item.fill_rate >= 70 ? 'bg-blue-500' : (item.fill_rate >= 40 ? 'bg-amber-500' : 'bg-rose-500'));
+                const fillRateBg = item.fill_rate >= 90 ? 'bg-emerald-50' : (item.fill_rate >= 70 ? 'bg-blue-50' : (item.fill_rate >= 40 ? 'bg-amber-50' : 'bg-rose-50'));
+                
+                return `
+                    <tr class="group hover:bg-emerald-50/20 transition-all duration-300">
+                        <td class="px-8 py-6">
+                            <div class="font-bold text-gray-900 text-lg mb-0.5">${item.client_name}</div>
+                            <div class="flex items-center text-sm text-gray-500">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 mr-2"></span>
+                                ${item.staffing_manager_name || 'No Manager Assigned'}
+                            </div>
+                        </td>
+                        <td class="px-8 py-6 text-center">
+                            <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gray-100 font-bold text-gray-700">
+                                ${item.event_count}
+                            </span>
+                        </td>
+                        <td class="px-8 py-6">
+                            <div class="flex flex-col items-center">
+                                <div class="flex gap-4 text-xs font-black uppercase tracking-tighter mb-2">
+                                    <div class="text-gray-500">Total: <span class="text-gray-900">${item.total_shifts}</span></div>
+                                    <div class="text-emerald-600">Filled: <span class="text-emerald-700">${item.filled_shifts}</span></div>
+                                    <div class="${requestedClass}">Requested: <span>${item.requested_shifts}</span></div>
+                                </div>
+                                <div class="w-48 h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner flex">
+                                    <div class="fill-rate-bar h-full ${fillRateColor}" style="width: ${item.fill_rate}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-8 py-6 text-center">
+                            <span class="px-4 py-1.5 rounded-full text-sm font-black ${fillRateBg} ${fillRateColor.replace('bg-', 'text-')} shadow-sm border border-current opacity-80">
+                                ${item.fill_rate}%
+                            </span>
+                        </td>
+                        <td class="px-8 py-6 text-right">
+                            <div class="font-bold text-gray-900">${item.avg_time_to_fill}</div>
+                            <div class="text-[10px] text-gray-400 uppercase font-bold tracking-widest mt-1">6mo average</div>
+                        </td>
+                        <td class="px-8 py-6 w-64">
+                            <div class="flex flex-col gap-1">
+                                <textarea 
+                                    class="w-full text-sm p-2.5 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-y min-h-[70px] outline-none" 
+                                    placeholder="Add a note..."
+                                    onchange="saveNote(${item.client_id}, this)"
+                                >${item.client_note ? item.client_note.replace(/</g, '&lt;').replace(/>/g, '&gt;') : ''}</textarea>
+                                <span id="note-status-${item.client_id}" class="text-[10px] text-emerald-600 font-bold uppercase tracking-wider opacity-0 transition-opacity duration-300">Saved</span>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        let currentSort = { column: 'client_name', direction: 'asc' };
+
+        function updateSortIcons() {
+            document.querySelectorAll('th.sortable').forEach(th => {
+                const icon = th.querySelector('.sort-icon');
+                if (th.dataset.sort === currentSort.column) {
+                    icon.innerHTML = currentSort.direction === 'asc' ? '↑' : '↓';
+                } else {
+                    icon.innerHTML = '↕';
+                }
+            });
+        }
+
+        document.querySelectorAll('th.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                const col = th.dataset.sort;
+                if (currentSort.column === col) {
+                    currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentSort.column = col;
+                    currentSort.direction = 'asc';
+                }
+                updateSortIcons();
+                applyFilterAndSort();
+            });
+        });
+
+        function sortData(data) {
+            return [...data].sort((a, b) => {
+                let valA = a[currentSort.column];
+                let valB = b[currentSort.column];
+
+                if (valA === undefined || valA === null) valA = '';
+                if (valB === undefined || valB === null) valB = '';
+
+                if (['fill_rate', 'avg_fill_seconds'].includes(currentSort.column)) {
+                    valA = parseFloat(valA) || 0;
+                    valB = parseFloat(valB) || 0;
+                } else {
+                    if (typeof valA === 'string') valA = valA.toLowerCase();
+                    if (typeof valB === 'string') valB = valB.toLowerCase();
+                }
+
+                if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+                if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        function applyFilterAndSort() {
+            const term = searchInput.value.toLowerCase();
+            const managerTerm = staffingManagerFilter.value.toLowerCase();
+            
+            const filtered = dashboardData.filter(item => {
+                const matchesClient = item.client_name.toLowerCase().includes(term);
+                const managerName = item.staffing_manager_name ? item.staffing_manager_name.toLowerCase() : "";
+                
+                const matchesSearch = matchesClient || managerName.includes(term);
+                const matchesDropdown = managerTerm === "" || managerName === managerTerm;
+                
+                return matchesSearch && matchesDropdown;
+            });
+            const sorted = sortData(filtered);
+            renderDashboard(sorted);
+            updateCounters(sorted);
+        }
+
+        searchInput.addEventListener('input', applyFilterAndSort);
+        staffingManagerFilter.addEventListener('change', applyFilterAndSort);
+
+        refreshBtn.addEventListener('click', fetchData);
+
+        // Init
+        const loggedInManager = "{{ logged_in_manager|default('') }}";
+        if (loggedInManager) {
+            Array.from(staffingManagerFilter.options).forEach(opt => {
+                if (opt.value.toLowerCase() === loggedInManager.toLowerCase()) {
+                    staffingManagerFilter.value = opt.value;
+                }
+            });
+        }
+        fetchData();
+    });
+
+    window.saveNote = async function(clientId, el) {
+        const statusEl = document.getElementById(`note-status-${clientId}`);
+        try {
+            const response = await fetch(`/staffing-dashboard/notes/${clientId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ note: el.value })
+            });
+            if (response.ok) {
+                statusEl.textContent = "Saved";
+                statusEl.classList.remove('text-red-600');
+                statusEl.classList.add('text-emerald-600');
+                statusEl.classList.remove('opacity-0');
+                setTimeout(() => statusEl.classList.add('opacity-0'), 2000);
+            } else {
+                throw new Error("Failed to save");
+            }
+        } catch (err) {
+            statusEl.textContent = "Error saving";
+            statusEl.classList.remove('text-emerald-600');
+            statusEl.classList.add('text-red-600');
+            statusEl.classList.remove('opacity-0');
+            setTimeout(() => statusEl.classList.add('opacity-0'), 3000);
+        }
+    };
+</script>
+{% endblock %}
