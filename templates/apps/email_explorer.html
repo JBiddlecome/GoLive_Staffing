@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Explorer | Admin Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --secondary: #10B981;
+            --background: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-main: #1F2937;
+            --text-muted: #6B7280;
+            --border: #E5E7EB;
+            --warning-bg: #FFFBEB;
+            --warning-border: #F59E0B;
+            --warning-text: #92400E;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .header a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .section-label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin: 20px 0 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-label:first-child {
+            margin-top: 0;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+
+        .form-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--text-main);
+        }
+
+        .field-hint {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        input[type="text"], input[type="date"] {
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #059669;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background-color: #F9FAFB;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.05em;
+        }
+
+        tr:hover {
+            background-color: #F9FAFB;
+        }
+
+        .preview-text {
+            color: var(--text-muted);
+            font-size: 13px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .loading-spinner {
+            display: none;
+            justify-content: center;
+            padding: 40px;
+            color: var(--primary);
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .loading-spinner span {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .error-message {
+            color: #DC2626;
+            background-color: #FEE2E2;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .results-header h3 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .count-info {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .count-info strong {
+            color: var(--text-main);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            background-color: #E0E7FF;
+            color: #4338CA;
+        }
+
+        .badge-warning {
+            background-color: #FEF3C7;
+            color: #92400E;
+        }
+
+        .warning-banner {
+            display: none;
+            background-color: var(--warning-bg);
+            border: 1px solid var(--warning-border);
+            color: var(--warning-text);
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #D1D5DB;
+            border-radius: 22px;
+            transition: background-color 0.2s;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: var(--primary);
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(18px);
+        }
+
+        .toggle-label {
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .toggle-hint {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-left: auto;
+        }
+
+        .all-mailboxes-note {
+            display: none;
+            background-color: #EEF2FF;
+            border: 1px solid #C7D2FE;
+            color: #3730A3;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        input:disabled {
+            background-color: #F3F4F6;
+            color: #9CA3AF;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fa-solid fa-envelope-open-text" style="color: var(--primary); margin-right: 8px;"></i>Email Explorer</h1>
+            <a href="/admin"><i class="fa-solid fa-arrow-left"></i> Back to Admin Portal</a>
+        </div>
+
+        <div class="card">
+            <div id="errorBox" class="error-message"></div>
+
+            <form id="searchForm">
+                <div class="section-label">Mailboxes &amp; Date Range</div>
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <div class="toggle-row">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="searchAllToggle" onchange="toggleAllMailboxes(this)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="toggle-label" onclick="document.getElementById('searchAllToggle').click()">Search all tenant mailboxes</span>
+                            <span class="toggle-hint">Enable to search every account in your organization</span>
+                        </div>
+                        <div id="allMailboxesNote" class="all-mailboxes-note">
+                            <i class="fa-solid fa-circle-info"></i>
+                            All mailboxes in your Microsoft 365 tenant will be searched. This may take longer for large organizations.
+                        </div>
+                        <div id="mailboxesFieldWrap">
+                            <label for="mailboxes">Target Mailboxes</label>
+                            <input type="text" id="mailboxes" name="mailboxes"
+                                placeholder="e.g., jake@culinarystaffing.com, hr@culinarystaffing.com">
+                            <div class="field-hint">Comma-separated list of email addresses to search through</div>
+                        </div>
+                        <input type="hidden" id="searchAllInput" name="search_all" value="false">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="startDate">Start Date</label>
+                        <input type="date" id="startDate" name="start_date" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="endDate">End Date</label>
+                        <input type="date" id="endDate" name="end_date" required>
+                    </div>
+                </div>
+
+                <div class="section-label">Filter By Sender / Recipient</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="sender">From (Sender) — Optional</label>
+                        <input type="text" id="sender" name="sender"
+                            placeholder="e.g., john@example.com">
+                        <div class="field-hint">Comma-separate multiple senders to match any of them</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="recipient">To (Recipient) — Optional</label>
+                        <input type="text" id="recipient" name="recipient"
+                            placeholder="e.g., jane@example.com">
+                        <div class="field-hint">Show only emails addressed to this recipient</div>
+                    </div>
+                </div>
+
+                <div class="section-label">Keyword Search</div>
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="keyword">Subject or Body Keyword — Optional</label>
+                        <input type="text" id="keyword" name="keyword"
+                            placeholder="e.g., invoice, interview, follow up">
+                        <div class="field-hint">Searches the email subject line and body preview for this phrase</div>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button type="button" class="btn-primary" onclick="searchEmails()" id="searchBtn">
+                        <i class="fa-solid fa-search"></i> Search
+                    </button>
+                    <button type="button" class="btn-secondary" onclick="downloadEmails()" id="downloadBtn" style="display: none;">
+                        <i class="fa-solid fa-file-arrow-down"></i> Download All Results
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card" id="resultsCard" style="display: none;">
+            <div class="results-header">
+                <h3>Results</h3>
+                <div class="count-info" id="countInfo"></div>
+            </div>
+
+            <div id="warningBanner" class="warning-banner">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span id="warningText"></span>
+            </div>
+
+            <div id="loadingSpinner" class="loading-spinner">
+                <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>
+                <span>Searching mailboxes — this may take a moment for large date ranges...</span>
+            </div>
+
+            <div class="table-responsive" id="tableWrapper" style="display: none;">
+                <table id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Mailbox</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Subject &amp; Preview</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Default dates: last 7 days
+        const end = new Date();
+        const start = new Date();
+        start.setDate(end.getDate() - 7);
+        document.getElementById('endDate').valueAsDate = end;
+        document.getElementById('startDate').valueAsDate = start;
+
+        let lastTotalCount = 0;
+
+        function toggleAllMailboxes(checkbox) {
+            const mailboxInput = document.getElementById('mailboxes');
+            const fieldWrap = document.getElementById('mailboxesFieldWrap');
+            const note = document.getElementById('allMailboxesNote');
+            const hiddenInput = document.getElementById('searchAllInput');
+
+            if (checkbox.checked) {
+                mailboxInput.disabled = true;
+                mailboxInput.value = '';
+                fieldWrap.style.opacity = '0.4';
+                note.style.display = 'flex';
+                hiddenInput.value = 'true';
+            } else {
+                mailboxInput.disabled = false;
+                fieldWrap.style.opacity = '1';
+                note.style.display = 'none';
+                hiddenInput.value = 'false';
+            }
+        }
+
+        function showError(message) {
+            const errorBox = document.getElementById('errorBox');
+            errorBox.textContent = message;
+            errorBox.style.display = 'block';
+            setTimeout(() => { errorBox.style.display = 'none'; }, 8000);
+        }
+
+        async function searchEmails() {
+            const isAll = document.getElementById('searchAllToggle').checked;
+            const mailboxes = document.getElementById('mailboxes').value.trim();
+
+            if (!isAll && !mailboxes) {
+                showError('Please enter at least one mailbox address, or enable "Search all tenant mailboxes".');
+                return;
+            }
+
+            const form = document.getElementById('searchForm');
+            // Only check native validity for non-mailbox fields
+            const dateStart = document.getElementById('startDate');
+            const dateEnd = document.getElementById('endDate');
+            if (!dateStart.value || !dateEnd.value) {
+                form.reportValidity();
+                return;
+            }
+
+            const formData = new FormData(form);
+
+            document.getElementById('searchBtn').disabled = true;
+            document.getElementById('resultsCard').style.display = 'block';
+            document.getElementById('loadingSpinner').style.display = 'flex';
+            document.getElementById('tableWrapper').style.display = 'none';
+            document.getElementById('downloadBtn').style.display = 'none';
+            document.getElementById('warningBanner').style.display = 'none';
+            document.getElementById('countInfo').textContent = '';
+
+            try {
+                const response = await fetch('/email-explorer/fetch', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.status === 'success') {
+                    lastTotalCount = result.total_count;
+                    populateTable(result.data, result.total_count, result.displayed_count);
+                    document.getElementById('downloadBtn').style.display = 'flex';
+                } else {
+                    showError(result.error || 'Failed to fetch emails.');
+                }
+            } catch (err) {
+                showError('Network error: ' + err.message);
+            } finally {
+                document.getElementById('searchBtn').disabled = false;
+                document.getElementById('loadingSpinner').style.display = 'none';
+                document.getElementById('tableWrapper').style.display = 'block';
+            }
+        }
+
+        function populateTable(data, totalCount, displayedCount) {
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = '';
+
+            // Update count info
+            const countInfo = document.getElementById('countInfo');
+            if (totalCount === 0) {
+                countInfo.innerHTML = '<span class="badge">0 results</span>';
+            } else if (totalCount > displayedCount) {
+                countInfo.innerHTML = `Showing <strong>${displayedCount}</strong> of <strong>${totalCount}</strong> total results`;
+                const warning = document.getElementById('warningBanner');
+                document.getElementById('warningText').textContent =
+                    `${totalCount} emails matched your search — only the most recent 100 are shown below. ` +
+                    `Use "Download All Results" to get the full set.`;
+                warning.style.display = 'flex';
+            } else {
+                countInfo.innerHTML = `<strong>${totalCount}</strong> result${totalCount !== 1 ? 's' : ''} found`;
+            }
+
+            if (data.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5">
+                            <div class="no-results">
+                                <i class="fa-solid fa-inbox fa-2x" style="margin-bottom: 10px; opacity: 0.3;"></i>
+                                <div>No emails found matching your search criteria.</div>
+                            </div>
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            data.forEach(msg => {
+                const dateObj = new Date(msg.date);
+                const formattedDate = dateObj.toLocaleString();
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="white-space: nowrap; font-size: 13px;">${formattedDate}</td>
+                    <td style="font-size: 13px;">${escapeHtml(msg.mailbox || '')}</td>
+                    <td style="font-size: 13px;">${escapeHtml(msg.sender || 'Unknown')}</td>
+                    <td style="font-size: 13px;">${escapeHtml(msg.to || 'Unknown')}</td>
+                    <td>
+                        <div style="font-weight: 500; font-size: 14px;">${escapeHtml(msg.subject || '(No Subject)')}</div>
+                        <div class="preview-text">${escapeHtml(msg.preview || '')}</div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
+        function downloadEmails() {
+            const isAll = document.getElementById('searchAllToggle').checked;
+            const mailboxes = document.getElementById('mailboxes').value.trim();
+            if (!isAll && !mailboxes) {
+                showError('Please enter at least one mailbox address, or enable "Search all tenant mailboxes".');
+                return;
+            }
+
+            if (lastTotalCount > 100) {
+                const confirmed = confirm(
+                    `Warning: Your search returned ${lastTotalCount} emails.\n\n` +
+                    `The download file may be very large. Consider refining your search parameters ` +
+                    `(narrower date range, specific sender/recipient, or keyword) to reduce the result set.\n\n` +
+                    `Continue downloading all ${lastTotalCount} emails?`
+                );
+                if (!confirmed) return;
+            }
+
+            const downloadForm = document.createElement('form');
+            downloadForm.method = 'POST';
+            downloadForm.action = '/email-explorer/download';
+            downloadForm.style.display = 'none';
+
+            const formData = new FormData(form);
+            for (let [key, value] of formData.entries()) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                downloadForm.appendChild(input);
+            }
+
+            document.body.appendChild(downloadForm);
+            downloadForm.submit();
+            document.body.removeChild(downloadForm);
+        }
+    </script>
+</body>
+</html>

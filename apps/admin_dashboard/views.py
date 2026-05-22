@@ -35,6 +35,8 @@ async def admin_dashboard_data(request: Request):
 async def admin_history_data(request: Request, start_date: str, end_date: str):
     from apps.admin_dashboard.tracker import get_admin_history
     history = get_admin_history(start_date, end_date)
-    history_sorted = sorted(history, key=lambda x: x["total_seconds"], reverse=True)
-    return JSONResponse(content={"status": "success", "data": history_sorted})
-
+@router.get("/staffing-activity-data")
+async def staffing_activity_data(request: Request, start_date: str, end_date: str):
+    from apps.admin_dashboard.tracker import get_staffing_activity
+    activity = get_staffing_activity(start_date, end_date)
+    return JSONResponse(content={"status": "success", "data": activity})
