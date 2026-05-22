@@ -102,6 +102,34 @@
     </div>
   </div>
 
+  <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm mt-8">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-gray-900">Event & Shift Activity</h2>
+      <form onsubmit="fetchEventShiftActivity(event)" class="flex items-center space-x-3">
+        <div>
+            <label for="es_start_date" class="sr-only">Start Date</label>
+            <input type="date" id="es_start_date" name="es_start_date" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm">
+        </div>
+        <span class="text-gray-500">to</span>
+        <div>
+            <label for="es_end_date" class="sr-only">End Date</label>
+            <input type="date" id="es_end_date" name="es_end_date" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm">
+        </div>
+        <button type="submit" class="inline-flex items-center rounded-md border border-transparent bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
+            Filter
+        </button>
+      </form>
+    </div>
+    
+    <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+      <div id="event-shift-activity-container" class="bg-white divide-y divide-gray-200">
+        <div class="p-8 text-center text-sm text-gray-500">
+            Loading activity data...
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="text-center mt-8 pb-12">
     <a href="/work-in-progress" class="text-sm font-semibold text-emerald-700 hover:underline">← Back to Work in Progress</a>
   </div>
@@ -186,12 +214,95 @@ function fetchHistory(e) {
         .catch(console.error);
 }
 
+function fetchEventShiftActivity(e) {
+    if (e) e.preventDefault();
+    const startDate = document.getElementById('es_start_date').value;
+    const endDate = document.getElementById('es_end_date').value;
+    
+    if (!startDate || !endDate) return;
+
+    fetch(`/admin-dashboard/staffing-activity-data?start_date=${startDate}&end_date=${endDate}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const container = document.getElementById('event-shift-activity-container');
+                let html = '';
+                
+                const renderUserBlock = (user) => {
+                    return `
+                    <div class="border-b border-gray-200 bg-gray-50">
+                        <button type="button" class="w-full px-4 py-4 text-left hover:bg-gray-100 focus:outline-none flex justify-between items-center" onclick="this.nextElementSibling.classList.toggle('hidden')">
+                            <div>
+                                <h3 class="text-md font-bold text-gray-900">${user.name}</h3>
+                                <p class="text-sm text-gray-500">${user.total_records} records</p>
+                            </div>
+                            <svg class="h-5 w-5 text-gray-400 transform transition-transform" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <div class="hidden px-4 pb-4 bg-white border-t border-gray-100">
+                            <dl class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                                <div class="overflow-hidden rounded-lg bg-emerald-50 px-4 py-5 shadow sm:p-6 text-center border border-emerald-100">
+                                    <dt class="truncate text-sm font-medium text-emerald-800">Events</dt>
+                                    <dd class="mt-1 text-3xl font-semibold tracking-tight text-emerald-900">${user.events}</dd>
+                                </div>
+                                <div class="overflow-hidden rounded-lg bg-emerald-50 px-4 py-5 shadow sm:p-6 text-center border border-emerald-100">
+                                    <dt class="truncate text-sm font-medium text-emerald-800">Shifts</dt>
+                                    <dd class="mt-1 text-3xl font-semibold tracking-tight text-emerald-900">${user.shifts}</dd>
+                                </div>
+                                <div class="overflow-hidden rounded-lg bg-emerald-50 px-4 py-5 shadow sm:p-6 text-center border border-emerald-100">
+                                    <dt class="truncate text-sm font-medium text-emerald-800">Publications</dt>
+                                    <dd class="mt-1 text-3xl font-semibold tracking-tight text-emerald-900">${user.publications}</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </div>
+                    `;
+                };
+
+                html += `<div class="bg-white"><h2 class="px-4 py-3 bg-gray-100 text-sm font-semibold text-gray-900 uppercase tracking-wider">Staffing Managers</h2>`;
+                if (data.data.managers && data.data.managers.length > 0) {
+                    data.data.managers.forEach(user => {
+                        html += renderUserBlock(user);
+                    });
+                } else {
+                    html += `<div class="p-4 text-sm text-gray-500 text-center">No activity found.</div>`;
+                }
+                html += `</div>`;
+
+                html += `<div class="bg-white"><h2 class="px-4 py-3 bg-gray-100 text-sm font-semibold text-gray-900 uppercase tracking-wider border-t border-gray-200">Staffing Coordinators</h2>`;
+                if (data.data.coordinators && data.data.coordinators.length > 0) {
+                    data.data.coordinators.forEach(user => {
+                        html += renderUserBlock(user);
+                    });
+                } else {
+                    html += `<div class="p-4 text-sm text-gray-500 text-center">No activity found.</div>`;
+                }
+                html += `</div>`;
+
+                container.innerHTML = html;
+            }
+        })
+        .catch(console.error);
+}
+
 // Ensure default dates (e.g. today)
 document.addEventListener("DOMContentLoaded", () => {
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('start_date').value = today;
-    document.getElementById('end_date').value = today;
+    const today = new Date();
+    const pastWeek = new Date(today);
+    pastWeek.setDate(pastWeek.getDate() - 7);
+    
+    const todayStr = today.toISOString().split('T')[0];
+    const pastWeekStr = pastWeek.toISOString().split('T')[0];
+
+    document.getElementById('start_date').value = todayStr;
+    document.getElementById('end_date').value = todayStr;
+    
+    document.getElementById('es_start_date').value = pastWeekStr;
+    document.getElementById('es_end_date').value = todayStr;
+
     fetchHistory();
+    fetchEventShiftActivity();
 });
 
 // The touch table updates every 7s

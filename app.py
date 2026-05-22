@@ -53,6 +53,7 @@ from apps.client_communication_summary.views import router as client_communicati
 from apps.employee_available_shift_history.views import router as employee_available_shift_history_router
 from apps.admin_portal.views import router as admin_portal_router
 from apps.email_review.views import router as email_review_router
+from apps.email_explorer.views import router as email_explorer_router
 from apps.email_count.views import router as email_count_router
 from apps.position_requests.views import router as position_requests_router
 from apps.flag_audit.views import router as flag_audit_router
@@ -466,6 +467,11 @@ app.include_router(
     admin_portal_router,
     prefix="/admin",
     tags=["Admin Portal"],
+)
+app.include_router(
+    email_explorer_router,
+    prefix="/email-explorer",
+    tags=["Email Explorer"],
 )
 app.include_router(
     email_review_router,

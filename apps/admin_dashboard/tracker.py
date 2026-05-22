@@ -140,3 +140,79 @@ def get_admin_history(start_date: str, end_date: str):
         
     return res
 
+def get_staffing_activity(start_date: str, end_date: str):
+    """
+    Retrieves activity counts for predefined Staffing Managers and Staffing Coordinators.
+    Counts Events and Shifts from history_entry, and Publications from the publishing table.
+    """
+    engine = _engine()
+    
+    start_timestamp = f"{start_date} 00:00:00"
+    end_timestamp = f"{end_date} 23:59:59"
+    
+    managers = [1803, 36528, 36956]
+    coordinators = [1804, 14989, 21151, 21152, 25929]
+    all_users = managers + coordinators
+    
+    user_stats = {uid: {
+        "user_id": uid, 
+        "name": f"User {uid}", 
+        "role": "Manager" if uid in managers else "Coordinator", 
+        "total_records": 0,
+        "events": 0, 
+        "shifts": 0, 
+        "publications": 0
+    } for uid in all_users}
+    
+    try:
+        with engine.connect() as conn:
+            # 1. Fetch User names
+            u_query = text(f"SELECT id, first_name, last_name FROM user WHERE id IN ({','.join(map(str, all_users))})")
+            for row in conn.execute(u_query).fetchall():
+                user_stats[row.id]["name"] = f"{row.first_name or ''} {row.last_name or ''}".strip() or f"User {row.id}"
+            
+            # 2. Fetch Event and Shift counts from history_entry
+            h_query = text(f'''
+                SELECT created_by, model, COUNT(id) as count
+                FROM history_entry
+                WHERE created_by IN ({','.join(map(str, all_users))})
+                  AND model IN ('Event', 'Shift', 'ShiftPosition', 'ShiftEmployee')
+                  AND created_at >= :start_date AND created_at <= :end_date
+                GROUP BY created_by, model
+            ''')
+            h_results = conn.execute(h_query, {"start_date": start_timestamp, "end_date": end_timestamp}).fetchall()
+            
+            for row in h_results:
+                if row.created_by in user_stats:
+                    if row.model == 'Event':
+                        user_stats[row.created_by]["events"] += row.count
+                        user_stats[row.created_by]["total_records"] += row.count
+                    else:
+                        user_stats[row.created_by]["shifts"] += row.count
+                        user_stats[row.created_by]["total_records"] += row.count
+            
+            # 3. Fetch Publications
+            p_query = text(f'''
+                SELECT created_by, COUNT(id) as count
+                FROM publishing
+                WHERE created_by IN ({','.join(map(str, all_users))})
+                  AND created_at >= :start_date AND created_at <= :end_date
+                GROUP BY created_by
+            ''')
+            p_results = conn.execute(p_query, {"start_date": start_timestamp, "end_date": end_timestamp}).fetchall()
+            
+            for row in p_results:
+                if row.created_by in user_stats:
+                    user_stats[row.created_by]["publications"] += row.count
+                    user_stats[row.created_by]["total_records"] += row.count
+                    
+    except Exception as e:
+        print(f"Error in get_staffing_activity: {e}")
+        
+    managers_list = [u for u in user_stats.values() if u["role"] == "Manager"]
+    coordinators_list = [u for u in user_stats.values() if u["role"] == "Coordinator"]
+    
+    managers_list.sort(key=lambda x: x["total_records"], reverse=True)
+    coordinators_list.sort(key=lambda x: x["total_records"], reverse=True)
+    
+    return {"managers": managers_list, "coordinators": coordinators_list}
