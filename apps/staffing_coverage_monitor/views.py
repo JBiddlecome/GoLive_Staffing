@@ -27,6 +27,8 @@ def _resolve_data_dir() -> Path:
 _HISTORY_DB = _resolve_data_dir() / "staffing_coverage_history.db"
 _HISTORY_DB.parent.mkdir(parents=True, exist_ok=True)
 
+_history_table_ensured = False
+
 def _ensure_history_table(connection) -> None:
     global _history_table_ensured
     if not _history_table_ensured:

@@ -117,7 +117,7 @@ async def get_prior_month_data(client_id: int):
                 LEFT JOIN dnr d ON t.employee_id = d.employee_id AND d.client_id = :client_id
                 WHERE e.client_id = :client_id
                   AND e.date BETWEEN :start_date AND :end_date
-                  AND t.employee_worked = 'WORKED'
+                  AND t.employee_worked IN ('WORKED', 'SENTHOME')
                   AND d.employee_id IS NULL
                 GROUP BY p.description
             """)
@@ -150,7 +150,7 @@ async def get_prior_month_data(client_id: int):
                 LEFT JOIN dnr d ON t.employee_id = d.employee_id AND d.client_id = :client_id
                 WHERE e.client_id = :client_id
                   AND e.date BETWEEN :start_date AND :end_date
-                  AND t.employee_worked = 'WORKED'
+                  AND t.employee_worked IN ('WORKED', 'SENTHOME')
                   AND d.employee_id IS NULL
                 ORDER BY emp.first_name, emp.last_name
             """)
@@ -186,15 +186,28 @@ async def get_prior_month_data(client_id: int):
             # 5. Fill Rates (>24h vs <24h)
             sql_fill_rates = text("""
                 SELECT 
-                    CASE WHEN TIMESTAMPDIFF(HOUR, sp.created_at, s.start) > 24 THEN 'over_24h' ELSE 'under_24h' END as timing_group,
-                    SUM(sp.count) as total_needed,
-                    SUM(sp.filled) as total_filled
-                FROM shift_position sp
-                JOIN shift s ON sp.shift_id = s.shift_id
-                JOIN event e ON s.event_id = e.event_id
-                WHERE e.client_id = :client_id
-                  AND e.date BETWEEN :start_date AND :end_date
-                  AND sp.deleted_at IS NULL
+                    timing_group,
+                    SUM(needed) as total_needed,
+                    SUM(LEAST(needed, actual_filled)) as total_filled
+                FROM (
+                    SELECT 
+                        CASE WHEN TIMESTAMPDIFF(HOUR, sp.created_at, s.start) > 24 THEN 'over_24h' ELSE 'under_24h' END as timing_group,
+                        sp.count as needed,
+                        (
+                            SELECT COUNT(*) 
+                            FROM shift_employee se 
+                            WHERE se.shift_position_id = sp.shift_position_id 
+                              AND se.deleted_at IS NULL 
+                              AND se.cancel_reason = 0 
+                              AND se.confirmed = 1
+                        ) as actual_filled
+                    FROM shift_position sp
+                    JOIN shift s ON sp.shift_id = s.shift_id
+                    JOIN event e ON s.event_id = e.event_id
+                    WHERE e.client_id = :client_id
+                      AND e.date BETWEEN :start_date AND :end_date
+                      AND sp.deleted_at IS NULL
+                ) sub
                 GROUP BY timing_group
             """)
             fill_df = pd.read_sql(sql_fill_rates, conn, params={
