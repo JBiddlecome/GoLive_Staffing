@@ -10,7 +10,7 @@ from apps.client_profile_changes.views import _engine
 # ---------------------------------------------------------------------------
 # Persistent state file — use Render persistent disk when available
 # ---------------------------------------------------------------------------
-_RENDER_DATA_DIR = Path("/opt/render/project/src/data")
+_RENDER_DATA_DIR = Path("/var/data")
 _LOCAL_STATE_PATH = Path("apps/client_profile_changes/cpc_state.json")
 
 if any(os.getenv(v) for v in ("RENDER", "RENDER_SERVICE_ID", "RENDER_EXTERNAL_URL")):

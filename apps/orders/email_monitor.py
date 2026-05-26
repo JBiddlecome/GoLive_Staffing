@@ -17,7 +17,7 @@ def _resolve_data_dir() -> Path:
     if Path("/var/data").exists():
         return Path("/var/data")
     if any(os.getenv(e) for e in ("RENDER", "RENDER_SERVICE_ID")):
-        return Path("/opt/render/project/src/data")
+        return Path("/var/data")
     return Path("data")
 
 _STATE_FILE = _resolve_data_dir() / "orders_inbox.json"
