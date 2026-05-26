@@ -24,7 +24,7 @@ def _resolve_data_dir() -> Path:
     if Path("/var/data").exists():
         return Path("/var/data")
     if any(os.getenv(e) for e in ("RENDER", "RENDER_SERVICE_ID")):
-        return Path("/opt/render/project/src/data")
+        return Path("/var/data")
     return Path("data")
 
 _completed_shifts_file = _resolve_data_dir() / "msp_completed_shifts.json"

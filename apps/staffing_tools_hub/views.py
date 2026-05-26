@@ -297,7 +297,7 @@ def _get_client_drop_off_summary(is_staffing_manager: bool, manager_name: str | 
             if Path("/var/data").exists():
                 return Path("/var/data")
             if any(os.getenv(e) for e in ("RENDER", "RENDER_SERVICE_ID")):
-                return Path("/opt/render/project/src/data")
+                return Path("/var/data")
             return Path("data")
 
         data_dir = _resolve_data_dir()
