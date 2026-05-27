@@ -42,7 +42,7 @@ CONCIERGE_COL_CANDIDATES = [
 ]
 TARGET_POSITIONS = ["Cook 2", "Server 2", "Dishwasher"]
 
-DATA_FILE = Path("Employee List Data.xlsx")
+DATA_SOURCE_NAME = "Live Database"
 ACTIVE_STAFF_WORKBOOK = "Sales and Staffing Charts.xlsx"
 ACTIVE_STAFF_SHEET = "Active Staff"
 ACTIVE_STAFF_COL_CANDIDATES = {
@@ -100,7 +100,7 @@ async def _render_page(request: Request, week_ending: str | None) -> HTMLRespons
 
     context = _build_context(
         request=request,
-        filename=DATA_FILE.name,
+        filename=DATA_SOURCE_NAME,
         sundays=sundays,
         selected_sunday=selected_sunday,
         metrics=metrics,
@@ -229,23 +229,42 @@ def _error_response(request: Request, message: str) -> HTMLResponse:
     context = {
         "request": request,
         "rm_error": message,
-        "rm_data_source": DATA_FILE.name,
+        "rm_data_source": DATA_SOURCE_NAME,
     }
     return templates.TemplateResponse("apps/recruiting_metrics.html", context, status_code=400)
 
 
 def _load_default_dataframe() -> pd.DataFrame:
-    if not DATA_FILE.exists():
-        raise ValueError(
-            "The data file 'Employee List Data.xlsx' could not be found in the application directory."
-        )
-
+    engine = _engine()
     try:
-        file_bytes = DATA_FILE.read_bytes()
-    except OSError as exc:  # pragma: no cover - filesystem errors
-        raise ValueError(f"Could not read data file: {exc}") from exc
-
-    return _load_dataframe(file_bytes, DATA_FILE.name)
+        sql = text(
+            """
+            SELECT
+                e.start_date AS `Start Date`,
+                e.start_date2 AS `Rehire Date`,
+                c.name AS `County of Residence`,
+                e.concierge_date AS `Concierge Date`,
+                pos_agg.positions AS `Positions`
+            FROM employee e
+            LEFT JOIN county c ON e.county_id = c.id
+            LEFT JOIN (
+                SELECT ep.employee_id, GROUP_CONCAT(DISTINCT p.description ORDER BY p.description SEPARATOR ', ') as positions
+                FROM employee_position ep
+                JOIN position p ON ep.position_id = p.position_id
+                WHERE ep.status = 'ACTIVE' AND ep.eligible = 1
+                GROUP BY ep.employee_id
+            ) pos_agg ON e.employee_id = pos_agg.employee_id
+            WHERE (e.payroll_id IS NULL OR e.payroll_id NOT LIKE '%DELETED%')
+              AND e.status != 'DELETED'
+            """
+        )
+        with engine.connect() as conn:
+            df = pd.read_sql(sql, conn)
+        return df
+    except Exception as exc:
+        raise ValueError(f"Could not load employee data from database: {exc}") from exc
+    finally:
+        engine.dispose()
 
 
 def _load_dataframe(file_bytes: bytes, filename: str) -> pd.DataFrame:
