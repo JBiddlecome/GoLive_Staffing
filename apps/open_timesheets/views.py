@@ -65,6 +65,7 @@ async def get_open_timesheets_data(
                 CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
                 e.mobile AS employee_phone,
                 ev.event_id,
+                ev.timeclock AS timeclock,
                 s.start AS shift_start,
                 t.employee_start,
                 t.employee_end,
@@ -83,7 +84,7 @@ async def get_open_timesheets_data(
             WHERE se.cancel_reason = 0 
               AND se.deleted_at IS NULL
               AND ev.deleted_at IS NULL
-              AND ev.timeclock IN ('EMPLOYEE_CODE', 'DISABLED')
+              AND ev.timeclock IN ('EMPLOYEE_CODE', 'DISABLED', 'ATLAS', 'NOWSTA', 'EMPLOYEE')
               AND (
                   (t.employee_start IS NULL OR t.employee_end IS NULL)
                   OR (

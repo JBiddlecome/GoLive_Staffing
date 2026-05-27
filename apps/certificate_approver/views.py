@@ -253,15 +253,27 @@ async def analyze_certificate_ai(cert_url: str, cert_type_id: int, cert_type_nam
         # This allows us to lower the resolution and save on AI API tokens
         is_pdf = cert_url.lower().split('?')[0].endswith('.pdf')
         file_doc = None
+        pdf_text = ""
         try:
             res = requests.get(cert_url)
             if res.status_code == 200:
                 file_doc = fitz.open(stream=res.content, filetype="pdf" if is_pdf else None)
+                if is_pdf and file_doc is not None:
+                    pages_text = []
+                    for page_num, page in enumerate(file_doc):
+                        page_text = page.get_text()
+                        if page_text.strip():
+                            pages_text.append(f"--- Page {page_num + 1} Text ---\n{page_text.strip()}")
+                    if pages_text:
+                        pdf_text = "\n\n".join(pages_text)
         except Exception as e:
-            print("Failed to pre-load user submission:", e)
+            print("Failed to pre-load user submission or extract text:", e)
 
         if is_pdf and file_doc is not None:
-            file_format_line = f"Original File Format: PDF ({len(file_doc)} pages — rendered below as images for AI review)"
+            if cert_type_id == 54 and pdf_text:
+                file_format_line = f"Original File Format: PDF ({len(file_doc)} pages — text layer successfully extracted; image rendering skipped for verification)"
+            else:
+                file_format_line = f"Original File Format: PDF ({len(file_doc)} pages — rendered below as images for AI review)"
         elif is_pdf:
             file_format_line = "Original File Format: PDF (page count unavailable — rendering failed)"
         else:
@@ -291,16 +303,21 @@ Please verify the attached pages (The User Submission) according to the rules fo
             {"type": "text", "text": "--- START OF USER SUBMISSION ---"}
         ]
 
-        if file_doc is not None:
-            for page_num, page in enumerate(file_doc):
-                pix = page.get_pixmap(dpi=100)
-                b64 = base64.b64encode(pix.tobytes("png")).decode('utf-8')
-                if is_pdf:
-                    content.append({"type": "text", "text": f"Page {page_num + 1} of {len(file_doc)}:"})
-                content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}", "detail": "auto"}})
+        if cert_type_id == 54 and pdf_text:
+            content.append({"type": "text", "text": f"Extracted Text Layer from PDF:\n\n{pdf_text}"})
         else:
-            # Fallback if fitz failed
-            content.append({"type": "image_url", "image_url": {"url": cert_url, "detail": "auto"}})
+            if pdf_text:
+                content.append({"type": "text", "text": f"Extracted Text Layer from PDF (for OCR reference):\n\n{pdf_text}\n\n---"})
+            if file_doc is not None:
+                for page_num, page in enumerate(file_doc):
+                    pix = page.get_pixmap(dpi=100)
+                    b64 = base64.b64encode(pix.tobytes("png")).decode('utf-8')
+                    if is_pdf:
+                        content.append({"type": "text", "text": f"Page {page_num + 1} of {len(file_doc)}:"})
+                    content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}", "detail": "auto"}})
+            else:
+                # Fallback if fitz failed
+                content.append({"type": "image_url", "image_url": {"url": cert_url, "detail": "auto"}})
             
         content.append({"type": "text", "text": "--- END OF USER SUBMISSION ---"})
         

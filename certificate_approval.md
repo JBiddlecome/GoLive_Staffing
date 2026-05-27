@@ -136,20 +136,19 @@ Each section below corresponds to a `cert_type_id`. Use only the spec that match
 - Title says **"County of San Bernardino"**, **"County of San Diego"**, or **"Riverside County"** — these are county-specific cards and are *not* valid as a general California Food Handler. Decline and name the correct type (IDs 17, 18, or 20) in `notes`.
 - Document is clearly an RBS or non-food-handler course.
 
----
-
 ### ID 10 — RBS Certification (Responsible Beverage Service)
 
 **Validity:** 3 years from certified date.
 
-**Required fields:** `number_required=1`, `issued_at_required=1`, `can_expire=1`, `exact_match_image=0`.
+**Required fields:** `number_required=1`, `issued_at_required=0`, `can_expire=1`, `exact_match_image=0`.
 
 **What to look for:**
-The standard, preferred upload is a **screenshot of the ABC dashboard from `abc.ca.gov`** showing:
-- Header: **"California Department of Alcoholic Beverage Control"**.
-- **Status: Certified**.
+The standard upload is a screenshot of the ABC dashboard from `abc.ca.gov` or a printed certificate from an approved training provider.
+- **Status: Certified** (if viewing the ABC dashboard).
 - A **9-digit Server ID** (must begin with `312`, `313`, `314`, etc. — a 9-digit number is the rule).
-- A **Renewal Date** (this is the expiration).
+- A **Renewal Date** or **Expiration Date** (this is the expiration).
+- **Date Math / Issued Date:** This certificate does not need an issued date on the document; it only has an expiration/renewal date. The issue date is typically 3 years prior to the expiration date. If the issue date is not visible on the document, extract/calculate the issue date as exactly 3 years prior to the expiration/renewal date.
+- **Header:** The document does NOT need to include the header "California Department of Alcoholic Beverage Control".
 
 A printed certificate from a training provider is **only acceptable** if it explicitly states the employee:
 1. Completed the **training course**, AND
@@ -703,7 +702,7 @@ Both must show the cardholder's **name**, a **"Valid from [date] to [date]"** ra
 | ID | Name | Verify # | Expires | Issue Date | Exact Match |
 |----|------|----------|---------|------------|-------------|
 | 3  | California Food Handlers Certificate | – | ✓ | ✓ | – |
-| 10 | RBS Certification | ✓ | ✓ | ✓ | – |
+| 10 | RBS Certification | ✓ | ✓ | – | – |
 | 14 | Covid Vaccination | – | – | ✓ | – |
 | 17 | San Bernardino Food Handlers Certificate | – | ✓ | ✓ | ✓ |
 | 18 | San Diego Food Handlers Certificate | – | ✓ | ✓ | – |
