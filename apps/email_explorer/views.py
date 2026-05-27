@@ -33,22 +33,86 @@ def _get_access_token():
     r.raise_for_status()
     return r.json().get("access_token")
 
+def _get_mailboxes_from_db():
+    from sqlalchemy import create_engine, text
+    from sqlalchemy.engine import URL
+    import os
+
+    reportable_host = os.getenv("REPORTABLE_DB_HOST")
+    host = reportable_host or os.getenv("DB_HOST")
+    name = os.getenv("REPORTABLE_DB_NAME") or os.getenv("DB_NAME", "cstaffing_live")
+    user = os.getenv("DB_USER")
+    password = os.getenv("DB_PASSWORD")
+    reportable_port = os.getenv("REPORTABLE_DB_PORT")
+    port = int(reportable_port or os.getenv("DB_PORT", "3306"))
+
+    if host in {"127.0.0.1", "localhost"} and not reportable_host:
+        tunnel_port = os.getenv("LOCAL_TUNNEL_PORT")
+        rds_host = os.getenv("RDS_HOST")
+        if rds_host and (not tunnel_port or str(port) != tunnel_port):
+            host = rds_host
+
+    if not all([host, user, password]):
+        print("Database credentials not fully configured in environment. Cannot fetch fallback mailboxes.")
+        return []
+
+    try:
+        db_url = URL.create(
+            drivername="mysql+pymysql",
+            username=user,
+            password=password,
+            host=host,
+            port=port,
+            database=name,
+        )
+        engine = create_engine(db_url, pool_pre_ping=True)
+        mailboxes = set()
+        with engine.connect() as conn:
+            # Query refined list of staff and corporate users
+            sql = text("""
+                SELECT DISTINCT email FROM user 
+                WHERE email IS NOT NULL 
+                  AND email LIKE '%@%'
+                  AND email NOT LIKE '[DELETED]%'
+                  AND email NOT LIKE '%[deleted]%'
+                  AND (
+                    `group` IN ('ADMIN', 'OWNER') 
+                    OR email LIKE '%@culinarystaffing.com' 
+                    OR email LIKE '%@culinarymanager.com'
+                  )
+            """)
+            res = conn.execute(sql)
+            for row in res.fetchall():
+                email = row[0]
+                if email:
+                    mailboxes.add(email.strip().lower())
+        engine.dispose()
+        return sorted(list(mailboxes))
+    except Exception as e:
+        print(f"Error querying database for fallback mailboxes: {str(e)}")
+        return []
+
 def _get_all_tenant_mailboxes(access_token):
     headers = {"Authorization": f"Bearer {access_token}", "Accept": "application/json"}
     url = "https://graph.microsoft.com/v1.0/users"
     params = {"$select": "mail,userPrincipalName", "$top": "999", "$filter": "accountEnabled eq true"}
     mailboxes = []
-    while url:
-        res = requests.get(url, headers=headers, params=params)
-        res.raise_for_status()
-        data = res.json()
-        for u in data.get("value", []):
-            addr = u.get("mail") or u.get("userPrincipalName", "")
-            if addr and "@" in addr and not addr.startswith("#"):
-                mailboxes.append(addr.strip())
-        url = data.get("@odata.nextLink")
-        params = None  # nextLink already includes params
+    try:
+        while url:
+            res = requests.get(url, headers=headers, params=params)
+            res.raise_for_status()
+            data = res.json()
+            for u in data.get("value", []):
+                addr = u.get("mail") or u.get("userPrincipalName", "")
+                if addr and "@" in addr and not addr.startswith("#"):
+                    mailboxes.append(addr.strip())
+            url = data.get("@odata.nextLink")
+            params = None  # nextLink already includes params
+    except Exception as e:
+        print(f"Error querying Microsoft Graph users endpoint: {str(e)}. Falling back to database employee and user list.")
+        return _get_mailboxes_from_db()
     return mailboxes
+
 
 def _fetch_all_matching_emails(
     access_token, mailboxes, start_date, end_date,
