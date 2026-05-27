@@ -291,6 +291,20 @@
                         `;
                     }
                     
+                    let timeclockHtml = '';
+                    const tc = item.timeclock;
+                    if (tc === 'EMPLOYEE_CODE') {
+                        timeclockHtml = `<div class="text-xs text-gray-500 mt-1 cursor-help" title="This location requires the employee to clock in with a code in GoLive.">Use GoLive Timesheet with Code</div>`;
+                    } else if (tc === 'ATLAS') {
+                        timeclockHtml = `<div class="text-xs text-gray-500 mt-1 cursor-help" title="This location requires the employee to clock-in on the Atlas system. They cannot clock-in on GoLive">Use Atlas Clock-in</div>`;
+                    } else if (tc === 'DISABLED') {
+                        timeclockHtml = `<div class="text-xs text-gray-500 mt-1 cursor-help" title="This location requires the employee to sign in on a paper timesheet. The employee should also clock-in on GoLive">Use GoLive and Paper Timesheet</div>`;
+                    } else if (tc === 'NOWSTA') {
+                        timeclockHtml = `<div class="text-xs text-gray-500 mt-1 cursor-help" title="This location requires employees to clock in on the Nowsta app likely provided by the event supervisor. They cannot clock in on GoLive">Use Nowsta Clock-in</div>`;
+                    } else if (tc === 'EMPLOYEE') {
+                        timeclockHtml = `<div class="text-xs text-gray-500 mt-1 cursor-help" title="This location requires the employee to clock-in on GoLive without a code.">Use GoLive Timesheet - No Code</div>`;
+                    }
+
                     tr.innerHTML = `
                         <td class="whitespace-nowrap font-medium text-gray-900">${item.event_date}</td>
                         <td class="whitespace-nowrap">
@@ -305,6 +319,7 @@
                             <a href="${item.timesheet_link}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline">
                                 View Timesheet <i class="fa-solid fa-arrow-up-right-from-square text-xs ml-1"></i>
                             </a>
+                            ${timeclockHtml}
                         </td>
                         <td class="whitespace-nowrap">${startDisplay}</td>
                         <td class="whitespace-nowrap">${timeCell(item.employee_end)}</td>
