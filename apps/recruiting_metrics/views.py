@@ -295,21 +295,65 @@ def _resolve_active_staff_workbook() -> Path:
 
 
 def _load_active_staff_trends() -> Tuple[Dict[str, List[Dict[str, object]]], str, str | None]:
+    import sqlite3
+    db_path = "db.sqlite3"
+    empty_payload = {"activeCounts": [], "percentWorking": []}
+    
+    # 1. Load from SQLite table
+    try:
+        conn = sqlite3.connect(db_path)
+        sqlite_df = pd.read_sql("SELECT * FROM active_staff_trends ORDER BY date ASC", conn)
+        conn.close()
+    except Exception as exc:
+        return empty_payload, "active_staff_trends (SQLite)", f"Could not read SQLite database: {exc}"
+        
+    if sqlite_df.empty:
+        return empty_payload, "active_staff_trends (SQLite)", "SQLite active_staff_trends table is empty."
+        
+    sqlite_df['Date'] = pd.to_datetime(sqlite_df['date'])
+    
+    # Rename columns to match expected candidates
+    sqlite_df = sqlite_df.rename(columns={
+        "active_staff": "Active Staff",
+        "worked": "Worked",
+        "percent_working": "Percentage of Active Staff Working"
+    })
+    
+    # 2. Load Excel sheet for Ad Clicks and Clickboarding Applicants
     workbook_path = _resolve_active_staff_workbook()
     source_name = workbook_path.name
-    empty_payload = {"activeCounts": [], "percentWorking": []}
-
-    if not workbook_path.exists():
-        return (
-            empty_payload,
-            source_name,
-            f"Active staff workbook not found: {workbook_path}",
-        )
-
-    try:
-        df = pd.read_excel(workbook_path, sheet_name=ACTIVE_STAFF_SHEET)
-    except Exception as exc:  # pragma: no cover - pandas specific errors
-        return empty_payload, source_name, f"Could not read active staff data: {exc}"
+    
+    excel_df = None
+    excel_error = None
+    if workbook_path.exists():
+        try:
+            # We copy Excel to a temp file to avoid locks
+            import shutil
+            temp_path = "Sales_and_Staffing_Charts_temp_view.xlsx"
+            
+            # Use powershell Copy-Item if on Windows, otherwise shutil
+            if os.name == 'nt':
+                import subprocess
+                subprocess.run(["powershell.exe", "-Command", f"Copy-Item -Path '{workbook_path}' -Destination '{temp_path}'"], check=False)
+            else:
+                shutil.copy(workbook_path, temp_path)
+                
+            raw_excel_df = pd.read_excel(temp_path, sheet_name=ACTIVE_STAFF_SHEET)
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+                
+            raw_excel_df['Date'] = pd.to_datetime(raw_excel_df['Date'])
+            excel_df = raw_excel_df[['Date', 'Ad Clicks', 'Clickboarding Applicants']].copy()
+        except Exception as exc:
+            excel_error = f"Could not read active staff Excel data: {exc}"
+            
+    # 3. Merge data
+    if excel_df is not None and not excel_df.empty:
+        df = pd.merge(sqlite_df, excel_df, on='Date', how='left')
+    else:
+        df = sqlite_df.copy()
+        df['Ad Clicks'] = None
+        df['Clickboarding Applicants'] = None
 
     date_col = _resolve_column(df, ACTIVE_STAFF_COL_CANDIDATES["date"])
     active_col = _resolve_column(df, ACTIVE_STAFF_COL_CANDIDATES["active_staff"])

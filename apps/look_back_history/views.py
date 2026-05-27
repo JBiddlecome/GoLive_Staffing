@@ -29,6 +29,9 @@ CLIENT_STATUS_LABELS = {
     12: "Inactive 365 days",
 }
 
+LOOKBACK_YEARS = 5
+
+
 def _resolve_data_dir() -> Path:
     env_dir = os.getenv("DATA_DIR") or os.getenv("RENDER_DISK_PATH")
     if env_dir:
