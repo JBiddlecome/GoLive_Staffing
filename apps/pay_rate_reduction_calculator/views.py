@@ -10,7 +10,13 @@ from typing import Dict, Optional
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
-EXCEL_PATH = r"C:\Users\jakeb\OneDrive\Documents\GitHub\GoLive_Staffing\shifts_report_april_may_2026.xlsx"
+# Resolve path dynamically to support both local Windows and live Render server
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+EXCEL_PATH = os.path.join(BASE_DIR, "shifts_report_april_may_2026.xlsx")
+
+LOCAL_FALLBACK = r"C:\Users\jakeb\OneDrive\Documents\GitHub\GoLive_Staffing\shifts_report_april_may_2026.xlsx"
+if not os.path.exists(EXCEL_PATH) and os.path.exists(LOCAL_FALLBACK):
+    EXCEL_PATH = LOCAL_FALLBACK
 
 import shutil
 import uuid
