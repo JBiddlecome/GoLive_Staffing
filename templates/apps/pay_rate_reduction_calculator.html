@@ -1,0 +1,445 @@
+{% extends "base.html" %}
+{% block title %}Pay Rate Reduction Calculator — GoLive Staffing{% endblock %}
+
+{% block content %}
+<div class="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+  <!-- Premium Header -->
+  <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-800 via-teal-800 to-cyan-900 text-white shadow-xl">
+    <div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_30%_30%,white,transparent_40%)]"></div>
+    <div class="absolute -right-16 -bottom-16 h-64 w-64 rounded-full bg-white/5 blur-3xl"></div>
+    <div class="relative px-8 py-10 md:px-12 md:py-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div class="space-y-3">
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-300 ring-1 ring-inset ring-emerald-500/30">
+          Sales Analytics Tool
+        </span>
+        <h1 class="brand-serif text-3xl md:text-4xl font-bold leading-tight">Pay Rate Reduction Calculator</h1>
+        <p class="text-emerald-100/80 text-sm md:text-base max-w-2xl">
+          Analyze and simulate potential payroll savings for <strong>April 25 - May 24, 2026</strong>. Simulates a $2 reduction or custom county/position rate schemes while respecting rate locks and minimum wage limits.
+        </p>
+      </div>
+      <div class="flex items-center gap-4 bg-white/10 backdrop-blur rounded-2xl p-4 border border-white/10">
+        <div class="text-right">
+          <p class="text-xs text-emerald-200/75 uppercase tracking-wider font-semibold">Dataset Shifts</p>
+          <p class="text-2xl font-bold text-white">{{ "{:,}".format(total_shifts) }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dynamic KPI Cards Dashboard -->
+  <section class="grid gap-6 md:grid-cols-3">
+    <!-- Baseline Card -->
+    <div class="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div class="absolute top-0 left-0 w-1.5 h-full bg-slate-400"></div>
+      <div class="flex justify-between items-start">
+        <div>
+          <p class="text-xs uppercase tracking-wider font-semibold text-slate-500">Baseline Payroll Paid</p>
+          <h2 class="text-3xl font-extrabold text-slate-800 mt-2" id="kpi-original-paid">
+            ${{ "{:,.2f}".format(total_original_paid) }}
+          </h2>
+          <p class="text-xs text-slate-500 mt-1">Based on actual hours worked &amp; original rates</p>
+        </div>
+        <div class="p-2.5 bg-slate-50 rounded-xl text-slate-600 border border-slate-100">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Less $2 Card -->
+    <div class="relative overflow-hidden rounded-2xl border border-emerald-100 bg-white p-6 shadow-sm">
+      <div class="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
+      <div class="flex justify-between items-start">
+        <div>
+          <p class="text-xs uppercase tracking-wider font-semibold text-emerald-700">Less $2 Rate Payroll</p>
+          <h2 class="text-3xl font-extrabold text-emerald-800 mt-2" id="kpi-less2-paid">
+            ${{ "{:,.2f}".format(total_less_2_paid) }}
+          </h2>
+          <div class="flex items-center gap-1.5 mt-2">
+            <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-100">
+              -${{ "{:,.2f}".format(savings_less_2) }}
+            </span>
+            <span class="text-xs text-emerald-600 font-medium">({{ "{:.1f}".format(savings_pct_less_2) }}% saved)</span>
+          </div>
+        </div>
+        <div class="p-2.5 bg-emerald-50 rounded-xl text-emerald-600 border border-emerald-100">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Rates Card -->
+    <div class="relative overflow-hidden rounded-2xl border border-teal-200 bg-teal-50/10 p-6 shadow-md transition-all duration-300" id="kpi-custom-card">
+      <div class="absolute top-0 left-0 w-1.5 h-full bg-teal-500"></div>
+      <div class="flex justify-between items-start">
+        <div>
+          <p class="text-xs uppercase tracking-wider font-semibold text-teal-700">Customized Rate Payroll</p>
+          <h2 class="text-3xl font-extrabold text-teal-900 mt-2 transition-all duration-300" id="kpi-custom-paid">
+            ${{ "{:,.2f}".format(total_original_paid) }}
+          </h2>
+          <div class="flex items-center gap-1.5 mt-2" id="custom-savings-wrapper">
+            <span class="inline-flex items-center gap-1 rounded-full bg-teal-100/80 px-2.5 py-0.5 text-xs font-bold text-teal-800 border border-teal-200" id="kpi-custom-savings">
+              -$0.00
+            </span>
+            <span class="text-xs text-teal-700 font-bold" id="kpi-custom-pct">(0.0% saved)</span>
+          </div>
+        </div>
+        <div class="p-2.5 bg-teal-100 text-teal-700 rounded-xl border border-teal-200 shadow-sm animate-pulse" id="custom-card-icon">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.003 9.003 0 1020.945 13H11V3.055z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Layout: Main Inputs vs. Floating Panel -->
+  <div class="grid gap-8 lg:grid-cols-4 items-start">
+    
+    <!-- Configurator Section (Counties & Positions) -->
+    <div class="space-y-6 lg:col-span-3">
+      <div class="flex items-center justify-between border-b border-gray-200 pb-4">
+        <div>
+          <h2 class="text-xl font-bold text-gray-800">Customize Rates by County &amp; Position</h2>
+          <p class="text-xs text-gray-500 mt-1">Configure custom target pay rates. Rate locked rows and minimum wage thresholds will be automatically respected.</p>
+        </div>
+        <div class="flex gap-2">
+          <button type="button" onclick="collapseAllCounties()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition">
+            Collapse All
+          </button>
+          <button type="button" onclick="expandAllCounties()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition">
+            Expand All
+          </button>
+        </div>
+      </div>
+
+      <!-- County Cards Collapsible Container -->
+      <div class="space-y-4">
+        {% for county, positions in counties %}
+        <div class="county-card bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden" data-county="{{ county }}">
+          <!-- County Header -->
+          <summary onclick="toggleCounty('{{ county | escape }}')" class="flex items-center justify-between px-6 py-4 cursor-pointer select-none hover:bg-gray-50/50 transition">
+            <div class="flex items-center gap-3">
+              <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 border border-teal-100 text-teal-800 font-bold text-xs">
+                {{ positions | length }}
+              </span>
+              <div>
+                <h3 class="font-bold text-gray-800 text-sm md:text-base">{{ county }}</h3>
+                <p class="text-xs text-gray-500">
+                  {{ "{:,}".format(positions | map(attribute='shifts') | sum) }} total shifts in this county
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="chevron text-gray-400 transform transition-transform duration-200 rotate-90">➤</span>
+            </div>
+          </summary>
+
+          <!-- Collapsible Body -->
+          <div class="county-body border-t border-gray-100 p-6 bg-slate-50/30 space-y-4">
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200 text-left text-xs">
+                <thead>
+                  <tr class="text-gray-500 uppercase tracking-wider font-semibold">
+                    <th class="py-2.5 px-4">Position Title</th>
+                    <th class="py-2.5 px-4 text-center">Shifts</th>
+                    <th class="py-2.5 px-4 text-center">Avg Original Rate</th>
+                    <th class="py-2.5 px-4 text-center">Minimum Wage</th>
+                    <th class="py-2.5 px-4 text-center">Rate Lock Status</th>
+                    <th class="py-2.5 px-4 text-right" style="width: 180px;">Custom Target Rate ($)</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 bg-white rounded-xl shadow-inner">
+                  {% for pos in positions %}
+                  <tr class="hover:bg-teal-50/10 transition">
+                    <!-- Position Title -->
+                    <td class="py-3 px-4 font-semibold text-gray-800">
+                      {{ pos.position }}
+                    </td>
+                    <!-- Shifts -->
+                    <td class="py-3 px-4 text-center text-gray-600 font-medium">
+                      {{ "{:,}".format(pos.shifts) }}
+                    </td>
+                    <!-- Avg Original Rate -->
+                    <td class="py-3 px-4 text-center text-gray-600 font-medium">
+                      ${{ "{:.2f}".format(pos.avg_orig_rate) }}/hr
+                    </td>
+                    <!-- Minimum Wage -->
+                    <td class="py-3 px-4 text-center text-emerald-600 font-semibold">
+                      {% if pos.min_wage == pos.max_min_wage %}
+                        ${{ "{:.2f}".format(pos.min_wage) }}/hr
+                      {% else %}
+                        <span class="cursor-help border-b border-dashed border-emerald-500" title="Varies by shift location/venue in this county between ${{ pos.min_wage }} and ${{ pos.max_min_wage }}.">
+                          ${{ "{:.2f}".format(pos.min_wage) }} - ${{ "{:.2f}".format(pos.max_min_wage) }}/hr
+                        </span>
+                      {% endif %}
+                    </td>
+                    <!-- Locked shifts indicator -->
+                    <td class="py-3 px-4 text-center">
+                      {% if pos.locked_shifts > 0 %}
+                      <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20" title="{{ pos.locked_shifts }} shifts cannot have their rate changed because their Rate Lock column is set to Yes.">
+                        🔒 {{ pos.locked_shifts }} Locked
+                      </span>
+                      {% else %}
+                      <span class="text-gray-400 text-xs">—</span>
+                      {% endif %}
+                    </td>
+                    <!-- Custom input -->
+                    <td class="py-3 px-4 text-right">
+                      {% if pos.locked_shifts == pos.shifts %}
+                      <div class="text-xs text-amber-600 font-semibold pr-3" title="All shifts for this position in this county are locked.">
+                        🔒 fully locked
+                      </div>
+                      <input type="hidden" class="rate-input" data-key="{{ county }}|{{ pos.position }}" value="">
+                      {% else %}
+                      <div class="relative rounded-md shadow-sm inline-block" style="width: 140px;">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5">
+                          <span class="text-gray-400 text-xs font-semibold">$</span>
+                        </div>
+                        <input 
+                          type="number" 
+                          step="0.01" 
+                          min="{{ pos.min_wage }}" 
+                          class="rate-input block w-full rounded-md border-0 py-1.5 pl-6 pr-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-teal-600 text-xs text-right font-semibold" 
+                          placeholder="{{ pos.avg_orig_rate }}"
+                          data-key="{{ county }}|{{ pos.position }}"
+                          data-min="{{ pos.min_wage }}"
+                          onchange="validateInput(this)"
+                          onkeyup="validateInput(this)"
+                        >
+                      </div>
+                      <p class="text-[10px] text-red-500 mt-0.5 hidden text-right font-medium pr-1 error-msg">Below Floor (${{ "{:.2f}".format(pos.min_wage) }})</p>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Floating Sticky Control / Recalculation Panel -->
+    <div class="lg:col-span-1 lg:sticky lg:top-6 space-y-6">
+      <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-md space-y-6">
+        <h3 class="font-bold text-gray-800 text-base border-b border-gray-100 pb-3 flex items-center gap-2">
+          <svg class="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+          </svg>
+          Simulator Controls
+        </h3>
+
+        <!-- Quick Apply Section -->
+        <div class="space-y-3">
+          <label class="block text-xs uppercase tracking-wider font-semibold text-gray-500">Quick Adjustments</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="quickApplyDelta(-1.0)" class="px-2.5 py-2 text-xs font-semibold rounded-lg bg-teal-50 border border-teal-100 text-teal-800 hover:bg-teal-100 transition">
+              -$1.00 / hr
+            </button>
+            <button type="button" onclick="quickApplyDelta(-2.0)" class="px-2.5 py-2 text-xs font-semibold rounded-lg bg-teal-50 border border-teal-100 text-teal-800 hover:bg-teal-100 transition">
+              -$2.00 / hr
+            </button>
+          </div>
+          <button type="button" onclick="quickApplyMinWage()" class="w-full px-2.5 py-2 text-xs font-bold rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-800 hover:bg-emerald-100 transition flex items-center justify-center gap-1">
+            🔽 Drop to Min Wage
+          </button>
+        </div>
+
+        <hr class="border-gray-100">
+
+        <!-- Action Buttons -->
+        <div class="space-y-3">
+          <button 
+            type="button" 
+            onclick="calculateCustomPayroll()" 
+            class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold px-4 py-3 shadow-lg shadow-teal-900/10 transition active:scale-95"
+            id="btn-recalculate"
+          >
+            <span id="btn-text">Recalculate Savings</span>
+            <svg class="h-4 w-4 hidden animate-spin" id="btn-spinner" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89" />
+            </svg>
+          </button>
+          
+          <button type="button" onclick="resetAllInputs()" class="w-full px-4 py-2.5 text-xs font-semibold rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition">
+            Reset Rates
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function toggleCounty(county) {
+    const card = document.querySelector(`.county-card[data-county="${county}"]`);
+    if (!card) return;
+    
+    const body = card.querySelector('.county-body');
+    const chevron = card.querySelector('.chevron');
+    
+    if (body.classList.contains('hidden')) {
+      body.classList.remove('hidden');
+      chevron.classList.add('rotate-90');
+    } else {
+      body.classList.add('hidden');
+      chevron.classList.remove('rotate-90');
+    }
+  }
+
+  function collapseAllCounties() {
+    document.querySelectorAll('.county-card').forEach(card => {
+      card.querySelector('.county-body').classList.add('hidden');
+      card.querySelector('.chevron').classList.remove('rotate-90');
+    });
+  }
+
+  function expandAllCounties() {
+    document.querySelectorAll('.county-card').forEach(card => {
+      card.querySelector('.county-body').classList.remove('hidden');
+      card.querySelector('.chevron').classList.add('rotate-90');
+    });
+  }
+
+  function validateInput(input) {
+    const minVal = parseFloat(input.getAttribute('data-min')) || 0;
+    const row = input.closest('tr');
+    const errorMsg = row.querySelector('.error-msg');
+    
+    if (input.value !== '') {
+      const val = parseFloat(input.value);
+      if (val < minVal) {
+        errorMsg.classList.remove('hidden');
+        input.classList.add('ring-red-500', 'text-red-900');
+        input.classList.remove('ring-gray-300', 'focus:ring-teal-600');
+      } else {
+        errorMsg.classList.add('hidden');
+        input.classList.remove('ring-red-500', 'text-red-900');
+        input.classList.add('ring-gray-300');
+      }
+    } else {
+      errorMsg.classList.add('hidden');
+      input.classList.remove('ring-red-500', 'text-red-900');
+      input.classList.add('ring-gray-300');
+    }
+  }
+
+  function quickApplyDelta(delta) {
+    document.querySelectorAll('.rate-input').forEach(input => {
+      const minVal = parseFloat(input.getAttribute('data-min')) || 0;
+      const placeholderVal = parseFloat(input.getAttribute('placeholder')) || 0;
+      if (placeholderVal > 0) {
+        // Calculate new rate
+        const newVal = placeholderVal + delta;
+        // Cap new rate at Min Wage floor
+        input.value = Math.max(newVal, minVal).toFixed(2);
+        validateInput(input);
+      }
+    });
+  }
+
+  function quickApplyMinWage() {
+    document.querySelectorAll('.rate-input').forEach(input => {
+      const minVal = parseFloat(input.getAttribute('data-min')) || 0;
+      if (minVal > 0) {
+        input.value = minVal.toFixed(2);
+        validateInput(input);
+      }
+    });
+  }
+
+  function resetAllInputs() {
+    document.querySelectorAll('.rate-input').forEach(input => {
+      input.value = '';
+      validateInput(input);
+    });
+    
+    // Reset KPI Card
+    const baselineText = document.getElementById('kpi-original-paid').textContent.trim();
+    document.getElementById('kpi-custom-paid').textContent = baselineText;
+    document.getElementById('kpi-custom-savings').textContent = '-$0.00';
+    document.getElementById('kpi-custom-pct').textContent = '(0.0% saved)';
+    
+    const card = document.getElementById('kpi-custom-card');
+    card.classList.remove('bg-teal-100/50', 'ring-2', 'ring-teal-500');
+  }
+
+  async function calculateCustomPayroll() {
+    const btn = document.getElementById('btn-recalculate');
+    const text = document.getElementById('btn-text');
+    const spinner = document.getElementById('btn-spinner');
+    
+    // UI Loading state
+    btn.disabled = true;
+    text.textContent = 'Calculating...';
+    spinner.classList.remove('hidden');
+    
+    // Compile inputs payload
+    const custom_rates = {};
+    document.querySelectorAll('.rate-input').forEach(input => {
+      const key = input.getAttribute('data-key');
+      const val = input.value.trim();
+      if (val !== '') {
+        custom_rates[key] = parseFloat(val);
+      }
+    });
+    
+    try {
+      const response = await fetch('/pay-rate-reduction-calculator/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ custom_rates })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Formatter function
+        const formatCurrency = (val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
+        
+        // Update top KPIs smoothly
+        document.getElementById('kpi-custom-paid').textContent = formatCurrency(data.total_custom_paid);
+        document.getElementById('kpi-custom-savings').textContent = `-${formatCurrency(data.savings)}`;
+        document.getElementById('kpi-custom-pct').textContent = `(${data.savings_pct.toFixed(1)}% saved)`;
+        
+        // Visual highlights to show successful update
+        const card = document.getElementById('kpi-custom-card');
+        card.classList.add('bg-teal-100/50', 'ring-2', 'ring-teal-500');
+        setTimeout(() => {
+          card.classList.remove('ring-2', 'ring-teal-500');
+        }, 1500);
+      } else {
+        alert(data.message || 'Error occurred during calculations.');
+      }
+    } catch (e) {
+      alert('Network or server error during calculations.');
+    } finally {
+      btn.disabled = false;
+      text.textContent = 'Recalculate Savings';
+      spinner.classList.add('hidden');
+    }
+  }
+
+  // Collapse counties on load to prevent page bloat, expanding the top one
+  document.addEventListener('DOMContentLoaded', () => {
+    collapseAllCounties();
+    
+    // Auto expand the first county
+    const firstCard = document.querySelector('.county-card');
+    if (firstCard) {
+      const county = firstCard.getAttribute('data-county');
+      toggleCounty(county);
+    }
+  });
+</script>
+{% endblock %}

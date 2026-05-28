@@ -76,6 +76,7 @@ from apps.contacts_data import add_contact, load_contacts, remove_contact
 from apps.it_tickets_data import load_tickets, save_ticket, set_ticket_estimate, update_ticket
 from apps.staffing_tools_hub.views import router as staffing_tools_hub_router
 from apps.orders.views import router as orders_router
+from apps.pay_rate_reduction_calculator.views import router as pay_rate_reduction_calculator_router
 
 from contextlib import asynccontextmanager
 import asyncio
@@ -563,6 +564,11 @@ app.include_router(
     tags=["Staffing Tools Hub"],
 )
 app.include_router(orders_router, prefix="/orders", tags=["Orders"])
+app.include_router(
+    pay_rate_reduction_calculator_router,
+    prefix="/pay-rate-reduction-calculator",
+    tags=["Pay Rate Reduction Calculator"]
+)
 
 
 # Redirect /sms_paraphraser to /sms-paraphraser for backward compatibility
