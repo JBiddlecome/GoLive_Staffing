@@ -301,7 +301,7 @@ async def get_dashboard_data(employee_id: int):
             positions_sql = text("""
                 SELECT p.description FROM employee_position ep 
                 JOIN position p ON ep.position_id = p.position_id 
-                WHERE ep.employee_id = :emp_id AND ep.status = 'ACTIVE' AND ep.eligible = 1
+                WHERE ep.employee_id = :emp_id AND (ep.status = 1 OR ep.status = 'ACTIVE') AND ep.eligible = 1
             """)
             pos_df = pd.read_sql(positions_sql, conn, params={"emp_id": employee_id})
             header_data["eligible_positions"] = pos_df["description"].tolist()

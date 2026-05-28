@@ -56,115 +56,200 @@
           </div>
           <span class="text-emerald-600 transition-transform duration-200 group-open:rotate-90">➤</span>
         </summary>
-        <div class="border-t border-emerald-100 bg-emerald-50/40">
-          <ul class="divide-y divide-emerald-100">
-            <li>
-              <a href="/clickboarding-check"
-                class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-white transition">
-                <div>
-                  <p class="font-semibold">Clickboarding Check</p>
-                  <p class="text-sm text-gray-600">Match Clickboarding names to recent employees and flag uncertain
-                    records.</p>
+        <div class="border-t border-emerald-100 bg-emerald-50/40 p-6 space-y-4">
+          <style>
+            /* Ensure nested details sections rotate their chevron smoothly on expansion */
+            details[open] > summary .details-arrow {
+              transform: rotate(90deg);
+            }
+          </style>
+
+          <!-- Onboarding Section -->
+          <details class="group/section rounded-2xl border border-emerald-100/70 bg-white shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md">
+            <summary class="flex items-center justify-between gap-4 px-6 py-4 cursor-pointer hover:bg-emerald-50/30 transition select-none">
+              <div class="flex items-center gap-3">
+                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100/80 shadow-sm text-emerald-700">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  </svg>
                 </div>
-                <span class="text-emerald-600">↗</span>
-              </a>
-            </li>
-            <li>
-              <a href="/concierge-tracker-2" class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-white transition">
-                <div>
-                  <p class="font-semibold">Concierge</p>
-                  <p class="text-sm text-gray-600">Upload employee rosters and track concierge calls, assignments, and
-                    outcomes.</p>
+                <h3 class="font-semibold text-gray-800 tracking-wide text-base">Onboarding</h3>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100/60 shadow-sm">3 apps</span>
+                <span class="text-emerald-600 transition-transform duration-200 details-arrow text-xs group-open/section:rotate-90">➤</span>
+              </div>
+            </summary>
+            <div class="border-t border-emerald-100/50 bg-emerald-50/5">
+              <ul class="divide-y divide-emerald-50/80">
+                <li>
+                  <a href="/concierge-tracker-2" class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-emerald-50/20 transition duration-150">
+                    <div>
+                      <p class="font-semibold text-gray-900 text-sm">Concierge</p>
+                      <p class="text-xs text-gray-600 mt-0.5">Upload employee rosters and track concierge calls, assignments, and outcomes.</p>
+                    </div>
+                    <span class="text-emerald-600 text-sm opacity-60 hover:opacity-100 transition-opacity">↗</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="/interview-questions" class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-emerald-50/20 transition duration-150">
+                    <div>
+                      <p class="font-semibold text-gray-900 text-sm">Interview Questions</p>
+                      <p class="text-xs text-gray-600 mt-0.5">Paste interview transcripts and receive AI-generated JSON feedback.</p>
+                    </div>
+                    <span class="text-emerald-600 text-sm opacity-60 hover:opacity-100 transition-opacity">↗</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="/resume-analyzer" class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-emerald-50/20 transition duration-150">
+                    <div>
+                      <p class="font-semibold text-gray-900 text-sm">Resume Analyzer</p>
+                      <p class="text-xs text-gray-600 mt-0.5">Upload a PDF or image resume for hospitality-focused JSON scoring.</p>
+                    </div>
+                    <span class="text-emerald-600 text-sm opacity-60 hover:opacity-100 transition-opacity">↗</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- Automation Section -->
+          <details class="group/section rounded-2xl border border-emerald-100/70 bg-white shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md">
+            <summary class="flex items-center justify-between gap-4 px-6 py-4 cursor-pointer hover:bg-emerald-50/30 transition select-none">
+              <div class="flex items-center gap-3">
+                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100/80 shadow-sm text-emerald-700">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
                 </div>
-                <span class="text-emerald-600">↗</span>
-              </a>
-            </li>
-            <li>
-              <a href="/interview-questions"
-                class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-white transition">
-                <div>
-                  <p class="font-semibold">Interview Questions</p>
-                  <p class="text-sm text-gray-600">Paste interview transcripts and receive AI-generated JSON feedback.
-                  </p>
+                <h3 class="font-semibold text-gray-800 tracking-wide text-base">Automation</h3>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100/60 shadow-sm">4 apps</span>
+                <span class="text-emerald-600 transition-transform duration-200 details-arrow text-xs group-open/section:rotate-90">➤</span>
+              </div>
+            </summary>
+            <div class="border-t border-emerald-100/50 bg-emerald-50/5">
+              <ul class="divide-y divide-emerald-50/80">
+                <li>
+                  <a href="/new-employee-position-approver" class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-emerald-50/20 transition duration-150">
+                    <div>
+                      <p class="font-semibold text-gray-900 text-sm">New Employee Position Approver</p>
+                      <p class="text-xs text-gray-600 mt-0.5">Review AI-recommended positions for newly active employees with resumes.</p>
+                    </div>
+                    <span class="text-emerald-600 text-sm opacity-60 hover:opacity-100 transition-opacity">↗</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="/profile-picture-approval" class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-emerald-50/20 transition duration-150">
+                    <div>
+                      <p class="font-semibold text-gray-900 text-sm">Profile Picture Approval</p>
+                      <p class="text-xs text-gray-600 mt-0.5">Approve or deny pending employee profile pictures with AI pre-screening.</p>
+                    </div>
+                    <span class="text-emerald-600 text-sm opacity-60 hover:opacity-100 transition-opacity">↗</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="/position-requests" class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-emerald-50/20 transition duration-150">
+                    <div>
+                      <p class="font-semibold text-gray-900 text-sm">Position Requests</p>
+                      <p class="text-xs text-gray-600 mt-0.5">Review employees applying for open positions via the Get Hired inbox.</p>
+                    </div>
+                    <span class="text-emerald-600 text-sm opacity-60 hover:opacity-100 transition-opacity">↗</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="/certificate-approver" class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-emerald-50/20 transition duration-150">
+                    <div>
+                      <p class="font-semibold text-gray-900 text-sm">Certificate Approver</p>
+                      <p class="text-xs text-gray-600 mt-0.5">Review pending employee certificates. Use AI to verify against SOP guidelines, then manually approve or deny.</p>
+                    </div>
+                    <span class="text-emerald-600 text-sm opacity-60 hover:opacity-100 transition-opacity">↗</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- Audits Section -->
+          <details class="group/section rounded-2xl border border-emerald-100/70 bg-white shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md">
+            <summary class="flex items-center justify-between gap-4 px-6 py-4 cursor-pointer hover:bg-emerald-50/30 transition select-none">
+              <div class="flex items-center gap-3">
+                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100/80 shadow-sm text-emerald-700">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
                 </div>
-                <span class="text-emerald-600">↗</span>
-              </a>
-            </li>
-            <li>
-              <a href="/resume-analyzer"
-                class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-white transition">
-                <div>
-                  <p class="font-semibold">Resume Analyzer</p>
-                  <p class="text-sm text-gray-600">Upload a PDF or image resume for hospitality-focused JSON scoring.
-                  </p>
+                <h3 class="font-semibold text-gray-800 tracking-wide text-base">Audits</h3>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100/60 shadow-sm">2 apps</span>
+                <span class="text-emerald-600 transition-transform duration-200 details-arrow text-xs group-open/section:rotate-90">➤</span>
+              </div>
+            </summary>
+            <div class="border-t border-emerald-100/50 bg-emerald-50/5">
+              <ul class="divide-y divide-emerald-50/80">
+                <li>
+                  <a href="/clickboarding-check" class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-emerald-50/20 transition duration-150">
+                    <div>
+                      <p class="font-semibold text-gray-900 text-sm">Clickboarding Check</p>
+                      <p class="text-xs text-gray-600 mt-0.5">Match Clickboarding names to recent employees and flag uncertain records.</p>
+                    </div>
+                    <span class="text-emerald-600 text-sm opacity-60 hover:opacity-100 transition-opacity">↗</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="/employee-phone-county-audit" class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-emerald-50/20 transition duration-150">
+                    <div>
+                      <p class="font-semibold text-gray-900 text-sm">Employee Phone &amp; County Audit</p>
+                      <p class="text-xs text-gray-600 mt-0.5">Find Active/Inactive employees with mobile numbers starting with 1 or Alabama in their county.</p>
+                    </div>
+                    <span class="text-emerald-600 text-sm opacity-60 hover:opacity-100 transition-opacity">↗</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- Reports Section -->
+          <details class="group/section rounded-2xl border border-emerald-100/70 bg-white shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md">
+            <summary class="flex items-center justify-between gap-4 px-6 py-4 cursor-pointer hover:bg-emerald-50/30 transition select-none">
+              <div class="flex items-center gap-3">
+                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100/80 shadow-sm text-emerald-700">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
                 </div>
-                <span class="text-emerald-600">↗</span>
-              </a>
-            </li>
-            <li>
-              <a href="/new-employee-position-approver"
-                class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-white transition">
-                <div>
-                  <p class="font-semibold">New Employee Position Approver</p>
-                  <p class="text-sm text-gray-600">Review AI-recommended positions for newly active employees with resumes.</p>
-                </div>
-                <span class="text-emerald-600">↗</span>
-              </a>
-            </li>
-            <li>
-              <a href="/profile-picture-approval"
-                class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-white transition">
-                <div>
-                  <p class="font-semibold">Profile Picture Approval</p>
-                  <p class="text-sm text-gray-600">Approve or deny pending employee profile pictures with AI pre-screening.
-                  </p>
-                </div>
-                <span class="text-emerald-600">↗</span>
-              </a>
-            </li>
-            <li>
-              <a href="/text-blast-filter"
-                class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-white transition">
-                <div>
-                  <p class="font-semibold">Text Blast Filter</p>
-                  <p class="text-sm text-gray-600">Clean/segment contacts and filter employee rosters before outbound
-                    SMS campaigns.</p>
-                </div>
-                <span class="text-emerald-600">↗</span>
-              </a>
-            </li>
-            <li>
-              <a href="/employee-phone-county-audit"
-                class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-white transition">
-                <div>
-                  <p class="font-semibold">Employee Phone &amp; County Audit</p>
-                  <p class="text-sm text-gray-600">Find Active/Inactive employees with mobile numbers starting with 1 or
-                    Alabama in their county.</p>
-                </div>
-                <span class="text-emerald-600">↗</span>
-              </a>
-            </li>
-            <li>
-              <a href="/position-requests"
-                class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-white transition">
-                <div>
-                  <p class="font-semibold">Position Requests</p>
-                  <p class="text-sm text-gray-600">Review employees applying for open positions via the Get Hired inbox.</p>
-                </div>
-                <span class="text-emerald-600">↗</span>
-              </a>
-            </li>
-            <li>
-              <a href="/staffing-coverage-monitor"
-                class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-white transition">
-                <div>
-                  <p class="font-semibold">Staffing Coverage Monitor</p>
-                  <p class="text-sm text-gray-600">Analyze open shifts vs. eligible active employees by county.</p>
-                </div>
-                <span class="text-emerald-600">↗</span>
-              </a>
-            </li>
-          </ul>
+                <h3 class="font-semibold text-gray-800 tracking-wide text-base">Reports</h3>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100/60 shadow-sm">2 apps</span>
+                <span class="text-emerald-600 transition-transform duration-200 details-arrow text-xs group-open/section:rotate-90">➤</span>
+              </div>
+            </summary>
+            <div class="border-t border-emerald-100/50 bg-emerald-50/5">
+              <ul class="divide-y divide-emerald-50/80">
+                <li>
+                  <a href="/text-blast-filter" class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-emerald-50/20 transition duration-150">
+                    <div>
+                      <p class="font-semibold text-gray-900 text-sm">Text Blast Filter</p>
+                      <p class="text-xs text-gray-600 mt-0.5">Clean/segment contacts and filter employee rosters before outbound SMS campaigns.</p>
+                    </div>
+                    <span class="text-emerald-600 text-sm opacity-60 hover:opacity-100 transition-opacity">↗</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="/staffing-coverage-monitor" class="flex items-start justify-between gap-3 px-6 py-4 hover:bg-emerald-50/20 transition duration-150">
+                    <div>
+                      <p class="font-semibold text-gray-900 text-sm">Staffing Coverage Monitor</p>
+                      <p class="text-xs text-gray-600 mt-0.5">Analyze open shifts vs. eligible active employees by county.</p>
+                    </div>
+                    <span class="text-emerald-600 text-sm opacity-60 hover:opacity-100 transition-opacity">↗</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </details>
         </div>
       </details>
 

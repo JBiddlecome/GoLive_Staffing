@@ -28,7 +28,7 @@ LEFT JOIN (
     SELECT ep.employee_id, GROUP_CONCAT(DISTINCT p.description ORDER BY p.description SEPARATOR ', ') as positions
     FROM employee_position ep
     JOIN position p ON ep.position_id = p.position_id
-    WHERE ep.status = 'ACTIVE' AND ep.eligible = 1
+    WHERE (ep.status = 1 OR ep.status = 'ACTIVE') AND ep.eligible = 1
     GROUP BY ep.employee_id
 ) pos_agg ON e.employee_id = pos_agg.employee_id
 WHERE (e.payroll_id IS NULL OR e.payroll_id NOT LIKE '%DELETED%')
