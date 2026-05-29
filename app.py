@@ -77,6 +77,7 @@ from apps.it_tickets_data import load_tickets, save_ticket, set_ticket_estimate,
 from apps.staffing_tools_hub.views import router as staffing_tools_hub_router
 from apps.orders.views import router as orders_router
 from apps.pay_rate_reduction_calculator.views import router as pay_rate_reduction_calculator_router
+from apps.sick_pay_requests.views import router as sick_pay_requests_router
 
 from contextlib import asynccontextmanager
 import asyncio
@@ -568,6 +569,11 @@ app.include_router(
     pay_rate_reduction_calculator_router,
     prefix="/pay-rate-reduction-calculator",
     tags=["Pay Rate Reduction Calculator"]
+)
+app.include_router(
+    sick_pay_requests_router,
+    prefix="/sick-pay-requests",
+    tags=["Sick Pay Requests"]
 )
 
 
