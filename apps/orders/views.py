@@ -40,6 +40,8 @@ async def extract_order(request: Request):
     data = await request.json()
     text = data.get('text', '')
     client_id = data.get('client_id')
+    reference_date = data.get('reference_date')
+    thread_mode = data.get('thread_mode', 'latest')
     
     # If client_id is not explicitly provided, try to detect from text
     if not client_id:
@@ -59,7 +61,7 @@ async def extract_order(request: Request):
     if not client_context:
         return JSONResponse({"status": "error", "message": "Failed to build knowledge base for client."}, status_code=500)
     
-    extracted_data = await ai_extract_order(text, client_context)
+    extracted_data = await ai_extract_order(text, client_context, reference_date=reference_date, thread_mode=thread_mode)
     
     if not extracted_data.get('basic_information'):
         return JSONResponse({"status": "error", "message": "Failed to extract order data."}, status_code=500)
@@ -130,6 +132,52 @@ async def search_employees(request: Request, q: str = '', date: str = ''):
         })
         
     return JSONResponse({"status": "success", "data": results})
+
+@router.get("/positions")
+async def get_positions(request: Request, client_id: int = None, venue_name: str = None):
+    engine = _engine()
+    positions = []
+    
+    if client_id and venue_name:
+        # Get positions configured for this client/venue
+        sql = text("""
+            SELECT DISTINCT p.description 
+            FROM position p
+            JOIN client_position cp ON cp.position_id = p.position_id
+            LEFT JOIN venue_position vp ON vp.position_id = p.position_id
+            LEFT JOIN venue v ON vp.venue_id = v.venue_id AND v.name = :venue_name AND v.deleted_at IS NULL
+            WHERE cp.client_id = :client_id 
+              AND (vp.venue_position_id IS NOT NULL OR v.venue_id IS NULL)
+            ORDER BY p.description ASC
+        """)
+        try:
+            with engine.connect() as conn:
+                rows = conn.execute(sql, {"client_id": client_id, "venue_name": venue_name}).fetchall()
+                positions = [r.description for r in rows]
+        except Exception as e:
+            print(f"Error fetching configured positions: {e}")
+            
+    if not positions:
+        # Fallback to typical positions from history
+        if client_id:
+            from .knowledge_base import build_client_kb
+            kb = build_client_kb(client_id)
+            if kb and kb.get("available_positions"):
+                positions = [p["name"] for p in kb["available_positions"]]
+                
+    if not positions:
+        # Fallback to all active/non-disabled positions in the database
+        sql = text("""
+            SELECT description FROM position ORDER BY description ASC
+        """)
+        try:
+            with engine.connect() as conn:
+                rows = conn.execute(sql).fetchall()
+                positions = [r.description for r in rows]
+        except Exception as e:
+            print(f"Error fetching fallback positions: {e}")
+            
+    return JSONResponse({"status": "success", "data": positions})
 
 @router.get("/clients")
 async def get_clients(request: Request):

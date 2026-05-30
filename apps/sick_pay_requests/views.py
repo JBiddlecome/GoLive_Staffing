@@ -119,6 +119,7 @@ async def get_sick_pay_requests_data(
             eow.created_at,
             eow.non_work_hours,
             eow.employee_id,
+            eow.notes,
             e.payroll_id,
             e.first_name,
             e.last_name
@@ -147,7 +148,7 @@ async def get_sick_pay_requests_data(
 
                 # Get persistent data from JSON file
                 saved_state = persistence.get(ticket_id_str, {})
-                item["note"] = saved_state.get("note", "")
+                item["note"] = item.get("notes") or saved_state.get("note", "")
                 item["completed"] = saved_state.get("completed", False)
                 item["completed_at"] = saved_state.get("completed_at", "")
 
@@ -200,6 +201,18 @@ async def save_ticket_state(payload: SavePayload):
         }
 
         _save_persistence(persistence)
+
+        # Update notes in the database table employee_other_work
+        engine = _engine()
+        try:
+            with engine.begin() as connection:
+                connection.execute(
+                    text("UPDATE employee_other_work SET notes = :notes WHERE id = :id"),
+                    {"notes": payload.note, "id": payload.id}
+                )
+        finally:
+            engine.dispose()
+
         return {"status": "success", "completed_at": completed_at}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

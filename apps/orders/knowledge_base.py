@@ -5,64 +5,115 @@ import re
 
 def detect_client_from_text(order_text: str) -> int:
     """
-    Extracts emails from the text and attempts to find a matching active client.
-    First tries an exact email match, then falls back to a domain match.
+    Attempts to find a matching client for the given text.
+    1. Extracts emails from the text and tries exact email then domain matches.
+    2. Scans the text for active client names (fuzzy word match).
+    3. Scans the text for active venue names (fuzzy word match) and connects to their client.
     Returns the client_id if found, otherwise None.
     """
-    emails = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', order_text)
-    if not emails:
+    if not order_text:
         return None
         
     engine = _engine()
-    with engine.connect() as conn:
-        # First pass: Exact email match
-        for email in emails:
-            # We want to make sure the client is active (status = 1)
-            # and not deleted. The GoLive DB has `client_contact` linked to `client`.
+    
+    # 1. Email-based detection
+    emails = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', order_text)
+    if emails:
+        with engine.connect() as conn:
+            # First pass: Exact email match
+            for email in emails:
+                sql = text("""
+                    SELECT c.client_id 
+                    FROM client_contact cc
+                    JOIN client c ON cc.client_id = c.client_id
+                    WHERE cc.email = :email 
+                      AND c.status IN (1, 10, 11) 
+                      AND c.deleted_at IS NULL
+                    LIMIT 1
+                """)
+                res = conn.execute(sql, {"email": email}).fetchone()
+                if res:
+                    return res.client_id
+                    
+            # Second pass: Domain match (skip generic and internal domains)
+            generic_domains = {'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com', 'culinarystaffing.com', 'golivestaffing.com'}
+            for email in emails:
+                domain = email.split('@')[-1].lower()
+                if domain in generic_domains:
+                    continue
+                    
+                domain_search = f"%@{domain}"
+                sql = text("""
+                    SELECT c.client_id 
+                    FROM client_contact cc
+                    JOIN client c ON cc.client_id = c.client_id
+                    WHERE cc.email LIKE :domain 
+                      AND c.status IN (1, 10, 11) 
+                      AND c.deleted_at IS NULL
+                    LIMIT 1
+                """)
+                res = conn.execute(sql, {"domain": domain_search}).fetchone()
+                if res:
+                    return res.client_id
+
+    # 2. Client Name-based detection
+    try:
+        with engine.connect() as conn:
             sql = text("""
-                SELECT c.client_id 
-                FROM client_contact cc
-                JOIN client c ON cc.client_id = c.client_id
-                WHERE cc.email = :email 
-                  AND c.status = 1 
-                  AND c.deleted_at IS NULL
-                LIMIT 1
+                SELECT client_id, name 
+                FROM client 
+                WHERE status IN (1, 10, 11) 
+                  AND deleted_at IS NULL
             """)
-            res = conn.execute(sql, {"email": email}).fetchone()
-            if res:
-                return res.client_id
-                
-        # Second pass: Domain match (skip generic and internal domains)
-        generic_domains = {'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com', 'culinarystaffing.com', 'golivestaffing.com'}
-        for email in emails:
-            domain = email.split('@')[-1].lower()
-            if domain in generic_domains:
-                continue
-                
-            domain_search = f"%@{domain}"
+            clients = conn.execute(sql).fetchall()
+            
+            # Sort clients by name length descending to match more specific names first
+            sorted_clients = sorted(clients, key=lambda c: len(c.name), reverse=True)
+            for cid, name in sorted_clients:
+                if not name:
+                    continue
+                # Use word boundaries and case-insensitive matching
+                pattern = r'\b' + re.escape(name.strip()) + r'\b'
+                if re.search(pattern, order_text, re.IGNORECASE):
+                    return cid
+    except Exception as e:
+        print(f"Error matching client name: {e}")
+
+    # 3. Venue Name-based detection
+    try:
+        with engine.connect() as conn:
             sql = text("""
-                SELECT c.client_id 
-                FROM client_contact cc
-                JOIN client c ON cc.client_id = c.client_id
-                WHERE cc.email LIKE :domain 
-                  AND c.status = 1 
+                SELECT v.client_id, v.name 
+                FROM venue v
+                JOIN client c ON v.client_id = c.client_id
+                WHERE c.status IN (1, 10, 11)
                   AND c.deleted_at IS NULL
-                LIMIT 1
+                  AND v.status = 1
+                  AND v.deleted_at IS NULL
             """)
-            res = conn.execute(sql, {"domain": domain_search}).fetchone()
-            if res:
-                return res.client_id
-                
+            venues = conn.execute(sql).fetchall()
+            
+            # Sort venues by name length descending to match more specific names first
+            sorted_venues = sorted(venues, key=lambda v: len(v.name), reverse=True)
+            for cid, name in sorted_venues:
+                if not name:
+                    continue
+                pattern = r'\b' + re.escape(name.strip()) + r'\b'
+                if re.search(pattern, order_text, re.IGNORECASE):
+                    return cid
+    except Exception as e:
+        print(f"Error matching venue name: {e}")
+        
     return None
 
 def get_active_clients() -> list:
-    """Returns a list of all active clients (id and name)."""
+    """Returns a list of all active or inactive 60/180 clients (id and name)."""
     engine = _engine()
     with engine.connect() as conn:
         sql = text("""
             SELECT client_id, name 
             FROM client 
-            WHERE status = 1 
+            WHERE status IN (1, 10, 11) 
               AND deleted_at IS NULL 
             ORDER BY name ASC
         """)
