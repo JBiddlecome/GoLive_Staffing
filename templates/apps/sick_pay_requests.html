@@ -167,11 +167,109 @@
                     <div class="border-t border-emerald-100 bg-emerald-50/5 p-6">
                         <div id="completed_container" class="grid gap-6 md:grid-cols-2">
                             <!-- Dynamic Completed Tickets injected here -->
-                        </div>
                     </div>
                 </details>
             </div>
 
+        </div>
+    </div>
+
+    <!-- Glassmorphic Email Compose Modal -->
+    <div id="email_modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <!-- Backdrop with soft blur -->
+        <div class="absolute inset-0 bg-emerald-950/40 backdrop-blur-sm transition-opacity" onclick="closeMessageModal()"></div>
+        
+        <!-- Modal Card Dialog -->
+        <div class="relative w-full max-w-lg rounded-3xl border border-emerald-100/50 bg-white/95 p-6 shadow-2xl transition-all scale-95 opacity-0 duration-300 transform backdrop-blur-md" id="email_modal_card">
+            <!-- Close Button -->
+            <button onclick="closeMessageModal()" class="absolute top-5 right-5 text-gray-400 hover:text-gray-600 transition p-1 hover:bg-gray-100 rounded-full">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+
+            <!-- Modal Header -->
+            <div class="flex items-center gap-3.5 mb-5">
+                <div id="modal_avatar" class="h-12 w-12 flex items-center justify-center rounded-full bg-gradient-to-br from-emerald-100 to-emerald-200 text-emerald-800 text-base font-extrabold shadow-inner">
+                    U
+                </div>
+                <div>
+                    <h3 class="text-xl font-extrabold text-gray-900 tracking-tight" id="modal_employee_name">Employee Name</h3>
+                    <div class="flex items-center gap-2 mt-0.5">
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100" id="modal_payroll_id">#Payroll ID</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Email Display and Info Banner -->
+            <div class="mb-5 p-4 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-between shadow-inner">
+                <div class="flex items-center gap-2.5">
+                    <div class="bg-white p-1.5 rounded-lg border border-gray-200/50 text-emerald-600 shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <span class="text-sm font-bold text-gray-700 select-all" id="modal_email_address">email@domain.com</span>
+                </div>
+                <span class="text-[10px] uppercase font-black tracking-widest px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800" id="modal_email_badge">Active</span>
+            </div>
+
+            <!-- Warning Alert (if employee is missing email) -->
+            <div id="modal_no_email_alert" class="hidden mb-5 p-4 rounded-2xl bg-rose-50 border border-rose-100 flex items-start gap-3 text-rose-800 text-sm">
+                <div class="bg-white p-1.5 rounded-xl border border-rose-200 text-rose-500 shadow-sm shrink-0">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <div>
+                    <span class="font-extrabold text-rose-900 block mb-0.5">Missing Email Address</span>
+                    This employee does not have an email address configured. You cannot send notifications to them.
+                </div>
+            </div>
+
+            <!-- Status Tabs Toggle -->
+            <div class="mb-5">
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Request Decision</label>
+                <div class="grid grid-cols-2 gap-2 p-1.5 bg-gray-100 rounded-2xl border border-gray-200/50">
+                    <button id="tab_approved" onclick="setModalStatus('Approved')" class="py-2 px-4 rounded-xl text-sm font-bold transition-all shadow-sm bg-white text-emerald-800 border border-black/5">
+                        Approved
+                    </button>
+                    <button id="tab_denied" onclick="setModalStatus('Denied')" class="py-2 px-4 rounded-xl text-sm font-semibold transition-all text-gray-500 hover:text-gray-800">
+                        Denied
+                    </button>
+                </div>
+            </div>
+
+            <!-- Message Compose TextBox -->
+            <div class="space-y-2 mb-5">
+                <div class="flex justify-between items-center px-1">
+                    <label class="text-xs font-bold text-gray-400 uppercase tracking-widest">Email Message</label>
+                    <span id="char_count" class="text-[10px] font-semibold text-gray-400">0 characters</span>
+                </div>
+                <textarea id="modal_message_input" placeholder="Draft your email message here..." 
+                    class="w-full h-32 rounded-2xl border border-gray-250 bg-gray-50/20 px-4 py-3 text-gray-700 focus:bg-white focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 text-sm leading-relaxed transition-all resize-none shadow-inner"
+                    oninput="updateCharCount()"></textarea>
+            </div>
+
+            <!-- Denied Reason Options (Visible only in Denied state) -->
+            <div id="denied_options_container" class="hidden mb-5 space-y-2">
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest px-1">Select Reason Option</label>
+                <div class="flex flex-col gap-2">
+                    <button onclick="applyDenialReason(1)" class="w-full text-left p-3.5 rounded-2xl border border-gray-150 bg-gray-50 hover:bg-emerald-50 hover:border-emerald-250 text-xs font-bold text-gray-700 hover:text-emerald-950 transition flex items-center justify-between group shadow-sm">
+                        <span>(1) Insufficient sick pay hours available</span>
+                        <span class="text-emerald-600 font-extrabold transition group-hover:translate-x-1 duration-200">Apply →</span>
+                    </button>
+                    <button onclick="applyDenialReason(2)" class="w-full text-left p-3.5 rounded-2xl border border-gray-150 bg-gray-50 hover:bg-emerald-50 hover:border-emerald-250 text-xs font-bold text-gray-700 hover:text-emerald-950 transition flex items-center justify-between group shadow-sm">
+                        <span>(2) Total 48 hours of sick pay has been used for this 12 month period</span>
+                        <span class="text-emerald-600 font-extrabold transition group-hover:translate-x-1 duration-200">Apply →</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Footer Buttons -->
+            <div class="flex items-center gap-3">
+                <button onclick="closeMessageModal()" class="flex-1 py-3 px-4 rounded-2xl border border-gray-250 hover:bg-gray-50 text-gray-700 font-extrabold text-sm shadow-sm transition">
+                    Cancel
+                </button>
+                <button id="send_email_btn" onclick="sendEmailAction()" class="flex-1 py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-md transition flex items-center justify-center gap-2">
+                    <span id="send_btn_text">Send Email</span>
+                    <div id="send_btn_spinner" class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent hidden"></div>
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -375,6 +473,14 @@
                             </svg>
                             <span>Created: ${ticket.created_at}</span>
                         </div>
+                        ${ticket.emailed && ticket.emailed_at ? `
+                            <div class="flex items-center gap-1.5 text-emerald-700 font-semibold cursor-help" title="Emailed: ${ticket.emailed_message}">
+                                <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                </svg>
+                                <span>Emailed: ${ticket.emailed_at}</span>
+                            </div>
+                        ` : ''}
                         ${ticket.completed && ticket.completed_at ? `
                             <div class="flex items-center gap-1.5 text-emerald-700 font-semibold">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -398,11 +504,19 @@
 
                     <!-- Card Footer Checkbox -->
                     <div class="pt-3 border-t border-gray-100 flex items-center justify-between">
-                        <a href="https://golive.culinarystaffing.com/employees/${ticket.employee_id}" target="_blank" 
-                            class="text-xs font-bold text-gray-400 hover:text-emerald-700 transition flex items-center gap-1">
-                            <span>View Profile</span>
-                            <span class="opacity-75">↗</span>
-                        </a>
+                        <div class="flex items-center gap-3">
+                            <a href="https://golive.culinarystaffing.com/employees/${ticket.employee_id}" target="_blank" 
+                                class="text-xs font-bold text-gray-400 hover:text-emerald-700 transition flex items-center gap-1">
+                                <span>View Profile</span>
+                                <span class="opacity-75">↗</span>
+                            </a>
+                            <span class="text-gray-300">|</span>
+                            <button onclick="openMessageModal(${ticket.id})" 
+                                class="text-xs font-bold text-emerald-600 hover:text-emerald-700 hover:underline transition flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                <span>Message</span>
+                            </button>
+                        </div>
                         
                         <label class="flex items-center gap-2 cursor-pointer select-none">
                             <input type="checkbox" ${ticket.completed ? 'checked' : ''} 
@@ -495,6 +609,182 @@
                 const checkboxEl = cardEl.querySelector('input[type="checkbox"]');
                 checkboxEl.checked = !checked;
                 alert('Could not update ticket completion status. Please try again.');
+            }
+        };
+
+        // Glassmorphic Modal Interaction Functions
+        let activeModalTicket = null;
+        let activeModalStatus = 'Approved'; // Default
+
+        window.openMessageModal = function(ticketId) {
+            const ticket = allTickets.find(t => t.id === parseInt(ticketId));
+            if (!ticket) return;
+
+            activeModalTicket = ticket;
+            
+            // Set details
+            document.getElementById('modal_employee_name').textContent = `${ticket.first_name || ''} ${ticket.last_name || ''}`;
+            document.getElementById('modal_payroll_id').textContent = ticket.payroll_id ? `#${ticket.payroll_id}` : 'No Payroll ID';
+            
+            const initials = `${(ticket.first_name || 'U').charAt(0)}${(ticket.last_name || 'E').charAt(0)}`.toUpperCase();
+            document.getElementById('modal_avatar').textContent = initials;
+            
+            const emailInput = document.getElementById('modal_email_address');
+            const emailBadge = document.getElementById('modal_email_badge');
+            const alertNoEmail = document.getElementById('modal_no_email_alert');
+            const sendBtn = document.getElementById('send_email_btn');
+
+            if (ticket.email) {
+                emailInput.textContent = ticket.email;
+                emailBadge.classList.remove('hidden');
+                alertNoEmail.classList.add('hidden');
+                sendBtn.disabled = false;
+                sendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                emailInput.textContent = 'No email address';
+                emailBadge.classList.add('hidden');
+                alertNoEmail.classList.remove('hidden');
+                sendBtn.disabled = true;
+                sendBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+
+            // Set default tab
+            setModalStatus('Approved');
+
+            // Open Modal with transition
+            const modal = document.getElementById('email_modal');
+            const card = document.getElementById('email_modal_card');
+            
+            modal.classList.remove('hidden');
+            // Allow layout/paint before transitions
+            setTimeout(() => {
+                card.classList.remove('scale-95', 'opacity-0');
+                card.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        };
+
+        window.closeMessageModal = function() {
+            const modal = document.getElementById('email_modal');
+            const card = document.getElementById('email_modal_card');
+            
+            card.classList.remove('scale-100', 'opacity-100');
+            card.classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                activeModalTicket = null;
+            }, 300);
+        };
+
+        window.setModalStatus = function(status) {
+            activeModalStatus = status;
+            
+            const tabApproved = document.getElementById('tab_approved');
+            const tabDenied = document.getElementById('tab_denied');
+            const deniedOptions = document.getElementById('denied_options_container');
+            const messageInput = document.getElementById('modal_message_input');
+
+            // Reset tab styles
+            tabApproved.className = 'py-2 px-4 rounded-xl text-sm font-semibold transition-all text-gray-500 hover:text-gray-800';
+            tabDenied.className = 'py-2 px-4 rounded-xl text-sm font-semibold transition-all text-gray-500 hover:text-gray-800';
+
+            if (status === 'Approved') {
+                tabApproved.className = 'py-2 px-4 rounded-xl text-sm font-bold transition-all shadow-sm bg-white text-emerald-800 border border-black/5';
+                deniedOptions.classList.add('hidden');
+                
+                // Prefill Approved Message
+                const hrs = activeModalTicket ? activeModalTicket.non_work_hours : 0;
+                messageInput.value = `Your request for ${hrs} hours of sick pay has been approved. Your payment will appear on your next paycheck.`;
+            } else {
+                tabDenied.className = 'py-2 px-4 rounded-xl text-sm font-bold transition-all shadow-sm bg-white text-rose-800 border border-black/5';
+                deniedOptions.classList.remove('hidden');
+                
+                // Prefill Denied Message
+                const hrs = activeModalTicket ? activeModalTicket.non_work_hours : 0;
+                messageInput.value = `Your request for ${hrs} hours of sick pay has been declined due `;
+            }
+            updateCharCount();
+        };
+
+        window.applyDenialReason = function(optionIndex) {
+            const messageInput = document.getElementById('modal_message_input');
+            const hrs = activeModalTicket ? activeModalTicket.non_work_hours : 0;
+            
+            if (optionIndex === 1) {
+                messageInput.value = `Your request for ${hrs} hours of sick pay has been declined due to insufficient sick pay hours available.`;
+            } else if (optionIndex === 2) {
+                messageInput.value = `Your request for ${hrs} hours of sick pay has been declined due to total 48 hours of sick pay has been used for this 12 month period.`;
+            }
+            updateCharCount();
+        };
+
+        window.updateCharCount = function() {
+            const messageInput = document.getElementById('modal_message_input');
+            const charCount = document.getElementById('char_count');
+            charCount.textContent = `${messageInput.value.length} characters`;
+        };
+
+        window.sendEmailAction = async function() {
+            if (!activeModalTicket) return;
+            
+            const messageInput = document.getElementById('modal_message_input');
+            const messageText = messageInput.value.trim();
+            if (!messageText) {
+                alert('Please draft a message before sending.');
+                return;
+            }
+
+            const sendBtn = document.getElementById('send_email_btn');
+            const btnText = document.getElementById('send_btn_text');
+            const btnSpinner = document.getElementById('send_btn_spinner');
+
+            // Set loading state
+            sendBtn.disabled = true;
+            btnText.textContent = 'Sending...';
+            btnSpinner.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/sick-pay-requests/api/send-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: activeModalTicket.id,
+                        employee_email: activeModalTicket.email,
+                        first_name: activeModalTicket.first_name,
+                        subject: `Sick Pay Request Update — Culinary Staffing`,
+                        message: messageText
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    // Update in-memory copies
+                    const item = allTickets.find(t => t.id === activeModalTicket.id);
+                    if (item) {
+                        item.emailed = true;
+                        item.emailed_at = result.emailed_at;
+                        item.note = result.new_note;
+                    }
+                    
+                    // Show success & Close
+                    btnText.textContent = 'Emailed! ✓';
+                    btnSpinner.classList.add('hidden');
+                    
+                    setTimeout(() => {
+                        closeMessageModal();
+                        applySearchAndFilter(); // Refresh dashboard list view
+                    }, 800);
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to send email');
+                }
+            } catch (err) {
+                alert(`Error sending email: ${err.message}`);
+                // Reset button state
+                sendBtn.disabled = false;
+                btnText.textContent = 'Send Email';
+                btnSpinner.classList.add('hidden');
             }
         };
 

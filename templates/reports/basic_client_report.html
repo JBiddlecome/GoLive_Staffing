@@ -9,10 +9,20 @@
       </div>
       <p class="uppercase text-sm font-semibold tracking-[0.2em] text-emerald-100">Client Reports</p>
       <h1 class="brand-serif text-4xl font-semibold leading-tight">Basic Client Report</h1>
-      <p class="mt-2 text-emerald-50/90 max-w-3xl">Search for a client, select a date range, and view employee hours, positions worked, and shift details.</p>
+      <p class="mt-2 text-emerald-50/90 max-w-3xl">Search for a client, select a date range (or query all-time history for a specific employee), and view employee hours, positions worked, and shift details.</p>
     </div>
 
     <div class="p-8 space-y-8">
+      <!-- Report Mode Toggle Tabs -->
+      <div class="flex border-b border-slate-100 pb-px gap-6 mb-6">
+        <button id="modeAll" type="button" class="pb-3 text-sm font-bold border-b-2 border-emerald-600 text-emerald-600 transition-all focus:outline-none">
+          All Employees (Date Range)
+        </button>
+        <button id="modeSingle" type="button" class="pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-600 transition-all focus:outline-none">
+          Specific Employee (All Time)
+        </button>
+      </div>
+
       <!-- Controls -->
       <div class="flex flex-wrap gap-4 items-end">
         <div class="flex-1 min-w-[280px] max-w-[350px] relative">
@@ -22,18 +32,31 @@
           <input type="hidden" id="clientId">
           <div id="clientDropdown" class="hidden absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-xl max-h-60 overflow-y-auto"></div>
         </div>
-        <div class="flex-1 min-w-[180px] max-w-[220px]">
+
+        <div id="startDateContainer" class="flex-1 min-w-[180px] max-w-[220px]">
           <label for="startDate" class="block text-sm font-medium text-slate-700 mb-2">Start Date</label>
           <input type="date" id="startDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 p-2.5">
         </div>
-        <div class="flex-1 min-w-[180px] max-w-[220px]">
+
+        <div id="endDateContainer" class="flex-1 min-w-[180px] max-w-[220px]">
           <label for="endDate" class="block text-sm font-medium text-slate-700 mb-2">End Date</label>
           <input type="date" id="endDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 p-2.5">
         </div>
+
+        <!-- Employee Search (Hidden by default, shown in Specific Employee mode) -->
+        <div id="employeeSearchContainer" class="hidden flex-1 min-w-[280px] max-w-[350px] relative">
+          <label for="employeeSearch" class="block text-sm font-medium text-slate-700 mb-2">Search Employee</label>
+          <input type="text" id="employeeSearch" placeholder="Type to search active employees..." autocomplete="off"
+            class="w-full bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 p-2.5">
+          <input type="hidden" id="employeeId">
+          <div id="employeeDropdown" class="hidden absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-xl max-h-60 overflow-y-auto"></div>
+        </div>
+
         <div class="flex items-center gap-2 h-[45px] mb-0.5">
           <input type="checkbox" id="byVenue" class="w-4 h-4 text-emerald-600 bg-slate-50 border-slate-300 rounded focus:ring-emerald-500 cursor-pointer">
           <label for="byVenue" class="text-sm font-medium text-slate-700 cursor-pointer">Separate by Venue</label>
         </div>
+
         <div class="flex gap-3">
           <button id="generateBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-lg transition-colors flex items-center">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
@@ -46,11 +69,22 @@
         </div>
       </div>
 
-      <!-- Selected client badge -->
-      <div id="selectedClient" class="hidden">
-        <div class="inline-flex items-center gap-2 bg-emerald-50 text-emerald-800 px-4 py-2 rounded-full text-sm font-semibold border border-emerald-200">
-          <span id="selectedClientName"></span>
-          <button id="clearClient" class="ml-1 text-emerald-600 hover:text-red-500 transition font-bold text-lg leading-none">&times;</button>
+      <!-- Selected client & employee badges -->
+      <div class="flex flex-wrap gap-3">
+        <div id="selectedClient" class="hidden">
+          <div class="inline-flex items-center gap-2 bg-emerald-50 text-emerald-800 px-4 py-2 rounded-full text-sm font-semibold border border-emerald-200 shadow-sm">
+            <span class="font-normal text-emerald-600">Client:</span>
+            <span id="selectedClientName"></span>
+            <button id="clearClient" class="ml-1 text-emerald-600 hover:text-red-500 transition font-bold text-lg leading-none">&times;</button>
+          </div>
+        </div>
+        
+        <div id="selectedEmployee" class="hidden">
+          <div class="inline-flex items-center gap-2 bg-blue-50 text-blue-800 px-4 py-2 rounded-full text-sm font-semibold border border-blue-200 shadow-sm">
+            <span class="font-normal text-blue-600">Employee:</span>
+            <span id="selectedEmployeeName"></span>
+            <button id="clearEmployee" class="ml-1 text-blue-600 hover:text-red-500 transition font-bold text-lg leading-none">&times;</button>
+          </div>
         </div>
       </div>
 
@@ -92,7 +126,7 @@
       </div>
 
       <div id="no-data" class="hidden text-center py-12 text-gray-500">
-        No shifts found for this client in the selected date range.
+        No shifts found matching the selected criteria.
       </div>
     </div>
   </div>
@@ -100,12 +134,30 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', async () => {
+    // Mode toggle components
+    const modeAllBtn = document.getElementById('modeAll');
+    const modeSingleBtn = document.getElementById('modeSingle');
+    const startDateContainer = document.getElementById('startDateContainer');
+    const endDateContainer = document.getElementById('endDateContainer');
+    const employeeSearchContainer = document.getElementById('employeeSearchContainer');
+    
+    // Client components
     const clientSearch = document.getElementById('clientSearch');
     const clientIdInput = document.getElementById('clientId');
     const clientDropdown = document.getElementById('clientDropdown');
     const selectedClientDiv = document.getElementById('selectedClient');
     const selectedClientName = document.getElementById('selectedClientName');
     const clearClientBtn = document.getElementById('clearClient');
+
+    // Employee components
+    const employeeSearch = document.getElementById('employeeSearch');
+    const employeeIdInput = document.getElementById('employeeId');
+    const employeeDropdown = document.getElementById('employeeDropdown');
+    const selectedEmployeeDiv = document.getElementById('selectedEmployee');
+    const selectedEmployeeName = document.getElementById('selectedEmployeeName');
+    const clearEmployeeBtn = document.getElementById('clearEmployee');
+
+    // Rest of components
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
     const byVenueInput = document.getElementById('byVenue');
@@ -119,6 +171,33 @@
     const summaryStats = document.getElementById('summary-stats');
 
     let allClients = [];
+    let currentMode = 'all'; // 'all' or 'single'
+
+    // Switch report type modes
+    function switchMode(mode) {
+      currentMode = mode;
+      container.classList.add('hidden');
+      noData.classList.add('hidden');
+      summaryStats.classList.add('hidden');
+      exportBtn.disabled = true;
+
+      if (mode === 'all') {
+        modeAllBtn.className = "pb-3 text-sm font-bold border-b-2 border-emerald-600 text-emerald-600 transition-all focus:outline-none";
+        modeSingleBtn.className = "pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-600 transition-all focus:outline-none";
+        startDateContainer.classList.remove('hidden');
+        endDateContainer.classList.remove('hidden');
+        employeeSearchContainer.classList.add('hidden');
+      } else {
+        modeAllBtn.className = "pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-600 transition-all focus:outline-none";
+        modeSingleBtn.className = "pb-3 text-sm font-bold border-b-2 border-emerald-600 text-emerald-600 transition-all focus:outline-none";
+        startDateContainer.classList.add('hidden');
+        endDateContainer.classList.add('hidden');
+        employeeSearchContainer.classList.remove('hidden');
+      }
+    }
+
+    modeAllBtn.addEventListener('click', () => switchMode('all'));
+    modeSingleBtn.addEventListener('click', () => switchMode('single'));
 
     // Load all clients on page load
     try {
@@ -149,6 +228,11 @@
       clientDropdown.classList.add('hidden');
       selectedClientName.textContent = client.name;
       selectedClientDiv.classList.remove('hidden');
+      
+      // Clear selected employee when client changes to keep data robust
+      if (currentMode === 'single') {
+        clearEmployeeSelection();
+      }
     }
 
     clientSearch.addEventListener('input', () => {
@@ -184,6 +268,92 @@
       noData.classList.add('hidden');
       summaryStats.classList.add('hidden');
       exportBtn.disabled = true;
+      clearEmployeeSelection();
+    });
+
+    // Employee search autocomplete dropdown
+    function showEmployeeDropdown(matches) {
+      employeeDropdown.innerHTML = '';
+      if (matches.length === 0) {
+        employeeDropdown.classList.add('hidden');
+        return;
+      }
+      matches.forEach(e => {
+        const div = document.createElement('div');
+        div.className = 'px-4 py-2.5 cursor-pointer hover:bg-blue-50 text-sm text-slate-800 transition';
+        div.textContent = e.name;
+        div.addEventListener('click', () => selectEmployee(e));
+        employeeDropdown.appendChild(div);
+      });
+      employeeDropdown.classList.remove('hidden');
+    }
+
+    function selectEmployee(employee) {
+      employeeIdInput.value = employee.employee_id;
+      employeeSearch.value = employee.name;
+      employeeDropdown.classList.add('hidden');
+      selectedEmployeeName.textContent = employee.name;
+      selectedEmployeeDiv.classList.remove('hidden');
+    }
+
+    function clearEmployeeSelection() {
+      employeeIdInput.value = '';
+      employeeSearch.value = '';
+      selectedEmployeeDiv.classList.add('hidden');
+    }
+
+    clearEmployeeBtn.addEventListener('click', () => {
+      clearEmployeeSelection();
+      container.classList.add('hidden');
+      noData.classList.add('hidden');
+      summaryStats.classList.add('hidden');
+      exportBtn.disabled = true;
+    });
+
+    let empDebounceTimer;
+    employeeSearch.addEventListener('input', () => {
+      clearTimeout(empDebounceTimer);
+      const q = employeeSearch.value.trim();
+      if (q.length < 2) {
+        employeeDropdown.classList.add('hidden');
+        return;
+      }
+      empDebounceTimer = setTimeout(async () => {
+        try {
+          const clientId = clientIdInput.value;
+          const url = `/reports/api/employees?q=${encodeURIComponent(q)}${clientId ? `&client_id=${clientId}` : ''}`;
+          const resp = await fetch(url);
+          const matches = await resp.json();
+          showEmployeeDropdown(matches);
+        } catch (err) { console.error('Failed to load employees', err); }
+      }, 250);
+    });
+
+    employeeSearch.addEventListener('focus', async () => {
+      const q = employeeSearch.value.trim();
+      const clientId = clientIdInput.value;
+      if (q.length >= 2) {
+        try {
+          const url = `/reports/api/employees?q=${encodeURIComponent(q)}${clientId ? `&client_id=${clientId}` : ''}`;
+          const resp = await fetch(url);
+          const matches = await resp.json();
+          showEmployeeDropdown(matches);
+        } catch (err) { console.error('Failed to load employees', err); }
+      } else if (clientId) {
+        // Show active employees who have ever worked at this client as a fast-select list
+        try {
+          const url = `/reports/api/employees?client_id=${clientId}`;
+          const resp = await fetch(url);
+          const matches = await resp.json();
+          showEmployeeDropdown(matches);
+        } catch (err) { console.error('Failed to load employees', err); }
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!employeeSearch.contains(e.target) && !employeeDropdown.contains(e.target)) {
+        employeeDropdown.classList.add('hidden');
+      }
     });
 
     // Generate Report
@@ -191,10 +361,15 @@
       const clientId = clientIdInput.value;
       const start = startDateInput.value;
       const end = endDateInput.value;
+      const employeeId = employeeIdInput.value;
       const byVenue = byVenueInput.checked;
 
       if (!clientId) { alert('Please search for and select a client.'); return; }
-      if (!start || !end) { alert('Please select both a start and end date.'); return; }
+      if (currentMode === 'all') {
+        if (!start || !end) { alert('Please select both a start and end date.'); return; }
+      } else {
+        if (!employeeId) { alert('Please search for and select a specific employee.'); return; }
+      }
 
       container.classList.add('hidden');
       noData.classList.add('hidden');
@@ -222,7 +397,13 @@
       }
 
       try {
-        const url = `/reports/api/basic-client-report?client_id=${clientId}&start_date=${start}&end_date=${end}&by_venue=${byVenue}`;
+        let url = `/reports/api/basic-client-report?client_id=${clientId}&by_venue=${byVenue}`;
+        if (currentMode === 'all') {
+          url += `&start_date=${start}&end_date=${end}`;
+        } else {
+          url += `&employee_id=${employeeId}`;
+        }
+
         const resp = await fetch(url);
         if (!resp.ok) throw new Error(await resp.text());
         const data = await resp.json();
@@ -295,9 +476,21 @@
       const clientId = clientIdInput.value;
       const start = startDateInput.value;
       const end = endDateInput.value;
+      const employeeId = employeeIdInput.value;
       const byVenue = byVenueInput.checked;
-      if (!clientId || !start || !end) return;
-      window.location.href = `/reports/api/basic-client-report/export?client_id=${clientId}&start_date=${start}&end_date=${end}&by_venue=${byVenue}`;
+      
+      if (!clientId) return;
+
+      let url = `/reports/api/basic-client-report/export?client_id=${clientId}&by_venue=${byVenue}`;
+      if (currentMode === 'all') {
+        if (!start || !end) return;
+        url += `&start_date=${start}&end_date=${end}`;
+      } else {
+        if (!employeeId) return;
+        url += `&employee_id=${employeeId}`;
+      }
+      
+      window.location.href = url;
     });
   });
 </script>
