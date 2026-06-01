@@ -147,7 +147,7 @@
                     </button>
                     {% endif %}
                     {% if row.status == 'Not Approved' %}
-                    <button class="inline-flex items-center gap-x-1.5 rounded-md bg-red-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 deny-position-btn transition-colors" data-phone="{{ row.phone }}" data-positions="{{ row.positions | escape }}" data-reason="{{ 'qualification' if 'Automatically marked as Not Approved due to' in (row.ai_analysis or '') else 'experience' }}">
+                    <button class="inline-flex items-center gap-x-1.5 rounded-md bg-red-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 deny-position-btn transition-colors" data-phone="{{ row.phone }}" data-positions="{{ row.positions | escape }}" data-reason="{{ 'qualification' if 'Automatically marked as Not Approved due to' in (row.ai_analysis or '') else 'experience' }}" data-name="{{ row.employee_name | escape }}">
                       <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                       </svg>
@@ -430,6 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', async () => {
       const phone = btn.dataset.phone;
       const positions = btn.dataset.positions;
+      const name = btn.dataset.name || '';
       
       if (!confirm(`Are you sure you want to send a denial email for the following positions to this employee?\n\nPositions: ${positions}`)) {
         return;
@@ -444,6 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
       formData.append('phone', phone);
       formData.append('positions', positions);
       formData.append('reason', reason);
+      formData.append('name', name);
 
       try {
         const response = await fetch('/position-requests/deny-position', {

@@ -422,7 +422,12 @@ def send_notification_email(employee_email: str, first_name: str, status: str, c
         body_text = f"Hi {first_name},<br><br>Good news! Your uploaded certificate for <b>{cert_type_name}</b> has been approved and is now active on your account."
     else:
         subject = f"Certificate Declined: {cert_type_name}"
-        body_text = f"Hi {first_name},<br><br>Unfortunately, your uploaded certificate for <b>{cert_type_name}</b> was declined.<br><br><b>Reason:</b> {reason}<br><br>Please review and upload a valid document."
+        if cert_type_name and "rbs" in cert_type_name.lower():
+            body_text = f"Hi {first_name},<br><br>Unfortunately, your uploaded certificate for <b>{cert_type_name}</b> was declined.<br><br><b>Reason:</b> {reason}<br><br>Please upload a screenshot of the dashboard page at https://abcbiz.abc.ca.gov that includes your certification status, server ID, and date of renewal. Thank you"
+        elif cert_type_name and "workplace violence" in cert_type_name.lower():
+            body_text = f"Hi {first_name},<br><br>Unfortunately, your uploaded certificate for <b>{cert_type_name}</b> was declined.<br><br><b>Reason:</b> {reason}<br><br>Workplace Violence Prevention Program Training must be Culinary Staffing provided training. Please take the required training by navigating to Company Info, then Certificates, and scroll down to Workplace Violence Prevention Training Program. Thank you."
+        else:
+            body_text = f"Hi {first_name},<br><br>Unfortunately, your uploaded certificate for <b>{cert_type_name}</b> was declined.<br><br><b>Reason:</b> {reason}<br><br>Please review and upload a valid document."
 
     html_body = f"""
     <html>
