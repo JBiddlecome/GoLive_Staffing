@@ -27,6 +27,12 @@ TARGET_MAILBOXES = ["jake@golivestaffing.com", "michael@culinarystaffing.com", "
 # The schema for the AI classifier
 CLASSIFICATION_PROMPT = """You are an email analyzer for a staffing agency.
 Read the email subject and body. Determine if this email contains a NEW staffing order/request for staff, or if it is an UPDATE to an existing order (such as adding a shift, removing a shift, or updating/changing shifts).
+
+CRITICAL THREAD RULE:
+Emails often contain a full conversation history (thread chain) below the latest message. You must evaluate whether the LATEST (top-most) message in the email chain is introducing/requesting a new order or an update.
+- If the latest message is a simple confirmation, thank you, approval, or follow-up that does not request new shifts or changes (e.g., "Thanks!", "Looks good!", "Confirmed", "Thank you, see you tomorrow", "We got it", "All set"), you MUST set both "is_order" and "is_update" to false. Do not classify the email as an order or update just because historical replies in the chain contain staffing requests.
+- If the latest message explicitly references or forwards the historical message below to request booking (e.g., "Please book the shifts below", "Can we repeat this order?", "Please see the forwarded request"), then and only then should you evaluate the historical details and set "is_order" or "is_update" to true.
+
 Return ONLY valid JSON matching this schema:
 {
     "is_order": boolean,

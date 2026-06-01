@@ -264,30 +264,48 @@ async def deny_position(
     request: Request,
     phone: str = Form(...),
     positions: str = Form(...),
-    reason: str = Form("experience")
+    reason: str = Form("experience"),
+    name: str = Form("")
 ):
-    clean_phone = re.sub(r'\D', '', phone)
+    clean_phone = re.sub(r'\D', '', phone) if phone else ""
     if len(clean_phone) > 10:
         clean_phone = clean_phone[-10:]
-        
-    if not clean_phone or len(clean_phone) < 10:
-        return JSONResponse({"status": "error", "message": "No valid 10-digit phone number provided."}, status_code=400)
         
     engine = _engine()
     try:
         with engine.connect() as conn:
-            emp_sql = text("""
-                SELECT employee_id, first_name, email 
-                FROM employee 
-                WHERE REPLACE(REPLACE(REPLACE(REPLACE(mobile, ' ', ''), '-', ''), '(', ''), ')', '') LIKE :phone
-                   OR REPLACE(REPLACE(REPLACE(REPLACE(home, ' ', ''), '-', ''), '(', ''), ')', '') LIKE :phone
-                   OR REPLACE(REPLACE(REPLACE(REPLACE(work, ' ', ''), '-', ''), '(', ''), ')', '') LIKE :phone
-                LIMIT 1
-            """)
-            emp_res = conn.execute(emp_sql, {"phone": f"%{clean_phone}%"}).fetchone()
+            emp_res = None
+            
+            # 1. Try phone number lookup if valid
+            if clean_phone and len(clean_phone) >= 10:
+                emp_sql = text("""
+                    SELECT employee_id, first_name, email 
+                    FROM employee 
+                    WHERE REPLACE(REPLACE(REPLACE(REPLACE(mobile, ' ', ''), '-', ''), '(', ''), ')', '') LIKE :phone
+                       OR REPLACE(REPLACE(REPLACE(REPLACE(home, ' ', ''), '-', ''), '(', ''), ')', '') LIKE :phone
+                       OR REPLACE(REPLACE(REPLACE(REPLACE(work, ' ', ''), '-', ''), '(', ''), ')', '') LIKE :phone
+                    LIMIT 1
+                """)
+                emp_res = conn.execute(emp_sql, {"phone": f"%{clean_phone}%"}).fetchone()
+            
+            # 2. Try name lookup if phone lookup didn't yield a match
+            if not emp_res and name and name != "Unknown":
+                name_sql = text("""
+                    SELECT employee_id, first_name, email 
+                    FROM employee 
+                    WHERE CONCAT(first_name, ' ', last_name) = :name
+                      AND status IN (1, 3, 6, 10, 14)
+                """)
+                name_results = conn.execute(name_sql, {"name": name}).fetchall()
+                if len(name_results) > 1:
+                    return JSONResponse({"status": "error", "message": "There are more than one user with this name in GoLive."}, status_code=400)
+                elif len(name_results) == 1:
+                    emp_res = name_results[0]
             
             if not emp_res:
-                return JSONResponse({"status": "error", "message": "Employee not found in database."}, status_code=404)
+                if not clean_phone or len(clean_phone) < 10:
+                    return JSONResponse({"status": "error", "message": "No valid 10-digit phone number provided and employee not found by name."}, status_code=400)
+                return JSONResponse({"status": "error", "message": "Employee not found in database by phone or name."}, status_code=404)
                 
             first_name = emp_res[1] or "Employee"
             employee_email = emp_res[2]
@@ -297,7 +315,7 @@ async def deny_position(
                 position_names = [p.strip() for p in positions.split("\\n") if p.strip()]
             if not position_names:
                  position_names = [positions.strip()]
-
+ 
             msg = f"Successfully processed denial for positions: {', '.join(position_names)}"
             
             email_sent = False

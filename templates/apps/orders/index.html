@@ -27,6 +27,22 @@
             <div class="space-y-4">
                 <label class="block text-sm font-medium text-slate-700">Order Text or Email Content</label>
                 <textarea id="orderInput" rows="10" class="w-full rounded-2xl border-slate-200 bg-white/80 shadow-inner focus:border-emerald-500 focus:ring-emerald-500 transition-shadow p-4 resize-none" placeholder="E.g., Hi GoLive! We need 5 Servers and 2 Bartenders for the Summer Gala at the Convention Center on June 15th from 4pm to 11pm. Thanks, ACME Catering."></textarea>
+                
+                <!-- Email Thread Scope Toggle -->
+                <div class="flex items-center justify-between p-3 rounded-2xl bg-white/60 border border-slate-100/80 shadow-sm backdrop-blur-sm">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5 pl-1 select-none">
+                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                        Extraction Scope
+                    </span>
+                    <div class="flex items-center gap-1 bg-slate-100/80 p-1 rounded-full border border-slate-200/50">
+                        <button id="scopeLatestBtn" class="px-3.5 py-1.5 rounded-full text-[10px] font-extrabold transition-all duration-200 select-none bg-emerald-600 text-white shadow-sm" onclick="setExtractionScope('latest')">
+                            LATEST MESSAGE
+                        </button>
+                        <button id="scopeFullBtn" class="px-3.5 py-1.5 rounded-full text-[10px] font-extrabold transition-all duration-200 select-none text-slate-500 hover:text-slate-700 hover:bg-slate-200/50" onclick="setExtractionScope('full')">
+                            FULL EMAIL CHAIN
+                        </button>
+                    </div>
+                </div>
             </div>
             
             <div class="mt-6 flex flex-wrap gap-4 items-center justify-between">
@@ -85,7 +101,7 @@
                         </div>
                         <div>
                             <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Event Name</p>
-                            <p class="font-medium text-slate-900" id="resEvent">-</p>
+                            <p class="font-medium text-slate-900 relative" id="resEvent">-</p>
                         </div>
                         <div class="col-span-2">
                             <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Venue</p>
@@ -201,7 +217,23 @@
     const resultsState = document.getElementById('resultsState');
     const clientSelectState = document.getElementById('clientSelectState');
     
-    async function runExtraction(text, clientId = null) {
+    let extractionScope = 'latest';
+    
+    window.setExtractionScope = function(scope) {
+        extractionScope = scope;
+        const latestBtn = document.getElementById('scopeLatestBtn');
+        const fullBtn = document.getElementById('scopeFullBtn');
+        
+        if (scope === 'latest') {
+            latestBtn.className = "px-3.5 py-1.5 rounded-full text-[10px] font-extrabold transition-all duration-200 select-none bg-emerald-600 text-white shadow-sm";
+            fullBtn.className = "px-3.5 py-1.5 rounded-full text-[10px] font-extrabold transition-all duration-200 select-none text-slate-500 hover:text-slate-700 hover:bg-slate-200/50";
+        } else {
+            latestBtn.className = "px-3.5 py-1.5 rounded-full text-[10px] font-extrabold transition-all duration-200 select-none text-slate-500 hover:text-slate-700 hover:bg-slate-200/50";
+            fullBtn.className = "px-3.5 py-1.5 rounded-full text-[10px] font-extrabold transition-all duration-200 select-none bg-emerald-600 text-white shadow-sm";
+        }
+    }
+    
+    async function runExtraction(text, clientId = null, referenceDate = null) {
         emptyState.classList.add('hidden');
         resultsState.classList.add('hidden');
         clientSelectState.classList.add('hidden');
@@ -211,6 +243,8 @@
         try {
             const payload = { text };
             if (clientId) payload.client_id = clientId;
+            if (referenceDate) payload.reference_date = referenceDate;
+            payload.thread_mode = extractionScope;
             
             const response = await fetch('/orders/extract', {
                 method: 'POST',
@@ -220,10 +254,26 @@
             const result = await response.json();
             
             if (result.status === 'success') {
-                renderResults(result.data, result.client_kb);
+                await renderResults(result.data, result.client_kb);
                 loadingState.classList.add('hidden');
                 loadingState.classList.remove('flex');
                 resultsState.classList.remove('hidden');
+                
+                // Safe Dismissal: If this extraction was initiated from an inbox ticket, dismiss it safely
+                const msgId = extractBtn.dataset.msgId;
+                if (msgId) {
+                    try {
+                        await fetch(`/orders/inbox/${msgId}/dismiss`, { method: 'POST' });
+                        await fetchInbox();
+                    } catch (dismissErr) {
+                        console.error("Failed to dismiss ticket after successful extraction", dismissErr);
+                    }
+                }
+                
+                // Clear the metadata from extractBtn to prevent pollution of subsequent manual extractions
+                extractBtn.dataset.clientId = '';
+                extractBtn.dataset.referenceDate = '';
+                extractBtn.dataset.msgId = '';
             } else if (result.requires_client_selection) {
                 loadingState.classList.add('hidden');
                 loadingState.classList.remove('flex');
@@ -231,6 +281,10 @@
                 document.getElementById('clientSelectMsg').innerText = result.message;
                 const select = document.getElementById('manualClientSelect');
                 select.innerHTML = result.clients.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                
+                // Preserve the reference date and thread mode for continuing extraction
+                document.getElementById('extractWithClientBtn').dataset.referenceDate = referenceDate || '';
+                document.getElementById('extractWithClientBtn').dataset.threadMode = extractionScope;
                 
                 clientSelectState.classList.remove('hidden');
                 clientSelectState.classList.add('flex');
@@ -255,13 +309,33 @@
             alert('Please enter some text or dictate an order first.');
             return;
         }
-        runExtraction(text);
+        
+        const clientId = extractBtn.dataset.clientId || null;
+        const referenceDate = extractBtn.dataset.referenceDate || null;
+        
+        // Clear any stored reference date on modal button for separate manual runs
+        document.getElementById('extractWithClientBtn').dataset.referenceDate = '';
+        document.getElementById('extractWithClientBtn').dataset.threadMode = '';
+        
+        runExtraction(text, clientId, referenceDate);
     });
     
     document.getElementById('extractWithClientBtn').addEventListener('click', () => {
         const text = orderInput.value.trim();
         const clientId = document.getElementById('manualClientSelect').value;
-        runExtraction(text, clientId);
+        const referenceDate = document.getElementById('extractWithClientBtn').dataset.referenceDate || null;
+        const threadMode = document.getElementById('extractWithClientBtn').dataset.threadMode || 'latest';
+        setExtractionScope(threadMode);
+        runExtraction(text, clientId, referenceDate);
+    });
+    
+    // Clear extractBtn metadata when the user completely clears the order input text
+    orderInput.addEventListener('input', () => {
+        if (!orderInput.value.trim()) {
+            extractBtn.dataset.clientId = '';
+            extractBtn.dataset.referenceDate = '';
+            extractBtn.dataset.msgId = '';
+        }
     });
 
     function renderField(value, placeholder, isRequired = false, idStr = "", classStr = "") {
@@ -272,6 +346,36 @@
             return `<input type="text" ${idAttr} class="${classStr} w-full text-sm border border-slate-200 rounded-md p-1 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-300" placeholder="${placeholder}">`;
         }
         return `<input type="text" ${idAttr} class="${classStr} w-full text-sm border-transparent bg-transparent hover:border-slate-200 focus:border-emerald-500 focus:bg-white rounded-md p-1 transition-colors" value="${value}">`;
+    }
+
+    function updateDayOfWeek(inputEl) {
+        const dateVal = inputEl.value.trim();
+        const labelEl = inputEl.parentNode.querySelector('.field-day-label');
+        if (!labelEl) return;
+        
+        if (!dateVal) {
+            labelEl.textContent = '';
+            return;
+        }
+        
+        try {
+            const parts = dateVal.split('-');
+            if (parts.length === 3) {
+                const year = parseInt(parts[0], 10);
+                const month = parseInt(parts[1], 10) - 1;
+                const day = parseInt(parts[2], 10);
+                
+                const date = new Date(year, month, day);
+                if (!isNaN(date.getTime())) {
+                    const formatter = new Intl.DateTimeFormat('en-US', { weekday: 'long' });
+                    labelEl.textContent = formatter.format(date);
+                    labelEl.className = "field-day-label text-[10px] font-bold text-emerald-600 pl-1 select-none";
+                    return;
+                }
+            }
+        } catch (err) {}
+        labelEl.textContent = 'Invalid Date';
+        labelEl.className = "field-day-label text-[10px] font-bold text-red-400 pl-1 select-none";
     }
 
     function renderTimeField(value, placeholder, classStr = "", inferred = false) {
@@ -333,7 +437,7 @@
         `;
     }
 
-    function renderResults(data, kb) {
+    async function renderResults(data, kb) {
         const basic = data.basic_information || {};
         const venues = (kb && kb.typical_venues) ? kb.typical_venues : [];
         
@@ -344,7 +448,7 @@
             selectedVenueName = venues[0].name;
         }
 
-        let venueSelectHtml = `<select id="field-venue_name" class="w-full text-sm border-transparent bg-transparent hover:border-slate-200 focus:border-emerald-500 focus:bg-white rounded-md p-1 transition-colors">
+        let venueSelectHtml = `<select id="field-venue_name" class="w-full text-sm border-transparent bg-transparent hover:border-slate-200 focus:border-emerald-500 focus:bg-white rounded-md p-1 transition-colors" onchange="updateAllPositionDropdowns()">
             ${venueOptions}
         </select>`;
 
@@ -358,6 +462,51 @@
         `;
         
         document.getElementById('resEvent').innerHTML = renderField(basic.event_name, "Event Name", false, "field-event_name");
+        
+        const eventNameInput = document.getElementById('field-event_name');
+        if (eventNameInput && basic.explicit_event_name && basic.explicit_event_name.toLowerCase().trim() !== (basic.event_name || '').toLowerCase().trim()) {
+            eventNameInput.dataset.suggestion = basic.explicit_event_name;
+            
+            const showSugg = () => {
+                const existing = document.getElementById('event-name-suggestion-box');
+                if (existing) existing.remove();
+                
+                const suggDiv = document.createElement('div');
+                suggDiv.id = 'event-name-suggestion-box';
+                suggDiv.className = 'absolute z-50 mt-1 bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs rounded-xl p-2.5 shadow-lg flex flex-col gap-1 cursor-pointer animate-in fade-in slide-in-from-top-1 duration-150';
+                suggDiv.style.left = `${eventNameInput.offsetLeft}px`;
+                suggDiv.style.top = `${eventNameInput.offsetTop + eventNameInput.offsetHeight}px`;
+                suggDiv.style.width = 'max-content';
+                suggDiv.style.maxWidth = '250px';
+                
+                suggDiv.innerHTML = `
+                    <span class="text-[10px] uppercase font-bold text-slate-400 select-none block mb-0.5">Explicit Event Name Suggested</span>
+                    <div class="hover:underline font-semibold leading-tight pr-4 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                        <span>${basic.explicit_event_name}</span>
+                    </div>
+                `;
+                
+                suggDiv.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    eventNameInput.value = basic.explicit_event_name;
+                    suggDiv.remove();
+                });
+                
+                eventNameInput.parentNode.appendChild(suggDiv);
+            };
+            
+            eventNameInput.addEventListener('focus', showSugg);
+            eventNameInput.addEventListener('click', showSugg);
+            
+            eventNameInput.addEventListener('blur', () => {
+                setTimeout(() => {
+                    const box = document.getElementById('event-name-suggestion-box');
+                    if (box) box.remove();
+                }, 200);
+            });
+        }
+
         document.getElementById('resVenue').innerHTML = venueSelectHtml;
         
         if (venues.length === 0) {
@@ -378,6 +527,20 @@
         document.getElementById('resState').innerHTML = renderField(basic.event_state, "State (Optional)", false, "field-event_state");
         document.getElementById('resZip').innerHTML = renderField(basic.event_zip, "Zip (Optional)", false, "field-event_zip");
 
+        // Fetch available positions for the current client and venue
+        const clientId = document.getElementById('field-client_id').value;
+        const currentVenueName = document.getElementById('field-venue_name').value || selectedVenueName;
+        let positionsList = [];
+        try {
+            const res = await fetch(`/orders/positions?client_id=${clientId}&venue_name=${encodeURIComponent(currentVenueName)}`);
+            const resData = await res.json();
+            if (resData.status === 'success') {
+                positionsList = resData.data;
+            }
+        } catch (err) {
+            console.error("Failed to fetch positions in renderResults", err);
+        }
+
         const shiftsContainer = document.getElementById('shiftsContainer');
         shiftsContainer.innerHTML = '';
 
@@ -392,18 +555,33 @@
             const tools = Array.isArray(details.tools) ? details.tools.join(', ') : '';
             const certs = Array.isArray(details.certifications) ? details.certifications.join(', ') : '';
             
+            // Build position select options
+            let hasSelected = positionsList.includes(shift.position);
+            let positionOptions = positionsList.map(pos => `<option value="${pos}" ${pos === shift.position ? 'selected' : ''}>${pos}</option>`).join('');
+            if (!hasSelected && shift.position) {
+                positionOptions = `<option value="${shift.position}" selected>${shift.position}</option>` + positionOptions;
+            }
+            
             const shiftEl = document.createElement('div');
             shiftEl.className = 'border border-slate-200 rounded-xl shift-row-data';
             shiftEl.dataset.count = shift.staff_count || 1;
             shiftEl.innerHTML = `
                 <div class="bg-slate-50 p-4 flex justify-between items-center cursor-pointer hover:bg-slate-100 transition-colors" onclick="this.nextElementSibling.classList.toggle('hidden')">
                     <div class="flex items-center gap-4 flex-1 mr-4">
-                        <div class="bg-indigo-100 text-indigo-700 font-bold px-3 py-1 rounded-lg text-sm min-w-[3rem] text-center">
-                            ${shift.staff_count || '?'}x
+                        <div class="flex items-center gap-1 bg-indigo-50 border border-indigo-100 rounded-xl px-2 py-1 focus-within:border-indigo-400 focus-within:bg-white transition-all shadow-sm" onclick="event.stopPropagation()">
+                            <input type="number" min="1" max="99" class="field-staff-count w-8 text-center font-bold text-sm bg-transparent border-none p-0 focus:ring-0 text-indigo-700" value="${shift.staff_count || 1}">
+                            <span class="text-xs font-bold text-indigo-400 select-none pr-1">x</span>
                         </div>
-                        <div class="flex-1 grid grid-cols-[1fr_1fr_2fr] gap-3 items-center">
-                            <div onclick="event.stopPropagation()">${renderField(shift.date, "Date (YYYY-MM-DD)", true, "", "field-date")}</div>
-                            <div onclick="event.stopPropagation()">${renderField(shift.position, "Position", true, "", "field-position")}</div>
+                        <div class="flex-1 grid grid-cols-[1fr_1.5fr_2.5fr] gap-3 items-center">
+                            <div onclick="event.stopPropagation()" class="flex flex-col gap-1">
+                                ${renderField(shift.date, "Date (YYYY-MM-DD)", true, "", "field-date")}
+                                <span class="field-day-label text-[10px] font-bold text-slate-400 pl-1 select-none"></span>
+                            </div>
+                            <div onclick="event.stopPropagation()">
+                                <select class="field-position field-position-select w-full text-xs font-semibold border-transparent bg-transparent hover:border-slate-200 focus:border-emerald-500 focus:bg-white rounded-md p-1 transition-colors cursor-pointer">
+                                    ${positionOptions}
+                                </select>
+                            </div>
                             <div class="flex items-center gap-1.5 min-w-max" onclick="event.stopPropagation()">
                                 ${renderTimeField(shift.start_time, "Start", "field-start")}
                                 <span class="text-slate-400 text-xs">to</span>
@@ -449,7 +627,41 @@
             shiftsContainer.appendChild(shiftEl);
         });
         
+        // Initialize and bind day of week labels reactively for all rendered shifts
+        document.querySelectorAll('.field-date').forEach(input => {
+            updateDayOfWeek(input);
+            input.addEventListener('input', () => updateDayOfWeek(input));
+            input.addEventListener('change', () => updateDayOfWeek(input));
+        });
+        
         document.getElementById('confirmBtnContainer').classList.remove('hidden');
+    }
+
+    window.updateAllPositionDropdowns = async function() {
+        const clientId = document.getElementById('field-client_id').value;
+        const venueName = document.getElementById('field-venue_name').value;
+        if (!clientId || !venueName) return;
+        
+        try {
+            const res = await fetch(`/orders/positions?client_id=${clientId}&venue_name=${encodeURIComponent(venueName)}`);
+            const resData = await res.json();
+            if (resData.status === 'success') {
+                const positionsList = resData.data;
+                
+                // Update every shift's position select elements
+                document.querySelectorAll('.field-position-select').forEach(selectEl => {
+                    const currentVal = selectEl.value;
+                    let hasSelected = positionsList.includes(currentVal);
+                    let optionsHtml = positionsList.map(pos => `<option value="${pos}" ${pos === currentVal ? 'selected' : ''}>${pos}</option>`).join('');
+                    if (!hasSelected && currentVal) {
+                        optionsHtml = `<option value="${currentVal}" selected>${currentVal}</option>` + optionsHtml;
+                    }
+                    selectEl.innerHTML = optionsHtml;
+                });
+            }
+        } catch (err) {
+            console.error("Failed to update position dropdowns", err);
+        }
     }
 
     document.getElementById('confirmBtn').addEventListener('click', async () => {
@@ -503,7 +715,7 @@
                 position: el.querySelector('.field-position').value,
                 start_time: startVal,
                 end_time: endVal,
-                staff_count: el.dataset.count,
+                staff_count: el.querySelector('.field-staff-count') ? el.querySelector('.field-staff-count').value : (el.dataset.count || 1),
                 publication_rule: el.querySelector('.field-publication-rule') ? el.querySelector('.field-publication-rule').value : 'DO_NOT_PUBLISH',
                 requested_employee_id: el.querySelector('.field-requested-employee-id') ? el.querySelector('.field-requested-employee-id').value.trim() : ''
             });
@@ -718,13 +930,18 @@
 
         // Set the input field
         const fullText = `Subject: ${t.subject}\n\n${t.body}`;
-        document.getElementById('orderInput').value = fullText;
+        const inputEl = document.getElementById('orderInput');
+        inputEl.value = fullText;
         
-        // Trigger extraction with client ID
-        runExtraction(fullText, t.client_id);
+        // Save metadata on extractBtn dataset to use when they click Extract
+        const btn = document.getElementById('extractBtn');
+        btn.dataset.clientId = t.client_id || '';
+        btn.dataset.referenceDate = t.received || '';
+        btn.dataset.msgId = t.id || '';
         
-        // Auto-dismiss from queue
-        fetch(`/orders/inbox/${id}/dismiss`, {method: 'POST'}).then(() => fetchInbox());
+        // Focus the input area and scroll smoothly to the input card
+        inputEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        inputEl.focus();
     }
 
     // Poll inbox every 10 seconds
