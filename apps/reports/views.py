@@ -355,6 +355,48 @@ async def get_active_clients_12m():
     finally:
         engine.dispose()
 
+@router.get("/api/employees")
+async def get_employees(q: str = "", client_id: int | None = None):
+    engine = _get_staffing_engine()
+    try:
+        with engine.begin() as conn:
+            if q:
+                sql = text("""
+                    SELECT employee_id, CONCAT(first_name, ' ', last_name) AS name 
+                    FROM employee 
+                    WHERE (first_name LIKE :q OR last_name LIKE :q OR CONCAT(first_name, ' ', last_name) LIKE :q)
+                      AND deleted_at IS NULL
+                    ORDER BY first_name, last_name
+                    LIMIT 50
+                """)
+                df = pd.read_sql(sql, conn, params={"q": f"%{q}%"})
+            elif client_id:
+                sql = text("""
+                    SELECT DISTINCT emp.employee_id, CONCAT(emp.first_name, ' ', emp.last_name) AS name
+                    FROM timesheet t
+                    JOIN shift_employee se ON t.shift_employee_id = se.shift_employee_id
+                    JOIN event e ON se.event_id = e.event_id
+                    JOIN employee emp ON t.employee_id = emp.employee_id
+                    WHERE e.client_id = :client_id
+                      AND t.employee_worked = 'WORKED'
+                      AND emp.deleted_at IS NULL
+                    ORDER BY emp.first_name, emp.last_name
+                    LIMIT 100
+                """)
+                df = pd.read_sql(sql, conn, params={"client_id": client_id})
+            else:
+                sql = text("""
+                    SELECT employee_id, CONCAT(first_name, ' ', last_name) AS name 
+                    FROM employee 
+                    WHERE deleted_at IS NULL
+                    ORDER BY first_name, last_name
+                    LIMIT 50
+                """)
+                df = pd.read_sql(sql, conn)
+            return df.to_dict(orient="records")
+    finally:
+        engine.dispose()
+
 # --- Preferred List Routes ---
 @router.get("/preferred", response_class=HTMLResponse)
 async def preferred_list_page(request: Request):
@@ -1139,12 +1181,32 @@ async def get_top_frequency_cancellations():
 async def basic_client_report_page(request: Request):
     return templates.TemplateResponse("reports/basic_client_report.html", {"request": request})
 
-async def _get_basic_client_summary_df(client_id: int, start_date: str, end_date: str, by_venue: bool = False):
+async def _get_basic_client_summary_df(
+    client_id: int,
+    start_date: str | None = None,
+    end_date: str | None = None,
+    employee_id: int | None = None,
+    by_venue: bool = False
+):
     engine = _get_staffing_engine()
     venue_select = "COALESCE(v.name, 'No Venue') AS venue_name," if by_venue else ""
     venue_join = "LEFT JOIN venue v ON e.venue_id = v.venue_id" if by_venue else ""
     venue_group = ", e.venue_id" if by_venue else ""
     venue_order = "venue_name ASC, " if by_venue else ""
+    
+    filters = ["e.client_id = :client_id", "t.employee_worked = 'WORKED'"]
+    params = {"client_id": client_id}
+    
+    if employee_id is not None:
+        filters.append("t.employee_id = :employee_id")
+        params["employee_id"] = employee_id
+    if start_date and end_date:
+        filters.append("e.date >= :start_date AND e.date <= :end_date")
+        params["start_date"] = start_date
+        params["end_date"] = end_date
+        
+    where_clause = " AND ".join(filters)
+    
     try:
         sql = text(f"""
             SELECT 
@@ -1175,26 +1237,39 @@ async def _get_basic_client_summary_df(client_id: int, start_date: str, end_date
             JOIN employee emp ON t.employee_id = emp.employee_id
             LEFT JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
             LEFT JOIN position p ON sp.position_id = p.position_id
-            WHERE e.client_id = :client_id
-              AND t.employee_worked = 'WORKED'
-              AND e.date >= :start_date AND e.date <= :end_date
+            WHERE {where_clause}
             GROUP BY t.employee_id {venue_group}
             ORDER BY {venue_order} emp.first_name ASC, emp.last_name ASC
         """)
         with engine.begin() as conn:
-            df = pd.read_sql(sql, conn, params={
-                "client_id": client_id,
-                "start_date": start_date,
-                "end_date": end_date,
-            })
+            df = pd.read_sql(sql, conn, params=params)
             return df
     finally:
         engine.dispose()
 
-async def _get_basic_client_detail_df(client_id: int, start_date: str, end_date: str):
+async def _get_basic_client_detail_df(
+    client_id: int,
+    start_date: str | None = None,
+    end_date: str | None = None,
+    employee_id: int | None = None
+):
     engine = _get_staffing_engine()
+    
+    filters = ["e.client_id = :client_id", "t.employee_worked = 'WORKED'"]
+    params = {"client_id": client_id}
+    
+    if employee_id is not None:
+        filters.append("t.employee_id = :employee_id")
+        params["employee_id"] = employee_id
+    if start_date and end_date:
+        filters.append("e.date >= :start_date AND e.date <= :end_date")
+        params["start_date"] = start_date
+        params["end_date"] = end_date
+        
+    where_clause = " AND ".join(filters)
+    
     try:
-        sql = text("""
+        sql = text(f"""
             SELECT 
                 e.date AS shift_date,
                 COALESCE(v.name, 'No Venue') AS venue_name,
@@ -1229,17 +1304,11 @@ async def _get_basic_client_detail_df(client_id: int, start_date: str, end_date:
             LEFT JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
             LEFT JOIN position p ON sp.position_id = p.position_id
             LEFT JOIN shift s ON sp.shift_id = s.shift_id
-            WHERE e.client_id = :client_id
-              AND t.employee_worked = 'WORKED'
-              AND e.date >= :start_date AND e.date <= :end_date
+            WHERE {where_clause}
             ORDER BY e.date ASC, emp.first_name ASC, emp.last_name ASC
         """)
         with engine.begin() as conn:
-            df = pd.read_sql(sql, conn, params={
-                "client_id": client_id,
-                "start_date": start_date,
-                "end_date": end_date,
-            })
+            df = pd.read_sql(sql, conn, params=params)
             if "shift_date" in df.columns and not df.empty:
                 df["shift_date"] = pd.to_datetime(df["shift_date"]).dt.strftime('%m/%d/%Y')
             return df
@@ -1247,17 +1316,35 @@ async def _get_basic_client_detail_df(client_id: int, start_date: str, end_date:
         engine.dispose()
 
 @router.get("/api/basic-client-report")
-async def get_basic_client_report(client_id: int, start_date: str, end_date: str, by_venue: bool = False):
-    df = await _get_basic_client_summary_df(client_id, start_date, end_date, by_venue=by_venue)
+async def get_basic_client_report(
+    client_id: int,
+    start_date: str | None = None,
+    end_date: str | None = None,
+    employee_id: int | None = None,
+    by_venue: bool = False
+):
+    df = await _get_basic_client_summary_df(
+        client_id, start_date, end_date, employee_id=employee_id, by_venue=by_venue
+    )
     return df.astype(object).where(pd.notnull(df), None).to_dict(orient="records")
 
 @router.get("/api/basic-client-report/export")
-async def export_basic_client_report(client_id: int, start_date: str, end_date: str, by_venue: bool = False):
-    summary_df = await _get_basic_client_summary_df(client_id, start_date, end_date, by_venue=by_venue)
-    detail_df = await _get_basic_client_detail_df(client_id, start_date, end_date)
+async def export_basic_client_report(
+    client_id: int,
+    start_date: str | None = None,
+    end_date: str | None = None,
+    employee_id: int | None = None,
+    by_venue: bool = False
+):
+    summary_df = await _get_basic_client_summary_df(
+        client_id, start_date, end_date, employee_id=employee_id, by_venue=by_venue
+    )
+    detail_df = await _get_basic_client_detail_df(
+        client_id, start_date, end_date, employee_id=employee_id
+    )
 
     if summary_df.empty:
-        raise HTTPException(status_code=404, detail="No data found for this client and date range")
+        raise HTTPException(status_code=404, detail="No data found for this client and criteria")
 
     # Fetch client name for the filename
     engine = _get_staffing_engine()
@@ -1310,7 +1397,16 @@ async def export_basic_client_report(client_id: int, start_date: str, end_date: 
         detail_export.to_excel(writer, index=False, sheet_name='Shift Details')
     output.seek(0)
 
-    filename = f"{safe_name}_report_{start_date}_to_{end_date}.xlsx"
+    if start_date and end_date:
+        filename = f"{safe_name}_report_{start_date}_to_{end_date}.xlsx"
+    else:
+        emp_name_part = ""
+        if not summary_df.empty:
+            emp_name = summary_df.iloc[0]["employee_name"]
+            safe_emp_name = "".join(c if c.isalnum() or c in (' ', '-', '_') else '' for c in emp_name).strip().replace(' ', '_')
+            emp_name_part = f"_{safe_emp_name}"
+        filename = f"{safe_name}{emp_name_part}_report_all_time.xlsx"
+
     return StreamingResponse(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
