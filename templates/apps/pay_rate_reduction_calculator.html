@@ -26,6 +26,34 @@
     </div>
   </section>
 
+  <!-- Premium Tabs -->
+  <div class="flex space-x-1 rounded-xl bg-slate-200/50 p-1 max-w-md backdrop-blur border border-slate-200 shadow-sm mb-6">
+    <button 
+      id="tab-btn-county"
+      type="button"
+      onclick="switchTab('county')"
+      class="w-full rounded-lg py-2.5 text-sm font-bold leading-5 text-teal-800 bg-white shadow transition-all duration-200 flex items-center justify-center gap-1.5 focus:outline-none"
+    >
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+      </svg>
+      County Simulator
+    </button>
+    <button 
+      id="tab-btn-compass"
+      type="button"
+      onclick="switchTab('compass')"
+      class="w-full rounded-lg py-2.5 text-sm font-semibold leading-5 text-slate-600 hover:bg-white/40 hover:text-slate-950 transition-all duration-200 flex items-center justify-center gap-1.5 focus:outline-none"
+    >
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+      Compass MSP
+    </button>
+  </div>
+
+  <div id="panel-county" class="space-y-8">
+
   <!-- Dynamic KPI Cards Dashboard -->
   <section class="grid gap-6 md:grid-cols-3">
     <!-- Baseline Card -->
@@ -275,8 +303,323 @@
       </div>
     </div>
 
-  </div>
-</div>
+  </div> <!-- Closes div.grid -->
+</div> <!-- Closes panel-county -->
+
+  <!-- Compass MSP Simulator Panel -->
+  <div id="panel-compass" class="space-y-8 hidden">
+    <!-- Premium Date Selector Header -->
+    <section class="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="space-y-1 flex-1">
+          <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+            <svg class="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Select Simulation Date Range
+          </h2>
+          <p class="text-xs text-gray-500">Choose the target date window to fetch from the live databases. Default is the April/May 2026 dataset.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
+            <label for="compass-start-date" class="text-xs font-bold text-slate-500">From:</label>
+            <input type="date" id="compass-start-date" value="2026-04-25" class="bg-transparent border-0 p-0 text-xs font-bold text-slate-800 focus:ring-0 focus:outline-none w-28">
+          </div>
+          <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
+            <label for="compass-end-date" class="text-xs font-bold text-slate-500">To:</label>
+            <input type="date" id="compass-end-date" value="2026-05-24" class="bg-transparent border-0 p-0 text-xs font-bold text-slate-800 focus:ring-0 focus:outline-none w-28">
+          </div>
+          <button 
+            type="button" 
+            onclick="loadCompassSimulation()" 
+            class="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold px-4 py-2.5 shadow-md shadow-teal-900/10 transition active:scale-95 text-xs"
+            id="btn-compass-load"
+          >
+            <span id="btn-compass-text">Load & Run Compass Simulation</span>
+            <svg class="h-4 w-4 hidden animate-spin" id="btn-compass-spinner" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Compass KPI Comparative Grid -->
+    <section class="grid gap-6 md:grid-cols-3">
+      <!-- Baseline KPIs -->
+      <div class="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div class="absolute top-0 left-0 w-1.5 h-full bg-slate-400"></div>
+        <p class="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 mb-4 flex items-center gap-1">
+          <span class="inline-block h-2 w-2 rounded-full bg-slate-400"></span>
+          Original Baseline Summary
+        </p>
+        <div class="space-y-3.5">
+          <div class="flex justify-between items-end border-b border-dashed border-slate-100 pb-2">
+            <span class="text-xs text-slate-500 font-medium">Total Bill</span>
+            <span class="text-sm font-bold text-slate-800" id="c-base-bill">$0.00</span>
+          </div>
+          <div class="flex justify-between items-end border-b border-dashed border-slate-100 pb-2">
+            <span class="text-xs text-slate-500 font-medium">Gross Pay</span>
+            <span class="text-sm font-bold text-slate-800" id="c-base-pay">$0.00</span>
+          </div>
+          <div class="flex justify-between items-end pt-1">
+            <span class="text-xs font-bold text-slate-600">Net Profit</span>
+            <span class="text-base font-extrabold text-slate-900" id="c-base-profit">$0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Simulated KPIs -->
+      <div class="relative overflow-hidden rounded-2xl border border-teal-100 bg-white p-6 shadow-sm">
+        <div class="absolute top-0 left-0 w-1.5 h-full bg-teal-500"></div>
+        <p class="text-[10px] uppercase tracking-wider font-extrabold text-teal-700 mb-4 flex items-center gap-1">
+          <span class="inline-block h-2 w-2 rounded-full bg-teal-500"></span>
+          Simulated Summary
+        </p>
+        <div class="space-y-3.5">
+          <div class="flex justify-between items-end border-b border-dashed border-teal-50/50 pb-2">
+            <span class="text-xs text-teal-600 font-medium">Simulated Bill</span>
+            <span class="text-sm font-bold text-teal-900" id="c-sim-bill">$0.00</span>
+          </div>
+          <div class="flex justify-between items-end border-b border-dashed border-teal-50/50 pb-2">
+            <span class="text-xs text-teal-600 font-medium">Simulated Pay</span>
+            <span class="text-sm font-bold text-teal-900" id="c-sim-pay">$0.00</span>
+          </div>
+          <div class="flex justify-between items-end pt-1">
+            <span class="text-xs font-bold text-teal-700">Simulated Net Profit</span>
+            <span class="text-base font-extrabold text-teal-950" id="c-sim-profit">$0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Net Deltas -->
+      <div class="relative overflow-hidden rounded-2xl border border-emerald-100 bg-emerald-50/10 p-6 shadow-md transition-all duration-300">
+        <div class="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
+        <p class="text-[10px] uppercase tracking-wider font-extrabold text-emerald-800 mb-4 flex items-center gap-1">
+          <span class="inline-block h-2 w-2 rounded-full bg-emerald-500"></span>
+          Financial Impact Summary
+        </p>
+        <div class="space-y-3.5">
+          <div class="flex justify-between items-end border-b border-dashed border-emerald-100/30 pb-2">
+            <span class="text-xs text-emerald-700 font-bold">Billing Change</span>
+            <span class="text-xs font-extrabold text-emerald-900"><span id="c-delta-bill">$0.00</span> <span id="c-delta-bill-pct" class="text-[10px] font-bold text-emerald-600">(+0.0%)</span></span>
+          </div>
+          <div class="flex justify-between items-end border-b border-dashed border-emerald-100/30 pb-2">
+            <span class="text-xs text-slate-600 font-bold">Payroll Cost Change</span>
+            <span class="text-xs font-extrabold text-slate-800"><span id="c-delta-pay">$0.00</span> <span id="c-delta-pay-pct" class="text-[10px] font-bold text-slate-505">(-0.0%)</span></span>
+          </div>
+          <div class="flex justify-between items-center pt-2">
+            <span class="text-xs font-extrabold text-emerald-900">Profit Net Delta</span>
+            <span id="c-delta-profit-wrapper" class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-100 shadow-sm">
+              <span id="c-delta-profit">+$0.00</span> <span id="c-delta-profit-pct" class="text-[10px]">(+0.0%)</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Compass Fee Distribution Grid -->
+    <section class="grid gap-6 md:grid-cols-2">
+      <!-- Baseline Fees -->
+      <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
+        <h3 class="font-bold text-gray-800 text-sm border-b border-gray-100 pb-2.5 flex items-center gap-1.5">
+          <span class="h-2 w-2 rounded-full bg-slate-400"></span>
+          Baseline Fees Breakdown
+        </h3>
+        <div class="space-y-4 text-xs">
+          <!-- MSP Fee -->
+          <div class="space-y-1">
+            <div class="flex justify-between font-medium">
+              <span class="text-gray-500">MSP Fee (12%)</span>
+              <span class="text-gray-700 font-bold"><span id="c-base-msp-val">$0.00</span> <span id="c-base-msp-pct" class="text-[10px] font-bold text-gray-400">0.0%</span></span>
+            </div>
+            <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+              <div id="c-base-msp-bar" class="bg-slate-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+          <!-- WC Fee -->
+          <div class="space-y-1">
+            <div class="flex justify-between font-medium">
+              <span class="text-gray-500">Workers Comp Fee</span>
+              <span class="text-gray-700 font-bold"><span id="c-base-wc-val">$0.00</span> <span id="c-base-wc-pct" class="text-[10px] font-bold text-gray-400">0.0%</span></span>
+            </div>
+            <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+              <div id="c-base-wc-bar" class="bg-slate-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+          <!-- CC Fee -->
+          <div class="space-y-1">
+            <div class="flex justify-between font-medium">
+              <span class="text-gray-500">Credit Card Fee (2.9%)</span>
+              <span class="text-gray-700 font-bold"><span id="c-base-cc-val">$0.00</span> <span id="c-base-cc-pct" class="text-[10px] font-bold text-gray-400">0.0%</span></span>
+            </div>
+            <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+              <div id="c-base-cc-bar" class="bg-slate-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+          <!-- BT Fee -->
+          <div class="space-y-1">
+            <div class="flex justify-between font-medium">
+              <span class="text-gray-500">Billing Type Fee (2.93%)</span>
+              <span class="text-gray-700 font-bold"><span id="c-base-bt-val">$0.00</span> <span id="c-base-bt-pct" class="text-[10px] font-bold text-gray-400">0.0%</span></span>
+            </div>
+            <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+              <div id="c-base-bt-bar" class="bg-slate-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+          <!-- Commissions -->
+          <div class="space-y-1">
+            <div class="flex justify-between font-medium">
+              <span class="text-gray-500">Commissions</span>
+              <span class="text-gray-700 font-bold"><span id="c-base-comm-val">$0.00</span> <span id="c-base-comm-pct" class="text-[10px] font-bold text-gray-400">0.0%</span></span>
+            </div>
+            <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+              <div id="c-base-comm-bar" class="bg-slate-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+          <!-- Payroll Tax -->
+          <div class="space-y-1">
+            <div class="flex justify-between font-medium">
+              <span class="text-gray-500">Payroll Taxes (10%)</span>
+              <span class="text-gray-700 font-bold"><span id="c-base-tax-val">$0.00</span> <span id="c-base-tax-pct" class="text-[10px] font-bold text-gray-400">0.0%</span></span>
+            </div>
+            <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+              <div id="c-base-tax-bar" class="bg-slate-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+          <!-- Total Fees -->
+          <div class="flex justify-between font-bold border-t border-gray-100 pt-3 text-sm text-gray-800">
+            <span>Total Removed Fees</span>
+            <span id="c-base-total-fees">$0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Simulated Fees -->
+      <div class="rounded-2xl border border-teal-100 bg-white p-6 shadow-sm space-y-4">
+        <h3 class="font-bold text-teal-800 text-sm border-b border-teal-50 pb-2.5 flex items-center gap-1.5">
+          <span class="h-2 w-2 rounded-full bg-teal-500"></span>
+          Simulated Recalculated Fees
+        </h3>
+        <div class="space-y-4 text-xs">
+          <!-- MSP Fee -->
+          <div class="space-y-1">
+            <div class="flex justify-between font-medium">
+              <span class="text-teal-600">MSP Fee (12%)</span>
+              <span class="text-teal-900 font-bold"><span id="c-sim-msp-val">$0.00</span> <span id="c-sim-msp-pct" class="text-[10px] font-bold text-teal-500">0.0%</span></span>
+            </div>
+            <div class="w-full bg-teal-50/50 h-2 rounded-full overflow-hidden">
+              <div id="c-sim-msp-bar" class="bg-teal-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+          <!-- WC Fee -->
+          <div class="space-y-1">
+            <div class="flex justify-between font-medium">
+              <span class="text-teal-600">Workers Comp Fee</span>
+              <span class="text-teal-900 font-bold"><span id="c-sim-wc-val">$0.00</span> <span id="c-sim-wc-pct" class="text-[10px] font-bold text-teal-500">0.0%</span></span>
+            </div>
+            <div class="w-full bg-teal-50/50 h-2 rounded-full overflow-hidden">
+              <div id="c-sim-wc-bar" class="bg-teal-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+          <!-- CC Fee -->
+          <div class="space-y-1">
+            <div class="flex justify-between font-medium">
+              <span class="text-teal-600">Credit Card Fee (2.9%)</span>
+              <span class="text-teal-900 font-bold"><span id="c-sim-cc-val">$0.00</span> <span id="c-sim-cc-pct" class="text-[10px] font-bold text-teal-500">0.0%</span></span>
+            </div>
+            <div class="w-full bg-teal-50/50 h-2 rounded-full overflow-hidden">
+              <div id="c-sim-cc-bar" class="bg-teal-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+          <!-- BT Fee -->
+          <div class="space-y-1">
+            <div class="flex justify-between font-medium">
+              <span class="text-teal-600">Billing Type Fee (2.93%)</span>
+              <span class="text-teal-900 font-bold"><span id="c-sim-bt-val">$0.00</span> <span id="c-sim-bt-pct" class="text-[10px] font-bold text-teal-500">0.0%</span></span>
+            </div>
+            <div class="w-full bg-teal-50/50 h-2 rounded-full overflow-hidden">
+              <div id="c-sim-bt-bar" class="bg-teal-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+          <!-- Commissions -->
+          <div class="space-y-1">
+            <div class="flex justify-between font-medium">
+              <span class="text-teal-600">Commissions</span>
+              <span class="text-teal-900 font-bold"><span id="c-sim-comm-val">$0.00</span> <span id="c-sim-comm-pct" class="text-[10px] font-bold text-teal-500">0.0%</span></span>
+            </div>
+            <div class="w-full bg-teal-50/50 h-2 rounded-full overflow-hidden">
+              <div id="c-sim-comm-bar" class="bg-teal-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+          <!-- Payroll Tax -->
+          <div class="space-y-1">
+            <div class="flex justify-between font-medium">
+              <span class="text-teal-600">Payroll Taxes (10%)</span>
+              <span class="text-teal-900 font-bold"><span id="c-sim-tax-val">$0.00</span> <span id="c-sim-tax-pct" class="text-[10px] font-bold text-teal-500">0.0%</span></span>
+            </div>
+            <div class="w-full bg-teal-50/50 h-2 rounded-full overflow-hidden">
+              <div id="c-sim-tax-bar" class="bg-teal-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+          <!-- Total Fees -->
+          <div class="flex justify-between font-bold border-t border-teal-50 pt-3 text-sm text-teal-900">
+            <span>Total Recalculated Fees</span>
+            <span id="c-sim-total-fees">$0.00</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Compass Client Breakdown Table -->
+    <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+        <div>
+          <h3 class="font-bold text-gray-800 text-base">Compass MSP Client Breakdown</h3>
+          <p class="text-xs text-gray-500 mt-0.5">Comparative metrics by individual client accounts under the simulation.</p>
+        </div>
+        <div class="relative rounded-md shadow-sm w-full sm:w-72">
+          <input 
+            type="text" 
+            placeholder="Search Compass clients..." 
+            oninput="handleClientSearch(this)"
+            class="block w-full rounded-md border-0 py-1.5 pl-3 pr-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-teal-600 text-xs font-semibold"
+          >
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 text-left text-xs">
+          <thead>
+            <tr class="text-gray-500 uppercase tracking-wider font-semibold select-none">
+              <th data-sort-col="client_name" onclick="sortClientTable('client_name')" class="py-2.5 px-4 cursor-pointer select-none text-gray-500 hover:text-gray-800 hover:bg-slate-50 rounded-lg transition-all duration-200 text-left" style="width: 35%;">
+                Client Name <span class="sort-arrow text-slate-300"> ↕</span>
+              </th>
+              <th data-sort-col="sim_bill" onclick="sortClientTable('sim_bill')" class="py-2.5 px-4 cursor-pointer select-none text-gray-500 hover:text-gray-800 hover:bg-slate-50 rounded-lg transition-all duration-200 text-center">
+                Simulated Bill <span class="sort-arrow text-slate-300"> ↕</span>
+              </th>
+              <th data-sort-col="sim_pay" onclick="sortClientTable('sim_pay')" class="py-2.5 px-4 cursor-pointer select-none text-gray-500 hover:text-gray-800 hover:bg-slate-50 rounded-lg transition-all duration-200 text-center">
+                Simulated Payroll <span class="sort-arrow text-slate-300"> ↕</span>
+              </th>
+              <th data-sort-col="sim_profit" onclick="sortClientTable('sim_profit')" class="py-2.5 px-4 cursor-pointer select-none text-teal-700 font-bold text-center" id="header-profit">
+                Simulated Profit <span class="sort-arrow font-bold text-teal-600"> ▼</span>
+              </th>
+              <th data-sort-col="profit_change" onclick="sortClientTable('profit_change')" class="py-2.5 px-4 cursor-pointer select-none text-gray-500 hover:text-gray-800 hover:bg-slate-50 rounded-lg transition-all duration-200 text-right">
+                Profit Net Delta <span class="sort-arrow text-slate-300"> ↕</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 bg-white rounded-xl shadow-inner" id="compass-client-tbody">
+            <tr>
+              <td colspan="5" class="py-10 text-center text-gray-500 font-semibold text-xs animate-pulse">
+                Click "Load & Run Compass Simulation" to query and simulate data.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+  </div> <!-- Closes panel-compass -->
+</div> <!-- Closes content container -->
 {% endblock %}
 
 {% block scripts %}
@@ -428,6 +771,231 @@
       text.textContent = 'Recalculate Savings';
       spinner.classList.add('hidden');
     }
+  }
+
+  let compassLoaded = false;
+  let currentSortCol = 'sim_profit';
+  let currentSortDir = 'desc';
+  let clientSearchQuery = '';
+  
+  function switchTab(tab) {
+    const countyBtn = document.getElementById('tab-btn-county');
+    const compassBtn = document.getElementById('tab-btn-compass');
+    const countyPanel = document.getElementById('panel-county');
+    const compassPanel = document.getElementById('panel-compass');
+    
+    if (tab === 'county') {
+      countyPanel.classList.remove('hidden');
+      compassPanel.classList.add('hidden');
+      
+      countyBtn.className = "w-full rounded-lg py-2.5 text-sm font-bold leading-5 text-teal-800 bg-white shadow transition-all duration-200 flex items-center justify-center gap-1.5 focus:outline-none";
+      compassBtn.className = "w-full rounded-lg py-2.5 text-sm font-semibold leading-5 text-slate-600 hover:bg-white/40 hover:text-slate-950 transition-all duration-200 flex items-center justify-center gap-1.5 focus:outline-none";
+    } else {
+      compassPanel.classList.remove('hidden');
+      countyPanel.classList.add('hidden');
+      
+      compassBtn.className = "w-full rounded-lg py-2.5 text-sm font-bold leading-5 text-teal-800 bg-white shadow transition-all duration-200 flex items-center justify-center gap-1.5 focus:outline-none";
+      countyBtn.className = "w-full rounded-lg py-2.5 text-sm font-semibold leading-5 text-slate-600 hover:bg-white/40 hover:text-slate-950 transition-all duration-200 flex items-center justify-center gap-1.5 focus:outline-none";
+      
+      // Auto load on first switch
+      if (!compassLoaded) {
+        loadCompassSimulation();
+      }
+    }
+  }
+  
+  async function loadCompassSimulation() {
+    const startDate = document.getElementById('compass-start-date').value;
+    const endDate = document.getElementById('compass-end-date').value;
+    
+    const btn = document.getElementById('btn-compass-load');
+    const text = document.getElementById('btn-compass-text');
+    const spinner = document.getElementById('btn-compass-spinner');
+    
+    btn.disabled = true;
+    text.textContent = 'Fetching and Simulating...';
+    spinner.classList.remove('hidden');
+    
+    try {
+      const response = await fetch('/pay-rate-reduction-calculator/compass/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ start_date: startDate, end_date: endDate })
+      });
+      const data = await response.json();
+      
+      if (response.ok) {
+        compassLoaded = true;
+        renderCompassUI(data);
+      } else {
+        alert(data.message || 'Error occurred during database simulation.');
+      }
+    } catch (e) {
+      alert('Network or server error during database simulation.');
+    } finally {
+      btn.disabled = false;
+      text.textContent = 'Load & Run Compass Simulation';
+      spinner.classList.add('hidden');
+    }
+  }
+
+  // Formatter functions
+  const formatCurrency = (val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
+  const formatPercent = (val) => `${val >= 0 ? '+' : ''}${val.toFixed(1)}%`;
+  
+  function renderCompassUI(data) {
+    const base = data.baseline;
+    const sim = data.simulated;
+    
+    // 1. Update Baseline KPIs
+    document.getElementById('c-base-bill').textContent = formatCurrency(base.total_bill);
+    document.getElementById('c-base-pay').textContent = formatCurrency(base.gross_pay);
+    document.getElementById('c-base-profit').textContent = formatCurrency(base.profit);
+    
+    // 2. Update Simulated KPIs
+    document.getElementById('c-sim-bill').textContent = formatCurrency(sim.total_bill);
+    document.getElementById('c-sim-pay').textContent = formatCurrency(sim.gross_pay);
+    document.getElementById('c-sim-profit').textContent = formatCurrency(sim.profit);
+    
+    // 3. Update Impact Deltas
+    const billDiff = sim.total_bill - base.total_bill;
+    const billPct = base.total_bill > 0 ? (billDiff / base.total_bill) * 100 : 0.0;
+    document.getElementById('c-delta-bill').textContent = `${billDiff >= 0 ? '+' : ''}${formatCurrency(billDiff)}`;
+    document.getElementById('c-delta-bill-pct').textContent = `(${formatPercent(billPct)})`;
+    
+    const payDiff = sim.gross_pay - base.gross_pay;
+    const payPct = base.gross_pay > 0 ? (payDiff / base.gross_pay) * 100 : 0.0;
+    document.getElementById('c-delta-pay').textContent = `${payDiff >= 0 ? '+' : ''}${formatCurrency(payDiff)}`;
+    document.getElementById('c-delta-pay-pct').textContent = `(${formatPercent(payPct)})`;
+    
+    const profitDiff = sim.profit - base.profit;
+    const profitPct = base.profit > 0 ? (profitDiff / base.profit) * 100 : 0.0;
+    document.getElementById('c-delta-profit').textContent = `${profitDiff >= 0 ? '+' : ''}${formatCurrency(profitDiff)}`;
+    document.getElementById('c-delta-profit-pct').textContent = `(${formatPercent(profitPct)})`;
+    
+    const profitWrapper = document.getElementById('c-delta-profit-wrapper');
+    if (profitDiff >= 0) {
+      profitWrapper.className = "inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700 border border-emerald-100 shadow-sm";
+    } else {
+      profitWrapper.className = "inline-flex items-center gap-1 rounded-full bg-rose-50 px-3 py-1 text-sm font-bold text-rose-700 border border-rose-100 shadow-sm";
+    }
+    
+    // 4. Update Original vs Simulated Fee list and progress bars
+    updateFeeItem('c-base-msp', base.msp_fee, base.total_bill);
+    updateFeeItem('c-base-wc', base.wc_fee, base.total_bill);
+    updateFeeItem('c-base-cc', base.cc_fee, base.total_bill);
+    updateFeeItem('c-base-bt', base.bt_fee, base.total_bill);
+    updateFeeItem('c-base-comm', base.commissions, base.total_bill);
+    updateFeeItem('c-base-tax', base.payroll_tax, base.total_bill);
+    document.getElementById('c-base-total-fees').textContent = formatCurrency(base.total_fees);
+    
+    updateFeeItem('c-sim-msp', sim.msp_fee, sim.total_bill);
+    updateFeeItem('c-sim-wc', sim.wc_fee, sim.total_bill);
+    updateFeeItem('c-sim-cc', sim.cc_fee, sim.total_bill);
+    updateFeeItem('c-sim-bt', sim.bt_fee, sim.total_bill);
+    updateFeeItem('c-sim-comm', sim.commissions, sim.total_bill);
+    updateFeeItem('c-sim-tax', sim.payroll_tax, sim.total_bill);
+    document.getElementById('c-sim-total-fees').textContent = formatCurrency(sim.total_fees);
+    
+    // 5. Render Client Table
+    window.compassClientData = data.client_breakdown;
+    renderClientTable();
+  }
+  
+  function updateFeeItem(elementId, feeVal, totalBill) {
+    const valText = document.getElementById(`${elementId}-val`);
+    const pctText = document.getElementById(`${elementId}-pct`);
+    const progress = document.getElementById(`${elementId}-bar`);
+    
+    if (valText && pctText && progress) {
+      const pct = totalBill > 0 ? (feeVal / totalBill) * 100 : 0.0;
+      valText.textContent = formatCurrency(feeVal);
+      pctText.textContent = `${pct.toFixed(1)}%`;
+      progress.style.width = `${Math.min(pct * 2.5, 100)}%`;
+    }
+  }
+
+  function renderClientTable() {
+    const tbody = document.getElementById('compass-client-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    if (!window.compassClientData || window.compassClientData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-gray-500 font-medium text-xs">No clients found.</td></tr>';
+      return;
+    }
+    
+    let filtered = window.compassClientData.filter(c => 
+      c.client_name.toLowerCase().includes(clientSearchQuery.toLowerCase())
+    );
+    
+    filtered.sort((a, b) => {
+      let valA = a[currentSortCol];
+      let valB = b[currentSortCol];
+      if (typeof valA === 'string') {
+        return currentSortDir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      } else {
+        return currentSortDir === 'asc' ? valA - valB : valB - valA;
+      }
+    });
+    
+    filtered.forEach(c => {
+      const tr = document.createElement('tr');
+      tr.className = "hover:bg-slate-50/50 transition border-b border-slate-100 text-xs";
+      
+      const badgeClass = c.profit_change >= 0 
+        ? "inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 font-bold text-emerald-700 border border-emerald-100"
+        : "inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 font-bold text-rose-700 border border-rose-100";
+        
+      tr.innerHTML = `
+        <td class="py-3 px-4 font-semibold text-gray-800 text-left">${c.client_name}</td>
+        <td class="py-3 px-4 text-center font-medium text-gray-600">
+          <div class="font-semibold text-gray-800">${formatCurrency(c.sim_bill)}</div>
+          <div class="text-[10px] text-gray-400">Orig: ${formatCurrency(c.orig_bill)}</div>
+        </td>
+        <td class="py-3 px-4 text-center font-medium text-gray-600">
+          <div class="font-semibold text-gray-800">${formatCurrency(c.sim_pay)}</div>
+          <div class="text-[10px] text-gray-400">Orig: ${formatCurrency(c.orig_pay)}</div>
+        </td>
+        <td class="py-3 px-4 text-center font-medium text-gray-600">
+          <div class="font-semibold text-teal-800 bg-teal-50/30 px-2 py-1 rounded">${formatCurrency(c.sim_profit)}</div>
+          <div class="text-[10px] text-gray-400">Orig: ${formatCurrency(c.orig_profit)}</div>
+        </td>
+        <td class="py-3 px-4 text-right">
+          <span class="${badgeClass}">${c.profit_change >= 0 ? '+' : ''}${formatCurrency(c.profit_change)}</span>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+  
+  function handleClientSearch(el) {
+    clientSearchQuery = el.value.trim();
+    renderClientTable();
+  }
+  
+  function sortClientTable(col) {
+    if (currentSortCol === col) {
+      currentSortDir = currentSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      currentSortCol = col;
+      currentSortDir = 'desc';
+    }
+    
+    document.querySelectorAll('[data-sort-col]').forEach(el => {
+      const arrow = el.querySelector('.sort-arrow');
+      if (el.getAttribute('data-sort-col') === col) {
+        arrow.textContent = currentSortDir === 'asc' ? ' ▲' : ' ▼';
+        arrow.className = "sort-arrow font-bold text-teal-600";
+        el.className = "py-2.5 px-4 cursor-pointer select-none text-teal-700 font-bold";
+      } else {
+        arrow.textContent = ' ↕';
+        arrow.className = "sort-arrow text-slate-300";
+        el.className = "py-2.5 px-4 cursor-pointer select-none text-gray-500 hover:text-gray-800 hover:bg-slate-50 rounded-lg transition-all duration-200";
+      }
+    });
+    
+    renderClientTable();
   }
 
   // Collapse counties on load to prevent page bloat, expanding the top one
