@@ -922,6 +922,7 @@ async def calculate_billing_type_rates(payload: BillingTypeCalculateRequest):
                 t.employee_start,
                 COALESCE(mwra.rate, 0.0) AS min_wage,
                 vp.venue_position_id,
+                COALESCE(pos.description, 'Unknown Position') AS position_name,
                 {ts_select_str}
             FROM shift_employee se
             JOIN event e ON se.event_id = e.event_id
@@ -933,6 +934,7 @@ async def calculate_billing_type_rates(payload: BillingTypeCalculateRequest):
             LEFT JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
             LEFT JOIN shift s ON sp.shift_id = s.shift_id
             LEFT JOIN venue_position vp ON vp.venue_id = e.venue_id AND vp.position_id = sp.position_id
+            LEFT JOIN position pos ON sp.position_id = pos.position_id
             LEFT JOIN user u ON c.sales_executive_id = u.id
             LEFT JOIN min_wage_rate_amount mwra ON v.min_wage_id = mwra.min_wage_id
                 AND (mwra.start_date IS NULL OR mwra.start_date <= '2026-07-01')
@@ -1301,10 +1303,42 @@ async def calculate_billing_type_rates(payload: BillingTypeCalculateRequest):
             client_map[c_name]["sim_profit"] = round(c_prof, 2)
             client_map[c_name]["profit_change"] = round(c_prof - client_map[c_name]["orig_profit"], 2)
 
+    # Per-client, per-position drill-down
+    client_positions = {}
+    if "position_name" in df.columns:
+        pos_group = df.groupby(["client_name", "position_name"]).agg(
+            avg_pay_rate=("pay_rate", "mean"),
+            avg_bill_rate=("bill_rate", "mean"),
+            shift_count=("pay_rate", "count")
+        ).reset_index()
+        for _, r in pos_group.iterrows():
+            c_name = r["client_name"]
+            pos_name = r["position_name"]
+            avg_pay = round(float(r["avg_pay_rate"]), 2)
+            avg_bill = round(float(r["avg_bill_rate"]), 2)
+            sim_pay = round(max(avg_pay - payload.reduction_amount, 0.0), 2)
+            sim_bill = round(sim_pay * (1.0 + payload.markup_percent / 100.0), 2)
+            current_markup = round(((avg_bill / avg_pay) - 1.0) * 100.0, 1) if avg_pay > 0 else 0.0
+            if c_name not in client_positions:
+                client_positions[c_name] = []
+            client_positions[c_name].append({
+                "position_name": pos_name,
+                "avg_pay_rate": avg_pay,
+                "avg_bill_rate": avg_bill,
+                "sim_pay_rate": sim_pay,
+                "sim_bill_rate": sim_bill,
+                "current_markup_pct": current_markup,
+                "sim_markup_pct": round(payload.markup_percent, 1),
+                "shift_count": int(r["shift_count"])
+            })
+        for c_name in client_positions:
+            client_positions[c_name].sort(key=lambda x: x["shift_count"], reverse=True)
+
     breakdown_list = list(client_map.values())
     breakdown_list.sort(key=lambda x: x["orig_bill"], reverse=True)
 
     return {
+        "markup_percent": payload.markup_percent,
         "baseline": {
             "total_bill": round(b_bill, 2),
             "gross_pay": round(b_pay, 2),
@@ -1329,5 +1363,6 @@ async def calculate_billing_type_rates(payload: BillingTypeCalculateRequest):
             "total_fees": round(s_tot_fees, 2),
             "profit": round(s_profit, 2)
         },
-        "client_breakdown": breakdown_list
+        "client_breakdown": breakdown_list,
+        "client_positions": client_positions
     }
