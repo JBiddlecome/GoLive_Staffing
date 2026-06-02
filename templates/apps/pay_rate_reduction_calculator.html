@@ -48,7 +48,7 @@
       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
       </svg>
-      Compass MSP
+      Compass & MSP Simulator
     </button>
   </div>
 
@@ -310,32 +310,76 @@
   <div id="panel-compass" class="space-y-8 hidden">
     <!-- Premium Date Selector Header -->
     <section class="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div class="space-y-1 flex-1">
+      <div class="space-y-4">
+        <div class="space-y-1">
           <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
             <svg class="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            Select Simulation Date Range
+            Simulation Settings & Query Parameters
           </h2>
-          <p class="text-xs text-gray-500">Choose the target date window to fetch from the live databases. Default is the April/May 2026 dataset.</p>
+          <p class="text-xs text-gray-500">Configure target date range, client MSP filters, simulated pay reductions, and markup percentages.</p>
         </div>
-        <div class="flex flex-wrap items-center gap-4">
-          <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
-            <label for="compass-start-date" class="text-xs font-bold text-slate-500">From:</label>
-            <input type="date" id="compass-start-date" value="2026-04-25" class="bg-transparent border-0 p-0 text-xs font-bold text-slate-800 focus:ring-0 focus:outline-none w-28">
+        
+        <div class="grid gap-4 sm:grid-cols-2 md:grid-cols-5 items-end">
+          <!-- Start Date -->
+          <div class="space-y-1.5">
+            <label for="compass-start-date" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Start Date</label>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 flex items-center">
+              <input type="date" id="compass-start-date" value="2026-04-25" class="bg-transparent border-0 p-0 text-xs font-bold text-slate-800 focus:ring-0 focus:outline-none w-full">
+            </div>
           </div>
-          <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
-            <label for="compass-end-date" class="text-xs font-bold text-slate-500">To:</label>
-            <input type="date" id="compass-end-date" value="2026-05-24" class="bg-transparent border-0 p-0 text-xs font-bold text-slate-800 focus:ring-0 focus:outline-none w-28">
+          <!-- End Date -->
+          <div class="space-y-1.5">
+            <label for="compass-end-date" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">End Date</label>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 flex items-center">
+              <input type="date" id="compass-end-date" value="2026-05-24" class="bg-transparent border-0 p-0 text-xs font-bold text-slate-800 focus:ring-0 focus:outline-none w-full">
+            </div>
           </div>
+          <!-- Target MSP -->
+          <div class="space-y-1.5">
+            <label for="compass-msp-filter" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Target MSP / Clients</label>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 flex items-center">
+              <select id="compass-msp-filter" class="bg-transparent border-0 p-0 text-xs font-bold text-slate-800 focus:ring-0 focus:outline-none w-full">
+                <option value="2" selected>Compass MSP</option>
+                <option value="all">All Clients (MSPs + Direct)</option>
+                <option value="none">No MSP (Direct Clients)</option>
+                <option disabled class="text-slate-300">--- Other MSPs ---</option>
+                {% for msp in msps %}
+                  {% if msp.id != 2 %}
+                    <option value="{{ msp.id }}">{{ msp.name }}</option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <!-- Pay Rate Reduction -->
+          <div class="space-y-1.5">
+            <label for="compass-reduction-amount" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Pay Rate Reduction</label>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 flex items-center gap-1">
+              <span class="text-xs font-bold text-slate-400">$</span>
+              <input type="number" id="compass-reduction-amount" value="2.00" step="0.25" min="0.00" class="bg-transparent border-0 p-0 text-xs font-bold text-slate-800 focus:ring-0 focus:outline-none w-full text-right">
+            </div>
+          </div>
+          <!-- Markup Percent -->
+          <div class="space-y-1.5">
+            <label for="compass-markup-percent" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Bill Rate Markup %</label>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 flex items-center gap-1">
+              <input type="number" id="compass-markup-percent" value="77" step="1" min="0" class="bg-transparent border-0 p-0 text-xs font-bold text-slate-800 focus:ring-0 focus:outline-none w-full text-right">
+              <span class="text-xs font-bold text-slate-400">%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end pt-2">
           <button 
             type="button" 
             onclick="loadCompassSimulation()" 
-            class="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold px-4 py-2.5 shadow-md shadow-teal-900/10 transition active:scale-95 text-xs"
+            class="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold px-5 py-2.5 shadow-md shadow-teal-900/10 transition active:scale-95 text-xs"
             id="btn-compass-load"
           >
-            <span id="btn-compass-text">Load & Run Compass Simulation</span>
+            <span id="btn-compass-text">Run Database Simulation</span>
             <svg class="h-4 w-4 hidden animate-spin" id="btn-compass-spinner" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
               <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89" />
             </svg>
@@ -430,7 +474,7 @@
           <!-- MSP Fee -->
           <div class="space-y-1">
             <div class="flex justify-between font-medium">
-              <span class="text-gray-500">MSP Fee (12%)</span>
+              <span class="text-gray-500" id="c-base-msp-label">MSP Fee</span>
               <span class="text-gray-700 font-bold"><span id="c-base-msp-val">$0.00</span> <span id="c-base-msp-pct" class="text-[10px] font-bold text-gray-400">0.0%</span></span>
             </div>
             <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
@@ -440,7 +484,7 @@
           <!-- WC Fee -->
           <div class="space-y-1">
             <div class="flex justify-between font-medium">
-              <span class="text-gray-500">Workers Comp Fee</span>
+              <span class="text-gray-500" id="c-base-wc-label">Workers Comp Fee</span>
               <span class="text-gray-700 font-bold"><span id="c-base-wc-val">$0.00</span> <span id="c-base-wc-pct" class="text-[10px] font-bold text-gray-400">0.0%</span></span>
             </div>
             <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
@@ -450,7 +494,7 @@
           <!-- CC Fee -->
           <div class="space-y-1">
             <div class="flex justify-between font-medium">
-              <span class="text-gray-500">Credit Card Fee (2.9%)</span>
+              <span class="text-gray-500" id="c-base-cc-label">Credit Card Fee</span>
               <span class="text-gray-700 font-bold"><span id="c-base-cc-val">$0.00</span> <span id="c-base-cc-pct" class="text-[10px] font-bold text-gray-400">0.0%</span></span>
             </div>
             <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
@@ -460,7 +504,7 @@
           <!-- BT Fee -->
           <div class="space-y-1">
             <div class="flex justify-between font-medium">
-              <span class="text-gray-500">Billing Type Fee (2.93%)</span>
+              <span class="text-gray-500" id="c-base-bt-label">Billing Type Fee</span>
               <span class="text-gray-700 font-bold"><span id="c-base-bt-val">$0.00</span> <span id="c-base-bt-pct" class="text-[10px] font-bold text-gray-400">0.0%</span></span>
             </div>
             <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
@@ -470,7 +514,7 @@
           <!-- Commissions -->
           <div class="space-y-1">
             <div class="flex justify-between font-medium">
-              <span class="text-gray-500">Commissions</span>
+              <span class="text-gray-500" id="c-base-comm-label">Commissions</span>
               <span class="text-gray-700 font-bold"><span id="c-base-comm-val">$0.00</span> <span id="c-base-comm-pct" class="text-[10px] font-bold text-gray-400">0.0%</span></span>
             </div>
             <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
@@ -480,7 +524,7 @@
           <!-- Payroll Tax -->
           <div class="space-y-1">
             <div class="flex justify-between font-medium">
-              <span class="text-gray-500">Payroll Taxes (10%)</span>
+              <span class="text-gray-500" id="c-base-tax-label">Payroll Taxes (10% of pay)</span>
               <span class="text-gray-700 font-bold"><span id="c-base-tax-val">$0.00</span> <span id="c-base-tax-pct" class="text-[10px] font-bold text-gray-400">0.0%</span></span>
             </div>
             <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
@@ -505,7 +549,7 @@
           <!-- MSP Fee -->
           <div class="space-y-1">
             <div class="flex justify-between font-medium">
-              <span class="text-teal-600">MSP Fee (12%)</span>
+              <span class="text-teal-600" id="c-sim-msp-label">MSP Fee</span>
               <span class="text-teal-900 font-bold"><span id="c-sim-msp-val">$0.00</span> <span id="c-sim-msp-pct" class="text-[10px] font-bold text-teal-500">0.0%</span></span>
             </div>
             <div class="w-full bg-teal-50/50 h-2 rounded-full overflow-hidden">
@@ -515,7 +559,7 @@
           <!-- WC Fee -->
           <div class="space-y-1">
             <div class="flex justify-between font-medium">
-              <span class="text-teal-600">Workers Comp Fee</span>
+              <span class="text-teal-600" id="c-sim-wc-label">Workers Comp Fee</span>
               <span class="text-teal-900 font-bold"><span id="c-sim-wc-val">$0.00</span> <span id="c-sim-wc-pct" class="text-[10px] font-bold text-teal-500">0.0%</span></span>
             </div>
             <div class="w-full bg-teal-50/50 h-2 rounded-full overflow-hidden">
@@ -525,7 +569,7 @@
           <!-- CC Fee -->
           <div class="space-y-1">
             <div class="flex justify-between font-medium">
-              <span class="text-teal-600">Credit Card Fee (2.9%)</span>
+              <span class="text-teal-600" id="c-sim-cc-label">Credit Card Fee</span>
               <span class="text-teal-900 font-bold"><span id="c-sim-cc-val">$0.00</span> <span id="c-sim-cc-pct" class="text-[10px] font-bold text-teal-500">0.0%</span></span>
             </div>
             <div class="w-full bg-teal-50/50 h-2 rounded-full overflow-hidden">
@@ -535,7 +579,7 @@
           <!-- BT Fee -->
           <div class="space-y-1">
             <div class="flex justify-between font-medium">
-              <span class="text-teal-600">Billing Type Fee (2.93%)</span>
+              <span class="text-teal-600" id="c-sim-bt-label">Billing Type Fee</span>
               <span class="text-teal-900 font-bold"><span id="c-sim-bt-val">$0.00</span> <span id="c-sim-bt-pct" class="text-[10px] font-bold text-teal-500">0.0%</span></span>
             </div>
             <div class="w-full bg-teal-50/50 h-2 rounded-full overflow-hidden">
@@ -545,7 +589,7 @@
           <!-- Commissions -->
           <div class="space-y-1">
             <div class="flex justify-between font-medium">
-              <span class="text-teal-600">Commissions</span>
+              <span class="text-teal-600" id="c-sim-comm-label">Commissions</span>
               <span class="text-teal-900 font-bold"><span id="c-sim-comm-val">$0.00</span> <span id="c-sim-comm-pct" class="text-[10px] font-bold text-teal-500">0.0%</span></span>
             </div>
             <div class="w-full bg-teal-50/50 h-2 rounded-full overflow-hidden">
@@ -555,7 +599,7 @@
           <!-- Payroll Tax -->
           <div class="space-y-1">
             <div class="flex justify-between font-medium">
-              <span class="text-teal-600">Payroll Taxes (10%)</span>
+              <span class="text-teal-600" id="c-sim-tax-label">Payroll Taxes (10% of pay)</span>
               <span class="text-teal-900 font-bold"><span id="c-sim-tax-val">$0.00</span> <span id="c-sim-tax-pct" class="text-[10px] font-bold text-teal-500">0.0%</span></span>
             </div>
             <div class="w-full bg-teal-50/50 h-2 rounded-full overflow-hidden">
@@ -575,13 +619,14 @@
     <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
         <div>
-          <h3 class="font-bold text-gray-800 text-base">Compass MSP Client Breakdown</h3>
-          <p class="text-xs text-gray-500 mt-0.5">Comparative metrics by individual client accounts under the simulation.</p>
+          <h3 class="font-bold text-gray-800 text-base" id="compass-table-title">Compass MSP Client Breakdown</h3>
+          <p class="text-xs text-gray-500 mt-0.5" id="compass-table-desc">Comparative metrics by individual client accounts under the simulation.</p>
         </div>
         <div class="relative rounded-md shadow-sm w-full sm:w-72">
           <input 
             type="text" 
-            placeholder="Search Compass clients..." 
+            placeholder="Search clients..." 
+            id="compass-client-search"
             oninput="handleClientSearch(this)"
             class="block w-full rounded-md border-0 py-1.5 pl-3 pr-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-teal-600 text-xs font-semibold"
           >
@@ -807,6 +852,9 @@
   async function loadCompassSimulation() {
     const startDate = document.getElementById('compass-start-date').value;
     const endDate = document.getElementById('compass-end-date').value;
+    const mspFilter = document.getElementById('compass-msp-filter').value;
+    const reductionAmount = parseFloat(document.getElementById('compass-reduction-amount').value) || 0.0;
+    const markupPercent = parseFloat(document.getElementById('compass-markup-percent').value) || 0.0;
     
     const btn = document.getElementById('btn-compass-load');
     const text = document.getElementById('btn-compass-text');
@@ -820,12 +868,26 @@
       const response = await fetch('/pay-rate-reduction-calculator/compass/calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ start_date: startDate, end_date: endDate })
+        body: JSON.stringify({ 
+          start_date: startDate, 
+          end_date: endDate,
+          reduction_amount: reductionAmount,
+          markup_percent: markupPercent,
+          msp_filter: mspFilter
+        })
       });
       const data = await response.json();
       
       if (response.ok) {
         compassLoaded = true;
+        
+        // Update table titles based on the selected filter
+        const mspSelect = document.getElementById('compass-msp-filter');
+        const mspName = mspSelect.options[mspSelect.selectedIndex].text;
+        document.getElementById('compass-table-title').textContent = `${mspName} Client Breakdown`;
+        document.getElementById('compass-table-desc').textContent = `Comparative metrics by individual ${mspName} client accounts under the simulation.`;
+        document.getElementById('compass-client-search').placeholder = `Search ${mspName} clients...`;
+        
         renderCompassUI(data);
       } else {
         alert(data.message || 'Error occurred during database simulation.');
@@ -834,7 +896,7 @@
       alert('Network or server error during database simulation.');
     } finally {
       btn.disabled = false;
-      text.textContent = 'Load & Run Compass Simulation';
+      text.textContent = 'Run Database Simulation';
       spinner.classList.add('hidden');
     }
   }
@@ -903,6 +965,7 @@
   }
   
   function updateFeeItem(elementId, feeVal, totalBill) {
+    const labelText = document.getElementById(`${elementId}-label`);
     const valText = document.getElementById(`${elementId}-val`);
     const pctText = document.getElementById(`${elementId}-pct`);
     const progress = document.getElementById(`${elementId}-bar`);
@@ -912,6 +975,18 @@
       valText.textContent = formatCurrency(feeVal);
       pctText.textContent = `${pct.toFixed(1)}%`;
       progress.style.width = `${Math.min(pct * 2.5, 100)}%`;
+      
+      if (labelText) {
+        let feeName = "MSP Fee";
+        if (elementId.includes("msp")) feeName = "MSP Fee";
+        else if (elementId.includes("wc")) feeName = "Workers Comp Fee";
+        else if (elementId.includes("cc")) feeName = "Credit Card Fee";
+        else if (elementId.includes("bt")) feeName = "Billing Type Fee";
+        else if (elementId.includes("comm")) feeName = "Commissions";
+        else if (elementId.includes("tax")) feeName = "Payroll Taxes";
+        
+        labelText.textContent = `${feeName} (${pct.toFixed(1)}%)`;
+      }
     }
   }
 

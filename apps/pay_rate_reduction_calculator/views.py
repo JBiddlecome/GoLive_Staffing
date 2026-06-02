@@ -6,6 +6,33 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import Dict, Optional
+from dotenv import load_dotenv
+from sqlalchemy import create_engine, text, inspect
+from sqlalchemy.engine import URL
+
+def _db_url_from_env() -> URL:
+    env_path = r"C:\Users\jakeb\OneDrive\Documents\GitHub\golive-staffing-tools.env"
+    if os.path.exists(env_path):
+        load_dotenv(env_path)
+        
+    host = os.getenv("DB_HOST")
+    name = os.getenv("DB_NAME", "cstaffing_live")
+    user = os.getenv("DB_USER")
+    password = os.getenv("DB_PASSWORD")
+    port = int(os.getenv("DB_PORT", "3306"))
+    
+    return URL.create(
+        drivername="mysql+pymysql",
+        username=user,
+        password=password,
+        host=host,
+        port=port,
+        database=name,
+    )
+
+def _engine():
+    return create_engine(_db_url_from_env(), pool_pre_ping=True)
+
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -107,6 +134,16 @@ async def pay_rate_reduction_calculator_page(request: Request):
             reverse=True
         )
         
+        msps_list = []
+        try:
+            engine_inst = _engine()
+            with engine_inst.begin() as connection:
+                msps_rows = connection.execute(text("SELECT id, name FROM msp ORDER BY name")).mappings().fetchall()
+                msps_list = [dict(r) for r in msps_rows]
+            engine_inst.dispose()
+        except Exception as db_err:
+            print("Warning: Could not load MSP list from DB for calculator:", db_err)
+
         return templates.TemplateResponse(
             "apps/pay_rate_reduction_calculator.html",
             {
@@ -116,7 +153,8 @@ async def pay_rate_reduction_calculator_page(request: Request):
                 "savings_less_2": savings_less_2,
                 "savings_pct_less_2": savings_pct_less_2,
                 "counties": sorted_counties,
-                "total_shifts": len(df)
+                "total_shifts": len(df),
+                "msps": msps_list
             }
         )
     except Exception as e:
@@ -187,36 +225,14 @@ async def calculate_custom_rates(payload: RecalculateRequest):
             content={"message": f"Error running calculations: {str(e)}"}
         )
 
-from dotenv import load_dotenv
-from sqlalchemy import create_engine, text, inspect
-from sqlalchemy.engine import URL
 
-def _db_url_from_env() -> URL:
-    env_path = r"C:\Users\jakeb\OneDrive\Documents\GitHub\golive-staffing-tools.env"
-    if os.path.exists(env_path):
-        load_dotenv(env_path)
-        
-    host = os.getenv("DB_HOST")
-    name = os.getenv("DB_NAME", "cstaffing_live")
-    user = os.getenv("DB_USER")
-    password = os.getenv("DB_PASSWORD")
-    port = int(os.getenv("DB_PORT", "3306"))
-    
-    return URL.create(
-        drivername="mysql+pymysql",
-        username=user,
-        password=password,
-        host=host,
-        port=port,
-        database=name,
-    )
-
-def _engine():
-    return create_engine(_db_url_from_env(), pool_pre_ping=True)
 
 class CompassCalculateRequest(BaseModel):
     start_date: str
     end_date: str
+    reduction_amount: float = 2.0
+    markup_percent: float = 77.0
+    msp_filter: str = "2"
 
 @router.post("/compass/calculate")
 async def calculate_compass_rates(payload: CompassCalculateRequest):
@@ -238,6 +254,22 @@ async def calculate_compass_rates(payload: CompassCalculateRequest):
             f"t.{col}" if col in timesheet_columns else f"0 AS {col}"
             for col in ts_cols
         )
+
+        msp_clause = ""
+        params = {"start_date": payload.start_date, "end_date": payload.end_date}
+
+        if payload.msp_filter == "none":
+            msp_clause = "AND c.msp_id IS NULL"
+        elif payload.msp_filter == "all":
+            msp_clause = ""
+        else:
+            try:
+                msp_id_val = int(payload.msp_filter)
+                msp_clause = "AND c.msp_id = :msp_id"
+                params["msp_id"] = msp_id_val
+            except ValueError:
+                # Fallback to Compass if parsing fails
+                msp_clause = "AND c.msp_id = 2"
 
         sql = text(
             f"""
@@ -276,10 +308,10 @@ async def calculate_compass_rates(payload: CompassCalculateRequest):
             LEFT JOIN shift s ON sp.shift_id = s.shift_id
             LEFT JOIN user u ON c.sales_executive_id = u.id
             LEFT JOIN min_wage_rate_amount mwra ON v.min_wage_id = mwra.min_wage_id
-                AND (mwra.start_date IS NULL OR mwra.start_date <= e.date)
-                AND (mwra.end_date IS NULL OR mwra.end_date >= e.date)
+                AND (mwra.start_date IS NULL OR mwra.start_date <= '2026-07-01')
+                AND (mwra.end_date IS NULL OR mwra.end_date >= '2026-07-01')
             WHERE e.date >= :start_date AND e.date <= :end_date
-              AND c.msp_id = 2
+              {msp_clause}
               AND (
                   (se.deleted_at IS NULL AND se.confirmed = 1 AND se.cancel_reason = 0)
                   OR se.shift_employee_id IN (
@@ -290,7 +322,7 @@ async def calculate_compass_rates(payload: CompassCalculateRequest):
             """
         )
 
-        params = {"start_date": payload.start_date, "end_date": payload.end_date}
+
 
         with engine.begin() as connection:
             df = pd.read_sql(sql, connection, params=params)
@@ -480,8 +512,8 @@ async def calculate_compass_rates(payload: CompassCalculateRequest):
         min_wage = float(row["min_wage"])
 
         if simulate:
-            pay_rate = max(orig_pay_rate - 2.0, min_wage)
-            bill_rate = pay_rate * 1.77
+            pay_rate = max(orig_pay_rate - payload.reduction_amount, min_wage)
+            bill_rate = pay_rate * (1.0 + payload.markup_percent / 100.0)
         else:
             pay_rate = orig_pay_rate
             bill_rate = orig_bill_rate
