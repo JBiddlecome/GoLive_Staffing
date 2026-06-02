@@ -27,7 +27,7 @@
   </section>
 
   <!-- Premium Tabs -->
-  <div class="flex space-x-1 rounded-xl bg-slate-200/50 p-1 max-w-md backdrop-blur border border-slate-200 shadow-sm mb-6">
+  <div class="flex space-x-1 rounded-xl bg-slate-200/50 p-1 max-w-xl backdrop-blur border border-slate-200 shadow-sm mb-6">
     <button 
       id="tab-btn-county"
       type="button"
@@ -49,6 +49,17 @@
         <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
       </svg>
       Compass & MSP Simulator
+    </button>
+    <button 
+      id="tab-btn-billing"
+      type="button"
+      onclick="switchTab('billing')"
+      class="w-full rounded-lg py-2.5 text-sm font-semibold leading-5 text-slate-600 hover:bg-white/40 hover:text-slate-950 transition-all duration-200 flex items-center justify-center gap-1.5 focus:outline-none"
+    >
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z" />
+      </svg>
+      Billing Type Simulator
     </button>
   </div>
 
@@ -709,6 +720,272 @@
         </table>
       </div>
   </div> <!-- Closes panel-compass -->
+
+  <!-- Billing Type Simulator Panel -->
+  <div id="panel-billing" class="space-y-8 hidden">
+    <!-- Settings Header -->
+    <section class="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div class="space-y-4">
+        <div class="space-y-1">
+          <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+            <svg class="h-5 w-5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z" />
+            </svg>
+            Billing Type Simulation Settings
+          </h2>
+          <p class="text-xs text-gray-500">Filter clients by billing type, then simulate pay rate reductions across that segment.</p>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2 md:grid-cols-6 items-end">
+          <!-- Start Date -->
+          <div class="space-y-1.5">
+            <label for="bt-start-date" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Start Date</label>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 flex items-center">
+              <input type="date" id="bt-start-date" value="2026-04-25" class="bg-transparent border-0 p-0 text-xs font-bold text-slate-800 focus:ring-0 focus:outline-none w-full">
+            </div>
+          </div>
+          <!-- End Date -->
+          <div class="space-y-1.5">
+            <label for="bt-end-date" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">End Date</label>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 flex items-center">
+              <input type="date" id="bt-end-date" value="2026-05-24" class="bg-transparent border-0 p-0 text-xs font-bold text-slate-800 focus:ring-0 focus:outline-none w-full">
+            </div>
+          </div>
+          <!-- Billing Type Filter -->
+          <div class="space-y-1.5">
+            <label for="bt-billing-type-filter" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Billing Type</label>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 flex items-center">
+              <select id="bt-billing-type-filter" class="bg-transparent border-0 p-0 text-xs font-bold text-slate-800 focus:ring-0 focus:outline-none w-full">
+                <option value="action_capital" selected>Action Capital</option>
+                <option value="all">All Clients</option>
+                <option disabled class="text-slate-300">--- Individual Types ---</option>
+                {% for bt in billing_types %}
+                  {% if bt.id not in [2, 3, 6, 7, 11] %}
+                    <option value="{{ bt.id }}">{{ bt.name }}</option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <!-- Calculation Mode -->
+          <div class="space-y-1.5">
+            <label for="bt-calc-mode" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Calculation Mode</label>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 flex items-center">
+              <select id="bt-calc-mode" onchange="toggleBtCalcModeInputs()" class="bg-transparent border-0 p-0 text-xs font-bold text-slate-800 focus:ring-0 focus:outline-none w-full">
+                <option value="global" selected>Global Reduction</option>
+                <option value="spreadsheet">Spreadsheet Rates</option>
+              </select>
+            </div>
+          </div>
+          <!-- Pay Rate Reduction -->
+          <div class="space-y-1.5" id="bt-reduction-container">
+            <label for="bt-reduction-amount" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Pay Rate Reduction</label>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 flex items-center gap-1">
+              <span class="text-xs font-bold text-slate-400">$</span>
+              <input type="number" id="bt-reduction-amount" value="2.00" step="0.25" min="0.00" class="bg-transparent border-0 p-0 text-xs font-bold text-slate-800 focus:ring-0 focus:outline-none w-full text-right">
+            </div>
+          </div>
+          <!-- Markup Percent -->
+          <div class="space-y-1.5" id="bt-markup-container">
+            <label for="bt-markup-percent" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Bill Rate Markup %</label>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 flex items-center gap-1">
+              <input type="number" id="bt-markup-percent" value="77" step="1" min="0" class="bg-transparent border-0 p-0 text-xs font-bold text-slate-800 focus:ring-0 focus:outline-none w-full text-right">
+              <span class="text-xs font-bold text-slate-400">%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end pt-2">
+          <button 
+            type="button" 
+            onclick="loadBillingTypeSimulation()" 
+            class="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold px-5 py-2.5 shadow-md shadow-violet-900/10 transition active:scale-95 text-xs"
+            id="btn-bt-load"
+          >
+            <span id="btn-bt-text">Run Billing Type Simulation</span>
+            <svg class="h-4 w-4 hidden animate-spin" id="btn-bt-spinner" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Billing Type KPI Comparative Grid -->
+    <section class="grid gap-6 md:grid-cols-3">
+      <!-- Baseline KPIs -->
+      <div class="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div class="absolute top-0 left-0 w-1.5 h-full bg-slate-400"></div>
+        <p class="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 mb-4 flex items-center gap-1">
+          <span class="inline-block h-2 w-2 rounded-full bg-slate-400"></span>
+          Original Baseline Summary
+        </p>
+        <div class="space-y-3.5">
+          <div class="flex justify-between items-end border-b border-dashed border-slate-100 pb-2">
+            <span class="text-xs text-slate-500 font-medium">Total Bill</span>
+            <span class="text-sm font-bold text-slate-800" id="bt-base-bill">$0.00</span>
+          </div>
+          <div class="flex justify-between items-end border-b border-dashed border-slate-100 pb-2">
+            <span class="text-xs text-slate-500 font-medium">Gross Pay</span>
+            <span class="text-sm font-bold text-slate-800" id="bt-base-pay">$0.00</span>
+          </div>
+          <div class="flex justify-between items-end pt-1">
+            <span class="text-xs font-bold text-slate-600">Net Profit</span>
+            <span class="text-base font-extrabold text-slate-900" id="bt-base-profit">$0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Simulated KPIs -->
+      <div class="relative overflow-hidden rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
+        <div class="absolute top-0 left-0 w-1.5 h-full bg-violet-500"></div>
+        <p class="text-[10px] uppercase tracking-wider font-extrabold text-violet-700 mb-4 flex items-center gap-1">
+          <span class="inline-block h-2 w-2 rounded-full bg-violet-500"></span>
+          Simulated Summary
+        </p>
+        <div class="space-y-3.5">
+          <div class="flex justify-between items-end border-b border-dashed border-violet-50/50 pb-2">
+            <span class="text-xs text-violet-600 font-medium">Simulated Bill</span>
+            <span class="text-sm font-bold text-violet-900" id="bt-sim-bill">$0.00</span>
+          </div>
+          <div class="flex justify-between items-end border-b border-dashed border-violet-50/50 pb-2">
+            <span class="text-xs text-violet-600 font-medium">Simulated Pay</span>
+            <span class="text-sm font-bold text-violet-900" id="bt-sim-pay">$0.00</span>
+          </div>
+          <div class="flex justify-between items-end pt-1">
+            <span class="text-xs font-bold text-violet-700">Simulated Net Profit</span>
+            <span class="text-base font-extrabold text-violet-950" id="bt-sim-profit">$0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Net Deltas -->
+      <div class="relative overflow-hidden rounded-2xl border border-emerald-100 bg-emerald-50/10 p-6 shadow-md transition-all duration-300">
+        <div class="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
+        <p class="text-[10px] uppercase tracking-wider font-extrabold text-emerald-800 mb-4 flex items-center gap-1">
+          <span class="inline-block h-2 w-2 rounded-full bg-emerald-500"></span>
+          Financial Impact Summary
+        </p>
+        <div class="space-y-3.5">
+          <div class="flex justify-between items-end border-b border-dashed border-emerald-100/30 pb-2">
+            <span class="text-xs text-emerald-700 font-bold">Billing Change</span>
+            <span class="text-xs font-extrabold text-emerald-900"><span id="bt-delta-bill">$0.00</span> <span id="bt-delta-bill-pct" class="text-[10px] font-bold text-emerald-600">(+0.0%)</span></span>
+          </div>
+          <div class="flex justify-between items-end border-b border-dashed border-emerald-100/30 pb-2">
+            <span class="text-xs text-slate-600 font-bold">Payroll Cost Change</span>
+            <span class="text-xs font-extrabold text-slate-800"><span id="bt-delta-pay">$0.00</span> <span id="bt-delta-pay-pct" class="text-[10px] font-bold text-slate-500">(-0.0%)</span></span>
+          </div>
+          <div class="flex justify-between items-center pt-2">
+            <span class="text-xs font-extrabold text-emerald-900">Profit Net Delta</span>
+            <span id="bt-delta-profit-wrapper" class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-100 shadow-sm">
+              <span id="bt-delta-profit">+$0.00</span> <span id="bt-delta-profit-pct" class="text-[10px]">(+0.0%)</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Billing Type Fee Distribution Grid -->
+    <section class="grid gap-6 md:grid-cols-2">
+      <!-- Baseline Fees -->
+      <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
+        <h3 class="font-bold text-gray-800 text-sm border-b border-gray-100 pb-2.5 flex items-center gap-1.5">
+          <span class="h-2 w-2 rounded-full bg-slate-400"></span>
+          Baseline Fees Breakdown
+        </h3>
+        <div class="space-y-4 text-xs">
+          <div class="space-y-1"><div class="flex justify-between font-medium"><span class="text-gray-500" id="bt-base-msp-label">MSP Fee</span><span class="text-gray-700 font-bold"><span id="bt-base-msp-val">$0.00</span> <span id="bt-base-msp-pct" class="text-[10px] font-bold text-gray-400">0.0%</span></span></div><div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden"><div id="bt-base-msp-bar" class="bg-slate-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div></div></div>
+          <div class="space-y-1"><div class="flex justify-between font-medium"><span class="text-gray-500" id="bt-base-wc-label">Workers Comp Fee</span><span class="text-gray-700 font-bold"><span id="bt-base-wc-val">$0.00</span> <span id="bt-base-wc-pct" class="text-[10px] font-bold text-gray-400">0.0%</span></span></div><div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden"><div id="bt-base-wc-bar" class="bg-slate-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div></div></div>
+          <div class="space-y-1"><div class="flex justify-between font-medium"><span class="text-gray-500" id="bt-base-cc-label">Credit Card Fee</span><span class="text-gray-700 font-bold"><span id="bt-base-cc-val">$0.00</span> <span id="bt-base-cc-pct" class="text-[10px] font-bold text-gray-400">0.0%</span></span></div><div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden"><div id="bt-base-cc-bar" class="bg-slate-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div></div></div>
+          <div class="space-y-1"><div class="flex justify-between font-medium"><span class="text-gray-500" id="bt-base-bt-label">Billing Type Fee</span><span class="text-gray-700 font-bold"><span id="bt-base-bt-val">$0.00</span> <span id="bt-base-bt-pct" class="text-[10px] font-bold text-gray-400">0.0%</span></span></div><div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden"><div id="bt-base-bt-bar" class="bg-slate-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div></div></div>
+          <div class="space-y-1"><div class="flex justify-between font-medium"><span class="text-gray-500" id="bt-base-comm-label">Commissions</span><span class="text-gray-700 font-bold"><span id="bt-base-comm-val">$0.00</span> <span id="bt-base-comm-pct" class="text-[10px] font-bold text-gray-400">0.0%</span></span></div><div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden"><div id="bt-base-comm-bar" class="bg-slate-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div></div></div>
+          <div class="space-y-1"><div class="flex justify-between font-medium"><span class="text-gray-500" id="bt-base-tax-label">Payroll Taxes (10% of pay)</span><span class="text-gray-700 font-bold"><span id="bt-base-tax-val">$0.00</span> <span id="bt-base-tax-pct" class="text-[10px] font-bold text-gray-400">0.0%</span></span></div><div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden"><div id="bt-base-tax-bar" class="bg-slate-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div></div></div>
+          <div class="flex justify-between font-bold border-t border-gray-100 pt-3 text-sm text-gray-800"><span>Total Removed Fees</span><span id="bt-base-total-fees">$0.00</span></div>
+        </div>
+      </div>
+
+      <!-- Simulated Fees -->
+      <div class="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm space-y-4">
+        <h3 class="font-bold text-violet-800 text-sm border-b border-violet-50 pb-2.5 flex items-center gap-1.5">
+          <span class="h-2 w-2 rounded-full bg-violet-500"></span>
+          Simulated Recalculated Fees
+        </h3>
+        <div class="space-y-4 text-xs">
+          <div class="space-y-1"><div class="flex justify-between font-medium"><span class="text-violet-600" id="bt-sim-msp-label">MSP Fee</span><span class="text-violet-900 font-bold"><span id="bt-sim-msp-val">$0.00</span> <span id="bt-sim-msp-pct" class="text-[10px] font-bold text-violet-500">0.0%</span></span></div><div class="w-full bg-violet-50/50 h-2 rounded-full overflow-hidden"><div id="bt-sim-msp-bar" class="bg-violet-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div></div></div>
+          <div class="space-y-1"><div class="flex justify-between font-medium"><span class="text-violet-600" id="bt-sim-wc-label">Workers Comp Fee</span><span class="text-violet-900 font-bold"><span id="bt-sim-wc-val">$0.00</span> <span id="bt-sim-wc-pct" class="text-[10px] font-bold text-violet-500">0.0%</span></span></div><div class="w-full bg-violet-50/50 h-2 rounded-full overflow-hidden"><div id="bt-sim-wc-bar" class="bg-violet-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div></div></div>
+          <div class="space-y-1"><div class="flex justify-between font-medium"><span class="text-violet-600" id="bt-sim-cc-label">Credit Card Fee</span><span class="text-violet-900 font-bold"><span id="bt-sim-cc-val">$0.00</span> <span id="bt-sim-cc-pct" class="text-[10px] font-bold text-violet-500">0.0%</span></span></div><div class="w-full bg-violet-50/50 h-2 rounded-full overflow-hidden"><div id="bt-sim-cc-bar" class="bg-violet-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div></div></div>
+          <div class="space-y-1"><div class="flex justify-between font-medium"><span class="text-violet-600" id="bt-sim-bt-label">Billing Type Fee</span><span class="text-violet-900 font-bold"><span id="bt-sim-bt-val">$0.00</span> <span id="bt-sim-bt-pct" class="text-[10px] font-bold text-violet-500">0.0%</span></span></div><div class="w-full bg-violet-50/50 h-2 rounded-full overflow-hidden"><div id="bt-sim-bt-bar" class="bg-violet-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div></div></div>
+          <div class="space-y-1"><div class="flex justify-between font-medium"><span class="text-violet-600" id="bt-sim-comm-label">Commissions</span><span class="text-violet-900 font-bold"><span id="bt-sim-comm-val">$0.00</span> <span id="bt-sim-comm-pct" class="text-[10px] font-bold text-violet-500">0.0%</span></span></div><div class="w-full bg-violet-50/50 h-2 rounded-full overflow-hidden"><div id="bt-sim-comm-bar" class="bg-violet-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div></div></div>
+          <div class="space-y-1"><div class="flex justify-between font-medium"><span class="text-violet-600" id="bt-sim-tax-label">Payroll Taxes (10% of pay)</span><span class="text-violet-900 font-bold"><span id="bt-sim-tax-val">$0.00</span> <span id="bt-sim-tax-pct" class="text-[10px] font-bold text-violet-500">0.0%</span></span></div><div class="w-full bg-violet-50/50 h-2 rounded-full overflow-hidden"><div id="bt-sim-tax-bar" class="bg-violet-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div></div></div>
+          <div class="flex justify-between font-bold border-t border-violet-50 pt-3 text-sm text-violet-900"><span>Total Recalculated Fees</span><span id="bt-sim-total-fees">$0.00</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Billing Type Client Breakdown Table -->
+    <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+        <div>
+          <h3 class="font-bold text-gray-800 text-base" id="bt-table-title">Action Capital Client Breakdown</h3>
+          <p class="text-xs text-gray-500 mt-0.5" id="bt-table-desc">Comparative metrics by client accounts under the billing type simulation.</p>
+        </div>
+        <div class="flex items-center gap-3 w-full sm:w-auto">
+          <button 
+            type="button" 
+            id="btn-bt-clear-overrides" 
+            onclick="resetBtClientOverrides()" 
+            class="hidden text-xs font-bold text-violet-600 hover:text-violet-700 hover:underline transition whitespace-nowrap"
+          >
+            Clear Overrides
+          </button>
+          <div class="relative rounded-md shadow-sm w-full sm:w-64">
+            <input 
+              type="text" 
+              placeholder="Search clients..." 
+              id="bt-client-search"
+              oninput="handleBtClientSearch(this)"
+              class="block w-full rounded-md border-0 py-1.5 pl-3 pr-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-violet-600 text-xs font-semibold"
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 text-left text-xs">
+          <thead>
+            <tr class="text-gray-500 uppercase tracking-wider font-semibold select-none">
+              <th data-sort-col-bt="client_name" onclick="sortBtClientTable('client_name')" class="py-2.5 px-4 cursor-pointer select-none text-gray-500 hover:text-gray-800 hover:bg-slate-50 rounded-lg transition-all duration-200 text-left" style="width: 30%;">
+                Client Name <span class="bt-sort-arrow text-slate-300"> ↕</span>
+              </th>
+              <th class="py-2.5 px-4 text-center text-gray-500" style="width: 15%;">
+                Pay Reduction
+              </th>
+              <th data-sort-col-bt="sim_bill" onclick="sortBtClientTable('sim_bill')" class="py-2.5 px-4 cursor-pointer select-none text-gray-500 hover:text-gray-800 hover:bg-slate-50 rounded-lg transition-all duration-200 text-center">
+                Simulated Bill <span class="bt-sort-arrow text-slate-300"> ↕</span>
+              </th>
+              <th data-sort-col-bt="sim_pay" onclick="sortBtClientTable('sim_pay')" class="py-2.5 px-4 cursor-pointer select-none text-gray-500 hover:text-gray-800 hover:bg-slate-50 rounded-lg transition-all duration-200 text-center">
+                Simulated Payroll <span class="bt-sort-arrow text-slate-300"> ↕</span>
+              </th>
+              <th data-sort-col-bt="sim_profit" onclick="sortBtClientTable('sim_profit')" class="py-2.5 px-4 cursor-pointer select-none text-violet-700 font-bold text-center" id="bt-header-profit">
+                Simulated Profit <span class="bt-sort-arrow font-bold text-violet-600"> ▼</span>
+              </th>
+              <th data-sort-col-bt="profit_change" onclick="sortBtClientTable('profit_change')" class="py-2.5 px-4 cursor-pointer select-none text-gray-500 hover:text-gray-800 hover:bg-slate-50 rounded-lg transition-all duration-200 text-right">
+                Profit Net Delta <span class="bt-sort-arrow text-slate-300"> ↕</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 bg-white rounded-xl shadow-inner" id="bt-client-tbody">
+            <tr>
+              <td colspan="6" class="py-10 text-center text-gray-500 font-semibold text-xs animate-pulse">
+                Click "Run Billing Type Simulation" to query and simulate data.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div> <!-- Closes panel-billing -->
+
 </div> <!-- Closes content container -->
 {% endblock %}
 
@@ -872,22 +1149,30 @@
   function switchTab(tab) {
     const countyBtn = document.getElementById('tab-btn-county');
     const compassBtn = document.getElementById('tab-btn-compass');
+    const billingBtn = document.getElementById('tab-btn-billing');
     const countyPanel = document.getElementById('panel-county');
     const compassPanel = document.getElementById('panel-compass');
-    
+    const billingPanel = document.getElementById('panel-billing');
+
+    const activeClass = "w-full rounded-lg py-2.5 text-sm font-bold leading-5 text-teal-800 bg-white shadow transition-all duration-200 flex items-center justify-center gap-1.5 focus:outline-none";
+    const inactiveClass = "w-full rounded-lg py-2.5 text-sm font-semibold leading-5 text-slate-600 hover:bg-white/40 hover:text-slate-950 transition-all duration-200 flex items-center justify-center gap-1.5 focus:outline-none";
+
+    countyPanel.classList.add('hidden');
+    compassPanel.classList.add('hidden');
+    billingPanel.classList.add('hidden');
+    countyBtn.className = inactiveClass;
+    compassBtn.className = inactiveClass;
+    billingBtn.className = inactiveClass;
+
     if (tab === 'county') {
       countyPanel.classList.remove('hidden');
-      compassPanel.classList.add('hidden');
-      
-      countyBtn.className = "w-full rounded-lg py-2.5 text-sm font-bold leading-5 text-teal-800 bg-white shadow transition-all duration-200 flex items-center justify-center gap-1.5 focus:outline-none";
-      compassBtn.className = "w-full rounded-lg py-2.5 text-sm font-semibold leading-5 text-slate-600 hover:bg-white/40 hover:text-slate-950 transition-all duration-200 flex items-center justify-center gap-1.5 focus:outline-none";
-    } else {
+      countyBtn.className = activeClass;
+    } else if (tab === 'compass') {
       compassPanel.classList.remove('hidden');
-      countyPanel.classList.add('hidden');
-      
-      compassBtn.className = "w-full rounded-lg py-2.5 text-sm font-bold leading-5 text-teal-800 bg-white shadow transition-all duration-200 flex items-center justify-center gap-1.5 focus:outline-none";
-      countyBtn.className = "w-full rounded-lg py-2.5 text-sm font-semibold leading-5 text-slate-600 hover:bg-white/40 hover:text-slate-950 transition-all duration-200 flex items-center justify-center gap-1.5 focus:outline-none";
-      
+      compassBtn.className = activeClass;
+    } else if (tab === 'billing') {
+      billingPanel.classList.remove('hidden');
+      billingBtn.className = activeClass;
     }
   }
   
@@ -1264,10 +1549,310 @@
     renderClientTable();
   }
 
+  // ─── Billing Type Simulator ───────────────────────────────────────────────
+  let btCurrentSortCol = 'sim_profit';
+  let btCurrentSortDir = 'desc';
+  let btClientSearchQuery = '';
+  window.btCustomClientReductions = {};
+
+  async function loadBillingTypeSimulation(isRecalculate = false) {
+    if (!isRecalculate) {
+      window.btCustomClientReductions = {};
+      const clearBtn = document.getElementById('btn-bt-clear-overrides');
+      if (clearBtn) clearBtn.classList.add('hidden');
+    }
+    const startDate = document.getElementById('bt-start-date').value;
+    const endDate = document.getElementById('bt-end-date').value;
+    const billingTypeFilter = document.getElementById('bt-billing-type-filter').value;
+    const reductionAmount = parseFloat(document.getElementById('bt-reduction-amount').value) || 0.0;
+    const markupPercent = parseFloat(document.getElementById('bt-markup-percent').value) || 0.0;
+    const calcMode = document.getElementById('bt-calc-mode').value;
+    const useSpreadsheet = (calcMode === 'spreadsheet');
+
+    const btn = document.getElementById('btn-bt-load');
+    const text = document.getElementById('btn-bt-text');
+    const spinner = document.getElementById('btn-bt-spinner');
+
+    btn.disabled = true;
+    text.textContent = isRecalculate ? 'Recalculating Overrides...' : 'Fetching and Simulating...';
+    spinner.classList.remove('hidden');
+
+    // Update table title based on selected billing type
+    const btSelect = document.getElementById('bt-billing-type-filter');
+    const btName = btSelect.options[btSelect.selectedIndex].text;
+    document.getElementById('bt-table-title').textContent = `${btName} Client Breakdown`;
+    document.getElementById('bt-table-desc').textContent = `Comparative metrics by ${btName} client accounts under the simulation.`;
+    document.getElementById('bt-client-search').placeholder = `Search ${btName} clients...`;
+
+    try {
+      const response = await fetch('/pay-rate-reduction-calculator/billing-type/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          start_date: startDate,
+          end_date: endDate,
+          billing_type_filter: billingTypeFilter,
+          reduction_amount: reductionAmount,
+          markup_percent: markupPercent,
+          client_reductions: window.btCustomClientReductions,
+          use_spreadsheet: useSpreadsheet
+        })
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        const hasOverrides = Object.keys(window.btCustomClientReductions).length > 0;
+        const clearBtn = document.getElementById('btn-bt-clear-overrides');
+        if (clearBtn) {
+          if (hasOverrides) clearBtn.classList.remove('hidden');
+          else clearBtn.classList.add('hidden');
+        }
+        renderBillingTypeUI(data);
+      } else {
+        alert(data.message || 'Error occurred during billing type simulation.');
+      }
+    } catch (e) {
+      alert('Network or server error during billing type simulation.');
+    } finally {
+      btn.disabled = false;
+      text.textContent = 'Run Billing Type Simulation';
+      spinner.classList.add('hidden');
+    }
+  }
+
+  function renderBillingTypeUI(data) {
+    const base = data.baseline;
+    const sim = data.simulated;
+
+    document.getElementById('bt-base-bill').textContent = formatCurrency(base.total_bill);
+    document.getElementById('bt-base-pay').textContent = formatCurrency(base.gross_pay);
+    document.getElementById('bt-base-profit').textContent = formatCurrency(base.profit);
+
+    document.getElementById('bt-sim-bill').textContent = formatCurrency(sim.total_bill);
+    document.getElementById('bt-sim-pay').textContent = formatCurrency(sim.gross_pay);
+    document.getElementById('bt-sim-profit').textContent = formatCurrency(sim.profit);
+
+    const billDiff = sim.total_bill - base.total_bill;
+    const billPct = base.total_bill > 0 ? (billDiff / base.total_bill) * 100 : 0.0;
+    document.getElementById('bt-delta-bill').textContent = `${billDiff >= 0 ? '+' : ''}${formatCurrency(billDiff)}`;
+    document.getElementById('bt-delta-bill-pct').textContent = `(${formatPercent(billPct)})`;
+
+    const payDiff = sim.gross_pay - base.gross_pay;
+    const payPct = base.gross_pay > 0 ? (payDiff / base.gross_pay) * 100 : 0.0;
+    document.getElementById('bt-delta-pay').textContent = `${payDiff >= 0 ? '+' : ''}${formatCurrency(payDiff)}`;
+    document.getElementById('bt-delta-pay-pct').textContent = `(${formatPercent(payPct)})`;
+
+    const profitDiff = sim.profit - base.profit;
+    const profitPct = base.profit > 0 ? (profitDiff / base.profit) * 100 : 0.0;
+    document.getElementById('bt-delta-profit').textContent = `${profitDiff >= 0 ? '+' : ''}${formatCurrency(profitDiff)}`;
+    document.getElementById('bt-delta-profit-pct').textContent = `(${formatPercent(profitPct)})`;
+
+    const profitWrapper = document.getElementById('bt-delta-profit-wrapper');
+    if (profitDiff >= 0) {
+      profitWrapper.className = "inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700 border border-emerald-100 shadow-sm";
+    } else {
+      profitWrapper.className = "inline-flex items-center gap-1 rounded-full bg-rose-50 px-3 py-1 text-sm font-bold text-rose-700 border border-rose-100 shadow-sm";
+    }
+
+    updateBtFeeItem('bt-base-msp', base.msp_fee, base.total_bill);
+    updateBtFeeItem('bt-base-wc', base.wc_fee, base.total_bill);
+    updateBtFeeItem('bt-base-cc', base.cc_fee, base.total_bill);
+    updateBtFeeItem('bt-base-bt', base.bt_fee, base.total_bill);
+    updateBtFeeItem('bt-base-comm', base.commissions, base.total_bill);
+    updateBtFeeItem('bt-base-tax', base.payroll_tax, base.total_bill);
+    document.getElementById('bt-base-total-fees').textContent = formatCurrency(base.total_fees);
+
+    updateBtFeeItem('bt-sim-msp', sim.msp_fee, sim.total_bill);
+    updateBtFeeItem('bt-sim-wc', sim.wc_fee, sim.total_bill);
+    updateBtFeeItem('bt-sim-cc', sim.cc_fee, sim.total_bill);
+    updateBtFeeItem('bt-sim-bt', sim.bt_fee, sim.total_bill);
+    updateBtFeeItem('bt-sim-comm', sim.commissions, sim.total_bill);
+    updateBtFeeItem('bt-sim-tax', sim.payroll_tax, sim.total_bill);
+    document.getElementById('bt-sim-total-fees').textContent = formatCurrency(sim.total_fees);
+
+    window.btClientData = data.client_breakdown;
+    renderBtClientTable();
+  }
+
+  function updateBtFeeItem(elementId, feeVal, totalBill) {
+    const labelText = document.getElementById(`${elementId}-label`);
+    const valText = document.getElementById(`${elementId}-val`);
+    const pctText = document.getElementById(`${elementId}-pct`);
+    const progress = document.getElementById(`${elementId}-bar`);
+
+    if (valText && pctText && progress) {
+      const pct = totalBill > 0 ? (feeVal / totalBill) * 100 : 0.0;
+      valText.textContent = formatCurrency(feeVal);
+      pctText.textContent = `${pct.toFixed(1)}%`;
+      progress.style.width = `${Math.min(pct * 2.5, 100)}%`;
+
+      if (labelText) {
+        let feeName = "MSP Fee";
+        if (elementId.includes("msp")) feeName = "MSP Fee";
+        else if (elementId.includes("wc")) feeName = "Workers Comp Fee";
+        else if (elementId.includes("cc")) feeName = "Credit Card Fee";
+        else if (elementId.includes("-bt")) feeName = "Billing Type Fee";
+        else if (elementId.includes("comm")) feeName = "Commissions";
+        else if (elementId.includes("tax")) feeName = "Payroll Taxes";
+        labelText.textContent = `${feeName} (${pct.toFixed(1)}%)`;
+      }
+    }
+  }
+
+  function handleBtClientReductionChange(inputEl) {
+    const clientName = inputEl.getAttribute('data-client');
+    const val = parseFloat(inputEl.value);
+    if (!isNaN(val) && val >= 0) {
+      window.btCustomClientReductions[clientName] = val;
+      loadBillingTypeSimulation(true);
+    } else {
+      inputEl.value = (window.btCustomClientReductions[clientName] !== undefined)
+        ? window.btCustomClientReductions[clientName].toFixed(2)
+        : parseFloat(document.getElementById('bt-reduction-amount').value || 2.0).toFixed(2);
+    }
+  }
+
+  function resetBtClientOverrides() {
+    window.btCustomClientReductions = {};
+    const clearBtn = document.getElementById('btn-bt-clear-overrides');
+    if (clearBtn) clearBtn.classList.add('hidden');
+    loadBillingTypeSimulation(true);
+  }
+
+  function renderBtClientTable() {
+    const tbody = document.getElementById('bt-client-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (!window.btClientData || window.btClientData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-gray-500 font-medium text-xs">No clients found.</td></tr>';
+      return;
+    }
+
+    let filtered = window.btClientData.filter(c =>
+      c.client_name.toLowerCase().includes(btClientSearchQuery.toLowerCase())
+    );
+
+    filtered.sort((a, b) => {
+      let valA = a[btCurrentSortCol];
+      let valB = b[btCurrentSortCol];
+      if (typeof valA === 'string') {
+        return btCurrentSortDir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      } else {
+        return btCurrentSortDir === 'asc' ? valA - valB : valB - valA;
+      }
+    });
+
+    const globalReduction = parseFloat(document.getElementById('bt-reduction-amount').value) || 2.0;
+    const calcMode = document.getElementById('bt-calc-mode').value;
+
+    filtered.forEach(c => {
+      const tr = document.createElement('tr');
+      tr.className = "hover:bg-slate-50/50 transition border-b border-slate-100 text-xs";
+
+      const badgeClass = c.profit_change >= 0
+        ? "inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 font-bold text-emerald-700 border border-emerald-100"
+        : "inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 font-bold text-rose-700 border border-rose-100";
+
+      let reductionCell = '';
+      if (calcMode === 'spreadsheet') {
+        reductionCell = `<span class="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2.5 py-1 text-[10px] font-bold text-slate-600 border border-slate-200">Spreadsheet</span>`;
+      } else {
+        const currentReduction = (window.btCustomClientReductions && window.btCustomClientReductions[c.client_name] !== undefined)
+          ? window.btCustomClientReductions[c.client_name]
+          : globalReduction;
+
+        reductionCell = `
+          <div class="relative rounded-md shadow-sm inline-block" style="width: 80px;">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2">
+              <span class="text-gray-400 text-xs">$</span>
+            </div>
+            <input 
+              type="number" 
+              step="0.25" 
+              min="0.00" 
+              class="block w-full rounded-md border-0 py-1 pl-4 pr-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-violet-600 text-xs text-right font-semibold" 
+              value="${currentReduction.toFixed(2)}"
+              data-client="${c.client_name}"
+              onchange="handleBtClientReductionChange(this)"
+            >
+          </div>
+        `;
+      }
+
+      tr.innerHTML = `
+        <td class="py-3 px-4 font-semibold text-gray-800 text-left">${c.client_name}</td>
+        <td class="py-3 px-4 text-center">${reductionCell}</td>
+        <td class="py-3 px-4 text-center font-medium text-gray-600">
+          <div class="font-semibold text-gray-800">${formatCurrency(c.sim_bill)}</div>
+          <div class="text-[10px] text-gray-400">Orig: ${formatCurrency(c.orig_bill)}</div>
+        </td>
+        <td class="py-3 px-4 text-center font-medium text-gray-600">
+          <div class="font-semibold text-gray-800">${formatCurrency(c.sim_pay)}</div>
+          <div class="text-[10px] text-gray-400">Orig: ${formatCurrency(c.orig_pay)}</div>
+        </td>
+        <td class="py-3 px-4 text-center font-medium text-gray-600">
+          <div class="font-semibold text-violet-800 bg-violet-50/30 px-2 py-1 rounded">${formatCurrency(c.sim_profit)}</div>
+          <div class="text-[10px] text-gray-400">Orig: ${formatCurrency(c.orig_profit)}</div>
+        </td>
+        <td class="py-3 px-4 text-right">
+          <span class="${badgeClass}">${c.profit_change >= 0 ? '+' : ''}${formatCurrency(c.profit_change)}</span>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function handleBtClientSearch(el) {
+    btClientSearchQuery = el.value.trim();
+    renderBtClientTable();
+  }
+
+  function sortBtClientTable(col) {
+    if (btCurrentSortCol === col) {
+      btCurrentSortDir = btCurrentSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      btCurrentSortCol = col;
+      btCurrentSortDir = 'desc';
+    }
+
+    document.querySelectorAll('[data-sort-col-bt]').forEach(el => {
+      const arrow = el.querySelector('.bt-sort-arrow');
+      if (el.getAttribute('data-sort-col-bt') === col) {
+        arrow.textContent = btCurrentSortDir === 'asc' ? ' ▲' : ' ▼';
+        arrow.className = "bt-sort-arrow font-bold text-violet-600";
+        el.className = "py-2.5 px-4 cursor-pointer select-none text-violet-700 font-bold";
+      } else {
+        arrow.textContent = ' ↕';
+        arrow.className = "bt-sort-arrow text-slate-300";
+        el.className = "py-2.5 px-4 cursor-pointer select-none text-gray-500 hover:text-gray-800 hover:bg-slate-50 rounded-lg transition-all duration-200";
+      }
+    });
+
+    renderBtClientTable();
+  }
+
+  function toggleBtCalcModeInputs() {
+    const mode = document.getElementById('bt-calc-mode').value;
+    const reductionContainer = document.getElementById('bt-reduction-container');
+    const markupContainer = document.getElementById('bt-markup-container');
+    if (mode === 'spreadsheet') {
+      reductionContainer.style.opacity = '0.4';
+      reductionContainer.style.pointerEvents = 'none';
+      markupContainer.style.opacity = '0.4';
+      markupContainer.style.pointerEvents = 'none';
+    } else {
+      reductionContainer.style.opacity = '1.0';
+      reductionContainer.style.pointerEvents = 'auto';
+      markupContainer.style.opacity = '1.0';
+      markupContainer.style.pointerEvents = 'auto';
+    }
+  }
+
   // Collapse counties on load to prevent page bloat, expanding the top one
   document.addEventListener('DOMContentLoaded', () => {
     collapseAllCounties();
-    
+
     // Auto expand the first county
     const firstCard = document.querySelector('.county-card');
     if (firstCard) {
@@ -1277,3 +1862,4 @@
   });
 </script>
 {% endblock %}
+
