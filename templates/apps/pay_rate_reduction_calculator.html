@@ -322,7 +322,7 @@
           <p class="text-xs text-gray-500">Configure target date range, client MSP filters, simulated pay reductions, and markup percentages.</p>
         </div>
         
-        <div class="grid gap-4 sm:grid-cols-2 md:grid-cols-5 items-end">
+        <div class="grid gap-4 sm:grid-cols-2 md:grid-cols-6 items-end">
           <!-- Start Date -->
           <div class="space-y-1.5">
             <label for="compass-start-date" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Start Date</label>
@@ -354,6 +354,16 @@
               </select>
             </div>
           </div>
+          <!-- Calculation Mode -->
+          <div class="space-y-1.5">
+            <label for="compass-calc-mode" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Calculation Mode</label>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 flex items-center">
+              <select id="compass-calc-mode" onchange="toggleCalcModeInputs()" class="bg-transparent border-0 p-0 text-xs font-bold text-slate-800 focus:ring-0 focus:outline-none w-full">
+                <option value="global" selected>Global Reduction</option>
+                <option value="spreadsheet">Spreadsheet Rates</option>
+              </select>
+            </div>
+          </div>
           <!-- Pay Rate Reduction -->
           <div class="space-y-1.5">
             <label for="compass-reduction-amount" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Pay Rate Reduction</label>
@@ -369,6 +379,28 @@
               <input type="number" id="compass-markup-percent" value="77" step="1" min="0" class="bg-transparent border-0 p-0 text-xs font-bold text-slate-800 focus:ring-0 focus:outline-none w-full text-right">
               <span class="text-xs font-bold text-slate-400">%</span>
             </div>
+          </div>
+        </div>
+
+        <!-- Spreadsheet Upload Widget -->
+        <div id="spreadsheet-upload-container" class="mt-4 p-4 border border-dashed border-teal-200 bg-teal-50/10 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300">
+          <div class="flex items-center gap-3">
+            <div class="p-2.5 bg-teal-50 rounded-xl text-teal-600 border border-teal-100 shadow-sm">
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-gray-800">Upload Rate Adjustment Spreadsheet</p>
+              <p class="text-[10px] text-gray-500">Provide a CSV or Excel file containing columns: <code>venue_position_id</code>, <code>new_pay</code>, and <code>new_bill</code>.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span id="upload-status" class="text-[10px] font-bold text-teal-600 hidden"></span>
+            <input type="file" id="spreadsheet-file-input" accept=".csv,.xlsx,.xls" class="hidden" onchange="handleSpreadsheetUpload(this)">
+            <button type="button" onclick="document.getElementById('spreadsheet-file-input').click()" class="px-4 py-2 text-xs font-bold rounded-lg border border-teal-200 text-teal-700 bg-white hover:bg-teal-50 transition active:scale-95 flex items-center gap-1.5 shadow-sm">
+              <span>Select File</span>
+            </button>
           </div>
         </div>
 
@@ -856,10 +888,6 @@
       compassBtn.className = "w-full rounded-lg py-2.5 text-sm font-bold leading-5 text-teal-800 bg-white shadow transition-all duration-200 flex items-center justify-center gap-1.5 focus:outline-none";
       countyBtn.className = "w-full rounded-lg py-2.5 text-sm font-semibold leading-5 text-slate-600 hover:bg-white/40 hover:text-slate-950 transition-all duration-200 flex items-center justify-center gap-1.5 focus:outline-none";
       
-      // Auto load on first switch
-      if (!compassLoaded) {
-        loadCompassSimulation();
-      }
     }
   }
   
@@ -874,6 +902,8 @@
     const mspFilter = document.getElementById('compass-msp-filter').value;
     const reductionAmount = parseFloat(document.getElementById('compass-reduction-amount').value) || 0.0;
     const markupPercent = parseFloat(document.getElementById('compass-markup-percent').value) || 0.0;
+    const calcMode = document.getElementById('compass-calc-mode') ? document.getElementById('compass-calc-mode').value : 'global';
+    const useSpreadsheet = (calcMode === 'spreadsheet');
     
     const btn = document.getElementById('btn-compass-load');
     const text = document.getElementById('btn-compass-text');
@@ -893,7 +923,8 @@
           reduction_amount: reductionAmount,
           markup_percent: markupPercent,
           msp_filter: mspFilter,
-          client_reductions: window.customClientReductions
+          client_reductions: window.customClientReductions,
+          use_spreadsheet: useSpreadsheet
         })
       });
       const data = await response.json();
@@ -1066,6 +1097,7 @@
     });
     
     const globalReduction = parseFloat(document.getElementById('compass-reduction-amount').value) || 2.0;
+    const calcMode = document.getElementById('compass-calc-mode') ? document.getElementById('compass-calc-mode').value : 'global';
     
     filtered.forEach(c => {
       const tr = document.createElement('tr');
@@ -1075,13 +1107,15 @@
         ? "inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 font-bold text-emerald-700 border border-emerald-100"
         : "inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 font-bold text-rose-700 border border-rose-100";
         
-      const currentReduction = (window.customClientReductions && window.customClientReductions[c.client_name] !== undefined)
-        ? window.customClientReductions[c.client_name]
-        : globalReduction;
-        
-      tr.innerHTML = `
-        <td class="py-3 px-4 font-semibold text-gray-800 text-left">${c.client_name}</td>
-        <td class="py-3 px-4 text-center">
+      let reductionCell = '';
+      if (calcMode === 'spreadsheet') {
+        reductionCell = `<span class="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2.5 py-1 text-[10px] font-bold text-slate-600 border border-slate-200">Spreadsheet</span>`;
+      } else {
+        const currentReduction = (window.customClientReductions && window.customClientReductions[c.client_name] !== undefined)
+          ? window.customClientReductions[c.client_name]
+          : globalReduction;
+          
+        reductionCell = `
           <div class="relative rounded-md shadow-sm inline-block" style="width: 80px;">
             <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2">
               <span class="text-gray-400 text-xs">$</span>
@@ -1096,6 +1130,13 @@
               onchange="handleClientReductionChange(this)"
             >
           </div>
+        `;
+      }
+        
+      tr.innerHTML = `
+        <td class="py-3 px-4 font-semibold text-gray-800 text-left">${c.client_name}</td>
+        <td class="py-3 px-4 text-center">
+          ${reductionCell}
         </td>
         <td class="py-3 px-4 text-center font-medium text-gray-600">
           <div class="font-semibold text-gray-800">${formatCurrency(c.sim_bill)}</div>
@@ -1115,6 +1156,83 @@
       `;
       tbody.appendChild(tr);
     });
+  }
+
+  function toggleCalcModeInputs() {
+    const modeSelect = document.getElementById('compass-calc-mode');
+    if (!modeSelect) return;
+    const mode = modeSelect.value;
+    
+    const reductionInput = document.getElementById('compass-reduction-amount');
+    const markupInput = document.getElementById('compass-markup-percent');
+    
+    if (reductionInput && markupInput) {
+      const reductionContainer = reductionInput.parentElement.parentElement;
+      const markupContainer = markupInput.parentElement.parentElement;
+      
+      if (mode === 'spreadsheet') {
+        reductionContainer.style.opacity = '0.4';
+        reductionContainer.style.pointerEvents = 'none';
+        markupContainer.style.opacity = '0.4';
+        markupContainer.style.pointerEvents = 'none';
+      } else {
+        reductionContainer.style.opacity = '1.0';
+        reductionContainer.style.pointerEvents = 'auto';
+        markupContainer.style.opacity = '1.0';
+        markupContainer.style.pointerEvents = 'auto';
+      }
+    }
+  }
+
+  async function handleSpreadsheetUpload(input) {
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    
+    const statusEl = document.getElementById('upload-status');
+    statusEl.textContent = 'Uploading...';
+    statusEl.className = 'text-[10px] font-bold text-teal-600 animate-pulse';
+    statusEl.classList.remove('hidden');
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      const response = await fetch('/pay-rate-reduction-calculator/upload-spreadsheet', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        statusEl.textContent = `✓ Loaded ${data.count} position rates.`;
+        statusEl.className = 'text-[10px] font-bold text-emerald-600';
+        
+        // Auto-select Spreadsheet calculation mode
+        const modeSelect = document.getElementById('compass-calc-mode');
+        if (modeSelect) {
+          modeSelect.value = 'spreadsheet';
+          toggleCalcModeInputs();
+        }
+      } else {
+        let errMsg = 'Upload failed';
+        try {
+          const data = await response.json();
+          errMsg = data.detail || errMsg;
+        } catch (e) {
+          if (response.status === 303 || response.status === 401) {
+            errMsg = 'Authentication required. Please refresh the page.';
+          } else {
+            errMsg = `Server error (${response.status})`;
+          }
+        }
+        statusEl.textContent = `✗ Error: ${errMsg}`;
+        statusEl.className = 'text-[10px] font-bold text-rose-600';
+      }
+    } catch (e) {
+      console.error("Upload error detail:", e);
+      statusEl.textContent = '✗ Network error: ' + e.message;
+      statusEl.className = 'text-[10px] font-bold text-rose-600';
+    }
   }
   
   function handleClientSearch(el) {

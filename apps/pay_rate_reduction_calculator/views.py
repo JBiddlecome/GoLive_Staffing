@@ -1,7 +1,8 @@
 import os
 import pandas as pd
 import numpy as np
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, File, UploadFile
+from pathlib import Path
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -62,6 +63,71 @@ def read_excel_robust(file_path: str) -> pd.DataFrame:
                 os.remove(temp_path)
             except Exception:
                 pass
+
+def parse_uploaded_file(file_path: str) -> Dict[int, Dict[str, float]]:
+    rates = {}
+    if file_path.lower().endswith(('.xlsx', '.xls')):
+        df = pd.read_excel(file_path)
+    else:
+        df = pd.read_csv(file_path)
+        
+    normalized_cols = {c: str(c).strip().lower().replace(" ", "_") for c in df.columns}
+    df = df.rename(columns=normalized_cols)
+    
+    reqs = ['venue_position_id', 'new_pay', 'new_bill']
+    missing = [r for r in reqs if r not in df.columns]
+    if missing:
+        raise ValueError(f"Missing required columns in spreadsheet: {', '.join(missing)}")
+        
+    df = df.dropna(subset=['venue_position_id'])
+    for _, row in df.iterrows():
+        try:
+            vpid = int(float(row['venue_position_id']))
+            new_pay = float(row['new_pay'])
+            new_bill = float(row['new_bill'])
+            rates[vpid] = {
+                'new_pay': new_pay,
+                'new_bill': new_bill
+            }
+        except (ValueError, TypeError):
+            continue
+    return rates
+
+def load_saved_spreadsheet_rates() -> Dict[int, Dict[str, float]]:
+    std_dir = os.path.join(BASE_DIR, "tmp", "pay_rate_reduction_calculator")
+    os.makedirs(std_dir, exist_ok=True)
+    std_csv_path = os.path.join(std_dir, "uploaded_rates.csv")
+    fallback_path = os.path.join(BASE_DIR, "apps", "pay_rate_reduction_calculator", "Markup_Analysis_Option_A.csv")
+    
+    if not os.path.exists(std_csv_path) and os.path.exists(fallback_path):
+        try:
+            rates = parse_uploaded_file(fallback_path)
+            df_std = pd.DataFrame([
+                {"venue_position_id": k, "new_pay": v["new_pay"], "new_bill": v["new_bill"]}
+                for k, v in rates.items()
+            ])
+            df_std.to_csv(std_csv_path, index=False)
+        except Exception as e:
+            print("Failed to seed uploaded_rates.csv from Markup_Analysis_Option_A.csv:", e)
+            
+    if os.path.exists(std_csv_path):
+        try:
+            df = pd.read_csv(std_csv_path)
+            rates = {}
+            for _, row in df.iterrows():
+                try:
+                    vpid = int(float(row['venue_position_id']))
+                    rates[vpid] = {
+                        'new_pay': float(row['new_pay']),
+                        'new_bill': float(row['new_bill'])
+                    }
+                except (ValueError, TypeError):
+                    continue
+            return rates
+        except Exception as e:
+            print(f"Error reading std_csv_path: {e}")
+            
+    return {}
 
 class RecalculateRequest(BaseModel):
     custom_rates: Dict[str, Optional[float]]
@@ -234,6 +300,46 @@ class CompassCalculateRequest(BaseModel):
     markup_percent: float = 77.0
     msp_filter: str = "2"
     client_reductions: Optional[Dict[str, float]] = None
+    use_spreadsheet: bool = False
+
+@router.post("/upload-spreadsheet")
+async def upload_spreadsheet(file: UploadFile = File(...)):
+    contents = await file.read()
+    temp_dir = os.path.join(BASE_DIR, "tmp", "pay_rate_reduction_calculator")
+    os.makedirs(temp_dir, exist_ok=True)
+    
+    filename = file.filename or "upload.csv"
+    file_suffix = Path(filename).suffix or ".csv"
+    temp_path = os.path.join(temp_dir, f"temp_upload_{uuid.uuid4().hex}{file_suffix}")
+    
+    try:
+        with open(temp_path, "wb") as f:
+            f.write(contents)
+            
+        rates = parse_uploaded_file(temp_path)
+        if not rates:
+            raise HTTPException(status_code=400, detail="No valid rates found in spreadsheet.")
+            
+        std_csv_path = os.path.join(temp_dir, "uploaded_rates.csv")
+        df_std = pd.DataFrame([
+            {"venue_position_id": k, "new_pay": v["new_pay"], "new_bill": v["new_bill"]}
+            for k, v in rates.items()
+        ])
+        df_std.to_csv(std_csv_path, index=False)
+        
+        return {
+            "success": True,
+            "message": f"Successfully processed {len(rates)} venue position rates.",
+            "count": len(rates)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    finally:
+        if os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
 
 @router.post("/compass/calculate")
 async def calculate_compass_rates(payload: CompassCalculateRequest):
@@ -297,6 +403,7 @@ async def calculate_compass_rates(payload: CompassCalculateRequest):
                 t.client_start,
                 t.employee_start,
                 COALESCE(mwra.rate, 0.0) AS min_wage,
+                vp.venue_position_id,
                 {ts_select_str}
             FROM shift_employee se
             JOIN event e ON se.event_id = e.event_id
@@ -307,6 +414,7 @@ async def calculate_compass_rates(payload: CompassCalculateRequest):
             LEFT JOIN timesheet t ON se.shift_employee_id = t.shift_employee_id
             LEFT JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
             LEFT JOIN shift s ON sp.shift_id = s.shift_id
+            LEFT JOIN venue_position vp ON vp.venue_id = e.venue_id AND vp.position_id = sp.position_id
             LEFT JOIN user u ON c.sales_executive_id = u.id
             LEFT JOIN min_wage_rate_amount mwra ON v.min_wage_id = mwra.min_wage_id
                 AND (mwra.start_date IS NULL OR mwra.start_date <= '2026-07-01')
@@ -513,12 +621,29 @@ async def calculate_compass_rates(payload: CompassCalculateRequest):
         min_wage = float(row["min_wage"])
 
         if simulate:
-            client_name = row["client_name"]
-            reduction = payload.reduction_amount
-            if payload.client_reductions and client_name in payload.client_reductions:
-                reduction = payload.client_reductions[client_name]
-            pay_rate = max(orig_pay_rate - reduction, min_wage)
-            bill_rate = pay_rate * (1.0 + payload.markup_percent / 100.0)
+            if payload.use_spreadsheet:
+                vpid_val = row.get("venue_position_id")
+                matched = False
+                if pd.notna(vpid_val):
+                    try:
+                        vpid = int(float(vpid_val))
+                        if vpid in spreadsheet_rates:
+                            pay_rate = spreadsheet_rates[vpid]["new_pay"]
+                            bill_rate = spreadsheet_rates[vpid]["new_bill"]
+                            pay_rate = max(pay_rate, min_wage)
+                            matched = True
+                    except (ValueError, TypeError):
+                        pass
+                if not matched:
+                    pay_rate = orig_pay_rate
+                    bill_rate = orig_bill_rate
+            else:
+                client_name = row["client_name"]
+                reduction = payload.reduction_amount
+                if payload.client_reductions and client_name in payload.client_reductions:
+                    reduction = payload.client_reductions[client_name]
+                pay_rate = max(orig_pay_rate - reduction, min_wage)
+                bill_rate = pay_rate * (1.0 + payload.markup_percent / 100.0)
         else:
             pay_rate = orig_pay_rate
             bill_rate = orig_bill_rate
@@ -620,6 +745,10 @@ async def calculate_compass_rates(payload: CompassCalculateRequest):
             "bt_fee": bt_fee,
             "commissions": commissions
         })
+
+    spreadsheet_rates = {}
+    if payload.use_spreadsheet:
+        spreadsheet_rates = load_saved_spreadsheet_rates()
 
     # Run baseline and simulated calculations
     base_df = df.apply(lambda r: calculate_financials(r, False), axis=1)
