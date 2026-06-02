@@ -622,14 +622,24 @@
           <h3 class="font-bold text-gray-800 text-base" id="compass-table-title">Compass MSP Client Breakdown</h3>
           <p class="text-xs text-gray-500 mt-0.5" id="compass-table-desc">Comparative metrics by individual client accounts under the simulation.</p>
         </div>
-        <div class="relative rounded-md shadow-sm w-full sm:w-72">
-          <input 
-            type="text" 
-            placeholder="Search clients..." 
-            id="compass-client-search"
-            oninput="handleClientSearch(this)"
-            class="block w-full rounded-md border-0 py-1.5 pl-3 pr-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-teal-600 text-xs font-semibold"
+        <div class="flex items-center gap-3 w-full sm:w-auto">
+          <button 
+            type="button" 
+            id="btn-clear-overrides" 
+            onclick="resetClientOverrides()" 
+            class="hidden text-xs font-bold text-teal-600 hover:text-teal-700 hover:underline transition whitespace-nowrap"
           >
+            Clear Overrides
+          </button>
+          <div class="relative rounded-md shadow-sm w-full sm:w-64">
+            <input 
+              type="text" 
+              placeholder="Search clients..." 
+              id="compass-client-search"
+              oninput="handleClientSearch(this)"
+              class="block w-full rounded-md border-0 py-1.5 pl-3 pr-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-teal-600 text-xs font-semibold"
+            >
+          </div>
         </div>
       </div>
 
@@ -637,8 +647,11 @@
         <table class="min-w-full divide-y divide-gray-200 text-left text-xs">
           <thead>
             <tr class="text-gray-500 uppercase tracking-wider font-semibold select-none">
-              <th data-sort-col="client_name" onclick="sortClientTable('client_name')" class="py-2.5 px-4 cursor-pointer select-none text-gray-500 hover:text-gray-800 hover:bg-slate-50 rounded-lg transition-all duration-200 text-left" style="width: 35%;">
+              <th data-sort-col="client_name" onclick="sortClientTable('client_name')" class="py-2.5 px-4 cursor-pointer select-none text-gray-500 hover:text-gray-800 hover:bg-slate-50 rounded-lg transition-all duration-200 text-left" style="width: 30%;">
                 Client Name <span class="sort-arrow text-slate-300"> ↕</span>
+              </th>
+              <th class="py-2.5 px-4 text-center text-gray-500" style="width: 15%;">
+                Pay Reduction
               </th>
               <th data-sort-col="sim_bill" onclick="sortClientTable('sim_bill')" class="py-2.5 px-4 cursor-pointer select-none text-gray-500 hover:text-gray-800 hover:bg-slate-50 rounded-lg transition-all duration-200 text-center">
                 Simulated Bill <span class="sort-arrow text-slate-300"> ↕</span>
@@ -656,8 +669,8 @@
           </thead>
           <tbody class="divide-y divide-gray-100 bg-white rounded-xl shadow-inner" id="compass-client-tbody">
             <tr>
-              <td colspan="5" class="py-10 text-center text-gray-500 font-semibold text-xs animate-pulse">
-                Click "Load & Run Compass Simulation" to query and simulate data.
+              <td colspan="6" class="py-10 text-center text-gray-500 font-semibold text-xs animate-pulse">
+                Click "Run Database Simulation" to query and simulate data.
               </td>
             </tr>
           </tbody>
@@ -822,6 +835,7 @@
   let currentSortCol = 'sim_profit';
   let currentSortDir = 'desc';
   let clientSearchQuery = '';
+  window.customClientReductions = {};
   
   function switchTab(tab) {
     const countyBtn = document.getElementById('tab-btn-county');
@@ -849,7 +863,12 @@
     }
   }
   
-  async function loadCompassSimulation() {
+  async function loadCompassSimulation(isRecalculate = false) {
+    if (!isRecalculate) {
+      window.customClientReductions = {};
+      const clearBtn = document.getElementById('btn-clear-overrides');
+      if (clearBtn) clearBtn.classList.add('hidden');
+    }
     const startDate = document.getElementById('compass-start-date').value;
     const endDate = document.getElementById('compass-end-date').value;
     const mspFilter = document.getElementById('compass-msp-filter').value;
@@ -861,7 +880,7 @@
     const spinner = document.getElementById('btn-compass-spinner');
     
     btn.disabled = true;
-    text.textContent = 'Fetching and Simulating...';
+    text.textContent = isRecalculate ? 'Recalculating Overrides...' : 'Fetching and Simulating...';
     spinner.classList.remove('hidden');
     
     try {
@@ -873,7 +892,8 @@
           end_date: endDate,
           reduction_amount: reductionAmount,
           markup_percent: markupPercent,
-          msp_filter: mspFilter
+          msp_filter: mspFilter,
+          client_reductions: window.customClientReductions
         })
       });
       const data = await response.json();
@@ -887,6 +907,17 @@
         document.getElementById('compass-table-title').textContent = `${mspName} Client Breakdown`;
         document.getElementById('compass-table-desc').textContent = `Comparative metrics by individual ${mspName} client accounts under the simulation.`;
         document.getElementById('compass-client-search').placeholder = `Search ${mspName} clients...`;
+        
+        // Show/hide Clear Overrides button
+        const hasOverrides = Object.keys(window.customClientReductions).length > 0;
+        const clearBtn = document.getElementById('btn-clear-overrides');
+        if (clearBtn) {
+          if (hasOverrides) {
+            clearBtn.classList.remove('hidden');
+          } else {
+            clearBtn.classList.add('hidden');
+          }
+        }
         
         renderCompassUI(data);
       } else {
@@ -990,13 +1021,33 @@
     }
   }
 
+  function handleClientReductionChange(inputEl) {
+    const clientName = inputEl.getAttribute('data-client');
+    const val = parseFloat(inputEl.value);
+    if (!isNaN(val) && val >= 0) {
+      window.customClientReductions[clientName] = val;
+      loadCompassSimulation(true);
+    } else {
+      inputEl.value = (window.customClientReductions[clientName] !== undefined)
+        ? window.customClientReductions[clientName].toFixed(2)
+        : parseFloat(document.getElementById('compass-reduction-amount').value || 2.0).toFixed(2);
+    }
+  }
+
+  function resetClientOverrides() {
+    window.customClientReductions = {};
+    const clearBtn = document.getElementById('btn-clear-overrides');
+    if (clearBtn) clearBtn.classList.add('hidden');
+    loadCompassSimulation(true);
+  }
+
   function renderClientTable() {
     const tbody = document.getElementById('compass-client-tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
     
     if (!window.compassClientData || window.compassClientData.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-gray-500 font-medium text-xs">No clients found.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-gray-500 font-medium text-xs">No clients found.</td></tr>';
       return;
     }
     
@@ -1014,6 +1065,8 @@
       }
     });
     
+    const globalReduction = parseFloat(document.getElementById('compass-reduction-amount').value) || 2.0;
+    
     filtered.forEach(c => {
       const tr = document.createElement('tr');
       tr.className = "hover:bg-slate-50/50 transition border-b border-slate-100 text-xs";
@@ -1022,8 +1075,28 @@
         ? "inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 font-bold text-emerald-700 border border-emerald-100"
         : "inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 font-bold text-rose-700 border border-rose-100";
         
+      const currentReduction = (window.customClientReductions && window.customClientReductions[c.client_name] !== undefined)
+        ? window.customClientReductions[c.client_name]
+        : globalReduction;
+        
       tr.innerHTML = `
         <td class="py-3 px-4 font-semibold text-gray-800 text-left">${c.client_name}</td>
+        <td class="py-3 px-4 text-center">
+          <div class="relative rounded-md shadow-sm inline-block" style="width: 80px;">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2">
+              <span class="text-gray-400 text-xs">$</span>
+            </div>
+            <input 
+              type="number" 
+              step="0.25" 
+              min="0.00" 
+              class="client-reduction-input block w-full rounded-md border-0 py-1 pl-4 pr-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-teal-600 text-xs text-right font-semibold" 
+              value="${currentReduction.toFixed(2)}"
+              data-client="${c.client_name}"
+              onchange="handleClientReductionChange(this)"
+            >
+          </div>
+        </td>
         <td class="py-3 px-4 text-center font-medium text-gray-600">
           <div class="font-semibold text-gray-800">${formatCurrency(c.sim_bill)}</div>
           <div class="text-[10px] text-gray-400">Orig: ${formatCurrency(c.orig_bill)}</div>
