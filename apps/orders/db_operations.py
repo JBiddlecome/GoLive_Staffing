@@ -139,6 +139,10 @@ def create_order(data: dict, user_id: int) -> dict:
                     "date": event_date
                 }).fetchone()
                 
+                has_create_shifts = any(s.get('action', 'CREATE') == 'CREATE' for s in day_shifts)
+                if not has_create_shifts and not existing_ev:
+                    raise Exception(f"No existing event found on {event_date} to update or remove shifts.")
+                
                 if existing_ev:
                     event_id = existing_ev[0]
                     created_event_ids.append(event_id)
@@ -215,8 +219,136 @@ def create_order(data: dict, user_id: int) -> dict:
                         })
                 
                 for s in day_shifts:
-                    # Resolve position_id, along with current rates (checking effective date amounts), uniform, and tools
+                    action = s.get('action', 'CREATE')
                     pos_name = s.get('position')
+                    
+                    if action in ('UPDATE', 'REMOVE'):
+                        # Retrieve all active shifts/positions for this event to find a match
+                        active_shifts_sql = text("""
+                            SELECT 
+                                s.shift_id, s.start, s.end, 
+                                sp.shift_position_id, sp.position_id, p.description as position_name, sp.count
+                            FROM shift s
+                            JOIN shift_position sp ON sp.shift_id = s.shift_id
+                            JOIN position p ON sp.position_id = p.position_id
+                            WHERE s.event_id = :event_id
+                              AND s.deleted_at IS NULL
+                              AND sp.deleted_at IS NULL
+                        """)
+                        db_shifts = conn.execute(active_shifts_sql, {"event_id": event_id}).fetchall()
+                        
+                        matched_shift = None
+                        best_score = -1
+                        inc_start_time = s.get('start_time')
+                        
+                        for db_sh in db_shifts:
+                            if db_sh.position_name.lower().strip() == pos_name.lower().strip():
+                                score = 10
+                                if inc_start_time and db_sh.start:
+                                    db_start_str = db_sh.start.strftime("%H:%M") if hasattr(db_sh.start, 'strftime') else str(db_sh.start).split(' ')[-1][:5]
+                                    if db_start_str == inc_start_time:
+                                        score += 20
+                                    else:
+                                        try:
+                                            db_h, db_m = map(int, db_start_str.split(':'))
+                                            inc_h, inc_m = map(int, inc_start_time.split(':'))
+                                            diff = abs((db_h * 60 + db_m) - (inc_h * 60 + inc_m))
+                                            score += max(0, 15 - (diff / 10))
+                                        except Exception:
+                                            pass
+                                if score > best_score:
+                                    best_score = score
+                                    matched_shift = db_sh
+                                    
+                        if not matched_shift:
+                            raise Exception(f"Could not find an existing active '{pos_name}' shift on {event_date} to {action.lower()}.")
+                            
+                        shift_id = matched_shift.shift_id
+                        shift_position_id = matched_shift.shift_position_id
+                        
+                        if action == 'REMOVE':
+                            # Soft delete shift
+                            conn.execute(text("""
+                                UPDATE shift
+                                SET deleted_at = NOW(), deleted_by = :user_id
+                                WHERE shift_id = :shift_id
+                            """), {"shift_id": shift_id, "user_id": user_id})
+                            
+                            # Soft delete shift position
+                            conn.execute(text("""
+                                UPDATE shift_position
+                                SET deleted_at = NOW(), deleted_by = :user_id
+                                WHERE shift_id = :shift_id AND deleted_at IS NULL
+                            """), {"shift_id": shift_id, "user_id": user_id})
+                            
+                            # Soft delete shift employees
+                            conn.execute(text("""
+                                UPDATE shift_employee
+                                SET deleted_at = NOW()
+                                WHERE shift_position_id = :sp_id AND deleted_at IS NULL
+                            """), {"sp_id": shift_position_id})
+                            
+                        elif action == 'UPDATE':
+                            new_start = f"{event_date} {s['start_time']}:00"
+                            new_end = f"{event_date} {s['end_time']}:00"
+                            
+                            current_start_str = matched_shift.start.strftime("%Y-%m-%d %H:%M:%S") if hasattr(matched_shift.start, 'strftime') else str(matched_shift.start) if matched_shift.start else ""
+                            current_end_str = matched_shift.end.strftime("%Y-%m-%d %H:%M:%S") if hasattr(matched_shift.end, 'strftime') else str(matched_shift.end) if matched_shift.end else ""
+                            
+                            time_changed = (current_start_str != new_start or current_end_str != new_end)
+                            
+                            if time_changed:
+                                # Check if has active employees
+                                has_emp = conn.execute(text("""
+                                    SELECT COUNT(*) FROM shift_employee
+                                    WHERE shift_position_id = :sp_id
+                                      AND deleted_at IS NULL
+                                      AND (cancel_reason IS NULL OR cancel_reason = 0)
+                                """), {"sp_id": shift_position_id}).scalar()
+                                
+                                if has_emp > 0:
+                                    conn.execute(text("""
+                                        UPDATE shift
+                                        SET start = :start, end = :end, old_start = :old_start, old_end = :old_end
+                                        WHERE shift_id = :shift_id
+                                    """), {
+                                        "start": new_start,
+                                        "end": new_end,
+                                        "old_start": matched_shift.start,
+                                        "old_end": matched_shift.end,
+                                        "shift_id": shift_id
+                                    })
+                                    
+                                    # Reset confirmed and request_by
+                                    conn.execute(text("""
+                                        UPDATE shift_employee
+                                        SET confirmed = 0, request_by = :user_id
+                                        WHERE shift_position_id = :sp_id
+                                          AND deleted_at IS NULL
+                                          AND (cancel_reason IS NULL OR cancel_reason = 0)
+                                    """), {"sp_id": shift_position_id, "user_id": user_id})
+                                else:
+                                    conn.execute(text("""
+                                        UPDATE shift
+                                        SET start = :start, end = :end
+                                        WHERE shift_id = :shift_id
+                                    """), {
+                                        "start": new_start,
+                                        "end": new_end,
+                                        "shift_id": shift_id
+                                    })
+                                    
+                            new_count = int(s.get('staff_count', matched_shift.count))
+                            if new_count != matched_shift.count:
+                                conn.execute(text("""
+                                    UPDATE shift_position
+                                    SET count = :count
+                                    WHERE shift_position_id = :sp_id
+                                """), {"count": new_count, "sp_id": shift_position_id})
+                        
+                        continue
+                        
+                    # Resolve position_id, along with current rates (checking effective date amounts), uniform, and tools
                     p_sql = text("""
                         SELECT 
                             p.position_id, 

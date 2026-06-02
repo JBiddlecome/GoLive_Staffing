@@ -218,6 +218,50 @@
     const clientSelectState = document.getElementById('clientSelectState');
     
     let extractionScope = 'latest';
+    let isEventNameManuallyEdited = false;
+
+    window.updateShiftRowActionStyle = function(rowEl) {
+        const actionSelect = rowEl.querySelector('.field-action-select');
+        const actionVal = actionSelect.value;
+        
+        rowEl.classList.remove('border-slate-200', 'border-emerald-200', 'border-amber-200', 'border-rose-200', 'bg-emerald-50/5', 'bg-amber-50/5', 'bg-rose-50/5');
+        
+        const countInput = rowEl.querySelector('.field-staff-count');
+        const dateInput = rowEl.querySelector('.field-date');
+        const posSelect = rowEl.querySelector('.field-position-select');
+        const startPicker = rowEl.querySelector('.field-start-picker');
+        const endPicker = rowEl.querySelector('.field-end-picker');
+        const expandHeader = rowEl.querySelector('.bg-slate-50, .bg-slate-50\\/80, .bg-emerald-50\\/20, .bg-amber-50\\/20, .bg-rose-50\\/20');
+        
+        if (actionVal === 'CREATE') {
+            rowEl.classList.add('border-emerald-200', 'bg-emerald-50/5');
+            actionSelect.className = "field-action-select text-xs font-bold rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 p-1 cursor-pointer focus:ring-emerald-500 focus:border-emerald-500";
+            if (countInput) countInput.disabled = false;
+            if (dateInput) dateInput.disabled = false;
+            if (posSelect) posSelect.disabled = false;
+            if (startPicker) startPicker.classList.remove('opacity-40', 'pointer-events-none');
+            if (endPicker) endPicker.classList.remove('opacity-40', 'pointer-events-none');
+            if (expandHeader) expandHeader.className = "bg-emerald-50/20 p-4 flex justify-between items-center cursor-pointer hover:bg-emerald-50/40 transition-colors";
+        } else if (actionVal === 'UPDATE') {
+            rowEl.classList.add('border-amber-200', 'bg-amber-50/5');
+            actionSelect.className = "field-action-select text-xs font-bold rounded-lg border border-amber-300 bg-amber-50 text-amber-700 p-1 cursor-pointer focus:ring-amber-500 focus:border-amber-500";
+            if (countInput) countInput.disabled = false;
+            if (dateInput) dateInput.disabled = false;
+            if (posSelect) posSelect.disabled = false;
+            if (startPicker) startPicker.classList.remove('opacity-40', 'pointer-events-none');
+            if (endPicker) endPicker.classList.remove('opacity-40', 'pointer-events-none');
+            if (expandHeader) expandHeader.className = "bg-amber-50/20 p-4 flex justify-between items-center cursor-pointer hover:bg-amber-50/40 transition-colors";
+        } else if (actionVal === 'REMOVE') {
+            rowEl.classList.add('border-rose-200', 'bg-rose-50/5');
+            actionSelect.className = "field-action-select text-xs font-bold rounded-lg border border-rose-300 bg-rose-50 text-rose-700 p-1 cursor-pointer focus:ring-rose-500 focus:border-rose-500";
+            if (countInput) countInput.disabled = true;
+            if (dateInput) dateInput.disabled = false;
+            if (posSelect) posSelect.disabled = false;
+            if (startPicker) startPicker.classList.add('opacity-40', 'pointer-events-none');
+            if (endPicker) endPicker.classList.add('opacity-40', 'pointer-events-none');
+            if (expandHeader) expandHeader.className = "bg-rose-50/20 p-4 flex justify-between items-center cursor-pointer hover:bg-rose-50/40 transition-colors";
+        }
+    }
     
     window.setExtractionScope = function(scope) {
         extractionScope = scope;
@@ -234,6 +278,7 @@
     }
     
     async function runExtraction(text, clientId = null, referenceDate = null) {
+        isEventNameManuallyEdited = false;
         emptyState.classList.add('hidden');
         resultsState.classList.add('hidden');
         clientSelectState.classList.add('hidden');
@@ -443,9 +488,9 @@
         
         let venueOptions = venues.map(v => `<option value="${v.name}" data-id="${v.venue_id}">${v.name}</option>`).join('');
         
-        let selectedVenueName = basic.venue_name;
+        let selectedVenueName = basic.venue_name || '';
         if (!selectedVenueName && venues.length > 0) {
-            selectedVenueName = venues[0].name;
+            selectedVenueName = (venues[0] && venues[0].name) || '';
         }
 
         let venueSelectHtml = `<select id="field-venue_name" class="w-full text-sm border-transparent bg-transparent hover:border-slate-200 focus:border-emerald-500 focus:bg-white rounded-md p-1 transition-colors" onchange="updateAllPositionDropdowns()">
@@ -461,49 +506,12 @@
             </div>
         `;
         
-        document.getElementById('resEvent').innerHTML = renderField(basic.event_name, "Event Name", false, "field-event_name");
+        document.getElementById('resEvent').innerHTML = renderField(selectedVenueName, "Event Name", false, "field-event_name");
         
         const eventNameInput = document.getElementById('field-event_name');
-        if (eventNameInput && basic.explicit_event_name && basic.explicit_event_name.toLowerCase().trim() !== (basic.event_name || '').toLowerCase().trim()) {
-            eventNameInput.dataset.suggestion = basic.explicit_event_name;
-            
-            const showSugg = () => {
-                const existing = document.getElementById('event-name-suggestion-box');
-                if (existing) existing.remove();
-                
-                const suggDiv = document.createElement('div');
-                suggDiv.id = 'event-name-suggestion-box';
-                suggDiv.className = 'absolute z-50 mt-1 bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs rounded-xl p-2.5 shadow-lg flex flex-col gap-1 cursor-pointer animate-in fade-in slide-in-from-top-1 duration-150';
-                suggDiv.style.left = `${eventNameInput.offsetLeft}px`;
-                suggDiv.style.top = `${eventNameInput.offsetTop + eventNameInput.offsetHeight}px`;
-                suggDiv.style.width = 'max-content';
-                suggDiv.style.maxWidth = '250px';
-                
-                suggDiv.innerHTML = `
-                    <span class="text-[10px] uppercase font-bold text-slate-400 select-none block mb-0.5">Explicit Event Name Suggested</span>
-                    <div class="hover:underline font-semibold leading-tight pr-4 flex items-center gap-1.5">
-                        <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
-                        <span>${basic.explicit_event_name}</span>
-                    </div>
-                `;
-                
-                suggDiv.addEventListener('mousedown', (e) => {
-                    e.preventDefault();
-                    eventNameInput.value = basic.explicit_event_name;
-                    suggDiv.remove();
-                });
-                
-                eventNameInput.parentNode.appendChild(suggDiv);
-            };
-            
-            eventNameInput.addEventListener('focus', showSugg);
-            eventNameInput.addEventListener('click', showSugg);
-            
-            eventNameInput.addEventListener('blur', () => {
-                setTimeout(() => {
-                    const box = document.getElementById('event-name-suggestion-box');
-                    if (box) box.remove();
-                }, 200);
+        if (eventNameInput) {
+            eventNameInput.addEventListener('input', () => {
+                isEventNameManuallyEdited = true;
             });
         }
 
@@ -513,12 +521,29 @@
             document.getElementById('resVenue').innerHTML = renderField(selectedVenueName, "Venue", true, "field-venue_name");
         } else {
             const selectEl = document.getElementById('field-venue_name');
-            const matchingOption = Array.from(selectEl.options).find(o => o.value.toLowerCase().includes(selectedVenueName.toLowerCase()) || selectedVenueName.toLowerCase().includes(o.value.toLowerCase()));
-            if (matchingOption) {
-                selectEl.value = matchingOption.value;
-            } else {
-                selectEl.selectedIndex = 0;
+            if (selectEl) {
+                const matchingOption = Array.from(selectEl.options).find(o => {
+                    const optVal = (o.value || '').toLowerCase().trim();
+                    const venueVal = (selectedVenueName || '').toLowerCase().trim();
+                    return optVal.includes(venueVal) || venueVal.includes(optVal);
+                });
+                if (matchingOption) {
+                    selectEl.value = matchingOption.value;
+                } else {
+                    selectEl.selectedIndex = 0;
+                }
             }
+        }
+
+        const venueEl = document.getElementById('field-venue_name');
+        if (venueEl) {
+            const syncEventName = () => {
+                if (!isEventNameManuallyEdited && eventNameInput) {
+                    eventNameInput.value = venueEl.value;
+                }
+            };
+            venueEl.addEventListener('change', syncEventName);
+            venueEl.addEventListener('input', syncEventName);
         }
 
         document.getElementById('resAddress1').innerHTML = renderField(basic.event_address1, "Address 1 (Optional)", false, "field-event_address1");
@@ -554,6 +579,7 @@
             const details = shift.details || {};
             const tools = Array.isArray(details.tools) ? details.tools.join(', ') : '';
             const certs = Array.isArray(details.certifications) ? details.certifications.join(', ') : '';
+            const actionVal = shift.action || 'CREATE';
             
             // Build position select options
             let hasSelected = positionsList.includes(shift.position);
@@ -563,11 +589,18 @@
             }
             
             const shiftEl = document.createElement('div');
-            shiftEl.className = 'border border-slate-200 rounded-xl shift-row-data';
+            shiftEl.className = 'border rounded-xl shift-row-data transition-all duration-200';
             shiftEl.dataset.count = shift.staff_count || 1;
             shiftEl.innerHTML = `
                 <div class="bg-slate-50 p-4 flex justify-between items-center cursor-pointer hover:bg-slate-100 transition-colors" onclick="this.nextElementSibling.classList.toggle('hidden')">
                     <div class="flex items-center gap-4 flex-1 mr-4">
+                        <div class="flex items-center gap-1.5" onclick="event.stopPropagation()">
+                            <select class="field-action-select text-xs font-bold rounded-lg border p-1 cursor-pointer transition-colors" onchange="updateShiftRowActionStyle(this.closest('.shift-row-data'))">
+                                <option value="CREATE" ${actionVal === 'CREATE' ? 'selected' : ''}>Create</option>
+                                <option value="UPDATE" ${actionVal === 'UPDATE' ? 'selected' : ''}>Update</option>
+                                <option value="REMOVE" ${actionVal === 'REMOVE' ? 'selected' : ''}>Remove</option>
+                            </select>
+                        </div>
                         <div class="flex items-center gap-1 bg-indigo-50 border border-indigo-100 rounded-xl px-2 py-1 focus-within:border-indigo-400 focus-within:bg-white transition-all shadow-sm" onclick="event.stopPropagation()">
                             <input type="number" min="1" max="99" class="field-staff-count w-8 text-center font-bold text-sm bg-transparent border-none p-0 focus:ring-0 text-indigo-700" value="${shift.staff_count || 1}">
                             <span class="text-xs font-bold text-indigo-400 select-none pr-1">x</span>
@@ -625,6 +658,7 @@
                 </div>
             `;
             shiftsContainer.appendChild(shiftEl);
+            updateShiftRowActionStyle(shiftEl);
         });
         
         // Initialize and bind day of week labels reactively for all rendered shifts
@@ -700,21 +734,23 @@
                 return `${String(hour).padStart(2, '0')}:${mm}`;
             };
 
+            const actionVal = el.querySelector('.field-action-select').value;
             const startVal = parseTime(el.querySelector('.field-start-picker'));
             const endVal = parseTime(el.querySelector('.field-end-picker'));
 
-            if (!startVal || !endVal) {
-                alert('Please enter both start and end times for all shifts.');
+            if (actionVal !== 'REMOVE' && (!startVal || !endVal)) {
+                alert('Please enter both start and end times for all active shifts.');
                 btn.innerHTML = originalText;
                 btn.disabled = false;
                 return;
             }
 
             dataToSubmit.shift_information.push({
+                action: actionVal,
                 date: el.querySelector('.field-date').value,
-                position: el.querySelector('.field-position').value,
-                start_time: startVal,
-                end_time: endVal,
+                position: el.querySelector('.field-position-select').value,
+                start_time: startVal || '',
+                end_time: endVal || '',
                 staff_count: el.querySelector('.field-staff-count') ? el.querySelector('.field-staff-count').value : (el.dataset.count || 1),
                 publication_rule: el.querySelector('.field-publication-rule') ? el.querySelector('.field-publication-rule').value : 'DO_NOT_PUBLISH',
                 requested_employee_id: el.querySelector('.field-requested-employee-id') ? el.querySelector('.field-requested-employee-id').value.trim() : ''
