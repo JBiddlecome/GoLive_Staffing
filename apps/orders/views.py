@@ -35,6 +35,128 @@ async def index(request: Request):
     user = request.session.get("user")
     return templates.TemplateResponse("apps/orders/index.html", {"request": request, "user": user})
 
+def normalize_extracted_positions(extracted_data: dict):
+    shifts = extracted_data.get('shift_information', [])
+    if not shifts:
+        return
+        
+    engine = _engine()
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(text("SELECT description FROM position")).fetchall()
+            db_positions = [r[0] for r in rows]
+            
+            for s in shifts:
+                pos = s.get('position')
+                if not pos:
+                    continue
+                matched_pos = None
+                for db_pos in db_positions:
+                    if db_pos.lower().strip() == pos.lower().strip():
+                        matched_pos = db_pos
+                        break
+                if matched_pos:
+                    s['position'] = matched_pos
+    except Exception as e:
+        print(f"Error normalizing positions: {e}")
+
+def resolve_existing_shifts_for_extraction(extracted_data: dict, client_id: int):
+    basic = extracted_data.get('basic_information', {})
+    venue_name = basic.get('venue_name')
+    shifts = extracted_data.get('shift_information', [])
+    
+    if not venue_name or not shifts:
+        return
+        
+    engine = _engine()
+    try:
+        with engine.connect() as conn:
+            v_sql = text("SELECT venue_id FROM venue WHERE client_id = :client_id AND name = :v_name LIMIT 1")
+            venue_row = conn.execute(v_sql, {"client_id": client_id, "v_name": venue_name}).fetchone()
+            if not venue_row:
+                return
+            venue_id = venue_row[0]
+            
+            for s in shifts:
+                action = s.get('action', 'CREATE')
+                if action not in ('UPDATE', 'REMOVE'):
+                    continue
+                    
+                event_date = s.get('date')
+                pos_name = s.get('position')
+                if not event_date or not pos_name:
+                    continue
+                    
+                ev_sql = text("""
+                    SELECT event_id FROM event 
+                    WHERE client_id = :client_id AND venue_id = :venue_id AND date = :date AND deleted_at IS NULL 
+                    LIMIT 1
+                """)
+                event_row = conn.execute(ev_sql, {"client_id": client_id, "venue_id": venue_id, "date": event_date}).fetchone()
+                if not event_row:
+                    continue
+                event_id = event_row[0]
+                
+                active_shifts_sql = text("""
+                    SELECT 
+                        s.shift_id, s.start, s.end, 
+                        sp.shift_position_id, p.description as position_name, sp.count
+                    FROM shift s
+                    JOIN shift_position sp ON sp.shift_id = s.shift_id
+                    JOIN position p ON sp.position_id = p.position_id
+                    WHERE s.event_id = :event_id
+                      AND s.deleted_at IS NULL
+                      AND sp.deleted_at IS NULL
+                """)
+                db_shifts = conn.execute(active_shifts_sql, {"event_id": event_id}).fetchall()
+                
+                matched_shift = None
+                best_score = -1
+                inc_start_time = s.get('start_time')
+                
+                for db_sh in db_shifts:
+                    if db_sh.position_name.lower().strip() == pos_name.lower().strip():
+                        score = 10
+                        if inc_start_time and db_sh.start:
+                            db_start_str = db_sh.start.strftime("%H:%M") if hasattr(db_sh.start, 'strftime') else str(db_sh.start).split(' ')[-1][:5]
+                            if db_start_str == inc_start_time:
+                                score += 20
+                            else:
+                                try:
+                                    db_h, db_m = map(int, db_start_str.split(':'))
+                                    inc_h, inc_m = map(int, inc_start_time.split(':'))
+                                    diff = abs((db_h * 60 + db_m) - (inc_h * 60 + inc_m))
+                                    score += max(0, 15 - (diff / 10))
+                                except Exception:
+                                    pass
+                        if score > best_score:
+                            best_score = score
+                            matched_shift = db_sh
+                            
+                if matched_shift:
+                    db_start = matched_shift.start
+                    db_end = matched_shift.end
+                    
+                    db_start_str = db_start.strftime("%H:%M") if hasattr(db_start, 'strftime') else str(db_start).split(' ')[-1][:5]
+                    db_end_str = db_end.strftime("%H:%M") if hasattr(db_end, 'strftime') else str(db_end).split(' ')[-1][:5]
+                    
+                    s['db_start_time'] = db_start_str
+                    s['db_end_time'] = db_end_str
+                    s['db_position'] = matched_shift.position_name
+                    
+                    # Normalise to actual DB casing and space format
+                    s['position'] = matched_shift.position_name
+                    
+                    if not s.get('start_time') or action == 'REMOVE':
+                        s['start_time'] = db_start_str
+                    if not s.get('end_time') or action == 'REMOVE':
+                        s['end_time'] = db_end_str
+                    if s.get('end_time_inferred') or not inc_start_time:
+                        s['end_time'] = db_end_str
+                        s['end_time_inferred'] = False
+    except Exception as e:
+        print(f"Error resolving existing shifts: {e}")
+
 @router.post("/extract")
 async def extract_order(request: Request):
     data = await request.json()
@@ -65,6 +187,9 @@ async def extract_order(request: Request):
     
     if not extracted_data.get('basic_information'):
         return JSONResponse({"status": "error", "message": "Failed to extract order data."}, status_code=500)
+        
+    normalize_extracted_positions(extracted_data)
+    resolve_existing_shifts_for_extraction(extracted_data, client_id)
     
     return JSONResponse({"status": "success", "data": extracted_data, "client_kb": client_context})
 

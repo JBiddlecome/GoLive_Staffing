@@ -12,6 +12,9 @@ else:
 OPENAI_API_KEY = os.getenv("STAND_ALONE") or os.getenv("OPENAI_API_KEY")
 
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
+PT = ZoneInfo("America/Los_Angeles")
 
 SYSTEM_PROMPT = """You are an expert Staffing Manager assistant for GoLive Staffing.
 Your job is to extract shift and event order details from raw text (emails or dictations) and map them to our database schema.
@@ -35,6 +38,7 @@ Return ONLY a valid JSON object matching this exact schema:
     "shift_information": [
         {
             "id": "integer (incrementing ID starting from 1)",
+            "action": "string (Allowed values: 'CREATE', 'UPDATE', 'REMOVE'. Defaults to 'CREATE'. Set to 'UPDATE' if the email asks to update/change times or details for an existing shift on this date. Set to 'REMOVE' if the email asks to delete/remove/cancel an existing shift on this date)",
             "date": "string (YYYY-MM-DD format. Each shift must have its own date if the order spans multiple days)",
             "start_time": "string (HH:MM format, 24-hour)",
             "end_time": "string (HH:MM format, 24-hour. Leave EMPTY if not explicitly stated AND cannot be inferred from typical_shift_times)",
@@ -67,25 +71,34 @@ Guidelines:
 - SIMPLE CONFIRMATION RULE: If the order text (or latest email message) is just a simple confirmation, reply, or follow-up that does not contain a new request for shifts (e.g., "Thank you, see you tomorrow!", "Thanks for confirming!", "Looks good!", "see you tomorrow"), you MUST return an empty shift_information list (i.e. "shift_information": []). Do NOT guess, predict, or extract any shifts based on typical times or typical positions in the context if the text is merely acknowledging or confirming without placing a new order request.
 - DATE RANGE & RECURRING SHIFTS RULE: If the request specifies a date range (e.g. "June 9 to July 10" or "6/9 to 7/10") along with a repeating pattern or weekdays (e.g. "Monday to Friday", "every Tuesday and Thursday", "daily"), you MUST expand this range and create a SEPARATE shift_information object for EACH and EVERY matching individual date in that range (inclusive of start and end dates). Do NOT just create two shifts for the start and end dates. Determine the correct calendar dates in the range for 2026 (e.g., if starting June 9, 2026 to July 10, 2026, Monday to Friday, you should output separate shifts for June 9, June 10, June 11, June 12, June 15, June 16, etc., all the way through July 10). List each resulting shift as its own object in the shift_information array.
 - EMAIL THREAD RULE: Emails may contain a history of previous messages (a thread chain) at the bottom. You MUST focus on the latest (top-most) message. Do NOT extract shifts or details from historical messages in the thread UNLESS the top-most message explicitly directs you to do so (e.g., "please repeat the order below", "book the same shifts as below", "see forwarded request"). If the latest message is just a simple confirmation or follow-up that does not request shifts, do not extract any shifts.
+- ACTION SELECTION RULE: Identify if the request is to add/create new shifts (CREATE), change details/times of existing shifts (UPDATE), or delete/cancel existing shifts (REMOVE). For example:
+  1. "please change the Cook G start time on 6/3/2026 to 8am start time" -> action is "UPDATE", position is "Cook G", date is "2026-06-03", start_time is "08:00".
+  2. "please remove the cook G shift on 6/3/2026" -> action is "REMOVE", position is "Cook G", date is "2026-06-03".
+  3. "We need a cook G on 6/3/2026 from 7am-3pm" -> action is "CREATE", position is "Cook G", date is "2026-06-03", start_time is "07:00", end_time is "15:00".
+- Use the 'Calendar Context (Relative dates)' list provided in the user prompt to resolve relative day names (like 'Friday', 'tomorrow', 'next Monday', 'today') to their correct YYYY-MM-DD calendar dates. Do NOT guess or perform manual date arithmetic.
 - Do NOT return markdown formatting (no ```json).
 """
 
 def parse_reference_date(ref_date_str: str) -> datetime:
-    """Parse reference date string into a datetime object robustly."""
+    """Parse reference date string into a datetime object robustly and convert to Pacific Time."""
     if not ref_date_str:
-        return datetime.now()
+        return datetime.now(PT)
     try:
         # Standard ISO format with 'Z'
         if ref_date_str.endswith('Z'):
             ref_date_str = ref_date_str[:-1] + '+00:00'
-        return datetime.fromisoformat(ref_date_str)
+        dt = datetime.fromisoformat(ref_date_str)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=ZoneInfo("UTC"))
+        return dt.astimezone(PT)
     except Exception:
         try:
             # Fallback to simple split if it has 'T' or space
             date_part = ref_date_str.split('T')[0].split(' ')[0]
-            return datetime.strptime(date_part, "%Y-%m-%d")
+            dt = datetime.strptime(date_part, "%Y-%m-%d")
+            return dt.replace(tzinfo=PT)
         except Exception:
-            return datetime.now()
+            return datetime.now(PT)
 def get_latest_email_message(body: str) -> str:
     """Extracts only the latest (top-most) email message from a thread chain."""
     if not body:
@@ -150,11 +163,30 @@ async def ai_extract_order(text: str, client_context: dict, reference_date: str 
     if reference_date:
         ref_dt = parse_reference_date(reference_date)
     else:
-        ref_dt = datetime.now()
+        ref_dt = datetime.now(PT)
         
     current_date = ref_dt.strftime("%A, %B %d, %Y")
+    
+    # Generate relative calendar context to prevent LLM calendar math errors
+    from datetime import timedelta
+    calendar_lines = []
+    for i in range(-2, 12):
+        dt = ref_dt + timedelta(days=i)
+        day_label = dt.strftime("%A")
+        date_label = dt.strftime("%Y-%m-%d")
+        rel = ""
+        if i == 0:
+            rel = " (Today)"
+        elif i == 1:
+            rel = " (Tomorrow)"
+        elif i == -1:
+            rel = " (Yesterday)"
+        calendar_lines.append(f"- {day_label}: {date_label}{rel}")
+    calendar_context = "\n".join(calendar_lines)
+    
     user_msg = (
-        f"Current Date: {current_date}\n\n"
+        f"Current Date: {current_date}\n"
+        f"Calendar Context (Relative dates):\n{calendar_context}\n\n"
         f"Client Context:\n{json.dumps(client_context, indent=2)}\n\n"
         f"Raw Order Text:\n{cleaned_text}\n\n"
         f"Extract the details into the required JSON schema."
