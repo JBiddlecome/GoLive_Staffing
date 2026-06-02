@@ -16,7 +16,7 @@ port = int(os.getenv("DB_PORT", "3306"))
 
 engine = create_engine(f"mysql+pymysql://{user}:{password}@{host}:{port}/{name}")
 
-def run_test_simulation(start_date, end_date, reduction_amount, markup_percent, msp_filter):
+def run_test_simulation(start_date, end_date, reduction_amount, markup_percent, msp_filter, client_reductions=None):
     inspector = inspect(engine)
     timesheet_columns = {col["name"] for col in inspector.get_columns("timesheet")}
 
@@ -111,6 +111,7 @@ def run_test_simulation(start_date, end_date, reduction_amount, markup_percent, 
     print(f"\n==========================================")
     print(f"MSP Filter: {msp_filter} | Reduction: ${reduction_amount:.2f} | Markup: {markup_percent}%")
     print(f"Fetched {len(df)} shifts.")
+    print("Unique clients:", list(df['client_name'].unique()))
     
     if df.empty:
         print("No shifts found.")
@@ -257,7 +258,11 @@ def run_test_simulation(start_date, end_date, reduction_amount, markup_percent, 
         min_wage = float(row["min_wage"])
 
         if simulate:
-            pay_rate = max(orig_pay_rate - reduction_amount, min_wage)
+            c_name = row["client_name"]
+            reduction = reduction_amount
+            if client_reductions and c_name in client_reductions:
+                reduction = client_reductions[c_name]
+            pay_rate = max(orig_pay_rate - reduction, min_wage)
             bill_rate = pay_rate * (1.0 + markup_percent / 100.0)
         else:
             pay_rate = orig_pay_rate
@@ -411,3 +416,6 @@ if __name__ == "__main__":
     
     # Test 3: All Clients (MSPs + Direct), $3.00 reduction, 75% markup
     run_test_simulation("2026-04-25", "2026-05-24", 3.0, 75.0, "all")
+
+    # Test 4: Compass MSP, $2 reduction, 77% markup, with client override of $0.00 for Wolfgang Puck Catering
+    run_test_simulation("2026-04-25", "2026-05-24", 2.0, 77.0, "2", client_reductions={"Wolfgang Puck Catering": 0.0})

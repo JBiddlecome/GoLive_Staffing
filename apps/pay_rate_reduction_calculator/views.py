@@ -233,6 +233,7 @@ class CompassCalculateRequest(BaseModel):
     reduction_amount: float = 2.0
     markup_percent: float = 77.0
     msp_filter: str = "2"
+    client_reductions: Optional[Dict[str, float]] = None
 
 @router.post("/compass/calculate")
 async def calculate_compass_rates(payload: CompassCalculateRequest):
@@ -512,7 +513,11 @@ async def calculate_compass_rates(payload: CompassCalculateRequest):
         min_wage = float(row["min_wage"])
 
         if simulate:
-            pay_rate = max(orig_pay_rate - payload.reduction_amount, min_wage)
+            client_name = row["client_name"]
+            reduction = payload.reduction_amount
+            if payload.client_reductions and client_name in payload.client_reductions:
+                reduction = payload.client_reductions[client_name]
+            pay_rate = max(orig_pay_rate - reduction, min_wage)
             bill_rate = pay_rate * (1.0 + payload.markup_percent / 100.0)
         else:
             pay_rate = orig_pay_rate
