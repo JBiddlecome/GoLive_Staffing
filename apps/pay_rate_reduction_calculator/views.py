@@ -420,6 +420,7 @@ async def calculate_compass_rates(payload: CompassCalculateRequest):
                 t.employee_start,
                 COALESCE(mwra.rate, 0.0) AS min_wage,
                 vp.venue_position_id,
+                COALESCE(pos.description, 'Unknown Position') AS position_name,
                 {ts_select_str}
             FROM shift_employee se
             JOIN event e ON se.event_id = e.event_id
@@ -431,6 +432,7 @@ async def calculate_compass_rates(payload: CompassCalculateRequest):
             LEFT JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
             LEFT JOIN shift s ON sp.shift_id = s.shift_id
             LEFT JOIN venue_position vp ON vp.venue_id = e.venue_id AND vp.position_id = sp.position_id
+            LEFT JOIN position pos ON sp.position_id = pos.position_id
             LEFT JOIN user u ON c.sales_executive_id = u.id
             LEFT JOIN min_wage_rate_amount mwra ON v.min_wage_id = mwra.min_wage_id
                 AND (mwra.start_date IS NULL OR mwra.start_date <= '2026-07-01')
@@ -828,10 +830,42 @@ async def calculate_compass_rates(payload: CompassCalculateRequest):
             client_map[c_name]["sim_profit"] = round(c_prof, 2)
             client_map[c_name]["profit_change"] = round(c_prof - client_map[c_name]["orig_profit"], 2)
 
+    # Per-client, per-position drill-down
+    client_positions = {}
+    if "position_name" in df.columns:
+        pos_group = df.groupby(["client_name", "position_name"]).agg(
+            avg_pay_rate=("pay_rate", "mean"),
+            avg_bill_rate=("bill_rate", "mean"),
+            shift_count=("pay_rate", "count")
+        ).reset_index()
+        for _, r in pos_group.iterrows():
+            c_name = r["client_name"]
+            pos_name = r["position_name"]
+            avg_pay = round(float(r["avg_pay_rate"]), 2)
+            avg_bill = round(float(r["avg_bill_rate"]), 2)
+            sim_pay = round(max(avg_pay - payload.reduction_amount, 0.0), 2)
+            sim_bill = round(sim_pay * (1.0 + payload.markup_percent / 100.0), 2)
+            current_markup = round(((avg_bill / avg_pay) - 1.0) * 100.0, 1) if avg_pay > 0 else 0.0
+            if c_name not in client_positions:
+                client_positions[c_name] = []
+            client_positions[c_name].append({
+                "position_name": pos_name,
+                "avg_pay_rate": avg_pay,
+                "avg_bill_rate": avg_bill,
+                "sim_pay_rate": sim_pay,
+                "sim_bill_rate": sim_bill,
+                "current_markup_pct": current_markup,
+                "sim_markup_pct": round(payload.markup_percent, 1),
+                "shift_count": int(r["shift_count"])
+            })
+        for c_name in client_positions:
+            client_positions[c_name].sort(key=lambda x: x["shift_count"], reverse=True)
+
     breakdown_list = list(client_map.values())
     breakdown_list.sort(key=lambda x: x["orig_bill"], reverse=True)
 
     return {
+        "markup_percent": payload.markup_percent,
         "baseline": {
             "total_bill": round(b_bill, 2),
             "gross_pay": round(b_pay, 2),
@@ -856,7 +890,8 @@ async def calculate_compass_rates(payload: CompassCalculateRequest):
             "total_fees": round(s_tot_fees, 2),
             "profit": round(s_profit, 2)
         },
-        "client_breakdown": breakdown_list
+        "client_breakdown": breakdown_list,
+        "client_positions": client_positions
     }
 
 @router.post("/billing-type/calculate")
@@ -1366,3 +1401,200 @@ async def calculate_billing_type_rates(payload: BillingTypeCalculateRequest):
         "client_breakdown": breakdown_list,
         "client_positions": client_positions
     }
+
+
+# === Rate Report ===
+import json
+import io
+import csv
+from fastapi.responses import StreamingResponse
+
+def _resolve_rate_report_dir() -> Path:
+    env_dir = os.getenv("DATA_DIR") or os.getenv("RENDER_DISK_PATH")
+    if env_dir:
+        return Path(env_dir)
+    if Path("/var/data").exists():
+        return Path("/var/data")
+    return Path("data")
+
+RATE_REPORT_FILE = _resolve_rate_report_dir() / "rate_report_adjustments.json"
+
+CLIENT_STATUS_MAP = {1: "Active", 10: "Inactive 60", 11: "Inactive 180"}
+RATE_REPORT_STATUSES = tuple(CLIENT_STATUS_MAP.keys())
+
+
+def _load_rate_report_adjustments() -> dict:
+    try:
+        RATE_REPORT_FILE.parent.mkdir(parents=True, exist_ok=True)
+        if RATE_REPORT_FILE.exists():
+            with RATE_REPORT_FILE.open("r") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
+
+
+def _save_rate_report_adjustments(data: dict):
+    RATE_REPORT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with RATE_REPORT_FILE.open("w") as f:
+        json.dump(data, f, indent=2)
+
+
+class RateReportSaveRequest(BaseModel):
+    adjustments: dict
+
+
+@router.get("/rate-report/clients")
+async def get_rate_report_clients():
+    engine = _engine()
+    try:
+        sql = text("""
+            SELECT
+                c.client_id,
+                c.name AS client_name,
+                c.status AS client_status,
+                e.venue_id,
+                v.name AS venue_name,
+                vp.venue_position_id,
+                pos.description AS position_name,
+                AVG(se.rate) AS avg_pay_rate,
+                AVG(se.bill_rate) AS avg_bill_rate,
+                COUNT(*) AS shift_count,
+                MAX(e.date) AS last_used,
+                COALESCE((
+                    SELECT mwra.rate
+                    FROM min_wage_rate_amount mwra
+                    WHERE mwra.min_wage_id = v.min_wage_id
+                      AND (mwra.start_date IS NULL OR mwra.start_date <= '2026-07-01')
+                      AND (mwra.end_date IS NULL OR mwra.end_date >= '2026-07-01')
+                    ORDER BY mwra.id DESC
+                    LIMIT 1
+                ), 0.0) AS min_wage_rate
+            FROM shift_employee se
+            JOIN event e ON se.event_id = e.event_id
+            JOIN client c ON e.client_id = c.client_id
+            JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
+            LEFT JOIN venue_position vp ON vp.venue_id = e.venue_id AND vp.position_id = sp.position_id
+            LEFT JOIN position pos ON sp.position_id = pos.position_id
+            LEFT JOIN venue v ON e.venue_id = v.venue_id
+            WHERE c.status IN :statuses
+              AND se.deleted_at IS NULL
+              AND se.confirmed = 1
+              AND se.cancel_reason = 0
+            GROUP BY c.client_id, c.name, c.status, e.venue_id, v.name, vp.venue_position_id, pos.description
+            ORDER BY c.name, pos.description
+        """)
+
+        with engine.begin() as conn:
+            rows = conn.execute(sql, {"statuses": RATE_REPORT_STATUSES}).mappings().fetchall()
+
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": f"Database error: {str(e)}"})
+    finally:
+        engine.dispose()
+
+    saved = _load_rate_report_adjustments()
+    clients: dict = {}
+    for row in rows:
+        c_id = row["client_id"]
+        c_name = row["client_name"]
+        c_status = CLIENT_STATUS_MAP.get(row["client_status"], str(row["client_status"]))
+
+        if c_id not in clients:
+            clients[c_id] = {
+                "client_id": c_id,
+                "client_name": c_name,
+                "client_status": c_status,
+                "positions": []
+            }
+
+        avg_pay = round(float(row["avg_pay_rate"] or 0), 2)
+        avg_bill = round(float(row["avg_bill_rate"] or 0), 2)
+        current_markup = round(((avg_bill / avg_pay) - 1.0) * 100.0, 1) if avg_pay > 0 else 0.0
+        vpid = row["venue_position_id"]
+        venue_id = row["venue_id"]
+        pos_name = row["position_name"] or "Unknown"
+        pos_key = f"{c_id}:{vpid}" if vpid else f"{c_id}:v{venue_id}:{pos_name}"
+        min_wage = round(float(row["min_wage_rate"] or 0), 2)
+
+        saved_adj = saved.get(pos_key, {})
+
+        # Enforce: saved new_pay_rate must not be below min wage
+        saved_new_pay = saved_adj.get("new_pay_rate", avg_pay)
+        if min_wage > 0:
+            saved_new_pay = max(saved_new_pay, min_wage)
+
+        clients[c_id]["positions"].append({
+            "key": pos_key,
+            "venue_position_id": vpid,
+            "client_id": c_id,
+            "venue_id": venue_id,
+            "venue_name": row["venue_name"] or "",
+            "position_name": pos_name,
+            "avg_pay_rate": avg_pay,
+            "avg_bill_rate": avg_bill,
+            "current_markup_pct": current_markup,
+            "shift_count": int(row["shift_count"]),
+            "last_used": str(row["last_used"]) if row["last_used"] else "",
+            "min_wage_rate": min_wage,
+            "new_pay_rate": saved_new_pay,
+            "new_bill_rate": saved_adj.get("new_bill_rate", avg_bill),
+            "new_markup_pct": saved_adj.get("new_markup_pct", current_markup),
+        })
+
+    client_list = list(clients.values())
+    for c in client_list:
+        c["positions"].sort(key=lambda x: x["shift_count"], reverse=True)
+    client_list.sort(key=lambda x: x["client_name"])
+    return {"clients": client_list, "saved_adjustments": saved}
+
+
+@router.post("/rate-report/save")
+async def save_rate_report_adjustments(payload: RateReportSaveRequest):
+    try:
+        # Full replace — frontend sends the complete state, so resets/deletions are honoured
+        _save_rate_report_adjustments(payload.adjustments)
+        return {"status": "ok", "saved": len(payload.adjustments)}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": f"Save error: {str(e)}"})
+
+
+@router.get("/rate-report/download")
+async def download_rate_report():
+    saved = _load_rate_report_adjustments()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "client_id", "client_name", "venue_position_id", "venue_id",
+        "position_name", "current_pay_rate", "current_bill_rate", "current_markup_pct",
+        "new_pay_rate", "new_bill_rate", "new_markup_pct", "pay_change", "bill_change"
+    ])
+
+    for _key, adj in saved.items():
+        orig_pay = adj.get("orig_pay_rate", 0) or 0
+        orig_bill = adj.get("orig_bill_rate", 0) or 0
+        new_pay = adj.get("new_pay_rate", orig_pay) or orig_pay
+        new_bill = adj.get("new_bill_rate", orig_bill) or orig_bill
+        writer.writerow([
+            adj.get("client_id", ""),
+            adj.get("client_name", ""),
+            adj.get("venue_position_id", ""),
+            adj.get("venue_id", ""),
+            adj.get("position_name", ""),
+            round(orig_pay, 2),
+            round(orig_bill, 2),
+            adj.get("orig_markup_pct", ""),
+            round(new_pay, 2),
+            round(new_bill, 2),
+            adj.get("new_markup_pct", ""),
+            round(new_pay - orig_pay, 2),
+            round(new_bill - orig_bill, 2),
+        ])
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=rate_report.csv"}
+    )

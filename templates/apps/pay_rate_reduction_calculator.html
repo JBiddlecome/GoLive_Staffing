@@ -60,6 +60,18 @@
         <path stroke-linecap="round" stroke-linejoin="round" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z" />
       </svg>
       Billing Type Simulator
+
+    </button>
+    <button 
+      id="tab-btn-ratereport"
+      type="button"
+      onclick="switchTab('ratereport')"
+      class="w-full rounded-lg py-2.5 text-sm font-semibold leading-5 text-slate-600 hover:bg-white/40 hover:text-slate-950 transition-all duration-200 flex items-center justify-center gap-1.5 focus:outline-none"
+    >
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+      </svg>
+      Rate Report
     </button>
   </div>
 
@@ -986,6 +998,107 @@
     </section>
   </div> <!-- Closes panel-billing -->
 
+  <!-- ── Rate Report Panel ─────────────────────────────────────────────── -->
+  <div id="panel-ratereport" class="space-y-6 hidden">
+
+    <!-- Controls bar -->
+    <section class="rounded-2xl border border-orange-100 bg-gradient-to-r from-orange-50 to-amber-50 p-6 shadow-sm">
+      <div class="flex flex-col lg:flex-row lg:items-end gap-6">
+        <div class="flex-1">
+          <h2 class="text-lg font-bold text-orange-900 flex items-center gap-2">
+            <svg class="h-5 w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            Rate Report
+          </h2>
+          <p class="text-xs text-orange-700/70 mt-1">Current pay &amp; bill rates for Active, Inactive 60, and Inactive 180 clients. Click a client to expand positions and adjust rates. Changes auto-save.</p>
+        </div>
+        <!-- Global controls -->
+        <div class="flex flex-wrap items-end gap-4">
+          <div id="rr-reduction-container">
+            <label class="block text-xs font-bold text-orange-800 mb-1">Global Pay Reduction ($)</label>
+            <div class="relative rounded-md shadow-sm" style="width:110px">
+              <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2"><span class="text-gray-400 text-xs">$</span></div>
+              <input type="number" id="rr-global-reduction" step="0.25" min="0" value="2.00"
+                class="block w-full rounded-md border-0 py-2 pl-5 pr-2 text-gray-900 ring-1 ring-inset ring-orange-200 focus:ring-2 focus:ring-inset focus:ring-orange-500 text-xs font-semibold"
+                oninput="rrApplyGlobalReduction()">
+            </div>
+          </div>
+          <div id="rr-markup-container">
+            <label class="block text-xs font-bold text-orange-800 mb-1">Global Bill Rate Markup (%)</label>
+            <div class="relative rounded-md shadow-sm" style="width:110px">
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"><span class="text-gray-400 text-xs">%</span></div>
+              <input type="number" id="rr-global-markup" step="0.5" min="0" value="77.00"
+                class="block w-full rounded-md border-0 py-2 pl-3 pr-6 text-gray-900 ring-1 ring-inset ring-orange-200 focus:ring-2 focus:ring-inset focus:ring-orange-500 text-xs font-semibold"
+                oninput="rrApplyGlobalMarkup()">
+            </div>
+          </div>
+          <div class="relative rounded-md shadow-sm" style="width:200px">
+            <label class="block text-xs font-bold text-orange-800 mb-1">Search Clients</label>
+            <input type="text" id="rr-client-search" placeholder="Filter clients..."
+              oninput="rrFilterClients()"
+              class="block w-full rounded-md border-0 py-2 pl-3 pr-3 text-gray-900 ring-1 ring-inset ring-orange-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-orange-500 text-xs font-semibold">
+          </div>
+          <div class="flex gap-2">
+            <button id="btn-rr-load" onclick="loadRateReport()" type="button"
+              class="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-2 text-sm font-bold text-white shadow-sm hover:bg-orange-700 active:scale-95 transition-all duration-200">
+              <svg id="btn-rr-spinner" class="hidden h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span id="btn-rr-text">Load Rate Report</span>
+            </button>
+            <button onclick="downloadRateReport()" type="button"
+              class="inline-flex items-center gap-1.5 rounded-xl bg-white border border-orange-300 px-4 py-2 text-sm font-bold text-orange-700 shadow-sm hover:bg-orange-50 active:scale-95 transition-all duration-200">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download CSV
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Save status indicator -->
+      <div id="rr-save-status" class="hidden mt-3 flex items-center gap-2 text-xs text-orange-700 font-semibold">
+        <svg class="h-3.5 w-3.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+        </svg>
+        <span id="rr-save-text">Saved</span>
+      </div>
+    </section>
+
+    <!-- Status filter pills -->
+    <div class="flex gap-2 flex-wrap">
+      <span class="text-xs text-gray-500 font-semibold self-center">Show:</span>
+      <button onclick="rrToggleStatus('Active', this)" data-rr-status="Active"
+        class="rr-status-pill inline-flex items-center gap-1 rounded-full bg-emerald-100 border border-emerald-300 px-3 py-1 text-xs font-bold text-emerald-800 cursor-pointer hover:bg-emerald-200 transition rr-pill-active">
+        <span class="h-2 w-2 rounded-full bg-emerald-500 inline-block"></span> Active
+      </button>
+      <button onclick="rrToggleStatus('Inactive 60', this)" data-rr-status="Inactive 60"
+        class="rr-status-pill inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-3 py-1 text-xs font-bold text-amber-800 cursor-pointer hover:bg-amber-200 transition rr-pill-active">
+        <span class="h-2 w-2 rounded-full bg-amber-500 inline-block"></span> Inactive 60
+      </button>
+      <button onclick="rrToggleStatus('Inactive 180', this)" data-rr-status="Inactive 180"
+        class="rr-status-pill inline-flex items-center gap-1 rounded-full bg-rose-100 border border-rose-300 px-3 py-1 text-xs font-bold text-rose-800 cursor-pointer hover:bg-rose-200 transition rr-pill-active">
+        <span class="h-2 w-2 rounded-full bg-rose-500 inline-block"></span> Inactive 180
+      </button>
+      <span id="rr-count-badge" class="ml-2 text-xs text-gray-400 font-medium self-center"></span>
+    </div>
+
+    <!-- Client list -->
+    <section id="rr-client-list" class="space-y-3">
+      <div class="flex items-center justify-center py-16 text-gray-400">
+        <div class="text-center">
+          <svg class="mx-auto h-12 w-12 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2" />
+          </svg>
+          <p class="text-sm font-semibold">Click "Load Rate Report" to begin</p>
+        </div>
+      </div>
+    </section>
+
+  </div> <!-- Closes panel-ratereport -->
+
 </div> <!-- Closes content container -->
 {% endblock %}
 
@@ -1150,9 +1263,11 @@
     const countyBtn = document.getElementById('tab-btn-county');
     const compassBtn = document.getElementById('tab-btn-compass');
     const billingBtn = document.getElementById('tab-btn-billing');
+    const rateReportBtn = document.getElementById('tab-btn-ratereport');
     const countyPanel = document.getElementById('panel-county');
     const compassPanel = document.getElementById('panel-compass');
     const billingPanel = document.getElementById('panel-billing');
+    const rateReportPanel = document.getElementById('panel-ratereport');
 
     const activeClass = "w-full rounded-lg py-2.5 text-sm font-bold leading-5 text-teal-800 bg-white shadow transition-all duration-200 flex items-center justify-center gap-1.5 focus:outline-none";
     const inactiveClass = "w-full rounded-lg py-2.5 text-sm font-semibold leading-5 text-slate-600 hover:bg-white/40 hover:text-slate-950 transition-all duration-200 flex items-center justify-center gap-1.5 focus:outline-none";
@@ -1160,9 +1275,11 @@
     countyPanel.classList.add('hidden');
     compassPanel.classList.add('hidden');
     billingPanel.classList.add('hidden');
+    rateReportPanel.classList.add('hidden');
     countyBtn.className = inactiveClass;
     compassBtn.className = inactiveClass;
     billingBtn.className = inactiveClass;
+    rateReportBtn.className = inactiveClass;
 
     if (tab === 'county') {
       countyPanel.classList.remove('hidden');
@@ -1173,6 +1290,9 @@
     } else if (tab === 'billing') {
       billingPanel.classList.remove('hidden');
       billingBtn.className = activeClass;
+    } else if (tab === 'ratereport') {
+      rateReportPanel.classList.remove('hidden');
+      rateReportBtn.className = activeClass;
     }
   }
   
@@ -1308,6 +1428,8 @@
     
     // 5. Render Client Table
     window.compassClientData = data.client_breakdown;
+    window.compassClientPositions = data.client_positions || {};
+    window.compassExpandedClients = new Set();
     renderClientTable();
   }
   
@@ -1383,11 +1505,12 @@
     
     const globalReduction = parseFloat(document.getElementById('compass-reduction-amount').value) || 2.0;
     const calcMode = document.getElementById('compass-calc-mode') ? document.getElementById('compass-calc-mode').value : 'global';
+    if (!window.compassExpandedClients) window.compassExpandedClients = new Set();
     
     filtered.forEach(c => {
-      const tr = document.createElement('tr');
-      tr.className = "hover:bg-slate-50/50 transition border-b border-slate-100 text-xs";
-      
+      const isExpanded = window.compassExpandedClients.has(c.client_name);
+      const hasPositions = window.compassClientPositions && window.compassClientPositions[c.client_name];
+
       const badgeClass = c.profit_change >= 0 
         ? "inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 font-bold text-emerald-700 border border-emerald-100"
         : "inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 font-bold text-rose-700 border border-rose-100";
@@ -1413,13 +1536,30 @@
               value="${currentReduction.toFixed(2)}"
               data-client="${c.client_name}"
               onchange="handleClientReductionChange(this)"
+              onclick="event.stopPropagation()"
             >
           </div>
         `;
       }
+
+      const chevronClass = isExpanded
+        ? "inline-block transition-transform duration-200 rotate-180"
+        : "inline-block transition-transform duration-200 rotate-0";
+
+      const tr = document.createElement('tr');
+      tr.className = `transition border-b border-slate-100 text-xs ${hasPositions ? 'cursor-pointer hover:bg-teal-50/30' : 'hover:bg-slate-50/30'} ${isExpanded ? 'bg-teal-50/20' : ''}`;
+      tr.setAttribute('data-compass-client-row', c.client_name);
+      if (hasPositions) {
+        tr.addEventListener('click', () => toggleCompassClientPositions(c.client_name));
+      }
         
       tr.innerHTML = `
-        <td class="py-3 px-4 font-semibold text-gray-800 text-left">${c.client_name}</td>
+        <td class="py-3 px-4 font-semibold text-gray-800 text-left">
+          <div class="flex items-center gap-2">
+            ${hasPositions ? `<svg class="${chevronClass} h-3.5 w-3.5 text-teal-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>` : '<span class="w-3.5 h-3.5 flex-shrink-0"></span>'}
+            ${c.client_name}
+          </div>
+        </td>
         <td class="py-3 px-4 text-center">
           ${reductionCell}
         </td>
@@ -1440,7 +1580,63 @@
         </td>
       `;
       tbody.appendChild(tr);
+
+      // Inline position detail row
+      if (hasPositions) {
+        const detailTr = document.createElement('tr');
+        detailTr.setAttribute('data-compass-detail-row', c.client_name);
+        detailTr.className = isExpanded ? '' : 'hidden';
+        detailTr.innerHTML = `
+          <td colspan="6" class="p-0 bg-teal-50/30">
+            <div class="px-8 py-4 border-t border-teal-100">
+              <p class="text-[10px] uppercase tracking-widest font-bold text-teal-700 mb-3">Position Rates &amp; Markup &mdash; ${c.client_name}</p>
+              <table class="min-w-full text-xs rounded-lg overflow-hidden">
+                <thead>
+                  <tr class="bg-teal-100/60 text-teal-800 uppercase tracking-wider font-bold text-[10px]">
+                    <th class="py-2 px-3 text-left">Position</th>
+                    <th class="py-2 px-3 text-center">Shifts</th>
+                    <th class="py-2 px-3 text-center">Avg Pay Rate</th>
+                    <th class="py-2 px-3 text-center">Avg Bill Rate</th>
+                    <th class="py-2 px-3 text-center">Current Markup %</th>
+                    <th class="py-2 px-3 text-center border-l border-teal-200">Sim Pay Rate</th>
+                    <th class="py-2 px-3 text-center">Sim Bill Rate</th>
+                    <th class="py-2 px-3 text-center">Sim Markup %</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white/70 divide-y divide-teal-50">
+                  ${(window.compassClientPositions[c.client_name] || []).map(p => `
+                    <tr class="hover:bg-teal-50/40 transition">
+                      <td class="py-2 px-3 font-semibold text-gray-800">${p.position_name}</td>
+                      <td class="py-2 px-3 text-center text-gray-500">${p.shift_count}</td>
+                      <td class="py-2 px-3 text-center text-gray-700">${formatCurrency(p.avg_pay_rate)}</td>
+                      <td class="py-2 px-3 text-center text-gray-700">${formatCurrency(p.avg_bill_rate)}</td>
+                      <td class="py-2 px-3 text-center">
+                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-700">${p.current_markup_pct.toFixed(1)}%</span>
+                      </td>
+                      <td class="py-2 px-3 text-center border-l border-teal-100 text-teal-800 font-semibold">${formatCurrency(p.sim_pay_rate)}</td>
+                      <td class="py-2 px-3 text-center text-teal-800 font-semibold">${formatCurrency(p.sim_bill_rate)}</td>
+                      <td class="py-2 px-3 text-center">
+                        <span class="inline-flex items-center rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-bold text-teal-700">${p.sim_markup_pct.toFixed(1)}%</span>
+                      </td>
+                    </tr>`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(detailTr);
+      }
     });
+  }
+
+  function toggleCompassClientPositions(clientName) {
+    if (!window.compassExpandedClients) window.compassExpandedClients = new Set();
+    if (window.compassExpandedClients.has(clientName)) {
+      window.compassExpandedClients.delete(clientName);
+    } else {
+      window.compassExpandedClients.add(clientName);
+    }
+    renderClientTable();
   }
 
   function toggleCalcModeInputs() {
@@ -1936,6 +2132,541 @@
       toggleCounty(county);
     }
   });
+
+  // ─── Rate Report JS ───────────────────────────────────────────────────────
+
+  window.rrClientData = [];
+  window.rrExpandedClients = new Set();
+  window.rrActiveStatuses = new Set(['Active', 'Inactive 60', 'Inactive 180']);
+  window.rrPendingAdjustments = {};
+  window.rrSaveTimer = null;
+
+  async function loadRateReport() {
+    const btn = document.getElementById('btn-rr-load');
+    const spinner = document.getElementById('btn-rr-spinner');
+    const text = document.getElementById('btn-rr-text');
+    btn.disabled = true;
+    spinner.classList.remove('hidden');
+    text.textContent = 'Loading...';
+    try {
+      const resp = await fetch('/pay-rate-reduction-calculator/rate-report/clients');
+      const data = await resp.json();
+      if (!resp.ok) { alert(data.message || 'Error loading rate report'); return; }
+      window.rrClientData = data.clients || [];
+      // Preload saved adjustments into pending
+      window.rrPendingAdjustments = {};
+      (data.clients || []).forEach(c => {
+        c.positions.forEach(p => {
+          if (p.new_pay_rate !== p.avg_pay_rate || p.new_bill_rate !== p.avg_bill_rate || p.new_markup_pct !== p.current_markup_pct) {
+            window.rrPendingAdjustments[p.key] = {
+              client_id: p.client_id,
+              client_name: c.client_name,
+              venue_position_id: p.venue_position_id,
+              venue_id: p.venue_id,
+              position_name: p.position_name,
+              orig_pay_rate: p.avg_pay_rate,
+              orig_bill_rate: p.avg_bill_rate,
+              orig_markup_pct: p.current_markup_pct,
+              new_pay_rate: p.new_pay_rate,
+              new_bill_rate: p.new_bill_rate,
+              new_markup_pct: p.new_markup_pct,
+            };
+          }
+        });
+      });
+      // Apply global defaults to positions not yet adjusted
+      rrApplyDefaultsToAll();
+      renderRateReport();
+    } catch(e) {
+      alert('Network error loading rate report');
+    } finally {
+      btn.disabled = false;
+      spinner.classList.add('hidden');
+      text.textContent = 'Reload';
+    }
+  }
+
+  function rrApplyDefaultsToAll() {
+    const reduction = parseFloat(document.getElementById('rr-global-reduction')?.value) || 0;
+    const markup = parseFloat(document.getElementById('rr-global-markup')?.value) || 77;
+    let changed = false;
+
+    window.rrClientData.forEach(c => {
+      c.positions.forEach(p => {
+        // Skip positions already manually adjusted or loaded from disk
+        if (window.rrPendingAdjustments[p.key]) return;
+
+        const floor = p.min_wage_rate || 0;
+        const rawNewPay = p.avg_pay_rate - reduction;
+        const newPay = parseFloat((floor > 0 ? Math.max(rawNewPay, floor) : Math.max(rawNewPay, 0)).toFixed(2));
+        const newBill = parseFloat((newPay * (1 + markup / 100)).toFixed(2));
+        const newMarkupPct = newPay > 0 ? parseFloat(((newBill / newPay - 1) * 100).toFixed(1)) : markup;
+
+        window.rrPendingAdjustments[p.key] = {
+          client_id: p.client_id,
+          client_name: c.client_name,
+          venue_position_id: p.venue_position_id,
+          venue_id: p.venue_id,
+          position_name: p.position_name,
+          orig_pay_rate: p.avg_pay_rate,
+          orig_bill_rate: p.avg_bill_rate,
+          orig_markup_pct: p.current_markup_pct,
+          new_pay_rate: newPay,
+          new_bill_rate: newBill,
+          new_markup_pct: newMarkupPct,
+        };
+        changed = true;
+      });
+    });
+
+    if (changed) rrScheduleSave();
+  }
+
+
+
+  function rrStatusBadge(status) {
+    if (status === 'Active') return '<span class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">Active</span>';
+    if (status === 'Inactive 60') return '<span class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-200">Inactive 60</span>';
+    return '<span class="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-800 border border-rose-200">Inactive 180</span>';
+  }
+
+  function renderRateReport() {
+    const container = document.getElementById('rr-client-list');
+    if (!container) return;
+    const search = (document.getElementById('rr-client-search')?.value || '').toLowerCase().trim();
+
+    let filtered = window.rrClientData.filter(c =>
+      window.rrActiveStatuses.has(c.client_status) &&
+      (!search || c.client_name.toLowerCase().includes(search))
+    );
+
+    document.getElementById('rr-count-badge').textContent = `${filtered.length} clients`;
+
+    if (filtered.length === 0) {
+      container.innerHTML = '<div class="py-10 text-center text-sm text-gray-400 font-medium">No clients match the current filter.</div>';
+      return;
+    }
+
+    container.innerHTML = '';
+    filtered.forEach(c => renderClientCard(c, container));
+  }
+
+  function renderClientCard(c, container) {
+    const isExpanded = window.rrExpandedClients.has(c.client_id);
+    const hasPositions = c.positions && c.positions.length > 0;
+    const modifiedCount = c.positions.filter(p => window.rrPendingAdjustments[p.key]).length;
+
+    const card = document.createElement('div');
+    card.className = 'rounded-2xl border border-orange-100 bg-white shadow-sm overflow-hidden';
+    card.setAttribute('data-rr-client-id', c.client_id);
+
+    const chevronClass = isExpanded ? 'rotate-180' : 'rotate-0';
+
+    // Client row header
+    const header = document.createElement('div');
+    header.className = `flex items-center gap-4 px-5 py-4 ${hasPositions ? 'cursor-pointer hover:bg-orange-50/40 transition' : ''} ${isExpanded ? 'bg-orange-50/30 border-b border-orange-100' : ''}`;
+    header.addEventListener('click', () => { rrToggleClient(c.client_id); });
+    header.innerHTML = `
+      <svg class="h-4 w-4 text-orange-400 flex-shrink-0 transition-transform duration-200 ${chevronClass}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+      </svg>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="font-bold text-gray-900 text-sm">${c.client_name}</span>
+          ${rrStatusBadge(c.client_status)}
+          ${modifiedCount > 0 ? `<span class="inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold text-orange-700 border border-orange-200">${modifiedCount} modified</span>` : ''}
+        </div>
+        <p class="text-[10px] text-gray-400 mt-0.5">${c.positions.length} position${c.positions.length !== 1 ? 's' : ''} · ID ${c.client_id}</p>
+      </div>
+      <!-- Per-client pay reduction input -->
+      <div class="flex items-center gap-3 flex-shrink-0" onclick="event.stopPropagation()">
+        <div>
+          <label class="block text-[10px] font-bold text-gray-500 mb-0.5">Pay Reduction ($)</label>
+          <div class="relative rounded-md shadow-sm" style="width:90px">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2"><span class="text-gray-400 text-[10px]">$</span></div>
+            <input type="number" step="0.25" min="0"
+              class="block w-full rounded-md border-0 py-1.5 pl-4 pr-1.5 text-gray-900 ring-1 ring-inset ring-orange-200 focus:ring-2 focus:ring-inset focus:ring-orange-500 text-xs font-semibold text-right"
+              data-rr-client-reduction="${c.client_id}"
+              value="${document.getElementById('rr-global-reduction')?.value || '2.00'}"
+              oninput="rrApplyClientReduction(${c.client_id}, this.value)">
+          </div>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-gray-500 mb-0.5">Bill Markup (%)</label>
+          <div class="relative rounded-md shadow-sm" style="width:90px">
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"><span class="text-gray-400 text-[10px]">%</span></div>
+            <input type="number" step="0.5" min="0"
+              class="block w-full rounded-md border-0 py-1.5 pl-2 pr-6 text-gray-900 ring-1 ring-inset ring-orange-200 focus:ring-2 focus:ring-inset focus:ring-orange-500 text-xs font-semibold text-right"
+              data-rr-client-markup="${c.client_id}"
+              value="${document.getElementById('rr-global-markup')?.value || '77.00'}"
+              oninput="rrApplyClientMarkup(${c.client_id}, this.value)">
+          </div>
+        </div>
+        <div class="self-end pb-0.5">
+          <button
+            onclick="rrResetClient(${c.client_id})"
+            title="Reset to current rates"
+            class="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[10px] font-bold text-rose-600 hover:bg-rose-100 active:scale-95 transition-all">
+            <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Reset
+          </button>
+        </div>
+      </div>
+    `;
+    card.appendChild(header);
+
+    // Position detail table (hidden unless expanded)
+    if (hasPositions) {
+      const detail = document.createElement('div');
+      detail.className = isExpanded ? '' : 'hidden';
+      detail.setAttribute('data-rr-detail', c.client_id);
+      detail.innerHTML = `
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-xs">
+            <thead>
+              <tr class="bg-orange-50/80 text-orange-900 uppercase tracking-wider font-bold text-[10px] border-b border-orange-100">
+                <th class="py-2.5 px-4 text-left">Position</th>
+                <th class="py-2.5 px-3 text-center">Venue</th>
+                <th class="py-2.5 px-3 text-center">VP ID</th>
+                <th class="py-2.5 px-3 text-center">Shifts</th>
+                <th class="py-2.5 px-3 text-center">Last Used</th>
+                <th class="py-2.5 px-3 text-center">Curr Pay</th>
+                <th class="py-2.5 px-3 text-center">Curr Bill</th>
+                <th class="py-2.5 px-3 text-center">Curr Markup %</th>
+                <th class="py-2.5 px-3 text-center">Min Wage (Jul 1)</th>
+                <th class="py-2.5 px-3 text-center border-l border-orange-200">New Pay</th>
+                <th class="py-2.5 px-3 text-center">New Bill</th>
+                <th class="py-2.5 px-3 text-center">New Markup %</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-orange-50" id="rr-pos-tbody-${c.client_id}">
+              ${c.positions.map(p => rrPositionRow(p, c)).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+      card.appendChild(detail);
+    }
+
+    container.appendChild(card);
+  }
+
+  function rrPositionRow(p, c) {
+    const adj = window.rrPendingAdjustments[p.key] || {};
+    const newPay = adj.new_pay_rate !== undefined ? adj.new_pay_rate : p.avg_pay_rate;
+    const newBill = adj.new_bill_rate !== undefined ? adj.new_bill_rate : p.avg_bill_rate;
+    const newMarkup = adj.new_markup_pct !== undefined ? adj.new_markup_pct : p.current_markup_pct;
+    const isModified = !!window.rrPendingAdjustments[p.key];
+    const rowBg = isModified ? 'bg-orange-50/30' : 'hover:bg-gray-50/50';
+    const lastUsed = p.last_used ? p.last_used.substring(0, 10) : '';
+    const vpid = p.venue_position_id !== null ? p.venue_position_id : '<span class="text-gray-300">—</span>';
+    const minWage = p.min_wage_rate || 0;
+    const atFloor = minWage > 0 && newPay <= minWage;
+    const payRingClass = atFloor
+      ? 'w-full rounded-md border-0 py-1 pl-4 pr-1 ring-2 ring-inset ring-rose-400 focus:ring-2 focus:ring-rose-500 text-xs font-semibold text-right text-rose-700 bg-rose-50'
+      : 'w-full rounded-md border-0 py-1 pl-4 pr-1 ring-1 ring-inset ring-orange-200 focus:ring-2 focus:ring-orange-500 text-xs font-semibold text-right text-gray-900';
+    const minWageDisplay = minWage > 0
+      ? `<span class="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 font-bold text-blue-700 text-[11px]">${formatCurrency(minWage)}</span>`
+      : '<span class="text-gray-300">—</span>';
+    return `
+      <tr class="${rowBg} transition" data-rr-pos-key="${p.key}">
+        <td class="py-2.5 px-4 font-semibold text-gray-800">${p.position_name}</td>
+        <td class="py-2.5 px-3 text-center text-gray-500 text-[11px]">${p.venue_name || '—'}</td>
+        <td class="py-2.5 px-3 text-center text-gray-500 text-[11px]">${vpid}</td>
+        <td class="py-2.5 px-3 text-center text-gray-500">${p.shift_count}</td>
+        <td class="py-2.5 px-3 text-center text-gray-400 text-[11px]">${lastUsed}</td>
+        <td class="py-2.5 px-3 text-center text-gray-700">${formatCurrency(p.avg_pay_rate)}</td>
+        <td class="py-2.5 px-3 text-center text-gray-700">${formatCurrency(p.avg_bill_rate)}</td>
+        <td class="py-2.5 px-3 text-center">
+          <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 font-bold text-slate-700">${p.current_markup_pct.toFixed(1)}%</span>
+        </td>
+        <td class="py-2.5 px-3 text-center">${minWageDisplay}</td>
+        <td class="py-2.5 px-3 text-center border-l border-orange-100">
+          <div class="relative inline-block" style="width:85px">
+            <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] pointer-events-none ${atFloor ? 'text-rose-400' : 'text-gray-400'}">$</span>
+            <input type="number" step="0.25" min="0"
+              class="${payRingClass}"
+              value="${newPay.toFixed(2)}"
+              data-rr-pos-key="${p.key}"
+              data-rr-min-wage="${minWage}"
+              data-rr-field="pay"
+              oninput="rrPositionFieldChange('${p.key}', 'pay', this.value, ${c.client_id}, '${c.client_name}', ${p.venue_position_id || 'null'}, ${p.venue_id}, '${p.position_name.replace(/'/g, "\\'")}',${ p.avg_pay_rate}, ${p.avg_bill_rate}, ${p.current_markup_pct}, ${minWage})"
+              onblur="rrPayBlur(this)">
+          </div>
+          <div data-rr-min-warn="${p.key}" class="text-[9px] text-rose-500 font-bold mt-0.5${atFloor && minWage > 0 ? '' : ' hidden'}">⚠ Min wage floor</div>
+        </td>
+        <td class="py-2.5 px-3 text-center">
+          <div class="relative inline-block" style="width:85px">
+            <span class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] pointer-events-none">$</span>
+            <input type="number" step="0.25" min="0"
+              class="w-full rounded-md border-0 py-1 pl-4 pr-1 ring-1 ring-inset ring-orange-200 focus:ring-2 focus:ring-orange-500 text-xs font-semibold text-right text-gray-900"
+              value="${newBill.toFixed(2)}"
+              data-rr-pos-key="${p.key}"
+              data-rr-field="bill"
+              oninput="rrPositionFieldChange('${p.key}', 'bill', this.value, ${c.client_id}, '${c.client_name}', ${p.venue_position_id || 'null'}, ${p.venue_id}, '${p.position_name.replace(/'/g, "\\'")}',${ p.avg_pay_rate}, ${p.avg_bill_rate}, ${p.current_markup_pct}, ${minWage})">
+          </div>
+        </td>
+        <td class="py-2.5 px-3 text-center">
+          <div class="relative inline-block" style="width:85px">
+            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] pointer-events-none">%</span>
+            <input type="number" step="0.5" min="0"
+              class="w-full rounded-md border-0 py-1 pl-2 pr-6 ring-1 ring-inset ring-orange-200 focus:ring-2 focus:ring-orange-500 text-xs font-semibold text-right text-gray-900"
+              value="${newMarkup.toFixed(1)}"
+              data-rr-pos-key="${p.key}"
+              data-rr-field="markup"
+              oninput="rrPositionFieldChange('${p.key}', 'markup', this.value, ${c.client_id}, '${c.client_name}', ${p.venue_position_id || 'null'}, ${p.venue_id}, '${p.position_name.replace(/'/g, "\\'")}',${ p.avg_pay_rate}, ${p.avg_bill_rate}, ${p.current_markup_pct}, ${minWage})">
+          </div>
+        </td>
+      </tr>`;
+  }
+
+  function rrPositionFieldChange(posKey, field, rawVal, clientId, clientName, vpid, venueId, posName, origPay, origBill, origMarkup, minWage) {
+    let val = parseFloat(rawVal);
+    if (isNaN(val)) return;
+    const floor = minWage > 0 ? minWage : 0;
+
+    if (!window.rrPendingAdjustments[posKey]) {
+      window.rrPendingAdjustments[posKey] = {
+        client_id: clientId,
+        client_name: clientName,
+        venue_position_id: vpid,
+        venue_id: venueId,
+        position_name: posName,
+        orig_pay_rate: origPay,
+        orig_bill_rate: origBill,
+        orig_markup_pct: origMarkup,
+        new_pay_rate: origPay,
+        new_bill_rate: origBill,
+        new_markup_pct: origMarkup,
+      };
+    }
+
+    const adj = window.rrPendingAdjustments[posKey];
+    const payEl = document.querySelector(`input[data-rr-pos-key="${posKey}"][data-rr-field="pay"]`);
+
+    if (field === 'pay') {
+      adj.new_pay_rate = val;
+      if (val > 0) adj.new_markup_pct = parseFloat(((adj.new_bill_rate / val - 1) * 100).toFixed(1));
+      const mkupEl = document.querySelector(`input[data-rr-pos-key="${posKey}"][data-rr-field="markup"]`);
+      if (mkupEl) mkupEl.value = adj.new_markup_pct.toFixed(1);
+
+    } else if (field === 'bill') {
+      adj.new_bill_rate = val;
+      if (adj.new_pay_rate > 0) adj.new_markup_pct = parseFloat(((val / adj.new_pay_rate - 1) * 100).toFixed(1));
+      const mkupEl = document.querySelector(`input[data-rr-pos-key="${posKey}"][data-rr-field="markup"]`);
+      if (mkupEl) mkupEl.value = adj.new_markup_pct.toFixed(1);
+    } else if (field === 'markup') {
+      adj.new_markup_pct = val;
+      adj.new_bill_rate = parseFloat((adj.new_pay_rate * (1 + val / 100)).toFixed(2));
+      const billEl = document.querySelector(`input[data-rr-pos-key="${posKey}"][data-rr-field="bill"]`);
+      if (billEl) billEl.value = adj.new_bill_rate.toFixed(2);
+    }
+
+    // Update pay input ring color and warning label to reflect min wage status
+    if (payEl) {
+      const atFloor = floor > 0 && adj.new_pay_rate <= floor;
+      payEl.className = atFloor
+        ? 'w-full rounded-md border-0 py-1 pl-4 pr-1 ring-2 ring-inset ring-rose-400 focus:ring-2 focus:ring-rose-500 text-xs font-semibold text-right text-rose-700 bg-rose-50'
+        : 'w-full rounded-md border-0 py-1 pl-4 pr-1 ring-1 ring-inset ring-orange-200 focus:ring-2 focus:ring-orange-500 text-xs font-semibold text-right text-gray-900';
+      const warnEl = document.querySelector(`[data-rr-min-warn="${posKey}"]`);
+      if (warnEl) warnEl.classList.toggle('hidden', !(atFloor && floor > 0));
+    }
+
+    rrScheduleSave();
+  }
+
+  function rrPayBlur(inputEl) {
+    const val = parseFloat(inputEl.value);
+    const floor = parseFloat(inputEl.getAttribute('data-rr-min-wage') || '0');
+    const posKey = inputEl.getAttribute('data-rr-pos-key');
+    if (isNaN(val) || !posKey) return;
+
+    const adj = window.rrPendingAdjustments[posKey];
+    if (!adj) return;
+
+    let finalVal = val;
+    if (floor > 0 && val < floor) {
+      finalVal = floor;
+      inputEl.value = finalVal.toFixed(2);
+    }
+
+    // Store final value
+    adj.new_pay_rate = finalVal;
+    if (finalVal > 0) adj.new_markup_pct = parseFloat(((adj.new_bill_rate / finalVal - 1) * 100).toFixed(1));
+    const mkupEl = document.querySelector(`input[data-rr-pos-key="${posKey}"][data-rr-field="markup"]`);
+    if (mkupEl) mkupEl.value = adj.new_markup_pct.toFixed(1);
+
+    // Update ring and warning to final state
+    const atFloor = floor > 0 && finalVal <= floor;
+    inputEl.className = atFloor
+      ? 'w-full rounded-md border-0 py-1 pl-4 pr-1 ring-2 ring-inset ring-rose-400 focus:ring-2 focus:ring-rose-500 text-xs font-semibold text-right text-rose-700 bg-rose-50'
+      : 'w-full rounded-md border-0 py-1 pl-4 pr-1 ring-1 ring-inset ring-orange-200 focus:ring-2 focus:ring-orange-500 text-xs font-semibold text-right text-gray-900';
+    const warnEl = document.querySelector(`[data-rr-min-warn="${posKey}"]`);
+    if (warnEl) warnEl.classList.toggle('hidden', !(atFloor && floor > 0));
+
+    rrScheduleSave();
+  }
+
+  function rrResetClient(clientId) {
+
+    const client = window.rrClientData.find(c => c.client_id === clientId);
+    if (!client) return;
+    client.positions.forEach(p => {
+      delete window.rrPendingAdjustments[p.key];
+    });
+    rrScheduleSave();
+    renderRateReport();
+  }
+
+  function rrToggleClient(clientId) {
+
+    if (window.rrExpandedClients.has(clientId)) {
+      window.rrExpandedClients.delete(clientId);
+    } else {
+      window.rrExpandedClients.add(clientId);
+    }
+    renderRateReport();
+  }
+
+  function rrApplyGlobalReduction() {
+    const val = parseFloat(document.getElementById('rr-global-reduction')?.value) || 0;
+    // Update all client-level reduction inputs
+    document.querySelectorAll('[data-rr-client-reduction]').forEach(inp => {
+      inp.value = val.toFixed(2);
+    });
+  }
+
+  function rrApplyGlobalMarkup() {
+    const val = parseFloat(document.getElementById('rr-global-markup')?.value) || 0;
+    document.querySelectorAll('[data-rr-client-markup]').forEach(inp => {
+      inp.value = val.toFixed(2);
+    });
+  }
+
+  function rrApplyClientReduction(clientId, rawVal) {
+    const reduction = parseFloat(rawVal) || 0;
+    const client = window.rrClientData.find(c => c.client_id === clientId);
+    if (!client) return;
+    client.positions.forEach(p => {
+      const floor = p.min_wage_rate || 0;
+      const rawNewPay = p.avg_pay_rate - reduction;
+      const newPay = floor > 0 ? Math.max(rawNewPay, floor) : Math.max(rawNewPay, 0);
+      const adjKey = p.key;
+      if (!window.rrPendingAdjustments[adjKey]) {
+        window.rrPendingAdjustments[adjKey] = {
+          client_id: p.client_id,
+          client_name: client.client_name,
+          venue_position_id: p.venue_position_id,
+          venue_id: p.venue_id,
+          position_name: p.position_name,
+          orig_pay_rate: p.avg_pay_rate,
+          orig_bill_rate: p.avg_bill_rate,
+          orig_markup_pct: p.current_markup_pct,
+          new_pay_rate: newPay,
+          new_bill_rate: p.avg_bill_rate,
+          new_markup_pct: p.current_markup_pct,
+        };
+      } else {
+        window.rrPendingAdjustments[adjKey].new_pay_rate = newPay;
+      }
+      // Update bill based on current new markup
+      const adj = window.rrPendingAdjustments[adjKey];
+      adj.new_bill_rate = parseFloat((newPay * (1 + adj.new_markup_pct / 100)).toFixed(2));
+      // Update visible inputs and ring color
+      const payEl = document.querySelector(`input[data-rr-pos-key="${adjKey}"][data-rr-field="pay"]`);
+      const billEl = document.querySelector(`input[data-rr-pos-key="${adjKey}"][data-rr-field="bill"]`);
+      if (payEl) {
+        payEl.value = newPay.toFixed(2);
+        const atFloor = floor > 0 && newPay <= floor;
+        payEl.className = atFloor
+          ? 'w-full rounded-md border-0 py-1 pl-4 pr-1 ring-2 ring-inset ring-rose-400 focus:ring-2 focus:ring-rose-500 text-xs font-semibold text-right text-rose-700 bg-rose-50'
+          : 'w-full rounded-md border-0 py-1 pl-4 pr-1 ring-1 ring-inset ring-orange-200 focus:ring-2 focus:ring-orange-500 text-xs font-semibold text-right text-gray-900';
+        const warnEl = document.querySelector(`[data-rr-min-warn="${adjKey}"]`);
+        if (warnEl) warnEl.classList.toggle('hidden', !(atFloor && floor > 0));
+      }
+      if (billEl) billEl.value = adj.new_bill_rate.toFixed(2);
+    });
+    rrScheduleSave();
+  }
+
+  function rrApplyClientMarkup(clientId, rawVal) {
+    const markup = parseFloat(rawVal) || 0;
+    const client = window.rrClientData.find(c => c.client_id === clientId);
+    if (!client) return;
+    client.positions.forEach(p => {
+      const adjKey = p.key;
+      const currentPay = (window.rrPendingAdjustments[adjKey]?.new_pay_rate) ?? p.avg_pay_rate;
+      const newBill = parseFloat((currentPay * (1 + markup / 100)).toFixed(2));
+      if (!window.rrPendingAdjustments[adjKey]) {
+        window.rrPendingAdjustments[adjKey] = {
+          client_id: p.client_id,
+          client_name: client.client_name,
+          venue_position_id: p.venue_position_id,
+          venue_id: p.venue_id,
+          position_name: p.position_name,
+          orig_pay_rate: p.avg_pay_rate,
+          orig_bill_rate: p.avg_bill_rate,
+          orig_markup_pct: p.current_markup_pct,
+          new_pay_rate: currentPay,
+          new_bill_rate: newBill,
+          new_markup_pct: markup,
+        };
+      } else {
+        window.rrPendingAdjustments[adjKey].new_bill_rate = newBill;
+        window.rrPendingAdjustments[adjKey].new_markup_pct = markup;
+      }
+      const billEl = document.querySelector(`input[data-rr-pos-key="${adjKey}"][data-rr-field="bill"]`);
+      const mkupEl = document.querySelector(`input[data-rr-pos-key="${adjKey}"][data-rr-field="markup"]`);
+      if (billEl) billEl.value = newBill.toFixed(2);
+      if (mkupEl) mkupEl.value = markup.toFixed(1);
+    });
+    rrScheduleSave();
+  }
+
+  function rrFilterClients() {
+    renderRateReport();
+  }
+
+  function rrToggleStatus(status, btn) {
+    if (window.rrActiveStatuses.has(status)) {
+      window.rrActiveStatuses.delete(status);
+      btn.classList.remove('rr-pill-active');
+      btn.style.opacity = '0.4';
+    } else {
+      window.rrActiveStatuses.add(status);
+      btn.classList.add('rr-pill-active');
+      btn.style.opacity = '1';
+    }
+    renderRateReport();
+  }
+
+  function rrScheduleSave() {
+    if (window.rrSaveTimer) clearTimeout(window.rrSaveTimer);
+    const statusEl = document.getElementById('rr-save-status');
+    const saveText = document.getElementById('rr-save-text');
+    if (statusEl) { statusEl.classList.remove('hidden'); saveText.textContent = 'Saving...'; }
+    window.rrSaveTimer = setTimeout(async () => {
+      try {
+        const resp = await fetch('/pay-rate-reduction-calculator/rate-report/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ adjustments: window.rrPendingAdjustments })
+        });
+        if (resp.ok && saveText) {
+          saveText.textContent = `Saved (${Object.keys(window.rrPendingAdjustments).length} positions)`;
+        }
+      } catch(e) {
+        if (saveText) saveText.textContent = 'Save failed';
+      }
+    }, 600);
+  }
+
+  async function downloadRateReport() {
+    window.location.href = '/pay-rate-reduction-calculator/rate-report/download';
+  }
+
 </script>
 {% endblock %}
 

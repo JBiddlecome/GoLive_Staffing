@@ -22,3 +22,5 @@ data/*.flag
 data/api_usage_logs.db
 data/new_employee_position_approver.json
 data/orders_inbox.json
+
+data/rate_report_adjustments.json
