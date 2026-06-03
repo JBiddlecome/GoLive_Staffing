@@ -1453,6 +1453,8 @@ async def get_rate_report_clients():
                 c.client_id,
                 c.name AS client_name,
                 c.status AS client_status,
+                c.msp_id,
+                m.name AS msp_name,
                 e.venue_id,
                 v.name AS venue_name,
                 vp.venue_position_id,
@@ -1473,6 +1475,7 @@ async def get_rate_report_clients():
             FROM shift_employee se
             JOIN event e ON se.event_id = e.event_id
             JOIN client c ON e.client_id = c.client_id
+            LEFT JOIN msp m ON c.msp_id = m.id
             JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
             JOIN venue_position vp ON vp.venue_id = e.venue_id AND vp.position_id = sp.position_id
             LEFT JOIN position pos ON sp.position_id = pos.position_id
@@ -1481,7 +1484,7 @@ async def get_rate_report_clients():
               AND se.deleted_at IS NULL
               AND se.confirmed = 1
               AND se.cancel_reason = 0
-            GROUP BY c.client_id, c.name, c.status, e.venue_id, v.name, vp.venue_position_id, pos.description
+            GROUP BY c.client_id, c.name, c.status, c.msp_id, m.name, e.venue_id, v.name, vp.venue_position_id, pos.description
             ORDER BY c.name, pos.description
         """)
 
@@ -1505,6 +1508,8 @@ async def get_rate_report_clients():
                 "client_id": c_id,
                 "client_name": c_name,
                 "client_status": c_status,
+                "msp_id": row["msp_id"],
+                "msp_name": row["msp_name"],
                 "positions": []
             }
 

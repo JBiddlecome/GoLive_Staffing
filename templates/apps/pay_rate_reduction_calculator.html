@@ -1074,6 +1074,19 @@
           </button>
         </div>
 
+        <!-- MSP Filter -->
+        <div class="relative rounded-md shadow-sm min-w-[180px] max-w-xs">
+          <label class="block text-xs font-bold text-orange-855 mb-1">MSP Filter</label>
+          <select id="rr-msp-filter" onchange="rrFilterClients()"
+            class="block w-full rounded-md border-0 py-2.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-orange-200 focus:ring-2 focus:ring-inset focus:ring-orange-500 text-xs font-semibold">
+            <option value="all">All Clients (MSPs + Direct)</option>
+            <option value="none">No MSP (Direct Clients)</option>
+            {% for msp in msps %}
+              <option value="{{ msp.id }}">{{ msp.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
         <!-- Filter Search Bar -->
         <div class="relative rounded-md shadow-sm flex-1 min-w-[240px] max-w-sm">
           <label class="block text-xs font-bold text-orange-855 mb-1">Search Clients</label>
@@ -2259,11 +2272,25 @@
     const container = document.getElementById('rr-client-list');
     if (!container) return;
     const search = (document.getElementById('rr-client-search')?.value || '').toLowerCase().trim();
+    const mspFilter = document.getElementById('rr-msp-filter')?.value || 'all';
 
-    let filtered = window.rrClientData.filter(c =>
-      window.rrActiveStatuses.has(c.client_status) &&
-      (!search || c.client_name.toLowerCase().includes(search))
-    );
+    let filtered = window.rrClientData.filter(c => {
+      // 1. Status Filter
+      if (!window.rrActiveStatuses.has(c.client_status)) return false;
+
+      // 2. Search Filter
+      if (search && !c.client_name.toLowerCase().includes(search)) return false;
+
+      // 3. MSP Filter
+      if (mspFilter === 'none') {
+        if (c.msp_id !== null && c.msp_id !== undefined) return false;
+      } else if (mspFilter !== 'all') {
+        const targetMspId = parseInt(mspFilter);
+        if (c.msp_id !== targetMspId) return false;
+      }
+
+      return true;
+    });
 
     document.getElementById('rr-count-badge').textContent = `${filtered.length} clients`;
 
