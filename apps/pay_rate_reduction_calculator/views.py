@@ -1459,8 +1459,30 @@ async def get_rate_report_clients():
                 v.name AS venue_name,
                 vp.venue_position_id,
                 pos.description AS position_name,
-                AVG(se.rate) AS avg_pay_rate,
-                AVG(se.bill_rate) AS avg_bill_rate,
+                COALESCE((
+                    SELECT vpa.pay_rate
+                    FROM venue_position_amount vpa
+                    WHERE vpa.venue_position_id = vp.venue_position_id
+                      AND (
+                        (vpa.start_date IS NULL AND vpa.end_date IS NULL)
+                        OR
+                        (vpa.start_date IS NOT NULL AND vpa.start_date <= CURDATE())
+                      )
+                    ORDER BY vpa.id DESC
+                    LIMIT 1
+                ), AVG(se.rate)) AS avg_pay_rate,
+                COALESCE((
+                    SELECT vpa.bill_rate
+                    FROM venue_position_amount vpa
+                    WHERE vpa.venue_position_id = vp.venue_position_id
+                      AND (
+                        (vpa.start_date IS NULL AND vpa.end_date IS NULL)
+                        OR
+                        (vpa.start_date IS NOT NULL AND vpa.start_date <= CURDATE())
+                      )
+                    ORDER BY vpa.id DESC
+                    LIMIT 1
+                ), AVG(se.bill_rate)) AS avg_bill_rate,
                 COUNT(*) AS shift_count,
                 MAX(e.date) AS last_used,
                 COALESCE((
