@@ -431,7 +431,7 @@ async def calculate_compass_rates(payload: CompassCalculateRequest):
             LEFT JOIN timesheet t ON se.shift_employee_id = t.shift_employee_id
             LEFT JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
             LEFT JOIN shift s ON sp.shift_id = s.shift_id
-            LEFT JOIN venue_position vp ON vp.venue_id = e.venue_id AND vp.position_id = sp.position_id
+            JOIN venue_position vp ON vp.venue_id = e.venue_id AND vp.position_id = sp.position_id
             LEFT JOIN position pos ON sp.position_id = pos.position_id
             LEFT JOIN user u ON c.sales_executive_id = u.id
             LEFT JOIN min_wage_rate_amount mwra ON v.min_wage_id = mwra.min_wage_id
@@ -968,7 +968,7 @@ async def calculate_billing_type_rates(payload: BillingTypeCalculateRequest):
             LEFT JOIN timesheet t ON se.shift_employee_id = t.shift_employee_id
             LEFT JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
             LEFT JOIN shift s ON sp.shift_id = s.shift_id
-            LEFT JOIN venue_position vp ON vp.venue_id = e.venue_id AND vp.position_id = sp.position_id
+            JOIN venue_position vp ON vp.venue_id = e.venue_id AND vp.position_id = sp.position_id
             LEFT JOIN position pos ON sp.position_id = pos.position_id
             LEFT JOIN user u ON c.sales_executive_id = u.id
             LEFT JOIN min_wage_rate_amount mwra ON v.min_wage_id = mwra.min_wage_id
@@ -1474,7 +1474,7 @@ async def get_rate_report_clients():
             JOIN event e ON se.event_id = e.event_id
             JOIN client c ON e.client_id = c.client_id
             JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
-            LEFT JOIN venue_position vp ON vp.venue_id = e.venue_id AND vp.position_id = sp.position_id
+            JOIN venue_position vp ON vp.venue_id = e.venue_id AND vp.position_id = sp.position_id
             LEFT JOIN position pos ON sp.position_id = pos.position_id
             LEFT JOIN venue v ON e.venue_id = v.venue_id
             WHERE c.status IN :statuses
@@ -1519,10 +1519,17 @@ async def get_rate_report_clients():
 
         saved_adj = saved.get(pos_key, {})
 
-        # Enforce: saved new_pay_rate must not be below min wage
-        saved_new_pay = saved_adj.get("new_pay_rate", avg_pay)
-        if min_wage > 0:
-            saved_new_pay = max(saved_new_pay, min_wage)
+        # Enforce: saved new_pay_rate must not be below min wage (only apply if position is in saved adjustments)
+        if pos_key in saved:
+            saved_new_pay = saved_adj.get("new_pay_rate", avg_pay)
+            if min_wage > 0:
+                saved_new_pay = max(saved_new_pay, min_wage)
+            saved_new_bill = saved_adj.get("new_bill_rate", avg_bill)
+            saved_new_markup = saved_adj.get("new_markup_pct", current_markup)
+        else:
+            saved_new_pay = avg_pay
+            saved_new_bill = avg_bill
+            saved_new_markup = current_markup
 
         clients[c_id]["positions"].append({
             "key": pos_key,
@@ -1538,8 +1545,8 @@ async def get_rate_report_clients():
             "last_used": str(row["last_used"]) if row["last_used"] else "",
             "min_wage_rate": min_wage,
             "new_pay_rate": saved_new_pay,
-            "new_bill_rate": saved_adj.get("new_bill_rate", avg_bill),
-            "new_markup_pct": saved_adj.get("new_markup_pct", current_markup),
+            "new_bill_rate": saved_new_bill,
+            "new_markup_pct": saved_new_markup,
         })
 
     client_list = list(clients.values())

@@ -1002,8 +1002,9 @@
   <div id="panel-ratereport" class="space-y-6 hidden">
 
     <!-- Controls bar -->
-    <section class="rounded-2xl border border-orange-100 bg-gradient-to-r from-orange-50 to-amber-50 p-6 shadow-sm">
-      <div class="flex flex-col lg:flex-row lg:items-end gap-6">
+    <section class="rounded-2xl border border-orange-100 bg-gradient-to-r from-orange-50 to-amber-50 p-6 shadow-sm space-y-6">
+      <!-- Top Row: Title, Description and Primary Action Buttons -->
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-orange-200/40 pb-5">
         <div class="flex-1">
           <h2 class="text-lg font-bold text-orange-900 flex items-center gap-2">
             <svg class="h-5 w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1013,51 +1014,75 @@
           </h2>
           <p class="text-xs text-orange-700/70 mt-1">Current pay &amp; bill rates for Active, Inactive 60, and Inactive 180 clients. Click a client to expand positions and adjust rates. Changes auto-save.</p>
         </div>
-        <!-- Global controls -->
-        <div class="flex flex-wrap items-end gap-4">
-          <div id="rr-reduction-container">
-            <label class="block text-xs font-bold text-orange-800 mb-1">Global Pay Reduction ($)</label>
-            <div class="relative rounded-md shadow-sm" style="width:110px">
-              <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2"><span class="text-gray-400 text-xs">$</span></div>
-              <input type="number" id="rr-global-reduction" step="0.25" min="0" value="2.00"
-                class="block w-full rounded-md border-0 py-2 pl-5 pr-2 text-gray-900 ring-1 ring-inset ring-orange-200 focus:ring-2 focus:ring-inset focus:ring-orange-500 text-xs font-semibold"
-                oninput="rrApplyGlobalReduction()">
-            </div>
-          </div>
-          <div id="rr-markup-container">
-            <label class="block text-xs font-bold text-orange-800 mb-1">Global Bill Rate Markup (%)</label>
-            <div class="relative rounded-md shadow-sm" style="width:110px">
-              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"><span class="text-gray-400 text-xs">%</span></div>
-              <input type="number" id="rr-global-markup" step="0.5" min="0" value="77.00"
-                class="block w-full rounded-md border-0 py-2 pl-3 pr-6 text-gray-900 ring-1 ring-inset ring-orange-200 focus:ring-2 focus:ring-inset focus:ring-orange-500 text-xs font-semibold"
-                oninput="rrApplyGlobalMarkup()">
-            </div>
-          </div>
-          <div class="relative rounded-md shadow-sm" style="width:200px">
-            <label class="block text-xs font-bold text-orange-800 mb-1">Search Clients</label>
-            <input type="text" id="rr-client-search" placeholder="Filter clients..."
-              oninput="rrFilterClients()"
-              class="block w-full rounded-md border-0 py-2 pl-3 pr-3 text-gray-900 ring-1 ring-inset ring-orange-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-orange-500 text-xs font-semibold">
-          </div>
-          <div class="flex gap-2">
-            <button id="btn-rr-load" onclick="loadRateReport()" type="button"
-              class="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-2 text-sm font-bold text-white shadow-sm hover:bg-orange-700 active:scale-95 transition-all duration-200">
-              <svg id="btn-rr-spinner" class="hidden h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span id="btn-rr-text">Load Rate Report</span>
-            </button>
-            <button onclick="downloadRateReport()" type="button"
-              class="inline-flex items-center gap-1.5 rounded-xl bg-white border border-orange-300 px-4 py-2 text-sm font-bold text-orange-700 shadow-sm hover:bg-orange-50 active:scale-95 transition-all duration-200">
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Download CSV
-            </button>
-          </div>
+        <div class="flex flex-wrap items-center gap-2.5">
+          <button id="btn-rr-load" onclick="loadRateReport()" type="button"
+            class="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-orange-700 active:scale-95 transition-all duration-200">
+            <svg id="btn-rr-spinner" class="hidden h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span id="btn-rr-text">Load Rate Report</span>
+          </button>
+          <button onclick="rrResetAll()" type="button"
+            class="inline-flex items-center gap-1.5 rounded-xl bg-rose-50 border border-rose-300 px-4 py-2.5 text-sm font-bold text-rose-700 shadow-sm hover:bg-rose-100 active:scale-95 transition-all duration-200">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Reset All
+          </button>
+          <button onclick="downloadRateReport()" type="button"
+            class="inline-flex items-center gap-1.5 rounded-xl bg-white border border-orange-300 px-4 py-2.5 text-sm font-bold text-orange-700 shadow-sm hover:bg-orange-50 active:scale-95 transition-all duration-200">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Download CSV
+          </button>
         </div>
       </div>
+
+      <!-- Bottom Row: Configuration Adjustments and Filter -->
+      <div class="flex flex-wrap items-end gap-6">
+        <!-- Global Pay Reduction Card -->
+        <div id="rr-reduction-container" class="flex items-end gap-3 bg-orange-100/20 p-3 rounded-xl border border-orange-200/40 shadow-inner">
+          <div>
+            <label class="block text-xs font-bold text-orange-850 mb-1">Global Pay Reduction ($)</label>
+            <div class="relative rounded-md shadow-sm" style="width:110px">
+              <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5"><span class="text-gray-400 text-xs">$</span></div>
+              <input type="number" id="rr-global-reduction" step="0.25" min="0" value="2.00"
+                class="block w-full rounded-md border-0 py-2.5 pl-6 pr-2 text-gray-900 ring-1 ring-inset ring-orange-200 focus:ring-2 focus:ring-inset focus:ring-orange-500 text-xs font-bold">
+            </div>
+          </div>
+          <button onclick="rrApplyGlobalReduction()" type="button"
+            class="inline-flex items-center justify-center rounded-lg bg-orange-600 hover:bg-orange-700 active:scale-95 px-4 py-2.5 text-xs font-bold text-white shadow transition-all duration-200">
+            Apply
+          </button>
+        </div>
+
+        <!-- Global Bill Markup Card -->
+        <div id="rr-markup-container" class="flex items-end gap-3 bg-orange-100/20 p-3 rounded-xl border border-orange-200/40 shadow-inner">
+          <div>
+            <label class="block text-xs font-bold text-orange-850 mb-1">Global Bill Rate Markup (%)</label>
+            <div class="relative rounded-md shadow-sm" style="width:110px">
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5"><span class="text-gray-400 text-xs">%</span></div>
+              <input type="number" id="rr-global-markup" step="0.5" min="0" value="77.00"
+                class="block w-full rounded-md border-0 py-2.5 pl-3 pr-6 text-gray-900 ring-1 ring-inset ring-orange-200 focus:ring-2 focus:ring-inset focus:ring-orange-500 text-xs font-bold">
+            </div>
+          </div>
+          <button onclick="rrApplyGlobalMarkup()" type="button"
+            class="inline-flex items-center justify-center rounded-lg bg-orange-600 hover:bg-orange-700 active:scale-95 px-4 py-2.5 text-xs font-bold text-white shadow transition-all duration-200">
+            Apply
+          </button>
+        </div>
+
+        <!-- Filter Search Bar -->
+        <div class="relative rounded-md shadow-sm flex-1 min-w-[240px] max-w-sm">
+          <label class="block text-xs font-bold text-orange-855 mb-1">Search Clients</label>
+          <input type="text" id="rr-client-search" placeholder="Filter clients by name..."
+            oninput="rrFilterClients()"
+            class="block w-full rounded-md border-0 py-2.5 pl-3 pr-3 text-gray-900 ring-1 ring-inset ring-orange-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-orange-500 text-xs font-semibold">
+        </div>
+      </div>
+
       <!-- Save status indicator -->
       <div id="rr-save-status" class="hidden mt-3 flex items-center gap-2 text-xs text-orange-700 font-semibold">
         <svg class="h-3.5 w-3.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
@@ -2175,7 +2200,7 @@
         });
       });
       // Apply global defaults to positions not yet adjusted
-      rrApplyDefaultsToAll();
+      // rrApplyDefaultsToAll();
       renderRateReport();
     } catch(e) {
       alert('Network error loading rate report');
@@ -2530,18 +2555,40 @@
     renderRateReport();
   }
 
+  function rrResetAll() {
+    window.rrPendingAdjustments = {};
+    const globalRed = document.getElementById('rr-global-reduction');
+    if (globalRed) globalRed.value = '0.00';
+    document.querySelectorAll('[data-rr-client-reduction]').forEach(inp => {
+      inp.value = '0.00';
+    });
+    rrScheduleSave();
+    renderRateReport();
+  }
+
   function rrApplyGlobalReduction() {
     const val = parseFloat(document.getElementById('rr-global-reduction')?.value) || 0;
     // Update all client-level reduction inputs
     document.querySelectorAll('[data-rr-client-reduction]').forEach(inp => {
       inp.value = val.toFixed(2);
     });
+    // Apply to all clients
+    if (!window.rrClientData) return;
+    window.rrClientData.forEach(c => {
+      rrApplyClientReduction(c.client_id, val);
+    });
   }
 
   function rrApplyGlobalMarkup() {
     const val = parseFloat(document.getElementById('rr-global-markup')?.value) || 0;
+    // Update all client-level markup inputs
     document.querySelectorAll('[data-rr-client-markup]').forEach(inp => {
       inp.value = val.toFixed(2);
+    });
+    // Apply to all clients
+    if (!window.rrClientData) return;
+    window.rrClientData.forEach(c => {
+      rrApplyClientMarkup(c.client_id, val);
     });
   }
 
