@@ -103,7 +103,7 @@
           </div>
 
           <div class="mt-auto space-y-2">
-            <button type="button" class="analyze-btn w-full inline-flex justify-center items-center gap-x-1.5 rounded-md bg-white px-2.5 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors" data-url="{{ cert.cert_url }}" data-cert-type-id="{{ cert.cert_type_id }}" data-cert-type-name="{{ cert.cert_type_name }}" data-issued-at="{{ cert.issued_at }}" data-expires-at="{{ cert.expires_at }}" data-number="{{ cert.number }}" data-file-name="{{ cert.file_name }}" data-first-name="{{ cert.first_name }}" data-last-name="{{ cert.last_name }}">
+            <button type="button" class="analyze-btn w-full inline-flex justify-center items-center gap-x-1.5 rounded-md bg-white px-2.5 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors" data-url="{{ cert.cert_url }}" data-cert-type-id="{{ cert.cert_type_id }}" data-cert-type-name="{{ cert.cert_type_name }}" data-issued-at="{{ cert.issued_at }}" data-expires-at="{{ cert.expires_at }}" data-number="{{ cert.number }}" data-file-name="{{ cert.file_name }}" data-first-name="{{ cert.first_name }}" data-last-name="{{ cert.last_name }}" data-record-id="{{ cert.id }}">
               <svg class="h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
               </svg>
@@ -113,7 +113,7 @@
               <button type="button" class="approve-btn flex-1 inline-flex justify-center items-center gap-x-1.5 rounded-md bg-emerald-600 px-2.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 transition-colors" data-record-id="{{ cert.id }}" data-first-name="{{ cert.first_name }}" data-email="{{ cert.email }}" data-cert-type-name="{{ cert.cert_type_name }}" data-employee-id="{{ cert.employee_id }}" data-other-work-eligible="{{ 'true' if cert.other_work_eligible else 'false' }}" data-other-work-type-id="{{ cert.other_work_type_id or '' }}" data-issued-at="{{ cert.issued_at or '' }}">
                 Approve
               </button>
-              <button type="button" class="deny-btn flex-1 inline-flex justify-center items-center gap-x-1.5 rounded-md bg-red-600 px-2.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 transition-colors" data-record-id="{{ cert.id }}" data-file-name="{{ cert.file_name }}" data-first-name="{{ cert.first_name }}" data-email="{{ cert.email }}" data-cert-type-name="{{ cert.cert_type_name }}">
+              <button type="button" class="deny-btn flex-1 inline-flex justify-center items-center gap-x-1.5 rounded-md bg-red-600 px-2.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 transition-colors" data-record-id="{{ cert.id }}" data-file-name="{{ cert.file_name }}" data-first-name="{{ cert.first_name }}" data-email="{{ cert.email }}" data-cert-type-name="{{ cert.cert_type_name }}" data-cert-type-id="{{ cert.cert_type_id }}" data-ai-reasons="{{ cert.ai_reasons or '' }}">
                 Deny
               </button>
             </div>
@@ -160,6 +160,9 @@ document.addEventListener('DOMContentLoaded', () => {
       formData.append('file_name', btn.dataset.fileName);
       formData.append('first_name', btn.dataset.firstName || '');
       formData.append('last_name', btn.dataset.lastName || '');
+      if (btn.dataset.recordId) {
+        formData.append('record_id', btn.dataset.recordId);
+      }
       
       try {
         const response = await fetch('/certificate-approver/analyze', {
@@ -304,7 +307,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const denyButtons = document.querySelectorAll('.deny-btn');
   denyButtons.forEach(btn => {
     btn.addEventListener('click', async () => {
-      const reason = prompt('Please enter the reason for denial (this will be emailed to the employee):');
+      const card = btn.closest('.cert-card');
+      const reasonsList = card.querySelector('.ai-reasons');
+      let prepopulatedReason = '';
+      
+      const isRbs = btn.dataset.certTypeId === "10" || (btn.dataset.certTypeName && btn.dataset.certTypeName.toLowerCase().includes('rbs'));
+      if (isRbs) {
+          prepopulatedReason = "The uploaded file is not an approved proof of RBS certification. Please upload a screenshot of the dashboard page at https://abcbiz.abc.ca.gov/ complete with Status, Server ID, and Expiration Date. Thank you";
+      } else if (reasonsList && reasonsList.children.length > 0) {
+          const reasons = Array.from(reasonsList.children).map(li => li.innerText);
+          prepopulatedReason = reasons.join(' ');
+      } else {
+          prepopulatedReason = btn.dataset.aiReasons || '';
+      }
+
+      const reason = prompt('Please enter the reason for denial (this will be emailed to the employee):', prepopulatedReason);
       if (reason === null) return; // User cancelled
       if (reason.trim() === '') {
           alert('A reason is required to deny a certificate.');

@@ -37,6 +37,13 @@ def _ensure_ai_reviewed_column():
     except Exception as e:
         # Expected to fail if column already exists
         pass
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE employee_certification ADD COLUMN ai_reasons TEXT DEFAULT NULL"))
+            print("[Certificate Approver] Added ai_reasons column.")
+    except Exception as e:
+        # Expected to fail if column already exists
+        pass
     finally:
         engine.dispose()
 
@@ -164,10 +171,18 @@ async def certificate_approval_loop():
                     try:
                         eng = _engine()
                         with eng.begin() as conn:
-                            conn.execute(text("UPDATE employee_certification SET ai_reviewed_at = NOW() WHERE id = :rid"), {"rid": cert['id']})
+                            reasons = analysis.get("reasons", [])
+                            reason_text = ", ".join(reasons) if reasons else ""
+                            if not reason_text and analysis.get("notes"):
+                                reason_text = analysis.get("notes")
+                            conn.execute(text("""
+                                UPDATE employee_certification 
+                                SET ai_reviewed_at = NOW(), ai_reasons = :ai_reasons 
+                                WHERE id = :rid
+                            """), {"ai_reasons": reason_text or None, "rid": cert['id']})
                         eng.dispose()
                     except Exception as e:
-                        print(f"Failed to mark ai_reviewed_at for cert {cert['id']}: {e}")
+                        print(f"Failed to mark ai_reviewed_at/ai_reasons for cert {cert['id']}: {e}")
                 else:
                     print(f"[{datetime.now()}] Certificate Approver: AI Error on cert {cert['id']}")
                 
