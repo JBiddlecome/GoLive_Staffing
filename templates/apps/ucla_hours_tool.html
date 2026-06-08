@@ -1,44 +1,384 @@
 {% extends "base.html" %}
 {% block title %}UCLA Hours Tool — GoLive Tools{% endblock %}
 {% block content %}
-<h1 class="text-xl font-semibold mb-4">UCLA Hours Tool</h1>
+<div class="space-y-8">
+  <!-- Header Section -->
+  <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400 text-white shadow-2xl">
+    <div class="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_30%,white,transparent_30%)]"></div>
+    <div class="relative px-8 py-10 lg:px-12 lg:py-12">
+      <div class="space-y-4">
+        <nav class="flex" aria-label="Breadcrumb">
+          <ol class="flex items-center space-x-2 text-sm font-medium text-emerald-50/80">
+            <li><a href="/" class="hover:text-white transition-colors">Home</a></li>
+            <li><span class="px-1">/</span></li>
+            <li class="text-white">UCLA Hours Tool</li>
+          </ol>
+        </nav>
+        <h1 class="brand-serif text-4xl md:text-5xl font-semibold leading-tight font-display">UCLA Hours Tool</h1>
+        <p class="text-emerald-50/90 text-lg max-w-2xl">
+          Process UCLA Agile1 assignments, split acknowledgment letters, and run billing estimates.
+        </p>
+      </div>
+    </div>
+  </section>
 
-<p class="text-sm text-gray-600 mb-4">
-  Upload the UCLA assignment list and payroll export. We will filter for UCLA clients, total each employee's
-  hours per pay rate, match assignments, and return a ready-to-upload spreadsheet.
-</p>
+  <!-- Three Card Grid -->
+  <div class="grid gap-8 lg:grid-cols-3">
+    <!-- Card 1: UCLA Hours Workbook -->
+    <div class="rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm flex flex-col justify-between">
+      <div>
+        <div class="flex items-center gap-3 mb-4">
+          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 shadow-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 00-4-4H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v8m-6 0h6"></path></svg>
+          </div>
+          <div>
+            <h2 class="text-lg font-semibold text-emerald-900">UCLA Hours Workbook</h2>
+            <p class="text-xs text-gray-500">Create the Agile1 upload workbook.</p>
+          </div>
+        </div>
+        <p class="text-sm text-gray-600 mb-6">
+          Upload the UCLA assignment list and payroll export to generate matched timesheets.
+        </p>
+        
+        <form class="space-y-4" method="post" enctype="multipart/form-data" action="/ucla-hours-tool/upload">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Assignment List (.xlsx)</label>
+            <input class="text-sm border border-gray-200 rounded-xl p-2 w-full bg-white file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer shadow-inner" type="file" name="employee_list" accept=".xlsx,.xls" required />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Payroll Export (.xlsx)</label>
+            <input class="text-sm border border-gray-200 rounded-xl p-2 w-full bg-white file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer shadow-inner" type="file" name="payroll" accept=".xlsx,.xls" required />
+          </div>
+          <button class="w-full mt-4 rounded-xl bg-emerald-600 px-4 py-2.5 font-semibold text-white shadow-lg shadow-emerald-950/10 hover:bg-emerald-700 active:scale-95 transition-all text-sm" type="submit">
+            Generate Workbook
+          </button>
+        </form>
+      </div>
+    </div>
 
-<form class="space-y-4" method="post" enctype="multipart/form-data" action="/ucla-hours-tool/upload">
-  <div>
-    <label class="block text-sm font-medium mb-1">Assignment List (.xlsx)</label>
-    <input class="border rounded p-2 w-full bg-white" type="file" name="employee_list" accept=".xlsx,.xls" required />
+    <!-- Card 2: UCLA Estimates -->
+    <div class="rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm flex flex-col justify-between">
+      <div>
+        <div class="flex items-center gap-3 mb-4">
+          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 shadow-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          </div>
+          <div>
+            <h2 class="text-lg font-semibold text-emerald-900">UCLA Shift Estimates</h2>
+            <p class="text-xs text-gray-500">Estimates and unfilled roles.</p>
+          </div>
+        </div>
+        <p class="text-sm text-gray-600 mb-6">
+          Query client schedules within a date range to track filled and unfilled bookings.
+        </p>
+        
+        <div class="space-y-4">
+          <div>
+            <label for="est_start_date" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Start Date</label>
+            <input type="date" id="est_start_date" class="text-sm w-full rounded-xl border border-gray-200 px-4 py-2 bg-white text-gray-900 focus:border-emerald-500 focus:ring-emerald-500 shadow-sm" />
+          </div>
+          <div>
+            <label for="est_end_date" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">End Date</label>
+            <input type="date" id="est_end_date" class="text-sm w-full rounded-xl border border-gray-200 px-4 py-2 bg-white text-gray-900 focus:border-emerald-500 focus:ring-emerald-500 shadow-sm" />
+          </div>
+          <div class="flex gap-2 pt-2">
+            <button id="run_estimates" class="flex-1 rounded-xl bg-emerald-600 px-4 py-2.5 font-semibold text-white shadow-lg shadow-emerald-950/10 hover:bg-emerald-700 active:scale-95 transition-all text-sm flex items-center justify-center gap-2">
+              <span>Run Report</span>
+            </button>
+            <button id="download_estimates" class="rounded-xl border border-gray-200 bg-white p-2.5 hover:bg-gray-50 shadow-sm active:scale-95 transition-all flex items-center justify-center" title="Download Excel">
+              <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            </button>
+            <button id="download_estimates_pdf" class="rounded-xl border border-gray-200 bg-white p-2.5 hover:bg-gray-50 shadow-sm active:scale-95 transition-all flex items-center justify-center" title="Download PDF">
+              <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: PDF Separator -->
+    <div class="rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm flex flex-col justify-between">
+      <div>
+        <div class="flex items-center gap-3 mb-4">
+          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 shadow-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+          </div>
+          <div>
+            <h2 class="text-lg font-semibold text-emerald-900">PDF Document Helper</h2>
+            <p class="text-xs text-gray-500">Split acknowledgment forms.</p>
+          </div>
+        </div>
+        <p class="text-sm text-gray-600 mb-6">
+          Upload a 6-page Acknowledgment Letter PDF to split it into three separate 2-page PDFs.
+        </p>
+        
+        <form class="space-y-4" method="post" enctype="multipart/form-data" action="/ucla-hours-tool/split-pdf">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Acknowledgment PDF</label>
+            <input class="text-sm border border-gray-200 rounded-xl p-2 w-full bg-white file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer shadow-inner" type="file" name="pdf_file" accept=".pdf" required />
+          </div>
+          <button class="w-full mt-4 rounded-xl bg-emerald-600 px-4 py-2.5 font-semibold text-white shadow-lg shadow-emerald-950/10 hover:bg-emerald-700 active:scale-95 transition-all text-sm" type="submit">
+            Split PDF
+          </button>
+        </form>
+      </div>
+    </div>
   </div>
-  <div>
-    <label class="block text-sm font-medium mb-1">Payroll (.xlsx)</label>
-    <input class="border rounded p-2 w-full bg-white" type="file" name="payroll" accept=".xlsx,.xls" required />
+
+  {% if error %}
+    <div class="p-4 bg-red-50 border border-red-200 rounded-2xl text-sm text-red-700 shadow-sm">
+      {{ error }}
+    </div>
+  {% endif %}
+
+  <!-- Estimates Report Results (Hidden by default) -->
+  <div id="estimates_results" class="hidden space-y-6">
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div class="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow transition">
+        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Slots</div>
+        <div id="stat_total_slots" class="text-3xl font-bold text-gray-800 mt-1">0</div>
+      </div>
+      <div class="bg-white border border-emerald-50 p-5 rounded-2xl shadow-sm hover:shadow transition">
+        <div class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Filled Slots</div>
+        <div id="stat_filled_slots" class="text-3xl font-bold text-emerald-700 mt-1">0</div>
+      </div>
+      <div class="bg-white border border-amber-50 p-5 rounded-2xl shadow-sm hover:shadow transition">
+        <div class="text-xs font-semibold text-amber-600 uppercase tracking-wider">Unfilled Slots</div>
+        <div id="stat_unfilled_slots" class="text-3xl font-bold text-amber-700 mt-1">0</div>
+      </div>
+      <div class="bg-white border border-blue-50 p-5 rounded-2xl shadow-sm hover:shadow transition">
+        <div class="text-xs font-semibold text-blue-600 uppercase tracking-wider">Total Est. Hours</div>
+        <div id="stat_total_hours" class="text-3xl font-bold text-blue-700 mt-1">0.00</div>
+      </div>
+      <div class="bg-white border border-yellow-50 p-5 rounded-2xl shadow-sm hover:shadow transition col-span-2 md:col-span-1">
+        <div class="text-xs font-semibold text-yellow-600 uppercase tracking-wider">Est. Billings</div>
+        <div id="stat_total_billings" class="text-3xl font-bold text-yellow-700 mt-1">$0.00</div>
+      </div>
+    </div>
+
+    <!-- Table Container -->
+    <div class="rounded-3xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+      <div class="p-6 bg-gray-50/30 border-b border-gray-100 flex flex-col gap-2">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <h3 class="font-bold text-gray-800 text-lg">Shift Estimations</h3>
+          <input type="text" id="table_search" placeholder="Search report..." class="rounded-xl border border-gray-200 px-4 py-2 text-sm bg-white focus:border-emerald-500 focus:ring-emerald-500 shadow-sm w-full md:w-64 transition-all" />
+        </div>
+        <p class="text-xs text-gray-500 font-medium">
+          Note: Hours are estimated. Shifts over 5 hours deduct 30 minutes for a meal break.
+        </p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-100">
+          <thead class="bg-gray-50/50">
+            <tr>
+              <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+              <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Client & Venue</th>
+              <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Position</th>
+              <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Times</th>
+              <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Employee</th>
+              <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Est. Hours</th>
+              <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Bill Rate</th>
+              <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Bill Amount</th>
+            </tr>
+          </thead>
+          <tbody id="estimates_table_body" class="bg-white divide-y divide-gray-50">
+            <!-- Dynamically populated -->
+          </tbody>
+          <tfoot class="bg-gray-50/50 border-t border-gray-200 font-bold">
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" colspan="4">Totals</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm"></td>
+              <td id="table_total_hours" class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 font-bold">0.00</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm"></td>
+              <td id="table_total_amount" class="px-6 py-4 whitespace-nowrap text-sm text-right text-emerald-700 font-bold">$0.00</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div id="estimates_empty" class="hidden text-center py-12 text-gray-500 font-medium bg-white">
+        No shifts matching search term.
+      </div>
+    </div>
   </div>
-  <button class="px-4 py-2 rounded-xl border shadow bg-white hover:bg-gray-50" type="submit">Generate UCLA Hours Workbook</button>
-</form>
 
-{% if error %}
-  <div class="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
-    {{ error }}
+  <div id="estimates_loading" class="hidden text-center py-20 bg-white border border-gray-100 rounded-3xl">
+    <div class="animate-spin rounded-full h-12 w-12 border-4 border-emerald-500 border-t-transparent mx-auto"></div>
+    <p class="text-sm font-semibold text-gray-500 mt-4">Fetching UCLA shift estimations...</p>
   </div>
-{% endif %}
 
-<hr class="my-8 border-gray-200" />
-
-<h2 class="text-lg font-semibold mb-4">Acknowledgment Letter PDF Separator</h2>
-<p class="text-sm text-gray-600 mb-4">
-  Upload a 6-page Acknowledgment Letter PDF (e.g., "Jake-Biddlecome-04-27-2026.pdf").
-  It will be split into three separate 2-page PDFs for General, Server, and Cook, named appropriately and downloaded as a ZIP file.
-</p>
-<form class="space-y-4" method="post" enctype="multipart/form-data" action="/ucla-hours-tool/split-pdf">
-  <div>
-    <label class="block text-sm font-medium mb-1">Acknowledgment Letter (.pdf)</label>
-    <input class="border rounded p-2 w-full bg-white" type="file" name="pdf_file" accept=".pdf" required />
+  <div id="estimates_error" class="hidden p-4 bg-red-50 border border-red-200 rounded-2xl text-sm text-red-700 shadow-sm">
+    Failed to fetch shift estimations. Please try again.
   </div>
-  <button class="px-4 py-2 rounded-xl border shadow bg-white hover:bg-gray-50" type="submit">Split PDF</button>
-</form>
+</div>
+{% endblock %}
 
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const estStartDate = document.getElementById('est_start_date');
+    const estEndDate = document.getElementById('est_end_date');
+    const runBtn = document.getElementById('run_estimates');
+    const downloadBtn = document.getElementById('download_estimates');
+    const downloadPdfBtn = document.getElementById('download_estimates_pdf');
+    
+    const resultsDiv = document.getElementById('estimates_results');
+    const loadingDiv = document.getElementById('estimates_loading');
+    const errorDiv = document.getElementById('estimates_error');
+    const tableBody = document.getElementById('estimates_table_body');
+    const tableEmpty = document.getElementById('estimates_empty');
+    const tableSearch = document.getElementById('table_search');
+    
+    // Stats elements
+    const statTotalSlots = document.getElementById('stat_total_slots');
+    const statFilledSlots = document.getElementById('stat_filled_slots');
+    const statUnfilledSlots = document.getElementById('stat_unfilled_slots');
+    const statTotalHours = document.getElementById('stat_total_hours');
+    const statTotalBillings = document.getElementById('stat_total_billings');
+
+    // Table totals elements
+    const tableTotalHours = document.getElementById('table_total_hours');
+    const tableTotalAmount = document.getElementById('table_total_amount');
+
+    // Default dates to current week (Monday to Sunday)
+    const today = new Date();
+    const day = today.getDay();
+    const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(today.setDate(diff));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    
+    const formatDate = (d) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const date = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${date}`;
+    };
+    
+    estStartDate.value = formatDate(monday);
+    estEndDate.value = formatDate(sunday);
+    
+    let allData = [];
+
+    async function fetchEstimates() {
+        const start = estStartDate.value;
+        const end = estEndDate.value;
+        if (!start || !end) return;
+        
+        loadingDiv.classList.remove('hidden');
+        resultsDiv.classList.add('hidden');
+        errorDiv.classList.add('hidden');
+        
+        try {
+            const res = await fetch(`/ucla-hours-tool/estimates?start_date=${start}&end_date=${end}`);
+            const payload = await res.json();
+            
+            if (res.ok) {
+                allData = payload.data || [];
+                renderResults();
+            } else {
+                throw new Error(payload.error || 'Failed to fetch estimates');
+            }
+        } catch (err) {
+            console.error(err);
+            errorDiv.textContent = err.message || 'An error occurred while fetching report data.';
+            errorDiv.classList.remove('hidden');
+            loadingDiv.classList.add('hidden');
+        }
+    }
+    
+    function renderResults() {
+        loadingDiv.classList.add('hidden');
+        resultsDiv.classList.remove('hidden');
+        
+        // Calculate stats
+        let totalSlots = allData.length;
+        let filledSlots = allData.filter(d => d.filled).length;
+        let unfilledSlots = totalSlots - filledSlots;
+        let totalHours = allData.reduce((acc, d) => acc + d.hours, 0);
+        let totalBillings = allData.reduce((acc, d) => acc + d.amount, 0);
+        
+        statTotalSlots.textContent = totalSlots;
+        statFilledSlots.textContent = filledSlots;
+        statUnfilledSlots.textContent = unfilledSlots;
+        statTotalHours.textContent = totalHours.toFixed(2);
+        statTotalBillings.textContent = '$' + totalBillings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        
+        applyFilterAndRenderTable();
+    }
+    
+    function applyFilterAndRenderTable() {
+        tableBody.innerHTML = '';
+        const search = tableSearch.value.toLowerCase().trim();
+        
+        const filtered = allData.filter(row => {
+            if (!search) return true;
+            return (
+                row.client.toLowerCase().includes(search) ||
+                row.venue.toLowerCase().includes(search) ||
+                row.position.toLowerCase().includes(search) ||
+                row.employee.toLowerCase().includes(search) ||
+                row.date.includes(search)
+            );
+        });
+        
+        // Compute filtered totals
+        let filteredHours = filtered.reduce((acc, d) => acc + d.hours, 0);
+        let filteredAmount = filtered.reduce((acc, d) => acc + d.amount, 0);
+        
+        tableTotalHours.textContent = filteredHours.toFixed(2);
+        tableTotalAmount.textContent = '$' + filteredAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        
+        if (filtered.length === 0) {
+            tableEmpty.classList.remove('hidden');
+        } else {
+            tableEmpty.classList.add('hidden');
+            filtered.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = row.filled ? 'hover:bg-gray-50 border-b border-gray-100' : 'bg-amber-50/10 hover:bg-amber-50/20 border-b border-gray-100';
+                
+                const empDisplay = row.filled 
+                    ? `<span class="font-semibold text-gray-800">${row.employee}</span>`
+                    : `<span class="inline-flex items-center rounded-full bg-amber-50 border border-amber-200 px-3 py-0.5 text-xs font-bold text-amber-700 shadow-inner">Unfilled</span>`;
+                    
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${row.date}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <div class="font-semibold text-gray-800">${row.client}</div>
+                        <div class="text-xs text-gray-500">${row.venue}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${row.position}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div>${row.start_time} - ${row.end_time}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">${empDisplay}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-800">${row.hours.toFixed(2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">$${row.bill_rate.toFixed(2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-emerald-700">$${row.amount.toFixed(2)}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+    }
+    
+    runBtn.addEventListener('click', fetchEstimates);
+    tableSearch.addEventListener('input', applyFilterAndRenderTable);
+    
+    downloadBtn.addEventListener('click', () => {
+        const start = estStartDate.value;
+        const end = estEndDate.value;
+        if (start && end) {
+            window.location.href = `/ucla-hours-tool/estimates/download?start_date=${start}&end_date=${end}`;
+        }
+    });
+
+    downloadPdfBtn.addEventListener('click', () => {
+        const start = estStartDate.value;
+        const end = estEndDate.value;
+        if (start && end) {
+            window.location.href = `/ucla-hours-tool/estimates/download-pdf?start_date=${start}&end_date=${end}`;
+        }
+    });
+  });
+</script>
 {% endblock %}

@@ -50,7 +50,7 @@ def get_pending_certificates(include_ai_reviewed: bool = True):
         with engine.connect() as conn:
             query_str = """
                 SELECT ec.id, ec.employee_id, ec.certification_id, c.name AS cert_type_name,
-                       ec.file, ec.number, ec.issued_at, ec.expires_at,
+                       ec.file, ec.number, ec.issued_at, ec.expires_at, ec.ai_reasons,
                        e.first_name, e.last_name, e.email,
                        e.start_date, e.start_date2, e.status,
                        c.other_work_type_id,
@@ -99,6 +99,7 @@ def get_pending_certificates(include_ai_reviewed: bool = True):
                     "number": row.number,
                     "issued_at": str(row.issued_at) if row.issued_at else None,
                     "expires_at": str(row.expires_at) if row.expires_at else None,
+                    "ai_reasons": row.ai_reasons,
                     "first_name": row.first_name or "Unknown",
                     "last_name": row.last_name or "",
                     "email": row.email,
@@ -379,7 +380,8 @@ async def analyze_cert(
     number: str = Form(""),
     file_name: str = Form(...),
     first_name: str = Form(""),
-    last_name: str = Form("")
+    last_name: str = Form(""),
+    record_id: int = Form(None)
 ):
     from apps.api_usage_tracker import log_api_usage
     log_api_usage("Certificate Approver", request=request)
@@ -387,6 +389,25 @@ async def analyze_cert(
     employee_name = f"{first_name} {last_name}".strip()
     result = await analyze_certificate_ai(cert_url, cert_type_id, cert_type_name, issued_at, expires_at, number, file_name, employee_name)
     if result["status"] == "success":
+        if record_id:
+            analysis = result.get("ai_analysis", {})
+            reasons = analysis.get("reasons", [])
+            reason_text = ", ".join(reasons) if reasons else ""
+            if not reason_text and analysis.get("notes"):
+                reason_text = analysis.get("notes")
+            
+            engine = _engine()
+            try:
+                with engine.begin() as conn:
+                    conn.execute(text("""
+                        UPDATE employee_certification 
+                        SET ai_reviewed_at = NOW(), ai_reasons = :ai_reasons 
+                        WHERE id = :rid
+                    """), {"ai_reasons": reason_text or None, "rid": record_id})
+            except Exception as e:
+                print(f"Failed to save manual AI analysis reasons: {e}")
+            finally:
+                engine.dispose()
         return JSONResponse(result)
     else:
         return JSONResponse(result, status_code=500)
@@ -423,7 +444,7 @@ def send_notification_email(employee_email: str, first_name: str, status: str, c
     else:
         subject = f"Certificate Declined: {cert_type_name}"
         if cert_type_name and "rbs" in cert_type_name.lower():
-            body_text = f"Hi {first_name},<br><br>Unfortunately, your uploaded certificate for <b>{cert_type_name}</b> was declined.<br><br><b>Reason:</b> {reason}<br><br>Please upload a screenshot of the dashboard page at https://abcbiz.abc.ca.gov that includes your certification status, server ID, and date of renewal. Thank you"
+            body_text = f"Hi {first_name},<br><br>Unfortunately, your uploaded certificate for <b>{cert_type_name}</b> was declined.<br><br><b>Reason:</b> {reason}"
         elif cert_type_name and "workplace violence" in cert_type_name.lower():
             body_text = f"Hi {first_name},<br><br>Unfortunately, your uploaded certificate for <b>{cert_type_name}</b> was declined.<br><br><b>Reason:</b> {reason}<br><br>Workplace Violence Prevention Program Training must be Culinary Staffing provided training. Please take the required training by navigating to Company Info, then Certificates, and scroll down to Workplace Violence Prevention Training Program. Thank you."
         else:

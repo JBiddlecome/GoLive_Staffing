@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 import io
+import os
 import re
 import zipfile
 from datetime import date, datetime, timedelta
 from typing import Dict
 
 import pandas as pd
-from fastapi import APIRouter, Request, UploadFile, File
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Request, UploadFile, File, Query
+from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pypdf import PdfReader, PdfWriter
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import URL
 
 templates = Jinja2Templates(directory="templates")
 router = APIRouter()
@@ -268,3 +271,332 @@ async def split_pdf(request: Request, pdf_file: UploadFile = File(...)):
             },
             status_code=500,
         )
+
+
+def _db_url_from_env() -> URL:
+    reportable_host = os.getenv("REPORTABLE_DB_HOST")
+    host = reportable_host or os.getenv("DB_HOST")
+    name = os.getenv("REPORTABLE_DB_NAME") or os.getenv("DB_NAME", "cstaffing_live")
+    user = os.getenv("DB_USER")
+    password = os.getenv("DB_PASSWORD")
+    reportable_port = os.getenv("REPORTABLE_DB_PORT")
+    port = int(reportable_port or os.getenv("DB_PORT", "3306"))
+    return URL.create(
+        drivername="mysql+pymysql",
+        username=user,
+        password=password,
+        host=host,
+        port=port,
+        database=name,
+    )
+
+
+def _engine():
+    return create_engine(_db_url_from_env(), pool_pre_ping=True)
+
+
+def _fetch_estimates_data(start_date: str, end_date: str) -> list[dict]:
+    engine = _engine()
+    sql = text("""
+        SELECT 
+            e.date AS event_date,
+            c.name AS client_name,
+            v.name AS venue_name,
+            p.description AS position_name,
+            s.start AS shift_start,
+            s.end AS shift_end,
+            sp.count AS position_count,
+            sp.shift_position_id,
+            sp.bill_rate AS default_bill_rate,
+            se.shift_employee_id,
+            se.bill_rate AS employee_bill_rate,
+            se.confirmed,
+            CONCAT(emp.first_name, ' ', emp.last_name) AS employee_name
+        FROM event e
+        JOIN client c ON e.client_id = c.client_id
+        JOIN venue v ON e.venue_id = v.venue_id
+        JOIN shift s ON s.event_id = e.event_id
+        JOIN shift_position sp ON sp.shift_id = s.shift_id
+        JOIN position p ON sp.position_id = p.position_id
+        LEFT JOIN shift_employee se ON se.shift_position_id = sp.shift_position_id 
+            AND se.deleted_at IS NULL 
+            AND se.cancel_reason = 0
+        LEFT JOIN employee emp ON se.employee_id = emp.employee_id 
+            AND emp.deleted_at IS NULL
+        WHERE c.client_id IN (345, 1710, 205, 1399)
+          AND e.date BETWEEN :start_date AND :end_date
+          AND e.deleted_at IS NULL
+          AND c.deleted_at IS NULL
+          AND v.deleted_at IS NULL
+          AND s.deleted_at IS NULL
+          AND sp.deleted_at IS NULL
+        ORDER BY e.date ASC, s.start ASC, p.description ASC, emp.first_name ASC, emp.last_name ASC
+    """)
+    
+    with engine.connect() as conn:
+        results = conn.execute(sql, {"start_date": start_date, "end_date": end_date}).mappings().all()
+        
+    groups = {}
+    for row in results:
+        sp_id = row['shift_position_id']
+        if sp_id not in groups:
+            groups[sp_id] = {
+                'event_date': row['event_date'],
+                'client_name': row['client_name'],
+                'venue_name': row['venue_name'],
+                'position_name': row['position_name'],
+                'shift_start': row['shift_start'],
+                'shift_end': row['shift_end'],
+                'position_count': row['position_count'],
+                'default_bill_rate': row['default_bill_rate'],
+                'employees': []
+            }
+        if row['employee_name'] is not None:
+            groups[sp_id]['employees'].append({
+                'name': row['employee_name'],
+                'bill_rate': row['employee_bill_rate'],
+                'confirmed': row['confirmed']
+            })
+    
+    report_rows = []
+    for sp_id, g in groups.items():
+        start_dt = g['shift_start']
+        end_dt = g['shift_end']
+        hours = 0.0
+        if start_dt and end_dt:
+            diff_hours = (end_dt - start_dt).total_seconds() / 3600.0
+            if diff_hours > 5.0:
+                diff_hours -= 0.5
+            hours = round(diff_hours, 2)
+        
+        # Filled slots
+        for emp in g['employees']:
+            rate = float(emp['bill_rate']) if (emp['bill_rate'] is not None and emp['bill_rate'] > 0) else float(g['default_bill_rate'] or 0)
+            amount = round(hours * rate, 2)
+            
+            report_rows.append({
+                'date': g['event_date'].strftime('%Y-%m-%d') if g['event_date'] else '',
+                'client': g['client_name'],
+                'venue': g['venue_name'],
+                'position': g['position_name'],
+                'start_time': start_dt.strftime('%I:%M %p') if start_dt else '',
+                'end_time': end_dt.strftime('%I:%M %p') if end_dt else '',
+                'employee': emp['name'],
+                'hours': hours,
+                'bill_rate': rate,
+                'amount': amount,
+                'filled': True
+            })
+        
+        # Unfilled slots
+        unfilled_count = max(0, g['position_count'] - len(g['employees']))
+        for _ in range(unfilled_count):
+            rate = float(g['default_bill_rate'] or 0)
+            amount = round(hours * rate, 2)
+            
+            report_rows.append({
+                'date': g['event_date'].strftime('%Y-%m-%d') if g['event_date'] else '',
+                'client': g['client_name'],
+                'venue': g['venue_name'],
+                'position': g['position_name'],
+                'start_time': start_dt.strftime('%I:%M %p') if start_dt else '',
+                'end_time': end_dt.strftime('%I:%M %p') if end_dt else '',
+                'employee': '',
+                'hours': hours,
+                'bill_rate': rate,
+                'amount': amount,
+                'filled': False
+            })
+            
+    return report_rows
+
+
+@router.get("/estimates")
+async def get_ucla_estimates(
+    start_date: str = Query(...),
+    end_date: str = Query(...)
+):
+    try:
+        data = _fetch_estimates_data(start_date, end_date)
+        return {"data": data}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@router.get("/estimates/download")
+async def download_ucla_estimates(
+    start_date: str = Query(...),
+    end_date: str = Query(...)
+):
+    try:
+        data = _fetch_estimates_data(start_date, end_date)
+        
+        # Build pandas DataFrame for Excel export
+        report_rows = []
+        for r in data:
+            report_rows.append({
+                'Event Date': r['date'],
+                'Client Name': r['client'],
+                'Venue Name': r['venue'],
+                'Position': r['position'],
+                'Start Time': r['start_time'],
+                'End Time': r['end_time'],
+                'Employee Name': r['employee'],
+                'Est. Hours': r['hours'],
+                'Bill Rate': r['bill_rate'],
+                'Total Bill Amount': r['amount']
+            })
+            
+        df = pd.DataFrame(report_rows)
+        buffer = io.BytesIO()
+        with pd.ExcelWriter(buffer) as writer:
+            df.to_excel(writer, index=False, sheet_name="UCLA Estimates")
+        buffer.seek(0)
+        
+        filename = f"ucla_estimates_{start_date}_to_{end_date}.xlsx"
+        headers = {"Content-Disposition": f"attachment; filename=\"{filename}\""}
+        return StreamingResponse(
+            buffer,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers=headers,
+        )
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+def _generate_estimates_pdf(data: list[dict], start_date: str, end_date: str) -> io.BytesIO:
+    import fitz
+    doc = fitz.open()
+    
+    total_hours = sum(r['hours'] for r in data)
+    total_amount = sum(r['amount'] for r in data)
+    
+    col_x = [40, 95, 275, 365, 475, 580, 635, 680, 752]
+    headers = ["Date", "Venue", "Position", "Times", "Employee", "Est. Hours", "Rate", "Amount"]
+    alignments = [0, 0, 0, 0, 0, 2, 2, 2] # 0=left, 1=center, 2=right
+    
+    def add_page_with_headers(page_num):
+        page = doc.new_page(width=792, height=612)
+        
+        # Header text
+        page.insert_text((40, 32), "Culinary Staffing Services", fontsize=14, fontname="hebo", color=(0.1, 0.45, 0.3))
+        page.insert_text((40, 46), f"UCLA Shift Estimates: {start_date} to {end_date}", fontsize=9, fontname="helv", color=(0.3, 0.3, 0.3))
+        page.insert_text((40, 58), "Note: Hours are estimated. Shifts over 5 hours deduct 30 minutes for a meal break.", fontsize=7.5, fontname="helv", color=(0.5, 0.5, 0.5))
+        
+        # Horizontal rule
+        page.draw_line((40, 64), (752, 64), color=(0.8, 0.8, 0.8), width=1)
+        
+        # Table headers
+        hy = 77
+        for idx, h in enumerate(headers):
+            rect = fitz.Rect(col_x[idx], hy - 10, col_x[idx+1], hy + 12)
+            page.insert_textbox(rect, h, fontsize=8, fontname="hebo", align=alignments[idx], color=(0.2, 0.2, 0.2))
+            
+        page.draw_line((40, hy + 14), (752, hy + 14), color=(0.6, 0.6, 0.6), width=1)
+        
+        # Page number footer
+        page.insert_text((710, 585), f"Page {page_num}", fontsize=8, fontname="helv", color=(0.5, 0.5, 0.5))
+        return page
+
+    page_num = 1
+    page = add_page_with_headers(page_num)
+    y = 105
+    row_height = 32
+    
+    for row_idx, r in enumerate(data):
+        if y + row_height > 560:
+            page_num += 1
+            page = add_page_with_headers(page_num)
+            y = 105
+            
+        # Draw cells
+        # Date
+        rect = fitz.Rect(col_x[0], y - 6, col_x[1] - 4, y + 10)
+        page.insert_textbox(rect, r['date'], fontsize=8, fontname="helv", align=0)
+        
+        # Venue Name
+        rect = fitz.Rect(col_x[1], y - 6, col_x[2] - 4, y + 26)
+        page.insert_textbox(rect, r['venue'], fontsize=8, fontname="helv", align=0)
+        
+        # Position
+        rect = fitz.Rect(col_x[2], y - 6, col_x[3] - 4, y + 10)
+        page.insert_textbox(rect, r['position'], fontsize=8, fontname="helv", align=0)
+        
+        # Times (drawn as stacked times in column 3)
+        rect = fitz.Rect(col_x[3], y - 6, col_x[4] - 4, y + 26)
+        times_text = f"{r['start_time']} -\n{r['end_time']}"
+        page.insert_textbox(rect, times_text, fontsize=8, fontname="helv", align=0)
+        
+        # Employee
+        rect = fitz.Rect(col_x[4], y - 6, col_x[5] - 4, y + 10)
+        emp_text = r['employee'] if r['employee'] else "Unfilled"
+        emp_color = (0.2, 0.2, 0.2) if r['employee'] else (0.8, 0.4, 0.0)
+        page.insert_textbox(rect, emp_text, fontsize=8, fontname="hebo" if not r['employee'] else "helv", align=0, color=emp_color)
+        
+        # Hours
+        rect = fitz.Rect(col_x[5], y - 6, col_x[6] - 4, y + 10)
+        page.insert_textbox(rect, f"{r['hours']:.2f}", fontsize=8, fontname="helv", align=2)
+        
+        # Bill Rate
+        rect = fitz.Rect(col_x[6], y - 6, col_x[7] - 4, y + 10)
+        page.insert_textbox(rect, f"${r['bill_rate']:.2f}", fontsize=8, fontname="helv", align=2)
+        
+        # Amount
+        rect = fitz.Rect(col_x[7], y - 6, col_x[8], y + 10)
+        page.insert_textbox(rect, f"${r['amount']:.2f}", fontsize=8, fontname="hebo", align=2, color=(0.05, 0.4, 0.2))
+        
+        # Draw soft divider line
+        page.draw_line((40, y + 25), (752, y + 25), color=(0.93, 0.93, 0.93), width=0.5)
+        y += row_height
+        
+    if y + 25 > 560:
+        page_num += 1
+        page = add_page_with_headers(page_num)
+        y = 105
+        
+    page.draw_line((40, y - 12), (752, y - 12), color=(0.2, 0.2, 0.2), width=1)
+    page.draw_line((40, y - 10), (752, y - 10), color=(0.2, 0.2, 0.2), width=1)
+    
+    rect = fitz.Rect(col_x[4], y - 8, col_x[5] - 4, y + 10)
+    page.insert_textbox(rect, "Totals:", fontsize=9, fontname="hebo", align=0)
+    
+    rect = fitz.Rect(col_x[5], y - 8, col_x[6] - 4, y + 10)
+    page.insert_textbox(rect, f"{total_hours:.2f}", fontsize=9, fontname="hebo", align=2)
+    
+    rect = fitz.Rect(col_x[7], y - 8, col_x[8], y + 10)
+    page.insert_textbox(rect, f"${total_amount:.2f}", fontsize=9, fontname="hebo", align=2, color=(0.05, 0.4, 0.2))
+    
+    page.draw_line((40, y + 14), (752, y + 14), color=(0.2, 0.2, 0.2), width=1)
+    page.draw_line((40, y + 16), (752, y + 16), color=(0.2, 0.2, 0.2), width=1)
+    
+    total_pages = doc.page_count
+    for page_idx in range(total_pages):
+        p = doc[page_idx]
+        p.insert_text((740, 585), f"/ {total_pages}", fontsize=8, fontname="helv", color=(0.5, 0.5, 0.5))
+        
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    doc.close()
+    buffer.seek(0)
+    return buffer
+
+
+@router.get("/estimates/download-pdf")
+async def download_ucla_estimates_pdf(
+    start_date: str = Query(...),
+    end_date: str = Query(...)
+):
+    try:
+        data = _fetch_estimates_data(start_date, end_date)
+        pdf_buffer = _generate_estimates_pdf(data, start_date, end_date)
+        
+        filename = f"ucla_estimates_{start_date}_to_{end_date}.pdf"
+        headers = {"Content-Disposition": f"attachment; filename=\"{filename}\""}
+        return StreamingResponse(
+            pdf_buffer,
+            media_type="application/pdf",
+            headers=headers,
+        )
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+

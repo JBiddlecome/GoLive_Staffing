@@ -656,6 +656,7 @@
             downloadForm.action = '/email-explorer/download';
             downloadForm.style.display = 'none';
 
+            const form = document.getElementById('searchForm');
             const formData = new FormData(form);
             for (let [key, value] of formData.entries()) {
                 const input = document.createElement('input');

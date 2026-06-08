@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+{% block title %}Duplicate Other Work Report — GoLive Staffing{% endblock %}
+{% block content %}
+<div class="space-y-8">
+    <!-- Header Section -->
+    <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400 text-white shadow-2xl">
+        <div class="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_30%,white,transparent_30%)]"></div>
+        <div class="relative px-8 py-10 lg:px-12 lg:py-12">
+            <div class="space-y-4">
+                <nav class="flex" aria-label="Breadcrumb">
+                    <ol class="flex items-center space-x-2 text-sm font-medium text-emerald-50/80">
+                        <li><a href="/" class="hover:text-white transition-colors">Home</a></li>
+                        <li><span class="px-1">/</span></li>
+                        <li class="text-white">Duplicate Other Work Report</li>
+                    </ol>
+                </nav>
+                <h1 class="brand-serif text-4xl md:text-5xl font-semibold leading-tight">Duplicate Other Work Report</h1>
+                <p class="text-emerald-50/90 text-lg max-w-2xl">
+                    View other work payments created during the date range that have duplicate entries in the database.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Filters and Summary -->
+    <div class="grid gap-6 lg:grid-cols-4 items-start">
+        <div class="lg:col-span-1 space-y-6">
+            <div class="rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm">
+                <h3 class="text-lg font-semibold text-emerald-900 mb-4">Date Range Filter</h3>
+                <p class="text-xs text-gray-500 mb-4">
+                    Based on when the other work payment was created.
+                </p>
+                <div class="space-y-4">
+                    <div>
+                        <label for="start_date" class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                        <input type="date" id="start_date" value="{{ start_date }}" 
+                            class="w-full rounded-xl border-emerald-100 bg-emerald-50/30 px-4 py-2 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label for="end_date" class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                        <input type="date" id="end_date" value="{{ end_date }}"
+                            class="w-full rounded-xl border-emerald-100 bg-emerald-50/30 px-4 py-2 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500">
+                    </div>
+                    <button id="apply_filters" 
+                        class="w-full mt-2 rounded-xl bg-emerald-600 px-4 py-3 font-semibold text-white shadow-lg shadow-emerald-900/10 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">
+                        <span>Refresh Report</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Summary Card -->
+            <div id="summary_card" class="hidden rounded-3xl bg-emerald-950 text-white p-6 shadow-xl relative overflow-hidden">
+                <div class="relative z-10">
+                    <p class="text-emerald-100/80 text-sm font-medium uppercase tracking-wider mb-1">Duplicate Sets</p>
+                    <div class="text-4xl font-bold" id="total_count">0</div>
+                    <p class="text-emerald-100/60 text-xs mt-2">Combinations of employee &amp; type with duplicates</p>
+                </div>
+                <div class="absolute -right-4 -bottom-4 opacity-10">
+                    <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Data Table / Cards -->
+        <div class="lg:col-span-3">
+            <div class="rounded-3xl border border-emerald-100 bg-white shadow-lg overflow-hidden min-h-[400px] flex flex-col justify-between">
+                
+                <!-- Loading State -->
+                <div id="loading_state" class="flex flex-col items-center justify-center py-20 flex-grow">
+                    <div class="animate-spin rounded-full h-12 w-12 border-4 border-emerald-500 border-t-transparent"></div>
+                    <p class="text-gray-500 mt-4 font-medium">Analyzing other work payments for duplicates...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty_state" class="hidden flex flex-col items-center justify-center py-20 px-8 text-center flex-grow">
+                    <div class="bg-emerald-50 p-6 rounded-full mb-6 text-emerald-600">
+                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900">No duplicate payments found</h3>
+                    <p class="text-gray-500 mt-2 max-w-sm">All employee other work payments created during this time period appear unique.</p>
+                </div>
+
+                <!-- Error State -->
+                <div id="error_state" class="hidden flex flex-col items-center justify-center py-20 px-8 text-center flex-grow">
+                    <div class="bg-red-50 p-6 rounded-full mb-6 text-red-500">
+                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900">Database Connection Error</h3>
+                    <p id="error_message" class="text-gray-500 mt-2 max-w-sm"></p>
+                </div>
+
+                <!-- Results Container -->
+                <div id="report_container" class="hidden p-6 space-y-6 flex-grow">
+                    <!-- Cards will be dynamically loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const startDateInput = document.getElementById('start_date');
+        const endDateInput = document.getElementById('end_date');
+        const applyBtn = document.getElementById('apply_filters');
+        
+        const loadingState = document.getElementById('loading_state');
+        const emptyState = document.getElementById('empty_state');
+        const errorState = document.getElementById('error_state');
+        const errorMessage = document.getElementById('error_message');
+        const reportContainer = document.getElementById('report_container');
+        const summaryCard = document.getElementById('summary_card');
+        const totalCount = document.getElementById('total_count');
+
+        async function fetchReportData() {
+            loadingState.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            errorState.classList.add('hidden');
+            reportContainer.classList.add('hidden');
+            summaryCard.classList.add('hidden');
+
+            const start = startDateInput.value;
+            const end = endDateInput.value;
+
+            try {
+                const response = await fetch(`/duplicate-other-work-report/data?start_date=${start}&end_date=${end}`);
+                const result = await response.json();
+
+                if (response.ok) {
+                    const data = result.data || [];
+                    if (data.length > 0) {
+                        renderReport(data);
+                        totalCount.textContent = data.length;
+                        summaryCard.classList.remove('hidden');
+                        reportContainer.classList.remove('hidden');
+                        loadingState.classList.add('hidden');
+                    } else {
+                        emptyState.classList.remove('hidden');
+                        loadingState.classList.add('hidden');
+                    }
+                } else {
+                    throw new Error(result.error || 'Failed to analyze other work tables');
+                }
+            } catch (err) {
+                errorMessage.textContent = err.message;
+                errorState.classList.remove('hidden');
+                loadingState.classList.add('hidden');
+            }
+        }
+
+        function renderReport(data) {
+            reportContainer.innerHTML = '';
+            
+            data.forEach((group, index) => {
+                const card = document.createElement('div');
+                card.className = 'rounded-2xl border border-emerald-100 bg-white shadow-sm overflow-hidden hover:shadow-md transition duration-200';
+                
+                // Set unique ID for the accordion content
+                const accordionId = `details-${index}`;
+                
+                card.innerHTML = `
+                    <!-- Accordion Trigger Header -->
+                    <div class="flex flex-wrap items-center justify-between gap-4 bg-emerald-50/20 px-6 py-5 cursor-pointer select-none border-b border-emerald-100/50" onclick="toggleDetails('${accordionId}', this)">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 shadow-sm">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <a href="https://golive.culinarystaffing.com/employees/${group.employee_id}" target="_blank" class="font-bold text-gray-900 hover:text-emerald-700 hover:underline text-base md:text-lg transition-colors" onclick="event.stopPropagation();">
+                                    ${group.employee_name}
+                                </a>
+                                <p class="text-sm text-gray-500 font-medium">${group.other_work_type_text}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="inline-flex items-center rounded-full bg-red-50 border border-red-200 px-3 py-1 text-xs font-bold text-red-700 shadow-sm">
+                                Total: ${group.times_used} payments
+                            </span>
+                            <span class="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-bold text-emerald-700 shadow-sm">
+                                Range: ${group.times_used_in_range}
+                            </span>
+                            <span class="text-emerald-600 transition-transform duration-200 transform pointer-events-none text-xs ml-1" id="arrow-${accordionId}">➤</span>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Collapsible Detail -->
+                    <div id="${accordionId}" class="hidden">
+                        <div class="p-6 bg-white space-y-4">
+                            <h4 class="text-sm font-bold uppercase tracking-wider text-gray-400">Payment Breakdown</h4>
+                            <div class="overflow-x-auto rounded-xl border border-emerald-50 shadow-inner">
+                                <table class="min-w-full divide-y divide-emerald-50">
+                                    <thead class="bg-emerald-50/30">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left text-xs font-bold text-emerald-800 uppercase tracking-wider">Status</th>
+                                            <th class="px-4 py-3 text-left text-xs font-bold text-emerald-800 uppercase tracking-wider">Work Date</th>
+                                            <th class="px-4 py-3 text-left text-xs font-bold text-emerald-800 uppercase tracking-wider">Hours (Work/Non-Work)</th>
+                                            <th class="px-4 py-3 text-right text-xs font-bold text-emerald-800 uppercase tracking-wider">Rate</th>
+                                            <th class="px-4 py-3 text-right text-xs font-bold text-emerald-800 uppercase tracking-wider">Cost</th>
+                                            <th class="px-4 py-3 text-left text-xs font-bold text-emerald-800 uppercase tracking-wider">Notes</th>
+                                            <th class="px-4 py-3 text-left text-xs font-bold text-emerald-800 uppercase tracking-wider">Created By</th>
+                                            <th class="px-4 py-3 text-left text-xs font-bold text-emerald-800 uppercase tracking-wider">Created At</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-emerald-50/50">
+                                        ${group.payments.map(payment => `
+                                            <tr class="${payment.in_range ? 'bg-emerald-50/5' : ''}">
+                                                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                                    ${payment.in_range 
+                                                        ? `<span class="inline-flex items-center rounded-full bg-emerald-100 border border-emerald-200 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 shadow-sm">In range</span>` 
+                                                        : `<span class="inline-flex items-center rounded-full bg-gray-100 border border-gray-200 px-2.5 py-0.5 text-xs font-semibold text-gray-600 shadow-sm">Outside range</span>`
+                                                    }
+                                                </td>
+                                                <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-800">
+                                                    ${payment.work_date}
+                                                </td>
+                                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                                                    Work: ${payment.work_hours.toFixed(2)} hrs<br>
+                                                    Non-Work: ${payment.non_work_hours.toFixed(2)} hrs
+                                                </td>
+                                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-700">
+                                                    $${payment.rate.toFixed(2)}
+                                                </td>
+                                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-emerald-700">
+                                                    $${payment.cost.toFixed(2)}
+                                                </td>
+                                                <td class="px-4 py-3 text-sm text-gray-600 max-w-xs break-words">
+                                                    ${payment.notes ? payment.notes : '<span class="text-gray-400 italic">None</span>'}
+                                                </td>
+                                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                                    ${payment.created_by_name}
+                                                </td>
+                                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                                    ${payment.created_at}
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                reportContainer.appendChild(card);
+            });
+        }
+
+        // Global function handler for Accordion Toggle
+        window.toggleDetails = function(id, triggerEl) {
+            const detailEl = document.getElementById(id);
+            const arrowEl = document.getElementById(`arrow-${id}`);
+            
+            if (detailEl.classList.contains('hidden')) {
+                detailEl.classList.remove('hidden');
+                arrowEl.classList.add('rotate-90');
+            } else {
+                detailEl.classList.add('hidden');
+                arrowEl.classList.remove('rotate-90');
+            }
+        };
+
+        applyBtn.addEventListener('click', fetchReportData);
+
+        // Fetch initial data on page load
+        fetchReportData();
+    });
+</script>
+{% endblock %}
