@@ -161,20 +161,20 @@
                 Email Inbox
             </h2>
             <div class="flex items-center gap-3 bg-white/50 px-3 py-1.5 rounded-full border border-slate-200">
-                <label for="inboxAccountFilter" class="text-sm text-slate-500 font-medium">Filter:</label>
+                <label for="inboxAccountFilter" class="text-sm text-slate-500 font-medium">Staffing Manager:</label>
                 <select id="inboxAccountFilter" onchange="renderFilteredInbox()" class="text-sm bg-transparent border-none text-slate-700 font-semibold focus:ring-0 cursor-pointer">
-                    <option value="all">All Accounts</option>
-                    <option value="jake@golivestaffing.com">jake@golivestaffing.com</option>
-                    <option value="michael@culinarystaffing.com">michael@culinarystaffing.com</option>
-                    <option value="marlen@culinarystaffing.com">marlen@culinarystaffing.com</option>
+                    <option value="all">All Managers</option>
+                    <option value="jake@golivestaffing.com">Jake</option>
+                    <option value="michael@culinarystaffing.com">Michael</option>
+                    <option value="marlen@culinarystaffing.com">Marlen</option>
                 </select>
                 <span id="inboxCount" class="bg-indigo-100 text-indigo-800 text-xs font-bold px-2.5 py-0.5 rounded-full">0</span>
             </div>
         </div>
         
-        <div id="inboxList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+        <div id="inboxList" class="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
             <!-- Inbox items will be injected here -->
-            <div class="col-span-full text-center py-12 text-slate-500">
+            <div class="text-center py-12 text-slate-500">
                 Checking for emails...
             </div>
         </div>
@@ -393,6 +393,18 @@
         return `<input type="text" ${idAttr} class="${classStr} w-full text-sm border-transparent bg-transparent hover:border-slate-200 focus:border-emerald-500 focus:bg-white rounded-md p-1 transition-colors" value="${value}">`;
     }
 
+    window.getFullDateValue = function(rowEl) {
+        if (!rowEl) return '';
+        const inputEl = rowEl.querySelector('.field-date');
+        if (!inputEl) return '';
+        let dateVal = inputEl.value.trim();
+        if (dateVal && dateVal.split('-').length === 2) {
+            const year = new Date().getFullYear();
+            dateVal = `${year}-${dateVal}`;
+        }
+        return dateVal;
+    }
+
     function updateDayOfWeek(inputEl) {
         const dateVal = inputEl.value.trim();
         const labelEl = inputEl.parentNode.querySelector('.field-day-label');
@@ -405,18 +417,27 @@
         
         try {
             const parts = dateVal.split('-');
+            let year = new Date().getFullYear();
+            let month = 0;
+            let day = 1;
+            
             if (parts.length === 3) {
-                const year = parseInt(parts[0], 10);
-                const month = parseInt(parts[1], 10) - 1;
-                const day = parseInt(parts[2], 10);
-                
-                const date = new Date(year, month, day);
-                if (!isNaN(date.getTime())) {
-                    const formatter = new Intl.DateTimeFormat('en-US', { weekday: 'long' });
-                    labelEl.textContent = formatter.format(date);
-                    labelEl.className = "field-day-label text-[10px] font-bold text-emerald-600 pl-1 select-none";
-                    return;
-                }
+                year = parseInt(parts[0], 10);
+                month = parseInt(parts[1], 10) - 1;
+                day = parseInt(parts[2], 10);
+            } else if (parts.length === 2) {
+                month = parseInt(parts[0], 10) - 1;
+                day = parseInt(parts[1], 10);
+            } else {
+                throw new Error("Invalid format");
+            }
+            
+            const date = new Date(year, month, day);
+            if (!isNaN(date.getTime())) {
+                const formatter = new Intl.DateTimeFormat('en-US', { weekday: 'long' });
+                labelEl.textContent = formatter.format(date);
+                labelEl.className = "field-day-label text-[10px] font-bold text-emerald-600 pl-1 select-none";
+                return;
             }
         } catch (err) {}
         labelEl.textContent = 'Invalid Date';
@@ -581,6 +602,29 @@
             const certs = Array.isArray(details.certifications) ? details.certifications.join(', ') : '';
             const actionVal = shift.action || 'CREATE';
             
+            // Format shift date to MM-DD to prevent cut-off in UI
+            let displayDate = shift.date || '';
+            if (displayDate && displayDate.split('-').length === 3) {
+                const parts = displayDate.split('-');
+                displayDate = `${parts[1]}-${parts[2]}`;
+            }
+            
+            // Split initial names and IDs for multiple employee support
+            const initialIds = String(details.requested_employee_id || '').split(',').map(s => s.trim()).filter(Boolean);
+            const initialNames = String(details.requested_employee_name || '').split(',').map(s => s.trim()).filter(Boolean);
+            
+            let pillsHtml = '';
+            for (let k = 0; k < initialIds.length; k++) {
+                const id = initialIds[k];
+                const name = initialNames[k] || `Employee #${id}`;
+                pillsHtml += `
+                    <span class="inline-flex items-center gap-1 bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold px-2 py-1 rounded-full mr-1 mb-1" data-id="${id}">
+                        ${name}
+                        <button type="button" class="text-indigo-400 hover:text-indigo-600 font-bold ml-1" onclick="removeEmployeePill(this)">&times;</button>
+                    </span>
+                `;
+            }
+            
             // Build position select options
             let hasSelected = positionsList.includes(shift.position);
             let positionOptions = positionsList.map(pos => `<option value="${pos}" ${pos === shift.position ? 'selected' : ''}>${pos}</option>`).join('');
@@ -607,7 +651,7 @@
                         </div>
                         <div class="flex-1 grid grid-cols-[1fr_1.5fr_2.5fr] gap-3 items-center">
                             <div onclick="event.stopPropagation()" class="flex flex-col gap-1">
-                                ${renderField(shift.date, "Date (YYYY-MM-DD)", true, "", "field-date")}
+                                ${renderField(displayDate, "Date (MM-DD)", true, "", "field-date")}
                                 <span class="field-day-label text-[10px] font-bold text-slate-400 pl-1 select-none"></span>
                             </div>
                             <div onclick="event.stopPropagation()">
@@ -642,15 +686,16 @@
                         <div>
                             <span class="text-slate-400 font-medium block mb-1">Publication Rule</span>
                             <select class="field-publication-rule w-full text-sm border border-slate-200 rounded-md p-1 focus:ring-emerald-500 focus:border-emerald-500" onchange="handlePublicationRuleChange(this)">
-                                <option value="DO_NOT_PUBLISH" ${(!details.publication_rules || details.publication_rules === 'DO_NOT_PUBLISH') && !details.requested_employee_id ? 'selected' : ''}>Do Not Publish</option>
-                                <option value="ALL" ${details.publication_rules === 'ALL' && !details.requested_employee_id ? 'selected' : ''}>Publish to All</option>
-                                <option value="PREFERRED" ${details.publication_rules === 'PREFERRED' && !details.requested_employee_id ? 'selected' : ''}>Publish to Preferred</option>
-                                <option value="WORKED_BEFORE" ${details.publication_rules === 'WORKED_BEFORE' && !details.requested_employee_id ? 'selected' : ''}>Publish to Worked Before</option>
-                                <option value="REQUEST_EMPLOYEE" ${details.requested_employee_id ? 'selected' : ''}>Request Employee</option>
+                                <option value="DO_NOT_PUBLISH" ${(!details.publication_rules || details.publication_rules === 'DO_NOT_PUBLISH') && initialIds.length === 0 ? 'selected' : ''}>Do Not Publish</option>
+                                <option value="ALL" ${details.publication_rules === 'ALL' && initialIds.length === 0 ? 'selected' : ''}>Publish to All</option>
+                                <option value="PREFERRED" ${details.publication_rules === 'PREFERRED' && initialIds.length === 0 ? 'selected' : ''}>Publish to Preferred</option>
+                                <option value="WORKED_BEFORE" ${details.publication_rules === 'WORKED_BEFORE' && initialIds.length === 0 ? 'selected' : ''}>Publish to Worked Before</option>
+                                <option value="REQUEST_EMPLOYEE" ${initialIds.length > 0 ? 'selected' : ''}>Request Employee</option>
                             </select>
-                            <div class="field-requested-employee-wrapper relative mt-2" style="${details.requested_employee_id ? 'display: block;' : 'display: none;'}">
-                                <input type="hidden" class="field-requested-employee-id" value="${details.requested_employee_id || ''}">
-                                <input type="text" class="field-requested-employee-search w-full text-sm border border-slate-200 rounded-md p-1 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-300" placeholder="Type employee name..." value="${details.requested_employee_name || ''}" onkeyup="searchEmployees(this, this.closest('.shift-row-data').querySelector('.field-date').value)" onfocus="searchEmployees(this, this.closest('.shift-row-data').querySelector('.field-date').value)">
+                            <div class="field-requested-employee-wrapper relative mt-2" style="${initialIds.length > 0 ? 'display: block;' : 'display: none;'}">
+                                <div class="field-requested-employees-pills flex flex-wrap mb-1">${pillsHtml}</div>
+                                <input type="hidden" class="field-requested-employee-id" value="${initialIds.join(',')}">
+                                <input type="text" class="field-requested-employee-search w-full text-sm border border-slate-200 rounded-md p-1 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-300" placeholder="Type employee name to add..." value="" onkeyup="if(!this.value.trim()){suggestEmployees(this);}else{searchEmployees(this, getFullDateValue(this.closest('.shift-row-data')));}" onfocus="if(!this.value.trim()){suggestEmployees(this);}else{searchEmployees(this, getFullDateValue(this.closest('.shift-row-data')));}">
                                 <div class="field-requested-employee-dropdown absolute z-50 w-full bg-white border border-slate-200 rounded-md shadow-lg max-h-48 overflow-y-auto hidden mt-1"></div>
                             </div>
                         </div>
@@ -747,7 +792,7 @@
 
             dataToSubmit.shift_information.push({
                 action: actionVal,
-                date: el.querySelector('.field-date').value,
+                date: getFullDateValue(el),
                 position: el.querySelector('.field-position-select').value,
                 start_time: startVal || '',
                 end_time: endVal || '',
@@ -877,37 +922,64 @@
         const filterVal = document.getElementById('inboxAccountFilter').value;
         const tickets = filterVal === 'all' 
             ? allInboxTickets 
-            : allInboxTickets.filter(t => t.account === filterVal);
+            : allInboxTickets.filter(t => {
+                const getMgrPrefix = (email) => {
+                    if (!email) return '';
+                    let clean = email.toLowerCase().trim();
+                    if (clean.startsWith('jake@')) return 'jake';
+                    if (clean.startsWith('michael@')) return 'michael';
+                    if (clean.startsWith('marlen@')) return 'marlen';
+                    return clean;
+                };
+                const filterPrefix = getMgrPrefix(filterVal);
+                const tPrefix = getMgrPrefix(t.staffing_manager || t.account);
+                return tPrefix === filterPrefix;
+            });
             
         const inboxList = document.getElementById('inboxList');
         document.getElementById('inboxCount').textContent = tickets.length;
         
         if (tickets.length === 0) {
-            inboxList.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500">No pending emails found.</div>`;
+            inboxList.innerHTML = `<div class="text-center py-12 text-slate-500">No pending emails found.</div>`;
             return;
         }
 
-        inboxList.innerHTML = tickets.map(t => {
-            const timeStr = new Date(t.received).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            const dateStr = new Date(t.received).toLocaleDateString([], {month: 'short', day: 'numeric'});
-            const isUpdateHtml = t.is_update ? `<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Update</span>` : `<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">New</span>`;
+        // Group tickets by client name
+        const groups = {};
+        tickets.forEach(t => {
+            const client = t.client_name || 'Unknown Client';
+            if (!groups[client]) groups[client] = [];
+            groups[client].push(t);
+        });
+
+        // Get sorted client names
+        const clientNames = Object.keys(groups).sort();
+
+        inboxList.innerHTML = clientNames.map(clientName => {
+            const clientTickets = groups[clientName];
             
-            return `
-            <div class="bg-white/80 rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow relative flex flex-col justify-between group">
-                <div>
-                    <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <div class="text-xs font-semibold text-slate-700">${t.client_name}</div>
-                            <div class="text-[10px] text-slate-400 font-medium">via ${t.account.split('@')[0]}</div>
+            // Sort client's tickets chronologically (oldest first)
+            clientTickets.sort((a, b) => new Date(a.received) - new Date(b.received));
+            
+            const emailRowsHtml = clientTickets.map(t => {
+                const receivedDate = new Date(t.received);
+                const timeStr = receivedDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const dateStr = receivedDate.toLocaleDateString([], {month: 'short', day: 'numeric'});
+                const isUpdateHtml = t.is_update 
+                    ? `<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Update</span>` 
+                    : `<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">New</span>`;
+                
+                return `
+                <div class="py-3.5 border-b border-slate-100 last:border-b-0 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1.5">
+                            <span class="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">${dateStr} ${timeStr}</span>
+                            ${isUpdateHtml}
                         </div>
-                        <span class="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">${dateStr} ${timeStr}</span>
+                        <h4 class="text-sm font-bold text-slate-800 leading-tight mb-1 cursor-pointer hover:text-indigo-600 transition-colors" onclick="viewEmail('${t.id}')">${t.subject}</h4>
+                        <p class="text-xs text-slate-500 line-clamp-2 cursor-pointer" onclick="viewEmail('${t.id}')">${t.preview}</p>
                     </div>
-                    <h3 class="text-sm font-bold text-slate-800 leading-tight mb-2 line-clamp-2 cursor-pointer hover:text-indigo-600 transition-colors" onclick="viewEmail('${t.id}')">${t.subject}</h3>
-                    <p class="text-xs text-slate-500 line-clamp-3 mb-4 cursor-pointer" onclick="viewEmail('${t.id}')">${t.preview}</p>
-                </div>
-                <div class="flex items-center justify-between mt-auto pt-3 border-t border-slate-100">
-                    ${isUpdateHtml}
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 items-center flex-shrink-0">
                         <button onclick="viewEmail('${t.id}')" class="text-slate-400 hover:text-indigo-600 transition-colors p-1.5 rounded-md hover:bg-indigo-50" title="View Full Email">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                         </button>
@@ -919,9 +991,40 @@
                         </button>
                     </div>
                 </div>
+                `;
+            }).join('');
+
+            return `
+            <div class="bg-white/80 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all overflow-hidden">
+                <div class="px-6 py-4 flex justify-between items-center cursor-pointer select-none bg-slate-50/50 hover:bg-slate-50 transition-colors" onclick="toggleClientGroup(this)">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-bold text-slate-800">${clientName}</span>
+                        <span class="bg-indigo-100 text-indigo-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">${clientTickets.length} ${clientTickets.length === 1 ? 'email' : 'emails'}</span>
+                    </div>
+                    <svg class="w-5 h-5 text-slate-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </div>
+                <div class="px-6 py-2 bg-white border-t border-slate-100/80 hidden">
+                    ${emailRowsHtml}
+                </div>
             </div>
             `;
         }).join('');
+    }
+
+    window.toggleClientGroup = function(headerEl) {
+        const body = headerEl.nextElementSibling;
+        const chevron = headerEl.querySelector('svg');
+        const isCollapsed = body.classList.contains('hidden');
+        
+        if (isCollapsed) {
+            body.classList.remove('hidden');
+            chevron.classList.add('rotate-180');
+        } else {
+            body.classList.add('hidden');
+            chevron.classList.remove('rotate-180');
+        }
     }
 
     window.viewEmail = function(id) {
@@ -985,51 +1088,64 @@
     setInterval(fetchInbox, 10000);
 
     let searchTimeout = null;
+
+    async function suggestEmployees(inputEl) {
+        const wrapper = inputEl.closest('.field-requested-employee-wrapper');
+        if (!wrapper) return;
+        const dropdown = wrapper.querySelector('.field-requested-employee-dropdown');
+        if (!dropdown) return;
+        
+        const shiftRow = inputEl.closest('.shift-row-data');
+        if (!shiftRow) return;
+        
+        const dateStr = getFullDateValue(shiftRow);
+        const positionStr = shiftRow.querySelector('.field-position').value;
+        const clientEl = document.getElementById('field-client_id');
+        const venueEl = document.getElementById('field-venue_name');
+        
+        if (clientEl && clientEl.value && venueEl && positionStr) {
+            const clientId = clientEl.value;
+            const venueName = venueEl.value;
+            
+            try {
+                const res = await fetch(`/orders/employees/suggest?client_id=${clientId}&venue_name=${encodeURIComponent(venueName)}&position_name=${encodeURIComponent(positionStr)}&date=${encodeURIComponent(dateStr)}`);
+                const data = await res.json();
+                
+                if (data.status === 'success' && data.data.length > 0) {
+                    dropdown.innerHTML = `
+                        <div class="px-3 py-1.5 bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase">Top Suggestions</div>
+                        ${data.data.map(emp => `
+                            <div class="px-3 py-2 hover:bg-slate-50 cursor-pointer flex items-center justify-between text-sm" onclick="selectEmployee(this, '${emp.id}', '${emp.name.replace(/'/g, "\\'")}')">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-medium text-slate-700">${emp.name}</span>
+                                    <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 rounded">Used ${emp.freq}x</span>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <span class="w-2.5 h-2.5 rounded-full ${emp.is_working ? 'bg-red-500' : 'bg-green-500'}"></span>
+                                    <span class="text-xs text-slate-400">${emp.is_working ? 'Working' : 'Available'}</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    `;
+                    dropdown.classList.remove('hidden');
+                } else {
+                    dropdown.classList.add('hidden');
+                }
+            } catch (err) {
+                console.error("Suggest failed", err);
+            }
+        } else {
+            dropdown.classList.add('hidden');
+        }
+    }
+    window.suggestEmployees = suggestEmployees;
     
     async function handlePublicationRuleChange(selectEl) {
         const wrapper = selectEl.nextElementSibling;
         if (selectEl.value === 'REQUEST_EMPLOYEE') {
             wrapper.style.display = 'block';
-            
-            // Auto fetch suggestions
-            const shiftRow = selectEl.closest('.shift-row-data');
-            const dateStr = shiftRow.querySelector('.field-date').value;
-            const positionStr = shiftRow.querySelector('.field-position').value;
-            const clientEl = document.getElementById('field-client_id');
-            const venueEl = document.getElementById('field-venue_name');
-            
-            if (clientEl && clientEl.value && venueEl && positionStr) {
-                const clientId = clientEl.value;
-                const venueName = venueEl.value; // It's a select or input
-                const dropdown = wrapper.querySelector('.field-requested-employee-dropdown');
-                
-                try {
-                    const res = await fetch(`/orders/employees/suggest?client_id=${clientId}&venue_name=${encodeURIComponent(venueName)}&position_name=${encodeURIComponent(positionStr)}&date=${encodeURIComponent(dateStr)}`);
-                    const data = await res.json();
-                    
-                    if (data.status === 'success' && data.data.length > 0) {
-                        dropdown.innerHTML = `
-                            <div class="px-3 py-1.5 bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase">Top Suggestions</div>
-                            ${data.data.map(emp => `
-                                <div class="px-3 py-2 hover:bg-slate-50 cursor-pointer flex items-center justify-between text-sm" onclick="selectEmployee(this, '${emp.id}', '${emp.name.replace(/'/g, "\\'")}')">
-                                    <div class="flex items-center gap-2">
-                                        <span class="font-medium text-slate-700">${emp.name}</span>
-                                        <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 rounded">Used ${emp.freq}x</span>
-                                    </div>
-                                    <div class="flex items-center gap-1">
-                                        <span class="w-2.5 h-2.5 rounded-full ${emp.is_working ? 'bg-red-500' : 'bg-green-500'}"></span>
-                                        <span class="text-xs text-slate-400">${emp.is_working ? 'Working' : 'Available'}</span>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        `;
-                        dropdown.classList.remove('hidden');
-                    }
-                } catch (err) {
-                    console.error("Suggest failed", err);
-                }
-            }
-            
+            const searchInput = wrapper.querySelector('.field-requested-employee-search');
+            suggestEmployees(searchInput);
         } else {
             wrapper.style.display = 'none';
         }
@@ -1039,6 +1155,10 @@
         const query = inputEl.value.trim();
         const dropdown = inputEl.nextElementSibling;
         
+        if (query.length === 0) {
+            suggestEmployees(inputEl);
+            return;
+        }
         if (query.length < 2) {
             dropdown.classList.add('hidden');
             return;
@@ -1071,11 +1191,44 @@
         }, 300);
     }
 
-    function selectEmployee(rowEl, empId, empName) {
-        const wrapper = rowEl.closest('.field-requested-employee-wrapper');
-        wrapper.querySelector('.field-requested-employee-id').value = empId;
-        wrapper.querySelector('.field-requested-employee-search').value = empName;
+    window.selectEmployee = function(itemEl, empId, empName) {
+        const wrapper = itemEl.closest('.field-requested-employee-wrapper');
+        const hiddenInput = wrapper.querySelector('.field-requested-employee-id');
+        const searchInput = wrapper.querySelector('.field-requested-employee-search');
+        const pillsContainer = wrapper.querySelector('.field-requested-employees-pills');
+        
+        let currentIds = hiddenInput.value.split(',').map(s => s.trim()).filter(Boolean);
+        
+        if (!currentIds.includes(String(empId))) {
+            currentIds.push(String(empId));
+            hiddenInput.value = currentIds.join(',');
+            
+            // Add pill
+            const pill = document.createElement('span');
+            pill.className = "inline-flex items-center gap-1 bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold px-2 py-1 rounded-full mr-1 mb-1";
+            pill.dataset.id = empId;
+            pill.innerHTML = `
+                ${empName}
+                <button type="button" class="text-indigo-400 hover:text-indigo-600 font-bold ml-1" onclick="removeEmployeePill(this)">&times;</button>
+            `;
+            pillsContainer.appendChild(pill);
+        }
+        
+        searchInput.value = '';
         wrapper.querySelector('.field-requested-employee-dropdown').classList.add('hidden');
+    }
+
+    window.removeEmployeePill = function(buttonEl) {
+        const pill = buttonEl.closest('span');
+        const wrapper = pill.closest('.field-requested-employee-wrapper');
+        const hiddenInput = wrapper.querySelector('.field-requested-employee-id');
+        
+        pill.remove();
+        
+        // Update hidden input
+        const remainingPills = wrapper.querySelectorAll('.field-requested-employees-pills span');
+        const ids = Array.from(remainingPills).map(p => p.dataset.id);
+        hiddenInput.value = ids.join(',');
     }
     
     // Hide dropdowns when clicking outside

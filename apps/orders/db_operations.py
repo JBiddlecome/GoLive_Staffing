@@ -267,26 +267,54 @@ def create_order(data: dict, user_id: int) -> dict:
                         shift_position_id = matched_shift.shift_position_id
                         
                         if action == 'REMOVE':
-                            # Soft delete shift
-                            conn.execute(text("""
-                                UPDATE shift
-                                SET deleted_at = NOW(), deleted_by = :user_id
-                                WHERE shift_id = :shift_id
-                            """), {"shift_id": shift_id, "user_id": user_id})
-                            
-                            # Soft delete shift position
-                            conn.execute(text("""
-                                UPDATE shift_position
-                                SET deleted_at = NOW(), deleted_by = :user_id
-                                WHERE shift_id = :shift_id AND deleted_at IS NULL
-                            """), {"shift_id": shift_id, "user_id": user_id})
-                            
-                            # Soft delete shift employees
-                            conn.execute(text("""
-                                UPDATE shift_employee
-                                SET deleted_at = NOW()
-                                WHERE shift_position_id = :sp_id AND deleted_at IS NULL
-                            """), {"sp_id": shift_position_id})
+                            remove_count = int(s.get('staff_count', 1))
+                            if matched_shift.count > remove_count:
+                                # Reduce the count instead of deleting
+                                new_count = matched_shift.count - remove_count
+                                conn.execute(text("""
+                                    UPDATE shift_position
+                                    SET count = :count
+                                    WHERE shift_position_id = :sp_id
+                                """), {"count": new_count, "sp_id": shift_position_id})
+                                
+                                # Query active shift employees (unconfirmed first, then recently added)
+                                active_emps_sql = text("""
+                                    SELECT shift_employee_id, confirmed
+                                    FROM shift_employee
+                                    WHERE shift_position_id = :sp_id
+                                      AND deleted_at IS NULL
+                                    ORDER BY confirmed ASC, shift_employee_id DESC
+                                """)
+                                emps_to_remove = conn.execute(active_emps_sql, {"sp_id": shift_position_id}).fetchall()
+                                
+                                # Soft delete up to `remove_count` employee assignments
+                                for emp in emps_to_remove[:remove_count]:
+                                    conn.execute(text("""
+                                        UPDATE shift_employee
+                                        SET deleted_at = NOW()
+                                        WHERE shift_employee_id = :se_id
+                                    """), {"se_id": emp.shift_employee_id})
+                            else:
+                                # Soft delete shift
+                                conn.execute(text("""
+                                    UPDATE shift
+                                    SET deleted_at = NOW(), deleted_by = :user_id
+                                    WHERE shift_id = :shift_id
+                                """), {"shift_id": shift_id, "user_id": user_id})
+                                
+                                # Soft delete shift position
+                                conn.execute(text("""
+                                    UPDATE shift_position
+                                    SET deleted_at = NOW(), deleted_by = :user_id
+                                    WHERE shift_id = :shift_id AND deleted_at IS NULL
+                                """), {"shift_id": shift_id, "user_id": user_id})
+                                
+                                # Soft delete shift employees
+                                conn.execute(text("""
+                                    UPDATE shift_employee
+                                    SET deleted_at = NOW()
+                                    WHERE shift_position_id = :sp_id AND deleted_at IS NULL
+                                """), {"sp_id": shift_position_id})
                             
                         elif action == 'UPDATE':
                             new_start = f"{event_date} {s['start_time']}:00"
@@ -617,26 +645,41 @@ def create_order(data: dict, user_id: int) -> dict:
                             "created_by": user_id or 35598
                         })
 
-                    elif pub_rule == 'REQUEST_EMPLOYEE' and req_emp_id and req_emp_id.isdigit():
-                        # Create unconfirmed shift_employee record for the requested employee
-                        se_sql = text("""
-                            INSERT INTO shift_employee (
-                                event_id, shift_position_id, employee_id, request_by,
-                                rate, bill_rate, confirmed, cancel_reason
-                            )
-                            VALUES (
-                                :event_id, :sp_id, :emp_id, :user_id,
-                                :rate, :bill_rate, 0, 0
-                            )
-                        """)
-                        conn.execute(se_sql, {
-                            "event_id": event_id,
-                            "sp_id": shift_position_id,
-                            "emp_id": int(req_emp_id),
-                            "user_id": user_id,
-                            "rate": pay_rate,
-                            "bill_rate": bill_rate
-                        })
+                    elif pub_rule == 'REQUEST_EMPLOYEE' and req_emp_id:
+                        # Extract employee IDs from various potential types (lists, integers, comma-separated strings)
+                        emp_ids = []
+                        if isinstance(req_emp_id, list):
+                            emp_ids = [int(x) for x in req_emp_id if str(x).strip().isdigit()]
+                        elif isinstance(req_emp_id, int):
+                            emp_ids = [req_emp_id]
+                        elif isinstance(req_emp_id, str):
+                            for p in req_emp_id.split(','):
+                                p_clean = p.strip()
+                                if p_clean.isdigit():
+                                    emp_ids.append(int(p_clean))
+                        elif isinstance(req_emp_id, float):
+                            emp_ids = [int(req_emp_id)]
+
+                        for emp_id in emp_ids:
+                            # Create unconfirmed shift_employee record for the requested employee
+                            se_sql = text("""
+                                INSERT INTO shift_employee (
+                                    event_id, shift_position_id, employee_id, request_by,
+                                    rate, bill_rate, confirmed, cancel_reason
+                                )
+                                VALUES (
+                                    :event_id, :sp_id, :emp_id, :user_id,
+                                    :rate, :bill_rate, 0, 0
+                                )
+                            """)
+                            conn.execute(se_sql, {
+                                "event_id": event_id,
+                                "sp_id": shift_position_id,
+                                "emp_id": emp_id,
+                                "user_id": user_id,
+                                "rate": pay_rate,
+                                "bill_rate": bill_rate
+                            })
                 
                 # 5. Update Event Stat Columns to color-code event correctly in GoLive (red/gray/white)
                 update_stats_sql = text("""

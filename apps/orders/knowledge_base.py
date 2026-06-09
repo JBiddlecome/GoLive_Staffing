@@ -236,3 +236,38 @@ def build_client_kb(client_id: int) -> dict:
     except Exception as e:
         print(f"Error building client KB for ID {client_id}: {e}")
         return {}
+
+def get_staffing_manager_for_client(client_id: int) -> str | None:
+    """Queries the database to find the staffing manager email associated with this client's active venues."""
+    engine = _engine()
+    sql = text("""
+        SELECT DISTINCT u.email
+        FROM venue v
+        JOIN user u ON v.staffing_manager_id = u.id
+        WHERE v.client_id = :client_id
+          AND v.status = 1
+          AND v.deleted_at IS NULL
+          AND u.email IS NOT NULL
+        LIMIT 1
+    """)
+    try:
+        with engine.connect() as conn:
+            res = conn.execute(sql, {"client_id": client_id}).fetchone()
+            if res:
+                return res[0]
+            
+            # Fallback to client's staff_id account manager
+            fallback_sql = text("""
+                SELECT u.email
+                FROM client c
+                JOIN user u ON c.staff_id = u.id
+                WHERE c.client_id = :client_id
+                  AND u.email IS NOT NULL
+            """)
+            res = conn.execute(fallback_sql, {"client_id": client_id}).fetchone()
+            if res:
+                return res[0]
+    except Exception as e:
+        print(f"Error fetching staffing manager for client {client_id}: {e}")
+    return None
+
