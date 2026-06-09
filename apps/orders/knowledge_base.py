@@ -3,7 +3,59 @@ from apps.position_requests.scheduler import _engine
 import json
 import re
 
-def detect_client_from_text(order_text: str) -> int:
+def clean_and_stem_words(name_str: str) -> list[str]:
+    """
+    Splits string into lowercase words, filters out generic terms/suffixes,
+    and stems words by removing trailing 's' (for words > 3 chars).
+    """
+    if not name_str:
+        return []
+    words = re.findall(r'\b\w+\b', name_str.lower())
+    generic_terms = {
+        'medical', 'center', 'centers', 'catering', 'dining', 'services', 'service', 
+        'llc', 'inc', 'ltd', 'club', 'hotel', 'resort', 'group', 'corporation', 'corp', 
+        'co', 'company', 'university', 'college', 'hospital', 'productions', 'production', 
+        'association', 'school', 'facility', 'training', 'practice', 'llp', 'incorporated',
+        'of', 'and', 'the', 'by', 'dba', 'private'
+    }
+    core_words = [w for w in words if w not in generic_terms]
+    if not core_words:
+        core_words = [w for w in words if w not in {'of', 'and', 'the', 'by'}]
+        
+    stemmed = []
+    for w in core_words:
+        if len(w) > 3 and w.endswith('s') and not w.endswith('ss'):
+            stemmed.append(w[:-1])
+        else:
+            stemmed.append(w)
+    return stemmed
+
+def is_subsequence_fuzzy(sub: list[str], main: list[str]) -> bool:
+    """
+    Returns True if all words in `sub` match words in `main` in the exact same relative order.
+    Supports prefixes and high similarity matching.
+    """
+    if not sub:
+        return False
+    import difflib
+    sub_idx = 0
+    for w_main in main:
+        w_sub = sub[sub_idx]
+        match = False
+        if w_sub == w_main:
+            match = True
+        elif len(w_sub) > 2 and len(w_main) > 2 and (w_sub.startswith(w_main) or w_main.startswith(w_sub)):
+            match = True
+        elif difflib.SequenceMatcher(None, w_sub, w_main).ratio() > 0.8:
+            match = True
+            
+        if match:
+            sub_idx += 1
+            if sub_idx == len(sub):
+                return True
+    return False
+
+def detect_client_from_text(order_text: str, is_dictation: bool = False) -> int:
     """
     Attempts to find a matching client for the given text.
     1. Extracts emails from the text and tries exact email then domain matches.
@@ -17,44 +69,45 @@ def detect_client_from_text(order_text: str) -> int:
     engine = _engine()
     
     # 1. Email-based detection
-    emails = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', order_text)
-    if emails:
-        with engine.connect() as conn:
-            # First pass: Exact email match
-            for email in emails:
-                sql = text("""
-                    SELECT c.client_id 
-                    FROM client_contact cc
-                    JOIN client c ON cc.client_id = c.client_id
-                    WHERE cc.email = :email 
-                      AND c.status IN (1, 10, 11) 
-                      AND c.deleted_at IS NULL
-                    LIMIT 1
-                """)
-                res = conn.execute(sql, {"email": email}).fetchone()
-                if res:
-                    return res.client_id
-                    
-            # Second pass: Domain match (skip generic and internal domains)
-            generic_domains = {'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com', 'culinarystaffing.com', 'golivestaffing.com'}
-            for email in emails:
-                domain = email.split('@')[-1].lower()
-                if domain in generic_domains:
-                    continue
-                    
-                domain_search = f"%@{domain}"
-                sql = text("""
-                    SELECT c.client_id 
-                    FROM client_contact cc
-                    JOIN client c ON cc.client_id = c.client_id
-                    WHERE cc.email LIKE :domain 
-                      AND c.status IN (1, 10, 11) 
-                      AND c.deleted_at IS NULL
-                    LIMIT 1
-                """)
-                res = conn.execute(sql, {"domain": domain_search}).fetchone()
-                if res:
-                    return res.client_id
+    if not is_dictation:
+        emails = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', order_text)
+        if emails:
+            with engine.connect() as conn:
+                # First pass: Exact email match
+                for email in emails:
+                    sql = text("""
+                        SELECT c.client_id 
+                        FROM client_contact cc
+                        JOIN client c ON cc.client_id = c.client_id
+                        WHERE cc.email = :email 
+                          AND c.status IN (1, 10, 11) 
+                          AND c.deleted_at IS NULL
+                        LIMIT 1
+                    """)
+                    res = conn.execute(sql, {"email": email}).fetchone()
+                    if res:
+                        return res.client_id
+                        
+                # Second pass: Domain match (skip generic and internal domains)
+                generic_domains = {'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com', 'culinarystaffing.com', 'golivestaffing.com'}
+                for email in emails:
+                    domain = email.split('@')[-1].lower()
+                    if domain in generic_domains:
+                        continue
+                        
+                    domain_search = f"%@{domain}"
+                    sql = text("""
+                        SELECT c.client_id 
+                        FROM client_contact cc
+                        JOIN client c ON cc.client_id = c.client_id
+                        WHERE cc.email LIKE :domain 
+                          AND c.status IN (1, 10, 11) 
+                          AND c.deleted_at IS NULL
+                        LIMIT 1
+                    """)
+                    res = conn.execute(sql, {"domain": domain_search}).fetchone()
+                    if res:
+                        return res.client_id
 
     # 2. Client Name-based detection
     try:
@@ -76,33 +129,44 @@ def detect_client_from_text(order_text: str) -> int:
                 pattern = r'\b' + re.escape(name.strip()) + r'\b'
                 if re.search(pattern, order_text, re.IGNORECASE):
                     return cid
+
+            # Second pass: robust word-subsequence fuzzy matching
+            order_words = clean_and_stem_words(order_text)
+            if order_words:
+                for cid, name in sorted_clients:
+                    if not name:
+                        continue
+                    client_words = clean_and_stem_words(name)
+                    if client_words and is_subsequence_fuzzy(client_words, order_words):
+                        return cid
     except Exception as e:
         print(f"Error matching client name: {e}")
 
     # 3. Venue Name-based detection
-    try:
-        with engine.connect() as conn:
-            sql = text("""
-                SELECT v.client_id, v.name 
-                FROM venue v
-                JOIN client c ON v.client_id = c.client_id
-                WHERE c.status IN (1, 10, 11)
-                  AND c.deleted_at IS NULL
-                  AND v.status = 1
-                  AND v.deleted_at IS NULL
-            """)
-            venues = conn.execute(sql).fetchall()
-            
-            # Sort venues by name length descending to match more specific names first
-            sorted_venues = sorted(venues, key=lambda v: len(v.name), reverse=True)
-            for cid, name in sorted_venues:
-                if not name:
-                    continue
-                pattern = r'\b' + re.escape(name.strip()) + r'\b'
-                if re.search(pattern, order_text, re.IGNORECASE):
-                    return cid
-    except Exception as e:
-        print(f"Error matching venue name: {e}")
+    if not is_dictation:
+        try:
+            with engine.connect() as conn:
+                sql = text("""
+                    SELECT v.client_id, v.name 
+                    FROM venue v
+                    JOIN client c ON v.client_id = c.client_id
+                    WHERE c.status IN (1, 10, 11)
+                      AND c.deleted_at IS NULL
+                      AND v.status = 1
+                      AND v.deleted_at IS NULL
+                """)
+                venues = conn.execute(sql).fetchall()
+                
+                # Sort venues by name length descending to match more specific names first
+                sorted_venues = sorted(venues, key=lambda v: len(v.name), reverse=True)
+                for cid, name in sorted_venues:
+                    if not name:
+                        continue
+                    pattern = r'\b' + re.escape(name.strip()) + r'\b'
+                    if re.search(pattern, order_text, re.IGNORECASE):
+                        return cid
+        except Exception as e:
+            print(f"Error matching venue name: {e}")
         
     return None
 
@@ -270,4 +334,55 @@ def get_staffing_manager_for_client(client_id: int) -> str | None:
     except Exception as e:
         print(f"Error fetching staffing manager for client {client_id}: {e}")
     return None
+
+def get_staffing_managers_for_clients(client_ids: list[int]) -> tuple[dict[int, str], bool]:
+    """Queries the database to find the staffing manager email associated with the active venues of multiple clients.
+    Falls back to the client's staff_id account manager if no active venue staffing manager is found.
+    Returns (resolved_dict, success_bool).
+    """
+    if not client_ids:
+        return {}, True
+        
+    engine = _engine()
+    resolved = {}
+    
+    # 1. Query active venues
+    sql = text("""
+        SELECT v.client_id, u.email
+        FROM venue v
+        JOIN user u ON v.staffing_manager_id = u.id
+        WHERE v.client_id IN :client_ids
+          AND v.status = 1
+          AND v.deleted_at IS NULL
+          AND u.email IS NOT NULL
+    """)
+    
+    try:
+        with engine.connect() as conn:
+            res = conn.execute(sql, {"client_ids": tuple(client_ids)}).fetchall()
+            for row in res:
+                cid, email = row
+                if cid not in resolved:
+                    resolved[cid] = email
+                    
+            # 2. Find fallback for clients not resolved yet
+            missing_ids = [cid for cid in client_ids if cid not in resolved]
+            if missing_ids:
+                fallback_sql = text("""
+                    SELECT c.client_id, u.email
+                    FROM client c
+                    JOIN user u ON c.staff_id = u.id
+                    WHERE c.client_id IN :missing_ids
+                      AND u.email IS NOT NULL
+                """)
+                fallback_res = conn.execute(fallback_sql, {"missing_ids": tuple(missing_ids)}).fetchall()
+                for row in fallback_res:
+                    cid, email = row
+                    if cid not in resolved:
+                        resolved[cid] = email
+            return resolved, True
+    except Exception as e:
+        print(f"Error fetching staffing managers for clients {client_ids}: {e}")
+        return {}, False
+
 

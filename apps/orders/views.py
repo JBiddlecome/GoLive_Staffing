@@ -5,6 +5,7 @@ from .extractor import ai_extract_order
 from .knowledge_base import build_client_kb, detect_client_from_text, get_active_clients
 from .db_operations import create_order
 from .email_monitor import _load_state, _save_state
+from .utils import clean_email_text
 from sqlalchemy import text
 from apps.position_requests.scheduler import _engine
 
@@ -31,7 +32,7 @@ CLIENT_KB = {
 }
 
 @router.get("/", response_class=HTMLResponse)
-async def index(request: Request):
+def index(request: Request):
     user = request.session.get("user")
     return templates.TemplateResponse("apps/orders/index.html", {"request": request, "user": user})
 
@@ -157,6 +158,13 @@ def resolve_existing_shifts_for_extraction(extracted_data: dict, client_id: int)
     except Exception as e:
         print(f"Error resolving existing shifts: {e}")
 
+@router.post("/clean")
+async def clean_order_email(request: Request):
+    data = await request.json()
+    email_text = data.get('text', '')
+    cleaned = clean_email_text(email_text)
+    return JSONResponse({"status": "success", "cleaned_text": cleaned})
+
 @router.post("/extract")
 async def extract_order(request: Request):
     data = await request.json()
@@ -166,8 +174,9 @@ async def extract_order(request: Request):
     thread_mode = data.get('thread_mode', 'latest')
     
     # If client_id is not explicitly provided, try to detect from text
+    is_dictation = data.get('is_dictation', False)
     if not client_id:
-        client_id = detect_client_from_text(text)
+        client_id = detect_client_from_text(text, is_dictation=is_dictation)
         
     if not client_id:
         active_clients = get_active_clients()
@@ -209,7 +218,7 @@ async def publish_order(request: Request):
     return JSONResponse(result)
 
 @router.get("/employees/search")
-async def search_employees(request: Request, q: str = '', date: str = ''):
+def search_employees(request: Request, q: str = '', date: str = ''):
     # Searches for active (1) or inactive60 (10) employees matching query
     # Also checks if they are working on the specified date
     engine = _engine()
@@ -259,7 +268,7 @@ async def search_employees(request: Request, q: str = '', date: str = ''):
     return JSONResponse({"status": "success", "data": results})
 
 @router.get("/positions")
-async def get_positions(request: Request, client_id: int = None, venue_name: str = None):
+def get_positions(request: Request, client_id: int = None, venue_name: str = None):
     engine = _engine()
     positions = []
     
@@ -305,38 +314,49 @@ async def get_positions(request: Request, client_id: int = None, venue_name: str
     return JSONResponse({"status": "success", "data": positions})
 
 @router.get("/clients")
-async def get_clients(request: Request):
+def get_clients(request: Request):
     """Return all active clients for autocomplete"""
     clients = get_active_clients()
     return JSONResponse({"status": "success", "data": clients})
 
 @router.get("/inbox")
-async def get_inbox_tickets(request: Request):
+def get_inbox_tickets(request: Request):
     """Return all pending email tickets"""
     state = _load_state()
     tickets = state.get("pending_tickets", [])
     
-    # Dynamically resolve staffing manager if not already present in cached tickets
-    from .knowledge_base import get_staffing_manager_for_client
-    updated = False
-    for t in tickets:
-        if "staffing_manager" not in t:
+    # Extract unique client IDs
+    client_ids = list({t.get("client_id") for t in tickets if t.get("client_id")})
+    
+    # Fetch current staffing managers from DB in batch
+    from .knowledge_base import get_staffing_managers_for_clients
+    managers_map, db_success = get_staffing_managers_for_clients(client_ids)
+    
+    # Only update cache if DB query succeeded to avoid clearing cache on network errors/downtime
+    if db_success:
+        updated = False
+        for t in tickets:
             client_id = t.get("client_id")
             if client_id:
-                t["staffing_manager"] = get_staffing_manager_for_client(client_id)
+                current_sm = managers_map.get(client_id)
+                if t.get("staffing_manager") != current_sm:
+                    t["staffing_manager"] = current_sm
+                    updated = True
             else:
-                t["staffing_manager"] = None
-            updated = True
+                if t.get("staffing_manager") is not None:
+                    t["staffing_manager"] = None
+                    updated = True
+                    
+        if updated:
+            from .email_monitor import _save_state
+            state["pending_tickets"] = tickets
+            _save_state(state)
             
-    if updated:
-        from .email_monitor import _save_state
-        state["pending_tickets"] = tickets
-        _save_state(state)
-        
     return JSONResponse({"status": "success", "data": tickets})
 
+
 @router.post("/inbox/{msg_id}/dismiss")
-async def dismiss_inbox_ticket(request: Request, msg_id: str):
+def dismiss_inbox_ticket(request: Request, msg_id: str):
     """Remove a ticket from the inbox without processing it"""
     state = _load_state()
     tickets = state.get("pending_tickets", [])
@@ -352,7 +372,7 @@ async def dismiss_inbox_ticket(request: Request, msg_id: str):
     return JSONResponse({"status": "success", "message": "Ticket dismissed"})
 
 @router.get("/employees/suggest")
-async def suggest_employees(request: Request, client_id: int, venue_name: str, position_name: str, date: str = ''):
+def suggest_employees(request: Request, client_id: int, venue_name: str, position_name: str, date: str = ''):
     engine = _engine()
     
     # Query to find most frequently scheduled employees for this client + venue + position combo

@@ -243,8 +243,13 @@ def _db_url_from_env() -> URL:
         database=name,
     )
 
+_cached_engine = None
+
 def _engine():
-    return create_engine(_db_url_from_env(), pool_pre_ping=True)
+    global _cached_engine
+    if _cached_engine is None:
+        _cached_engine = create_engine(_db_url_from_env(), pool_pre_ping=True)
+    return _cached_engine
 
 async def extract_text_from_url(url: str) -> str:
     if not url:

@@ -46,10 +46,16 @@
             </div>
             
             <div class="mt-6 flex flex-wrap gap-4 items-center justify-between">
-                <button id="micBtn" class="flex items-center justify-center gap-2 px-6 py-3 rounded-full border-2 border-slate-200 bg-white text-slate-700 font-medium hover:border-emerald-500 hover:text-emerald-600 transition-all shadow-sm active:scale-95 group">
-                    <svg class="w-5 h-5 group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
-                    Dictate Order
-                </button>
+                <div class="flex flex-wrap gap-3">
+                    <button id="micBtn" class="flex items-center justify-center gap-2 px-6 py-3 rounded-full border-2 border-slate-200 bg-white text-slate-700 font-medium hover:border-emerald-500 hover:text-emerald-600 transition-all shadow-sm active:scale-95 group">
+                        <svg class="w-5 h-5 group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                        Dictate Order
+                    </button>
+                    <button id="cleanBtn" class="flex items-center justify-center gap-2 px-6 py-3 rounded-full border-2 border-slate-200 bg-white text-slate-700 font-medium hover:border-emerald-500 hover:text-emerald-600 transition-all shadow-sm active:scale-95 group">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        Clean Email
+                    </button>
+                </div>
                 <button id="extractBtn" class="flex items-center justify-center gap-2 px-8 py-3 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold hover:from-emerald-500 hover:to-teal-500 transition-all shadow-lg hover:shadow-emerald-500/25 active:scale-95">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                     Extract Details
@@ -219,6 +225,7 @@
     
     let extractionScope = 'latest';
     let isEventNameManuallyEdited = false;
+    let isDictated = false;
 
     window.updateShiftRowActionStyle = function(rowEl) {
         const actionSelect = rowEl.querySelector('.field-action-select');
@@ -290,6 +297,9 @@
             if (clientId) payload.client_id = clientId;
             if (referenceDate) payload.reference_date = referenceDate;
             payload.thread_mode = extractionScope;
+            payload.is_dictation = isDictated;
+            
+            isDictated = false; // Reset for next run
             
             const response = await fetch('/orders/extract', {
                 method: 'POST',
@@ -364,6 +374,45 @@
         
         runExtraction(text, clientId, referenceDate);
     });
+
+    const cleanBtn = document.getElementById('cleanBtn');
+    cleanBtn.addEventListener('click', async () => {
+        const text = orderInput.value.trim();
+        if (!text) {
+            alert('Please enter or paste an email first.');
+            return;
+        }
+
+        const originalText = cleanBtn.innerHTML;
+        cleanBtn.disabled = true;
+        cleanBtn.innerHTML = `
+            <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Cleaning...
+        `;
+
+        try {
+            const response = await fetch('/orders/clean', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                orderInput.value = result.cleaned_text;
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('A network error occurred while cleaning the email.');
+        } finally {
+            cleanBtn.innerHTML = originalText;
+            cleanBtn.disabled = false;
+        }
+    });
     
     document.getElementById('extractWithClientBtn').addEventListener('click', () => {
         const text = orderInput.value.trim();
@@ -380,6 +429,7 @@
             extractBtn.dataset.clientId = '';
             extractBtn.dataset.referenceDate = '';
             extractBtn.dataset.msgId = '';
+            isDictated = false;
         }
     });
 
@@ -837,6 +887,7 @@
         recognition.onresult = function(event) {
             const transcript = event.results[0][0].transcript;
             orderInput.value += (orderInput.value ? ' ' : '') + transcript;
+            isDictated = true;
             micBtn.classList.remove('bg-red-50', 'border-red-500', 'text-red-600');
             micBtn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg> Dictate Order`;
         };
