@@ -7,7 +7,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 import openai
 
-from apps.orders.knowledge_base import detect_client_from_text, build_client_kb
+from apps.orders.knowledge_base import detect_client_from_text, build_client_kb, get_staffing_manager_for_client
 
 def _resolve_data_dir() -> Path:
     import os
@@ -168,6 +168,7 @@ async def email_monitoring_loop():
                                 # Get client info to save name
                                 kb = build_client_kb(client_id)
                                 client_name = kb.get("name", "Unknown Client")
+                                staffing_manager = get_staffing_manager_for_client(client_id)
                                 
                                 new_ticket = {
                                     "id": msg_id,
@@ -180,7 +181,8 @@ async def email_monitoring_loop():
                                     "preview": body_preview,
                                     "body": body_content,
                                     "received": received,
-                                    "is_update": classification.get("is_update", False)
+                                    "is_update": classification.get("is_update", False),
+                                    "staffing_manager": staffing_manager
                                 }
                                 pending_tickets.append(new_ticket)
                                 print(f"[Orders Email Monitor] Added new ticket for {client_name} from {sender_email} (Account: {mailbox})")

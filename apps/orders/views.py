@@ -314,7 +314,26 @@ async def get_clients(request: Request):
 async def get_inbox_tickets(request: Request):
     """Return all pending email tickets"""
     state = _load_state()
-    return JSONResponse({"status": "success", "data": state.get("pending_tickets", [])})
+    tickets = state.get("pending_tickets", [])
+    
+    # Dynamically resolve staffing manager if not already present in cached tickets
+    from .knowledge_base import get_staffing_manager_for_client
+    updated = False
+    for t in tickets:
+        if "staffing_manager" not in t:
+            client_id = t.get("client_id")
+            if client_id:
+                t["staffing_manager"] = get_staffing_manager_for_client(client_id)
+            else:
+                t["staffing_manager"] = None
+            updated = True
+            
+    if updated:
+        from .email_monitor import _save_state
+        state["pending_tickets"] = tickets
+        _save_state(state)
+        
+    return JSONResponse({"status": "success", "data": tickets})
 
 @router.post("/inbox/{msg_id}/dismiss")
 async def dismiss_inbox_ticket(request: Request, msg_id: str):
