@@ -989,11 +989,19 @@
             
         const inboxList = document.getElementById('inboxList');
         document.getElementById('inboxCount').textContent = tickets.length;
-        
+
         if (tickets.length === 0) {
             inboxList.innerHTML = `<div class="text-center py-12 text-slate-500">No pending emails found.</div>`;
             return;
         }
+
+        // Snapshot which client groups are currently open so we can restore after re-render
+        const openClients = new Set();
+        inboxList.querySelectorAll('[data-client-group]').forEach(header => {
+            if (!header.nextElementSibling.classList.contains('hidden')) {
+                openClients.add(header.dataset.clientGroup);
+            }
+        });
 
         // Group tickets by client name
         const groups = {};
@@ -1003,8 +1011,12 @@
             groups[client].push(t);
         });
 
-        // Get sorted client names
-        const clientNames = Object.keys(groups).sort();
+        // Sort clients by most recent email
+        const clientNames = Object.keys(groups).sort((a, b) => {
+            const latestA = Math.max(...groups[a].map(t => new Date(t.received)));
+            const latestB = Math.max(...groups[b].map(t => new Date(t.received)));
+            return latestB - latestA;
+        });
 
         inboxList.innerHTML = clientNames.map(clientName => {
             const clientTickets = groups[clientName];
@@ -1047,7 +1059,7 @@
 
             return `
             <div class="bg-white/80 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all overflow-hidden">
-                <div class="px-6 py-4 flex justify-between items-center cursor-pointer select-none bg-slate-50/50 hover:bg-slate-50 transition-colors" onclick="toggleClientGroup(this)">
+                <div class="px-6 py-4 flex justify-between items-center cursor-pointer select-none bg-slate-50/50 hover:bg-slate-50 transition-colors" data-client-group="${clientName}" onclick="toggleClientGroup(this)">
                     <div class="flex items-center gap-3">
                         <span class="text-sm font-bold text-slate-800">${clientName}</span>
                         <span class="bg-indigo-100 text-indigo-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">${clientTickets.length} ${clientTickets.length === 1 ? 'email' : 'emails'}</span>
@@ -1062,6 +1074,14 @@
             </div>
             `;
         }).join('');
+
+        // Restore previously open groups
+        inboxList.querySelectorAll('[data-client-group]').forEach(header => {
+            if (openClients.has(header.dataset.clientGroup)) {
+                header.nextElementSibling.classList.remove('hidden');
+                header.querySelector('svg').classList.add('rotate-180');
+            }
+        });
     }
 
     window.toggleClientGroup = function(headerEl) {
@@ -1107,7 +1127,6 @@
     });
 
     window.dismissTicket = async function(id) {
-        if (!confirm("Are you sure you want to dismiss this order email?")) return;
         try {
             await fetch(`/orders/inbox/${id}/dismiss`, {method: 'POST'});
             fetchInbox();
@@ -1122,16 +1141,18 @@
         const fullText = `Subject: ${t.subject}\n\n${t.body}`;
         const inputEl = document.getElementById('orderInput');
         inputEl.value = fullText;
-        
+
         // Save metadata on extractBtn dataset to use when they click Extract
         const btn = document.getElementById('extractBtn');
         btn.dataset.clientId = t.client_id || '';
         btn.dataset.referenceDate = t.received || '';
         btn.dataset.msgId = t.id || '';
-        
+
         // Focus the input area and scroll smoothly to the input card
         inputEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         inputEl.focus();
+        inputEl.setSelectionRange(0, 0);
+        inputEl.scrollTop = 0;
     }
 
     // Poll inbox every 10 seconds

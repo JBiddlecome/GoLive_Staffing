@@ -9,7 +9,10 @@
       "Bash(./venv/Scripts/python.exe -c ' *)",
       "Bash(./.venv/Scripts/python.exe -c ' *)",
       "Read(//c/Users/jakeb/Downloads/**)",
-      "Bash(.venvScriptspython.exe -c ' *)"
+      "Bash(.venvScriptspython.exe -c ' *)",
+      "Bash(claude mcp *)",
+      "Bash(Get-ChildItem *)",
+      "Bash(git *)"
     ]
   }
 }
