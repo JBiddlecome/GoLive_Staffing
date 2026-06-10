@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import string
 import requests
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -8,6 +9,60 @@ from zoneinfo import ZoneInfo
 import openai
 
 from apps.orders.knowledge_base import detect_client_from_text, build_client_kb, get_staffing_manager_for_client
+from apps.orders.extractor import clean_email_thread_if_needed, get_latest_email_message
+
+def is_simple_acknowledgment(text: str) -> bool:
+    """
+    Check if the text is a simple acknowledgment or confirmation that should 
+    never be treated as a new order or update.
+    """
+    if not text:
+        return True
+    
+    cleaned = text.lower().strip()
+    # Get non-empty lines
+    lines = [line.strip() for line in cleaned.splitlines() if line.strip()]
+    if not lines:
+        return True
+    
+    first_line = lines[0]
+    # Remove punctuation
+    first_line_clean = first_line.translate(str.maketrans('', '', string.punctuation)).strip()
+    
+    simple_acks = {
+        "ok", "okay", "okey", "kk", "k",
+        "yep", "yes", "yup", "yeah", "yah",
+        "no", "nope",
+        "thanks", "thank you", "ty", "thx", "thanks again",
+        "got it", "received", "will do",
+        "looks good", "look good",
+        "confirmed", "confirm",
+        "no problem", "no prob", "no worries",
+        "perfect", "awesome", "great",
+        "all set", "all good", "sounds good", "sound good",
+        "done", "approved", "approve",
+        "see you", "see you tomorrow",
+        "correct", "that is correct", "thats correct", "yes correct",
+        "thanks team", "thank you team", "ok thanks", "okay thanks"
+    }
+    
+    if first_line_clean in simple_acks:
+        # Check if remaining lines are just signatures
+        for line in lines[1:]:
+            line_clean = line.translate(str.maketrans('', '', string.punctuation)).strip()
+            # If it is a signature template or standard sender note
+            if "sent from" in line_clean or line_clean in {"thanks", "thank you", "best", "regards", "sincerely"}:
+                continue
+            words = line_clean.split()
+            if len(words) <= 2:
+                # Likely just a name / title at the bottom of the signature
+                continue
+            # Any other content might have actual information
+            return False
+        return True
+        
+    return False
+
 
 def _resolve_data_dir() -> Path:
     import os
@@ -108,8 +163,15 @@ def _fetch_recent_messages(token: str, mailbox: str) -> list[dict]:
 
 async def classify_email(subject: str, body: str) -> dict:
     try:
+        # Check if the latest message is a simple acknowledgment
+        latest_message = get_latest_email_message(body)
+        if is_simple_acknowledgment(latest_message):
+            print(f"[Orders Email Monitor] Skipping simple acknowledgment: {latest_message.strip()!r}")
+            return {"is_order": False, "is_update": False, "confidence": 1.0}
+
+        cleaned_body = clean_email_thread_if_needed(body)
         client = openai.AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY") or os.getenv("STAND_ALONE"))
-        user_msg = f"Subject: {subject}\n\nBody:\n{body[:2000]}"
+        user_msg = f"Subject: {subject}\n\nBody:\n{cleaned_body[:2000]}"
         response = await client.chat.completions.create(
             model=os.getenv("OPENAI_MODEL_AUTOMATION", "gpt-4.1-nano"),
             messages=[

@@ -1,6 +1,13 @@
 import os
 from dotenv import load_dotenv
 
+# Force LOCAL_TUNNEL_PORT and DB_PORT to 3307 on Render to ensure all app modules
+# connect via the SSH tunnel (localhost:3307) rather than trying to connect
+# directly to RDS_HOST (which is in a private network and will timeout/hang).
+if any(os.getenv(v) for v in ("RENDER", "RENDER_SERVICE_ID", "RENDER_EXTERNAL_URL")):
+    os.environ["LOCAL_TUNNEL_PORT"] = "3307"
+    os.environ["DB_PORT"] = "3307"
+
 env_path = r"C:\Users\jakeb\OneDrive\Documents\GitHub\golive-staffing-tools.env"
 if os.path.exists(env_path):
     load_dotenv(env_path)
