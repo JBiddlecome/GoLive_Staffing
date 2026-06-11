@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 import requests
 import os
 import io
+import base64
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -332,3 +333,119 @@ async def download_emails(
     filename = f"email_export_{start_date}_to_{end_date}.txt"
     resp_headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
     return StreamingResponse(iter([output.getvalue()]), media_type="text/plain", headers=resp_headers)
+
+
+@router.get("/message/{mailbox}/{message_id}")
+async def get_message_detail(request: Request, mailbox: str, message_id: str):
+    try:
+        access_token = _get_access_token()
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Accept": "application/json",
+    }
+    
+    select_fields = "id,subject,body,receivedDateTime,sentDateTime,sender,toRecipients,ccRecipients,hasAttachments"
+    url = f"https://graph.microsoft.com/v1.0/users/{mailbox}/messages/{message_id}"
+    
+    try:
+        res = requests.get(url, headers=headers, params={"$select": select_fields})
+        res.raise_for_status()
+        msg = res.json()
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": f"Error fetching message: {str(e)}"})
+
+    attachments = []
+    if msg.get("hasAttachments", False):
+        attachments_url = f"https://graph.microsoft.com/v1.0/users/{mailbox}/messages/{message_id}/attachments"
+        try:
+            att_res = requests.get(attachments_url, headers=headers, params={"$select": "id,name,contentType,size,isInline"})
+            att_res.raise_for_status()
+            attachments = att_res.json().get("value", [])
+        except Exception as e:
+            print(f"Error fetching attachments: {str(e)}")
+
+    sender_addr = msg.get("sender", {}).get("emailAddress", {}).get("address", "")
+    sender_name = msg.get("sender", {}).get("emailAddress", {}).get("name", "")
+    
+    to_list = [
+        f"{r.get('emailAddress', {}).get('name', '')} <{r.get('emailAddress', {}).get('address', '')}>" if r.get('emailAddress', {}).get('name') 
+        else r.get('emailAddress', {}).get('address', '') 
+        for r in msg.get("toRecipients", [])
+    ]
+    to_str = ", ".join([t for t in to_list if t])
+
+    cc_list = [
+        f"{r.get('emailAddress', {}).get('name', '')} <{r.get('emailAddress', {}).get('address', '')}>" if r.get('emailAddress', {}).get('name') 
+        else r.get('emailAddress', {}).get('address', '') 
+        for r in msg.get("ccRecipients", [])
+    ]
+    cc_str = ", ".join([c for c in cc_list if c])
+
+    body_content = msg.get("body", {}).get("content", "")
+    body_type = msg.get("body", {}).get("contentType", "text")
+
+    return JSONResponse(content={
+        "status": "success",
+        "data": {
+            "id": msg.get("id"),
+            "subject": msg.get("subject"),
+            "date": msg.get("receivedDateTime", msg.get("sentDateTime")),
+            "sender_name": sender_name,
+            "sender_address": sender_addr,
+            "to": to_str,
+            "cc": cc_str,
+            "body": body_content,
+            "body_type": body_type,
+            "attachments": [
+                {
+                    "id": att.get("id"),
+                    "name": att.get("name"),
+                    "contentType": att.get("contentType"),
+                    "size": att.get("size"),
+                    "isInline": att.get("isInline", False)
+                }
+                for att in attachments
+            ]
+        }
+    })
+
+
+@router.get("/message/{mailbox}/{message_id}/attachment/{attachment_id}")
+async def download_attachment(request: Request, mailbox: str, message_id: str, attachment_id: str):
+    try:
+        access_token = _get_access_token()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Accept": "application/json"
+    }
+    url = f"https://graph.microsoft.com/v1.0/users/{mailbox}/messages/{message_id}/attachments/{attachment_id}"
+    
+    try:
+        res = requests.get(url, headers=headers)
+        res.raise_for_status()
+        att = res.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching attachment: {str(e)}")
+
+    if "contentBytes" not in att:
+        raise HTTPException(status_code=400, detail="Attachment has no download content.")
+
+    try:
+        file_data = base64.b64decode(att.get("contentBytes", ""))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to decode attachment: {str(e)}")
+
+    filename = att.get("name", "attachment")
+    content_type = att.get("contentType", "application/octet-stream")
+
+    resp_headers = {
+        "Content-Disposition": f'attachment; filename="{filename}"'
+    }
+    return StreamingResponse(io.BytesIO(file_data), media_type=content_type, headers=resp_headers)
+

@@ -369,7 +369,275 @@
             color: #9CA3AF;
             cursor: not-allowed;
         }
+
+        /* Modal Overlay & Container */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+        }
+
+        .modal-container {
+            background: var(--card-bg);
+            width: 90%;
+            max-width: 850px;
+            max-height: 90vh;
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform: scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .modal-overlay.active .modal-container {
+            transform: scale(1);
+        }
+
+        /* Modal Header */
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .modal-subject {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .close-btn {
+            background: #F3F4F6;
+            border: none;
+            color: var(--text-muted);
+            font-size: 24px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            padding: 0;
+        }
+
+        .close-btn:hover {
+            background: #E5E7EB;
+            color: var(--text-main);
+        }
+
+        /* Meta Grid */
+        .modal-meta-grid {
+            padding: 16px 24px;
+            background: #F9FAFB;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .meta-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+            color: white;
+            font-weight: 600;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+            text-transform: uppercase;
+        }
+
+        .meta-details {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex-grow: 1;
+            font-size: 13px;
+        }
+
+        .meta-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .meta-label {
+            color: var(--text-muted);
+            font-weight: 500;
+            width: 65px;
+            flex-shrink: 0;
+        }
+
+        .meta-val {
+            color: var(--text-main);
+            font-weight: 400;
+            word-break: break-all;
+        }
+
+        /* Body Area */
+        .modal-body-container {
+            flex-grow: 1;
+            padding: 24px;
+            overflow-y: auto;
+            position: relative;
+            background: #FFFFFF;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-iframe {
+            width: 100%;
+            height: 400px;
+            border: none;
+            flex-grow: 1;
+        }
+
+        .modal-spinner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--primary);
+        }
+
+        .modal-spinner span {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        /* Attachments Section */
+        .modal-attachments {
+            padding: 16px 24px;
+            background: #F9FAFB;
+            border-top: 1px solid var(--border);
+        }
+
+        .attachments-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .attachments-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 12px;
+        }
+
+        .attachment-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--text-main);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .attachment-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transform: translateY(-1px);
+        }
+
+        .attachment-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+            width: 24px;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .attachment-icon .fa-file-pdf { color: #EF4444; }
+        .attachment-icon .fa-file-excel { color: #10B981; }
+        .attachment-icon .fa-file-word { color: #3B82F6; }
+        .attachment-icon .fa-file-image { color: #EC4899; }
+        .attachment-icon .fa-file-zipper { color: #F59E0B; }
+        .attachment-icon .fa-file-lines { color: #6B7280; }
+        .attachment-icon .fa-file { color: #9CA3AF; }
+
+        .attachment-info {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex-grow: 1;
+        }
+
+        .attachment-name {
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .attachment-size {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .attachment-download-icon {
+            font-size: 14px;
+            color: var(--text-muted);
+            opacity: 0.6;
+            margin-left: auto;
+            flex-shrink: 0;
+            transition: opacity 0.2s;
+        }
+
+        .attachment-card:hover .attachment-download-icon {
+            opacity: 1;
+            color: var(--primary);
+        }
+
+        /* Results Table Row Interactions */
+        #resultsBody tr {
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+        #resultsBody tr:hover {
+            background-color: #EEF2FF !important;
+        }
     </style>
+
 </head>
 <body>
     <div class="container">
@@ -484,6 +752,59 @@
                     </thead>
                     <tbody id="resultsBody"></tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Detail Modal -->
+    <div id="emailModal" class="modal-overlay" style="display: none;">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="modal-subject" id="modalSubject">Email Subject</div>
+                <button class="close-btn" onclick="closeEmailModal()">&times;</button>
+            </div>
+            <div class="modal-meta-grid">
+                <div class="meta-avatar" id="metaAvatar">U</div>
+                <div class="meta-details">
+                    <div class="meta-row">
+                        <span class="meta-label">From:</span>
+                        <span class="meta-val" id="modalFrom"></span>
+                    </div>
+                    <div class="meta-row">
+                        <span class="meta-label">To:</span>
+                        <span class="meta-val" id="modalTo"></span>
+                    </div>
+                    <div class="meta-row" id="modalCcRow" style="display: none;">
+                        <span class="meta-label">CC:</span>
+                        <span class="meta-val" id="modalCc"></span>
+                    </div>
+                    <div class="meta-row">
+                        <span class="meta-label">Date:</span>
+                        <span class="meta-val" id="modalDate"></span>
+                    </div>
+                    <div class="meta-row">
+                        <span class="meta-label">Mailbox:</span>
+                        <span class="meta-val" id="modalMailbox"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-body-container">
+                <div id="modalSpinner" class="modal-spinner">
+                    <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>
+                    <span>Loading message body...</span>
+                </div>
+                <iframe id="modalIframe" class="modal-iframe" style="display: none;"></iframe>
+            </div>
+
+            <!-- Attachments Section -->
+            <div id="modalAttachmentsSection" class="modal-attachments" style="display: none;">
+                <div class="attachments-title">
+                    <i class="fa-solid fa-paperclip"></i> Attachments (<span id="attachmentsCount">0</span>)
+                </div>
+                <div class="attachments-list" id="modalAttachmentsList">
+                    <!-- Dynamic attachment items -->
+                </div>
             </div>
         </div>
     </div>
@@ -613,6 +934,7 @@
                 const dateObj = new Date(msg.date);
                 const formattedDate = dateObj.toLocaleString();
                 const tr = document.createElement('tr');
+                tr.onclick = () => openEmailDetails(msg.mailbox, msg.id);
                 tr.innerHTML = `
                     <td style="white-space: nowrap; font-size: 13px;">${formattedDate}</td>
                     <td style="font-size: 13px;">${escapeHtml(msg.mailbox || '')}</td>
@@ -670,6 +992,223 @@
             downloadForm.submit();
             document.body.removeChild(downloadForm);
         }
+
+        async function openEmailDetails(mailbox, messageId) {
+            const modal = document.getElementById('emailModal');
+            const iframe = document.getElementById('modalIframe');
+            const spinner = document.getElementById('modalSpinner');
+            const attachmentsSection = document.getElementById('modalAttachmentsSection');
+            const attachmentsList = document.getElementById('modalAttachmentsList');
+            const ccRow = document.getElementById('modalCcRow');
+            
+            // Show modal and loading state
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('active'), 10);
+            
+            spinner.style.display = 'flex';
+            iframe.style.display = 'none';
+            attachmentsSection.style.display = 'none';
+            
+            // Clear content fields
+            document.getElementById('modalSubject').textContent = 'Loading...';
+            document.getElementById('modalFrom').textContent = '';
+            document.getElementById('modalTo').textContent = '';
+            document.getElementById('modalCc').textContent = '';
+            ccRow.style.display = 'none';
+            document.getElementById('modalDate').textContent = '';
+            document.getElementById('modalMailbox').textContent = '';
+            attachmentsList.innerHTML = '';
+            
+            try {
+                const url = `/email-explorer/message/${encodeURIComponent(mailbox)}/${encodeURIComponent(messageId)}`;
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                if (response.ok && result.status === 'success') {
+                    const data = result.data;
+                    
+                    document.getElementById('modalSubject').textContent = data.subject || '(No Subject)';
+                    
+                    // Display Sender Avatar initial
+                    const initial = (data.sender_name || data.sender_address || '?').charAt(0).toUpperCase();
+                    document.getElementById('metaAvatar').textContent = initial;
+                    
+                    document.getElementById('modalFrom').textContent = data.sender_name 
+                        ? `${data.sender_name} <${data.sender_address}>` 
+                        : data.sender_address;
+                        
+                    document.getElementById('modalTo').textContent = data.to || '(Unknown Recipient)';
+                    
+                    if (data.cc) {
+                        document.getElementById('modalCc').textContent = data.cc;
+                        ccRow.style.display = 'flex';
+                    }
+                    
+                    const dateObj = new Date(data.date);
+                    document.getElementById('modalDate').textContent = dateObj.toLocaleString();
+                    document.getElementById('modalMailbox').textContent = mailbox;
+                    
+                    // Populate email body in iframe
+                    const doc = iframe.contentDocument || iframe.contentWindow.document;
+                    doc.open();
+                    
+                    if (data.body_type === 'html') {
+                        doc.write(data.body);
+                    } else {
+                        // For text body, wrap it in a <pre> element for formatting
+                        doc.write(`
+                            <html>
+                            <head>
+                                <style>
+                                    body {
+                                        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                                        font-size: 14px;
+                                        line-height: 1.6;
+                                        color: #1F2937;
+                                        white-space: pre-wrap;
+                                        margin: 0;
+                                        padding: 8px;
+                                    }
+                                </style>
+                            </head>
+                            <body>${escapeHtml(data.body)}</body>
+                            </html>
+                        `);
+                    }
+                    doc.close();
+                    
+                    // Display the body
+                    iframe.style.display = 'block';
+                    spinner.style.display = 'none';
+                    
+                    // Process attachments
+                    if (data.attachments && data.attachments.length > 0) {
+                        document.getElementById('attachmentsCount').textContent = data.attachments.length;
+                        
+                        data.attachments.forEach(att => {
+                            const sizeFormatted = formatBytes(att.size);
+                            const iconClass = getFileIconClass(att.name);
+                            
+                            const attCard = document.createElement('a');
+                            attCard.className = 'attachment-card';
+                            attCard.href = `/email-explorer/message/${encodeURIComponent(mailbox)}/${encodeURIComponent(messageId)}/attachment/${encodeURIComponent(att.id)}`;
+                            attCard.target = '_blank'; // Trigger download
+                            
+                            attCard.innerHTML = `
+                                <div class="attachment-icon">
+                                    <i class="${iconClass}"></i>
+                                </div>
+                                <div class="attachment-info">
+                                    <div class="attachment-name" title="${escapeHtml(att.name)}">${escapeHtml(att.name)}</div>
+                                    <div class="attachment-size">${sizeFormatted}</div>
+                                </div>
+                                <div class="attachment-download-icon">
+                                    <i class="fa-solid fa-download"></i>
+                                </div>
+                            `;
+                            attachmentsList.appendChild(attCard);
+                        });
+                        
+                        attachmentsSection.style.display = 'block';
+                    }
+                    
+                } else {
+                    document.getElementById('modalSubject').textContent = 'Error';
+                    showModalError(result.error || 'Failed to load email details.');
+                    spinner.style.display = 'none';
+                }
+            } catch (err) {
+                document.getElementById('modalSubject').textContent = 'Error';
+                showModalError('Network error: ' + err.message);
+                spinner.style.display = 'none';
+            }
+        }
+        
+        function showModalError(message) {
+            const iframe = document.getElementById('modalIframe');
+            const doc = iframe.contentDocument || iframe.contentWindow.document;
+            doc.open();
+            doc.write(`
+                <html>
+                <body style="font-family: sans-serif; padding: 12px; margin: 0;">
+                    <div style="color: #DC2626; background-color: #FEE2E2; padding: 12px; border-radius: 6px; font-size: 14px;">
+                        <strong>Error:</strong> ${escapeHtml(message)}
+                    </div>
+                </body>
+                </html>
+            `);
+            doc.close();
+            iframe.style.display = 'block';
+        }
+
+        function closeEmailModal() {
+            const modal = document.getElementById('emailModal');
+            modal.classList.remove('active');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                // Clear iframe to free memory
+                const iframe = document.getElementById('modalIframe');
+                const doc = iframe.contentDocument || iframe.contentWindow.document;
+                doc.open();
+                doc.write('');
+                doc.close();
+            }, 300);
+        }
+        
+        // Close modal on escape key or clicking outside
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('emailModal');
+                if (modal.style.display !== 'none') {
+                    closeEmailModal();
+                }
+            }
+        });
+        
+        document.getElementById('emailModal').addEventListener('click', (e) => {
+            if (e.target.id === 'emailModal') closeEmailModal();
+        });
+
+        function formatBytes(bytes, decimals = 1) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        function getFileIconClass(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            switch (ext) {
+                case 'pdf':
+                    return 'fa-solid fa-file-pdf';
+                case 'xlsx':
+                case 'xls':
+                case 'csv':
+                    return 'fa-solid fa-file-excel';
+                case 'docx':
+                case 'doc':
+                    return 'fa-solid fa-file-word';
+                case 'jpg':
+                case 'jpeg':
+                case 'png':
+                case 'gif':
+                case 'webp':
+                    return 'fa-solid fa-file-image';
+                case 'zip':
+                case 'rar':
+                case '7z':
+                case 'tar':
+                case 'gz':
+                    return 'fa-solid fa-file-zipper';
+                case 'txt':
+                    return 'fa-solid fa-file-lines';
+                default:
+                    return 'fa-solid fa-file';
+            }
+        }
     </script>
+
 </body>
 </html>
