@@ -65,6 +65,10 @@ def _ensure_state_table():
         engine.dispose()
 
 def get_automation_enabled() -> bool:
+    import os
+    if not any(os.getenv(e) for e in ("RENDER", "RENDER_SERVICE_ID")):
+        return False
+
     global _auto_approve_enabled, _state_initialized
     if not _state_initialized:
         _ensure_state_table()
@@ -84,6 +88,10 @@ def get_automation_enabled() -> bool:
     return _auto_approve_enabled
 
 def set_automation_enabled(enabled: bool) -> None:
+    import os
+    if not any(os.getenv(e) for e in ("RENDER", "RENDER_SERVICE_ID")):
+        enabled = False
+
     global _auto_approve_enabled, _state_initialized
     _auto_approve_enabled = enabled
     _state_initialized = True

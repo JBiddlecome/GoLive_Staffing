@@ -42,6 +42,20 @@
       </button>
     </div>
   </div>
+
+  <!-- Sub-navigation Tabs -->
+  <div class="mt-6 border-b border-gray-200">
+    <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+      <button id="tab-active" class="border-emerald-500 text-emerald-600 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-semibold transition-all cursor-pointer flex items-center gap-2 focus:outline-none" aria-current="page">
+        Active Requests
+        <span id="active-count" class="rounded-full bg-emerald-100 py-0.5 px-2.5 text-xs font-semibold text-emerald-800">0</span>
+      </button>
+      <button id="tab-approved" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-all cursor-pointer flex items-center gap-2 focus:outline-none">
+        Approved Requests
+        <span id="approved-count" class="rounded-full bg-gray-100 py-0.5 px-2.5 text-xs font-semibold text-gray-600">0</span>
+      </button>
+    </nav>
+  </div>
   
   <div class="mt-4 flow-root">
     <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -66,15 +80,16 @@
             </thead>
             <tbody class="divide-y divide-gray-100 bg-white" id="requests-tbody">
               {% for row in records %}
-              {% if not row.completed %}
-              <tr class="transition-colors duration-150 {% if row.completed %}bg-emerald-50/60{% endif %} hover:bg-gray-50 filterable-row">
+              <tr class="transition-colors duration-150 {% if row.completed %}bg-emerald-50/60{% endif %} hover:bg-gray-50 filterable-row"
+                  data-completed="{{ 'true' if row.completed else 'false' }}"
+                  data-status="{% if row.status == 'Approved' %}Approved{% elif row.status == 'Not Approved' %}Not Approved{% elif row.status == 'Consider' %}Consider{% else %}Pending{% endif %}">
                 <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 text-center">
                   <input type="checkbox" 
                          class="h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-600 transition-colors update-row cursor-pointer" 
                          data-msg-id="{{ row.message_id }}"
                          {% if row.completed %}checked{% endif %}>
                 </td>
-                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-600" data-status="{% if row.status == 'Approved' %}Approved{% elif row.status == 'Not Approved' %}Not Approved{% elif row.status == 'Consider' %}Consider{% else %}Pending{% endif %}">
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-600" data-status-label="{% if row.status == 'Approved' %}Approved{% elif row.status == 'Not Approved' %}Not Approved{% elif row.status == 'Consider' %}Consider{% else %}Pending{% endif %}">
                   {% if row.status == 'Approved' %}
                     <span title="{{ row.ai_analysis | default('') | escape }}" class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 cursor-help">Approved</span>
                   {% elif row.status == 'Not Approved' %}
@@ -139,25 +154,36 @@
                       {% if row.ai_analysis %}View Analysis{% else %}Analyze{% endif %}
                     </button>
                     {% if row.status == 'Approved' %}
-                    <button class="inline-flex items-center gap-x-1.5 rounded-md bg-blue-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 add-position-btn transition-colors" data-phone="{{ row.phone }}" data-positions="{{ row.positions | escape }}">
-                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                      </svg>
-                      Add Position
-                    </button>
+                      {% if row.completed %}
+                      <button class="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm cursor-not-allowed add-position-btn" disabled>
+                        Added
+                      </button>
+                      {% else %}
+                      <button class="inline-flex items-center gap-x-1.5 rounded-md bg-blue-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 add-position-btn transition-colors" data-phone="{{ row.phone }}" data-positions="{{ row.positions | escape }}">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                        Add Position
+                      </button>
+                      {% endif %}
                     {% endif %}
                     {% if row.status == 'Not Approved' %}
-                    <button class="inline-flex items-center gap-x-1.5 rounded-md bg-red-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 deny-position-btn transition-colors" data-phone="{{ row.phone }}" data-positions="{{ row.positions | escape }}" data-reason="{{ 'qualification' if 'Automatically marked as Not Approved due to' in (row.ai_analysis or '') else 'experience' }}" data-name="{{ row.employee_name | escape }}">
-                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                      </svg>
-                      Denied
-                    </button>
+                      {% if row.completed %}
+                      <button class="inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm cursor-not-allowed deny-position-btn" disabled>
+                        Sent
+                      </button>
+                      {% else %}
+                      <button class="inline-flex items-center gap-x-1.5 rounded-md bg-red-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 deny-position-btn transition-colors" data-phone="{{ row.phone }}" data-positions="{{ row.positions | escape }}" data-reason="{{ 'qualification' if 'Automatically marked as Not Approved due to' in (row.ai_analysis or '') else 'experience' }}" data-name="{{ row.employee_name | escape }}">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                        </svg>
+                        Denied
+                      </button>
+                      {% endif %}
                     {% endif %}
                   </div>
                 </td>
               </tr>
-              {% endif %}
               {% endfor %}
               {% if not records %}
               <tr>
@@ -220,6 +246,7 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+  let activeTab = 'active'; // 'active' or 'approved'
   const updateElements = document.querySelectorAll('.update-row');
   
   updateElements.forEach(el => {
@@ -243,14 +270,47 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         if (response.ok) {
+          tr.dataset.completed = checkbox.checked ? 'true' : 'false';
           if (checkbox.checked) {
             tr.classList.add('bg-emerald-50/60');
-            setTimeout(() => {
-              tr.style.display = 'none';
-            }, 300);
+            const addBtn = tr.querySelector('.add-position-btn');
+            if (addBtn) {
+              addBtn.disabled = true;
+              addBtn.innerHTML = 'Added';
+              addBtn.className = 'inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm cursor-not-allowed add-position-btn';
+            }
+            const denyBtn = tr.querySelector('.deny-position-btn');
+            if (denyBtn) {
+              denyBtn.disabled = true;
+              denyBtn.innerHTML = 'Sent';
+              denyBtn.className = 'inline-flex items-center gap-x-1.5 rounded-md bg-gray-400 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm cursor-not-allowed deny-position-btn';
+            }
           } else {
             tr.classList.remove('bg-emerald-50/60');
+            const addBtn = tr.querySelector('.add-position-btn');
+            if (addBtn) {
+              addBtn.disabled = false;
+              addBtn.innerHTML = `
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Add Position
+              `;
+              addBtn.className = 'inline-flex items-center gap-x-1.5 rounded-md bg-blue-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 add-position-btn transition-colors';
+            }
+            const denyBtn = tr.querySelector('.deny-position-btn');
+            if (denyBtn) {
+              denyBtn.disabled = false;
+              denyBtn.innerHTML = `
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                </svg>
+                Denied
+              `;
+              denyBtn.className = 'inline-flex items-center gap-x-1.5 rounded-md bg-red-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 deny-position-btn transition-colors';
+            }
           }
+          applyFilters();
         } else {
           console.error("Failed to update row", await response.text());
         }
@@ -262,28 +322,91 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const recruiterFilter = document.getElementById('recruiter-filter');
   const statusFilter = document.getElementById('status-filter');
+  const tabActiveBtn = document.getElementById('tab-active');
+  const tabApprovedBtn = document.getElementById('tab-approved');
+
+  function updateTabStyles() {
+    if (activeTab === 'active') {
+      tabActiveBtn.classList.remove('border-transparent', 'text-gray-500', 'font-medium');
+      tabActiveBtn.classList.add('border-emerald-500', 'text-emerald-600', 'font-semibold');
+      tabActiveBtn.setAttribute('aria-current', 'page');
+      
+      tabApprovedBtn.classList.remove('border-emerald-500', 'text-emerald-600', 'font-semibold');
+      tabApprovedBtn.classList.add('border-transparent', 'text-gray-500', 'font-medium');
+      tabApprovedBtn.removeAttribute('aria-current');
+    } else {
+      tabApprovedBtn.classList.remove('border-transparent', 'text-gray-500', 'font-medium');
+      tabApprovedBtn.classList.add('border-emerald-500', 'text-emerald-600', 'font-semibold');
+      tabApprovedBtn.setAttribute('aria-current', 'page');
+      
+      tabActiveBtn.classList.remove('border-emerald-500', 'text-emerald-600', 'font-semibold');
+      tabActiveBtn.classList.add('border-transparent', 'text-gray-500', 'font-medium');
+      tabActiveBtn.removeAttribute('aria-current');
+    }
+  }
+
+  if (tabActiveBtn) {
+    tabActiveBtn.addEventListener('click', () => {
+      activeTab = 'active';
+      updateTabStyles();
+      applyFilters();
+    });
+  }
+
+  if (tabApprovedBtn) {
+    tabApprovedBtn.addEventListener('click', () => {
+      activeTab = 'approved';
+      updateTabStyles();
+      applyFilters();
+    });
+  }
 
   function applyFilters() {
     const filterValue = recruiterFilter ? recruiterFilter.value : '';
     const statusValue = statusFilter ? statusFilter.value : '';
     
     const rows = document.querySelectorAll('.filterable-row');
+    let activeCount = 0;
+    let approvedCount = 0;
+
     rows.forEach(row => {
       const select = row.querySelector('select');
-      if (!select) return;
-      const recruiter = select.value;
-      const statusTd = row.querySelector('td[data-status]');
-      const status = statusTd ? statusTd.dataset.status : '';
+      const recruiter = select ? select.value : '';
+      const status = row.dataset.status || '';
+      const isCompleted = row.dataset.completed === 'true';
       
       const matchRecruiter = !filterValue || filterValue === recruiter || (filterValue === 'Unassigned' && !recruiter);
       const matchStatus = !statusValue || statusValue === status;
       
+      // Calculate matching counts based on dropdown filter criteria
       if (matchRecruiter && matchStatus) {
+        if (!isCompleted) {
+          activeCount++;
+        }
+        if (status === 'Approved') {
+          approvedCount++;
+        }
+      }
+
+      // Check if it fits the currently active tab
+      let matchesTab = false;
+      if (activeTab === 'active') {
+        matchesTab = !isCompleted;
+      } else if (activeTab === 'approved') {
+        matchesTab = (status === 'Approved');
+      }
+
+      if (matchRecruiter && matchStatus && matchesTab) {
         row.style.display = '';
       } else {
         row.style.display = 'none';
       }
     });
+
+    const activeBadge = document.getElementById('active-count');
+    const approvedBadge = document.getElementById('approved-count');
+    if (activeBadge) activeBadge.textContent = activeCount;
+    if (approvedBadge) approvedBadge.textContent = approvedCount;
   }
 
   if (recruiterFilter) {
@@ -294,6 +417,9 @@ document.addEventListener('DOMContentLoaded', () => {
     statusFilter.addEventListener('change', applyFilters);
   }
 
+  // Initial count and filter application
+  applyFilters();
+
   const sortStatusBtn = document.getElementById('sort-status-btn');
   let statusSortAsc = true;
   
@@ -303,8 +429,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const rows = Array.from(tbody.querySelectorAll('tr.filterable-row'));
       
       rows.sort((a, b) => {
-        const aStatus = a.querySelector('td[data-status]')?.dataset.status || '';
-        const bStatus = b.querySelector('td[data-status]')?.dataset.status || '';
+        const aStatus = a.dataset.status || '';
+        const bStatus = b.dataset.status || '';
         if (aStatus < bStatus) return statusSortAsc ? -1 : 1;
         if (aStatus > bStatus) return statusSortAsc ? 1 : -1;
         return 0;

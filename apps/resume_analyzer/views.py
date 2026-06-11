@@ -24,6 +24,9 @@ Target positions
 
 Evaluate the candidate for these positions:
 
+CRITICAL RULE: A candidate's experience must be associated with a specific, clearly identifiable company, restaurant, or venue. 
+If a position is merely "listed" on a resume without being tied to an actual employer or business (e.g., just a list of skills or solitary job titles without a company name), it MUST be completely ignored and assigned "no_experience". Do not count general skill listings or generic titles that lack an employer context.
+
 Cook
 Prep Cook
 Dishwasher
