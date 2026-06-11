@@ -242,7 +242,6 @@ def _db_url_from_env() -> URL:
         port=port,
         database=name,
     )
-
 _cached_engine = None
 
 def _engine():
@@ -714,6 +713,7 @@ async def fetch_submissions():
             save_records(records)
 
 async def position_requests_monitoring_loop():
+    await asyncio.sleep(30)
     while True:
         try:
             await fetch_submissions()

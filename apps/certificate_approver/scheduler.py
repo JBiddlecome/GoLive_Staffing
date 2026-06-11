@@ -89,6 +89,7 @@ def set_auto_approve_enabled(enabled: bool):
         engine.dispose()
 
 async def certificate_approval_loop():
+    await asyncio.sleep(20)
     from apps.certificate_approver.views import get_pending_certificates, analyze_certificate_ai, approve_cert_action, deny_cert_action
     
     while True:

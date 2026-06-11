@@ -802,6 +802,7 @@ def dismiss_review(review_id: str, reason: str = "") -> dict[str, Any]:
 
 
 async def new_employee_position_approver_loop() -> None:
+    await asyncio.sleep(25)
     while True:
         try:
             await scan_for_new_employees()

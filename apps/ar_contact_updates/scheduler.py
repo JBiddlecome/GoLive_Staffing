@@ -280,6 +280,9 @@ def get_ar_changes_log():
 async def ar_contacts_monitoring_loop():
     global _ar_contacts_cache, _is_initialized, _ar_contacts_changes, _last_email_sent_date
 
+    # Stagger startup
+    await asyncio.sleep(15)
+
     # Load initial state
     loaded_cache, loaded_changes, loaded_email_date = load_ar_state()
     if loaded_cache:
@@ -289,9 +292,6 @@ async def ar_contacts_monitoring_loop():
             _last_email_sent_date = loaded_email_date
         _is_initialized = True
         print(f"[AR Contacts] Loaded {len(_ar_contacts_cache)} contacts and {len(_ar_contacts_changes)} changes from disk.")
-
-    # Stagger startup
-    await asyncio.sleep(20)
 
     print("[AR Contacts] Monitor started.")
 

@@ -297,7 +297,7 @@ async def email_forwarder_loop():
                                 log.append(log_entry)
                                 print(
                                     f"[Email Forwarder] Forwarded '{msg.get('subject')}' "
-                                    f"from {mailbox} → {DESTINATION}"
+                                    f"from {mailbox} -> {DESTINATION}"
                                 )
 
                 # Trim dedup list (keep last 500)
