@@ -328,7 +328,7 @@ def _match_position_key(name: str) -> str | None:
 
 
 def _evaluate_positions_against_levels(
-    ai_positions: dict, requested_positions: str
+    ai_positions: dict, requested_positions: str, restrict_level_3: bool = False, restriction_reasons: list[str] = None
 ) -> tuple[str, str, list[str]]:
     """Compare AI-determined levels against requested position levels.
 
@@ -355,6 +355,25 @@ def _evaluate_positions_against_levels(
         est_years = pos_data.get("estimated_years", 0)
         reasons = pos_data.get("reasons", [])
         base_name = POSITION_KEY_TO_NAME.get(key, req_name)
+
+        if restrict_level_3:
+            if key in ["event_supervisor"]:
+                denied.append(req_name)
+                details.append(
+                    f"❌ {req_name} → NOT approved. Restricted from Level 3/Management positions due to: {', '.join(restriction_reasons or [])}."
+                )
+                continue
+            
+            if req_level >= 3:
+                denied.append(f"{req_name} {req_level}")
+                details.append(
+                    f"❌ {req_name} {req_level} → NOT approved. Restricted from Level 3 positions due to: {', '.join(restriction_reasons or [])}."
+                )
+                continue
+                
+            if ai_level >= 3:
+                ai_level = 2
+                reasons.append(f"Capped at Level 2 due to: {', '.join(restriction_reasons or [])}")
 
         # If no level was specified in the request, approve at whatever level they qualify for
         if req_level == 0:
@@ -406,7 +425,7 @@ def _evaluate_positions_against_levels(
     return status, detail_text, approved
 
 
-async def ai_analyze(resume_text, experience_text, requested_positions):
+async def ai_analyze(resume_text, experience_text, requested_positions, restrict_level_3=False, restriction_reasons=None):
     from apps.api_usage_tracker import log_api_usage
     log_api_usage("Position Requests")
     
@@ -438,7 +457,7 @@ async def ai_analyze(resume_text, experience_text, requested_positions):
     summary = parsed.get("candidate_summary", {})
 
     status, detail_text, approved = _evaluate_positions_against_levels(
-        ai_positions, requested_positions
+        ai_positions, requested_positions, restrict_level_3, restriction_reasons
     )
 
     # Prepend candidate overview
@@ -533,12 +552,16 @@ async def evaluate_candidate(name, phone, resume_url, experience_text, requested
             """)
             has_noshow = conn.execute(noshow_sql, {"emp_id": emp_id}).fetchone() is not None
             
+            restrict_level_3 = False
+            restriction_reasons = []
+
             if has_dnr or has_da or has_noshow:
                 reasons = []
                 if has_dnr: reasons.append("DNR in last 2 years")
                 if has_da: reasons.append("DA (Warning) in last 2 years")
                 if has_noshow: reasons.append("NOSHOW between 10 days and 2 years ago")
-                return "Not Approved", "Automatically marked as Not Approved due to: " + ", ".join(reasons)
+                restrict_level_3 = True
+                restriction_reasons = reasons
                 
     except Exception as e:
         engine.dispose()
@@ -547,7 +570,7 @@ async def evaluate_candidate(name, phone, resume_url, experience_text, requested
         engine.dispose()
         
     resume_text = await extract_text_from_url(resume_url) if resume_url else "No resume attached."
-    status, analysis_text, _ = await ai_analyze(resume_text, experience_text, requested_positions)
+    status, analysis_text, _ = await ai_analyze(resume_text, experience_text, requested_positions, restrict_level_3, restriction_reasons)
     return status, analysis_text
 
 async def fetch_submissions():
