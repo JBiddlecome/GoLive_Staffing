@@ -38,17 +38,19 @@ def _get_engine():
     return create_engine(_db_url_from_env(), pool_pre_ping=True)
 
 FLAG_COLORS = {
-    0: "Orange",
-    1: "Red",
-    3: "Brown",
-    5: "Purple",
-    6: "Yellow"
+    "0": "Orange",
+    "1": "Red",
+    "2": "Green",
+    "3": "Brown",
+    "5": "Purple",
+    "6": "Yellow",
+    "none": "No Flag"
 }
 
 @router.get("", response_class=HTMLResponse)
 async def page(
     request: Request,
-    flags: list[int] = Query(default=[0, 1]),
+    flags: list[str] = Query(default=["0", "1"]),
     has_dnr: str = Query(default="All"),
     has_da: str = Query(default="All")
 ):
@@ -57,14 +59,29 @@ async def page(
     error = None
 
     try:
-        if not flags:
-            flags = [-1] # prevent empty IN clause error
-            
         with engine.connect() as conn:
             # First, fetch eligible employees:
             # Active statuses: 1 (Active), 3 (Inactive 60), 10 (Hiatus), 14 (Other Status)
-            # flags in the requested list
-            flags_placeholder = ', '.join([str(int(f)) for f in flags])
+            conditions = []
+            selected_int_flags = []
+            for f in flags:
+                if f != "none":
+                    try:
+                        selected_int_flags.append(int(f))
+                    except ValueError:
+                        pass
+            
+            if selected_int_flags:
+                flags_placeholder = ', '.join([str(f) for f in selected_int_flags])
+                conditions.append(f"e.flag IN ({flags_placeholder})")
+            
+            if "none" in flags:
+                conditions.append("e.flag IS NULL")
+                
+            if conditions:
+                flag_filter_sql = "AND (" + " OR ".join(conditions) + ")"
+            else:
+                flag_filter_sql = "AND 1=0"
             
             sql = text(f'''
                 SELECT 
@@ -74,7 +91,7 @@ async def page(
                     e.flag
                 FROM employee e
                 WHERE e.status IN (1, 3, 10, 14)
-                  AND e.flag IN ({flags_placeholder})
+                  {flag_filter_sql}
                 ORDER BY e.first_name, e.last_name
             ''')
             
@@ -106,6 +123,24 @@ async def page(
                 da_res = conn.execute(da_sql).mappings().all()
                 da_emp_ids = {r['employee_id'] for r in da_res}
                 
+                # Check for shifts worked in the last year
+                shifts_sql = text(f'''
+                    SELECT 
+                        t.employee_id,
+                        COUNT(DISTINCT t.timesheet_id) as shifts_last_year
+                    FROM timesheet t
+                    JOIN shift_employee se ON t.shift_employee_id = se.shift_employee_id
+                    JOIN shift_position sp ON se.shift_position_id = sp.shift_position_id
+                    JOIN shift s ON sp.shift_id = s.shift_id
+                    WHERE t.employee_id IN ({emp_ids_placeholder})
+                      AND t.employee_worked = 'WORKED'
+                      AND s.start >= DATE_SUB(NOW(), INTERVAL 1 YEAR)
+                      AND s.start <= NOW()
+                    GROUP BY t.employee_id
+                ''')
+                shifts_res = conn.execute(shifts_sql).mappings().all()
+                shifts_lookup = {row['employee_id']: row['shifts_last_year'] for row in shifts_res}
+                
                 for r in emp_result:
                     emp_id = r['employee_id']
                     dnr_val = "Yes" if emp_id in dnr_emp_ids else "No"
@@ -115,13 +150,18 @@ async def page(
                         continue
                     if has_da != "All" and da_val != has_da:
                         continue
+                    
+                    flag_key = "none" if r['flag'] is None else str(r['flag'])
+                    flag_color = FLAG_COLORS.get(flag_key, f"Unknown ({r['flag']})")
+                    shifts_count = shifts_lookup.get(emp_id, 0)
                         
                     employees.append({
                         "employee_id": emp_id,
                         "name": f"{r['first_name']} {r['last_name']}",
-                        "flag_color": FLAG_COLORS.get(r['flag'], f"Unknown ({r['flag']})"),
+                        "flag_color": flag_color,
                         "has_dnr_last_2_years": dnr_val,
-                        "has_da_last_2_years": da_val
+                        "has_da_last_2_years": da_val,
+                        "shifts_last_year": shifts_count
                     })
 
     except Exception as e:
@@ -138,3 +178,4 @@ async def page(
         "all_flags": FLAG_COLORS,
         "error": error
     })
+
