@@ -86,6 +86,7 @@ from apps.staffing_tools_hub.views import router as staffing_tools_hub_router
 from apps.orders.views import router as orders_router
 from apps.pay_rate_reduction_calculator.views import router as pay_rate_reduction_calculator_router
 from apps.sick_pay_requests.views import router as sick_pay_requests_router
+from apps.no_show_report.views import router as no_show_report_router
 
 from contextlib import asynccontextmanager
 import asyncio
@@ -103,6 +104,7 @@ from apps.new_employee_position_approver.scheduler import new_employee_position_
 from apps.client_notifications.scheduler import client_notifications_loop
 from apps.orders.email_monitor import email_monitoring_loop
 from apps.recruiting_metrics.scheduler import recruiting_metrics_monitoring_loop
+from apps.no_show_report.scheduler import no_show_report_loop
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -120,6 +122,7 @@ async def lifespan(app: FastAPI):
     cn_task = asyncio.create_task(client_notifications_loop())
     orders_email_task = asyncio.create_task(email_monitoring_loop())
     recruiting_metrics_task = asyncio.create_task(recruiting_metrics_monitoring_loop())
+    no_show_report_task = asyncio.create_task(no_show_report_loop())
     yield
     monitor_task.cancel()
     cc_monitor_task.cancel()
@@ -135,6 +138,7 @@ async def lifespan(app: FastAPI):
     cn_task.cancel()
     orders_email_task.cancel()
     recruiting_metrics_task.cancel()
+    no_show_report_task.cancel()
 
 app = FastAPI(title="GoLive Staffing — Tools", lifespan=lifespan)
 
@@ -587,6 +591,11 @@ app.include_router(
     sick_pay_requests_router,
     prefix="/sick-pay-requests",
     tags=["Sick Pay Requests"]
+)
+app.include_router(
+    no_show_report_router,
+    prefix="/no-show-report",
+    tags=["No Show Report"]
 )
 
 

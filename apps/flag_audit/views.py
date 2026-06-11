@@ -1,11 +1,13 @@
 import os
 from datetime import datetime, date
-from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, Request, Query
-from fastapi.responses import HTMLResponse, JSONResponse
+from typing import Optional, List, Dict, Any, Tuple
+from fastapi import APIRouter, Request, Query, HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
+import pandas as pd
+from io import BytesIO
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -47,13 +49,11 @@ FLAG_COLORS = {
     "none": "No Flag"
 }
 
-@router.get("", response_class=HTMLResponse)
-async def page(
-    request: Request,
-    flags: list[str] = Query(default=["0", "1"]),
-    has_dnr: str = Query(default="All"),
-    has_da: str = Query(default="All")
-):
+def _get_employees_data(
+    flags: list[str],
+    has_dnr: str,
+    has_da: str
+) -> Tuple[list[dict], Optional[str]]:
     engine = _get_engine()
     employees = []
     error = None
@@ -168,7 +168,17 @@ async def page(
         error = f"Database error: {e}"
     finally:
         engine.dispose()
+        
+    return employees, error
 
+@router.get("", response_class=HTMLResponse)
+async def page(
+    request: Request,
+    flags: list[str] = Query(default=["0", "1"]),
+    has_dnr: str = Query(default="All"),
+    has_da: str = Query(default="All")
+):
+    employees, error = _get_employees_data(flags, has_dnr, has_da)
     return templates.TemplateResponse("apps/flag_audit.html", {
         "request": request,
         "employees": employees,
@@ -178,4 +188,39 @@ async def page(
         "all_flags": FLAG_COLORS,
         "error": error
     })
+
+@router.get("/export")
+async def export_excel(
+    flags: list[str] = Query(default=["0", "1"]),
+    has_dnr: str = Query(default="All"),
+    has_da: str = Query(default="All")
+):
+    employees, error = _get_employees_data(flags, has_dnr, has_da)
+    if error:
+        raise HTTPException(status_code=500, detail=error)
+        
+    data = []
+    for emp in employees:
+        data.append({
+            "Employee ID": emp["employee_id"],
+            "Employee Name": emp["name"],
+            "Flag Color": emp["flag_color"],
+            "DNR (Last 2 Years)": emp["has_dnr_last_2_years"],
+            "Disciplinary Action (Last 2 Years)": emp["has_da_last_2_years"],
+            "Shifts (Last Year)": emp["shifts_last_year"]
+        })
+        
+    df = pd.DataFrame(data)
+    
+    output_buffer = BytesIO()
+    df.to_excel(output_buffer, index=False)
+    output_buffer.seek(0)
+    
+    filename = f"flag_audit_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    return StreamingResponse(
+        output_buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
 

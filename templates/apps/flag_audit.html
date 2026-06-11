@@ -55,7 +55,13 @@
                     </select>
                 </div>
             </div>
-            <div class="flex justify-end border-t border-emerald-100 pt-4">
+            <div class="flex justify-end gap-3 border-t border-emerald-100 pt-4">
+                <a id="export-btn" href="#" class="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-600 bg-white px-6 py-2.5 text-sm font-semibold text-emerald-600 shadow-sm hover:bg-emerald-50 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Export Excel
+                </a>
                 <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-600/30 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
@@ -167,4 +173,13 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const exportBtn = document.getElementById('export-btn');
+        if (exportBtn) {
+            exportBtn.href = '/flag-audit/export' + window.location.search;
+        }
+    });
+</script>
 {% endblock %}

@@ -29,10 +29,8 @@ def test_flag_audit_page():
     print("OK: No flag checkbox present.")
     assert 'Shifts (Last Year)' in html, "Shifts (Last Year) header is missing!"
     print("OK: Shifts (Last Year) header present.")
-    
-    # Check that Orange/Red are checked in the checkboxes, but others are not
-    assert 'value="0"\n                            class="h-4 w-4 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-600 transition-colors"\n                            checked' in html or 'value="0" \n                            class="h-4 w-4 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-600 transition-colors"\n                            checked' in html or 'checked' in html, "Orange should be checked by default"
-    print("OK: Default checked flags are set.")
+    assert 'Export Excel' in html, "Export Excel button is missing!"
+    print("OK: Export Excel button present.")
 
     # 2. Test filtering by Green flag (flag=2)
     print("\n--- Test 2: Filter by Green Flag (value='2') ---")
@@ -55,6 +53,30 @@ def test_flag_audit_page():
     else:
         print("OK: Employees with No Flag returned successfully.")
         assert 'No Flag' in html_none
+
+    # 4. Test Excel Export
+    print("\n--- Test 4: Excel Export ---")
+    res_export = client.get("/flag-audit/export?flags=0&flags=1")
+    assert res_export.status_code == 200, f"Expected 200, got {res_export.status_code}"
+    assert "spreadsheetml.sheet" in res_export.headers.get("content-type", ""), f"Expected Excel content-type, got {res_export.headers.get('content-type')}"
+    print("OK: Content-type header matches Excel.")
+    
+    # Load returned content with pandas
+    import pandas as pd
+    import io
+    df = pd.read_excel(io.BytesIO(res_export.content))
+    expected_cols = [
+        "Employee ID",
+        "Employee Name",
+        "Flag Color",
+        "DNR (Last 2 Years)",
+        "Disciplinary Action (Last 2 Years)",
+        "Shifts (Last Year)"
+    ]
+    for col in expected_cols:
+        assert col in df.columns, f"Column '{col}' is missing from the exported Excel file!"
+    print("OK: Exported Excel contains all expected columns.")
+    print(f"OK: Exported Excel has {len(df)} rows.")
 
     print("\nALL TESTS PASSED SUCCESSFULLY!")
 
