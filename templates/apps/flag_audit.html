@@ -31,7 +31,7 @@
                     <label class="relative flex items-center justify-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50/50 px-4 py-2.5 cursor-pointer hover:border-emerald-300 hover:bg-emerald-50 transition-all shadow-sm">
                         <input type="checkbox" name="flags" value="{{ flag_id }}" 
                             class="h-4 w-4 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-600 transition-colors"
-                            {% if flag_id in selected_flags|map('int') %}checked{% endif %}>
+                            {% if flag_id in selected_flags %}checked{% endif %}>
                         <span class="text-sm font-medium text-emerald-800">{{ flag_name }}</span>
                     </label>
                     {% endfor %}
@@ -84,6 +84,9 @@
                         <th scope="col" class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-emerald-800">
                             Disciplinary Action (Last 2 Years)
                         </th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-emerald-800">
+                            Shifts (Last Year)
+                        </th>
                         <th scope="col" class="relative px-6 py-4">
                             <span class="sr-only">Actions</span>
                         </th>
@@ -105,6 +108,8 @@
                                 {% elif emp.flag_color == 'Yellow' %}bg-yellow-50 text-yellow-700 border-yellow-200
                                 {% elif emp.flag_color == 'Purple' %}bg-purple-50 text-purple-700 border-purple-200
                                 {% elif emp.flag_color == 'Brown' %}bg-amber-50 text-amber-800 border-amber-200
+                                {% elif emp.flag_color == 'Green' %}bg-green-50 text-green-700 border-green-200
+                                {% elif emp.flag_color == 'No Flag' %}bg-gray-50 text-gray-500 border-gray-200
                                 {% else %}bg-gray-100 text-gray-800 border-gray-200{% endif %}">
                                 {{ emp.flag_color }}
                             </span>
@@ -136,6 +141,9 @@
                                 No
                             </span>
                             {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                            {{ emp.shifts_last_year }}
                         </td>
                         <td class="whitespace-nowrap px-6 py-4 text-right">
                             <a href="/staffing-employee-dashboard?employee_id={{ emp.employee_id }}" target="_blank" class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 hover:text-indigo-800 transition-colors border border-indigo-100 shadow-sm">
