@@ -1,0 +1,469 @@
+{% extends "base.html" %}
+{% block title %}No Show Report — GoLive Staffing{% endblock %}
+{% block content %}
+<div class="space-y-8">
+    <!-- Header Section with vibrant gradient and glassmorphism highlight -->
+    <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-700 via-emerald-600 to-teal-500 text-white shadow-xl">
+        <div class="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_30%_30%,white,transparent_40%)]"></div>
+        <div class="relative px-8 py-10 lg:px-12 lg:py-12 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div class="space-y-4">
+                <nav class="flex" aria-label="Breadcrumb">
+                    <ol class="flex items-center space-x-2 text-sm font-medium text-emerald-100/80">
+                        <li><a href="/" class="hover:text-white transition-colors">Home</a></li>
+                        <li><span class="px-1">/</span></li>
+                        <li><span class="text-emerald-100/80">Reports</span></li>
+                        <li><span class="px-1">/</span></li>
+                        <li class="text-white font-semibold">No Show Report</li>
+                    </ol>
+                </nav>
+                <h1 class="brand-serif text-4xl md:text-5xl font-bold leading-tight">No Show Report</h1>
+                <p class="text-emerald-50/90 text-lg max-w-2xl">
+                    Identify, audit, and email details of all employee timesheets marked with No Show status.
+                </p>
+            </div>
+            <!-- Live Action Badge -->
+            <div class="flex items-center gap-3 bg-white/10 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/20 self-start md:self-auto">
+                <span class="relative flex h-3.5 w-3.5">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-400"></span>
+                </span>
+                <span class="text-sm font-semibold tracking-wide">Automated: Every Monday @ 9:00 AM</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Filters and Actions Controls -->
+    <div class="grid gap-6 lg:grid-cols-4 items-start">
+        <div class="lg:col-span-1 space-y-6">
+            <div class="rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm space-y-6">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Report Parameters
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="start_date" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Start Date</label>
+                            <input type="date" id="start_date" value="{{ start_date }}" 
+                                class="w-full rounded-xl border-emerald-100 bg-emerald-50/20 px-4 py-2.5 text-gray-900 font-medium focus:border-emerald-500 focus:ring-emerald-500 transition-colors">
+                        </div>
+                        <div>
+                            <label for="end_date" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">End Date</label>
+                            <input type="date" id="end_date" value="{{ end_date }}"
+                                class="w-full rounded-xl border-emerald-100 bg-emerald-50/20 px-4 py-2.5 text-gray-900 font-medium focus:border-emerald-500 focus:ring-emerald-500 transition-colors">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-gray-100 space-y-3">
+                    <!-- Refresh Button -->
+                    <button id="apply_filters" 
+                        class="w-full rounded-xl bg-emerald-600 px-4 py-3 font-semibold text-white shadow-md hover:bg-emerald-700 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        <span>Run Report</span>
+                    </button>
+
+                    <!-- Pull Last Mon-Sun Button (Testing Requirement) -->
+                    <button id="pull_prev_week" 
+                        class="w-full rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 font-semibold text-emerald-800 hover:bg-emerald-100 active:bg-emerald-200 transition-colors flex items-center justify-center gap-2"
+                        title="Quick-select previous Monday to Sunday date range">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span>Previous Mon - Sun</span>
+                    </button>
+
+                    <!-- Email Trigger Button -->
+                    <button id="email_report" 
+                        class="w-full rounded-xl bg-teal-600 px-4 py-3 font-semibold text-white shadow-md hover:bg-teal-700 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        <span>Email Report</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Summary KPI Card -->
+            <div id="summary_card" class="hidden rounded-3xl bg-gray-900 text-white p-6 shadow-xl relative overflow-hidden transition-all duration-300">
+                <div class="relative z-10">
+                    <p class="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">No Show Instances</p>
+                    <div class="text-5xl font-black tracking-tight" id="total_count">0</div>
+                    <p class="text-gray-500 text-xs mt-3 leading-relaxed">Timesheets matched for selected date range.</p>
+                </div>
+                <div class="absolute -right-4 -bottom-4 opacity-10 text-emerald-500">
+                    <svg class="w-28 h-28" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Report Display -->
+        <div class="lg:col-span-3">
+            <div class="rounded-3xl border border-emerald-100 bg-white shadow-md overflow-hidden min-h-[450px] flex flex-col justify-between">
+                <!-- States Container -->
+                <div class="flex-grow">
+                    <!-- Loading State -->
+                    <div id="loading_state" class="flex flex-col items-center justify-center py-24">
+                        <div class="relative flex items-center justify-center">
+                            <div class="animate-spin rounded-full h-16 w-16 border-4 border-emerald-500/20 border-t-emerald-600"></div>
+                            <svg class="w-6 h-6 text-emerald-600 absolute animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        </div>
+                        <p class="text-gray-500 mt-6 font-semibold tracking-wide">Compiling No Show Report...</p>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="empty_state" class="hidden flex flex-col items-center justify-center py-20 px-8 text-center">
+                        <div class="bg-emerald-50 p-6 rounded-full mb-6">
+                            <svg class="w-12 h-12 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900">No Shows Clear</h3>
+                        <p class="text-gray-500 mt-2 max-w-sm">No employee timesheets with a No Show status were recorded for this period.</p>
+                    </div>
+
+                    <!-- Error State -->
+                    <div id="error_state" class="hidden flex flex-col items-center justify-center py-20 px-8 text-center">
+                        <div class="bg-red-50 p-6 rounded-full mb-6">
+                            <svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900 font-serif">Report Generation Error</h3>
+                        <p id="error_message" class="text-gray-500 mt-2 max-w-md"></p>
+                    </div>
+
+                    <!-- Results List -->
+                    <div id="results_container" class="hidden space-y-6 p-6">
+                        <!-- Cards will be dynamically injected here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Alert Popup (Custom Notification Alert) -->
+<div id="alert_modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm px-4">
+    <div class="bg-white rounded-3xl border border-gray-100 shadow-2xl p-6 max-w-md w-full scale-95 transition-transform duration-300 space-y-4">
+        <div class="flex items-center gap-3" id="alert_header">
+            <!-- Icon injected here -->
+            <h3 class="text-xl font-bold" id="alert_title">Alert</h3>
+        </div>
+        <p class="text-gray-600 text-sm leading-relaxed" id="alert_body"></p>
+        <div class="flex justify-end pt-2">
+            <button onclick="closeAlert()" class="px-5 py-2.5 bg-gray-900 text-white rounded-xl font-semibold text-sm hover:bg-gray-800 transition-colors">
+                Dismiss
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const startDateInput = document.getElementById('start_date');
+        const endDateInput = document.getElementById('end_date');
+        const applyBtn = document.getElementById('apply_filters');
+        const pullPrevWeekBtn = document.getElementById('pull_prev_week');
+        const emailBtn = document.getElementById('email_report');
+        
+        const loadingState = document.getElementById('loading_state');
+        const emptyState = document.getElementById('empty_state');
+        const errorState = document.getElementById('error_state');
+        const errorMessage = document.getElementById('error_message');
+        const resultsContainer = document.getElementById('results_container');
+        const summaryCard = document.getElementById('summary_card');
+        const totalCount = document.getElementById('total_count');
+
+        let reportData = [];
+
+        // Helper to calculate previous Monday - Sunday range
+        function getPrevWeekRange() {
+            const today = new Date();
+            // Get day index: 0 is Sunday, 1 is Monday, ..., 6 is Saturday
+            let day = today.getDay();
+            
+            // Adjust day to match: 0 is Monday, 6 is Sunday
+            // Date.getDay() -> Sun:0, Mon:1, Tue:2...
+            let daysSinceMonday = day === 0 ? 6 : day - 1;
+            
+            const lastMonday = new Date(today);
+            lastMonday.setDate(today.getDate() - daysSinceMonday - 7);
+            
+            const lastSunday = new Date(lastMonday);
+            lastSunday.setDate(lastMonday.getDate() + 6);
+            
+            return {
+                start: formatDate(lastMonday),
+                end: formatDate(lastSunday)
+            };
+        }
+
+        function formatDate(date) {
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        async function fetchReport() {
+            loadingState.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            errorState.classList.add('hidden');
+            resultsContainer.classList.add('hidden');
+            summaryCard.classList.add('hidden');
+
+            const start = startDateInput.value;
+            const end = endDateInput.value;
+
+            try {
+                const response = await fetch(`/no-show-report/data?start_date=${start}&end_date=${end}`);
+                const result = await response.json();
+
+                if (response.ok) {
+                    reportData = result.data || [];
+                    renderReport();
+                } else {
+                    throw new Error(result.error || 'Failed to query no-show report data.');
+                }
+            } catch (err) {
+                errorMessage.textContent = err.message;
+                errorState.classList.remove('hidden');
+                loadingState.classList.add('hidden');
+                resultsContainer.classList.add('hidden');
+                summaryCard.classList.add('hidden');
+            }
+        }
+
+        function renderReport() {
+            resultsContainer.innerHTML = '';
+            totalCount.textContent = reportData.length;
+
+            if (reportData.length === 0) {
+                emptyState.classList.remove('hidden');
+                loadingState.classList.add('hidden');
+                resultsContainer.classList.add('hidden');
+                summaryCard.classList.add('hidden');
+                return;
+            }
+
+            reportData.forEach(row => {
+                const card = document.createElement('div');
+                card.className = "rounded-2xl border border-gray-100 bg-white p-6 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all space-y-4";
+
+                // Format shift datetime display
+                let timeDisplay = row.event_date;
+                if (row.shift_start) {
+                    const timePart = row.shift_start.split(" ")[1];
+                    timeDisplay += ` @ ${timePart.substring(0, 5)}`;
+                }
+
+                // Compile all note blocks
+                let notesHtml = '';
+                
+                // 1. Employee Timesheet Notes
+                if (row.employee_notes) {
+                    notesHtml += `
+                        <div class="bg-gray-50/50 rounded-xl p-3 border border-gray-100">
+                            <span class="text-[10px] font-bold text-blue-600 uppercase tracking-wider block mb-1">Employee Timesheet Note</span>
+                            <p class="text-sm text-gray-700">${row.employee_notes}</p>
+                        </div>
+                    `;
+                }
+
+                // 2. Client Timesheet Notes
+                if (row.client_notes) {
+                    notesHtml += `
+                        <div class="bg-gray-50/50 rounded-xl p-3 border border-gray-100">
+                            <span class="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block mb-1">Client Timesheet Note</span>
+                            <p class="text-sm text-gray-700">${row.client_notes}</p>
+                        </div>
+                    `;
+                }
+
+                // 3. Placement Cancel Notes
+                if (row.cancel_notes) {
+                    notesHtml += `
+                        <div class="bg-red-50/30 rounded-xl p-3 border border-red-100/50">
+                            <span class="text-[10px] font-bold text-red-600 uppercase tracking-wider block mb-1">Placement Cancel Notes</span>
+                            <p class="text-sm text-gray-700">${row.cancel_notes}</p>
+                        </div>
+                    `;
+                }
+
+                // 4. Daily Report Notes
+                if (row.daily_report_notes) {
+                    notesHtml += `
+                        <div class="bg-emerald-50/30 rounded-xl p-3 border border-emerald-100/50">
+                            <span class="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block mb-1">Daily Report Notes</span>
+                            <p class="text-sm text-gray-700">${row.daily_report_notes}</p>
+                        </div>
+                    `;
+                }
+
+                // 5. Note to Employee
+                if (row.note_to_employee) {
+                    notesHtml += `
+                        <div class="bg-gray-50/50 rounded-xl p-3 border border-gray-100">
+                            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Note to Employee</span>
+                            <p class="text-sm text-gray-700">${row.note_to_employee}</p>
+                        </div>
+                    `;
+                }
+
+                // 6. Additional Coordinator/Payroll notes
+                if (row.additional_notes && row.additional_notes.length > 0) {
+                    row.additional_notes.forEach(note => {
+                        const isPayroll = note.type.includes('Payroll');
+                        notesHtml += `
+                            <div class="bg-gray-50/50 rounded-xl p-3 border border-gray-100">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-[10px] font-bold ${isPayroll ? 'text-emerald-700' : 'text-amber-700'} uppercase tracking-wider block">${note.type}</span>
+                                    <span class="text-[9px] font-medium text-gray-400">${note.date} by ${note.author}</span>
+                                </div>
+                                <p class="text-sm text-gray-700">${note.note}</p>
+                            </div>
+                        `;
+                    });
+                }
+
+                const notesSection = notesHtml 
+                    ? `<div class="grid gap-3 md:grid-cols-2 pt-2">${notesHtml}</div>`
+                    : `<div class="text-sm text-gray-400 italic">No notes found for this shift or timesheet</div>`;
+
+                const cancelReasonBadge = row.cancel_reason === 14 
+                    ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">No Call / No Show Code</span>'
+                    : '';
+
+                card.innerHTML = `
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+                        <div class="space-y-1">
+                            <a href="https://golive.culinarystaffing.com/employees/${row.employee_id}" target="_blank" 
+                                class="text-lg font-bold text-emerald-800 hover:text-emerald-900 hover:underline flex items-center gap-1.5">
+                                ${row.employee_name}
+                                <svg class="w-4 h-4 text-emerald-600/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                            </a>
+                            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 font-medium">
+                                <span class="flex items-center gap-1">
+                                    <strong>Shift Date:</strong> ${timeDisplay}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-800 border border-gray-200 uppercase tracking-wide">
+                                Emp status: ${row.employee_worked || 'N/A'}
+                            </span>
+                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-800 border border-gray-200 uppercase tracking-wide">
+                                Client status: ${row.client_worked || 'N/A'}
+                            </span>
+                            ${cancelReasonBadge}
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <p class="text-sm font-bold text-gray-700">
+                            Client Account: <span class="text-gray-900">${row.client_name}</span> ${row.venue_name ? ` — <span class="text-gray-500">${row.venue_name}</span>` : ''}
+                        </p>
+                        ${notesSection}
+                    </div>
+                `;
+
+                resultsContainer.appendChild(card);
+            });
+
+            summaryCard.classList.remove('hidden');
+            resultsContainer.classList.remove('hidden');
+            loadingState.classList.add('hidden');
+            emptyState.classList.add('hidden');
+            errorState.classList.add('hidden');
+        }
+
+        async function triggerEmail() {
+            const start = startDateInput.value;
+            const end = endDateInput.value;
+
+            // Disable button during loading
+            emailBtn.disabled = true;
+            const oldHtml = emailBtn.innerHTML;
+            emailBtn.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Sending...</span>
+            `;
+
+            try {
+                const response = await fetch(`/no-show-report/send-email?start_date=${start}&end_date=${end}`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    let alertMsg = `Email report successfully dispatched to: ${result.recipient}`;
+                    if (result.mocked) {
+                        alertMsg = `[Local Test - Mock Sent]\n${result.info}`;
+                    }
+                    showAlert("Email Dispatched Successfully", alertMsg, "success");
+                } else {
+                    throw new Error(result.error || 'Failed to dispatch report email.');
+                }
+            } catch (err) {
+                showAlert("Email Dispatch Failed", err.message, "error");
+            } finally {
+                emailBtn.disabled = false;
+                emailBtn.innerHTML = oldHtml;
+            }
+        }
+
+        // Click listeners
+        applyBtn.addEventListener('click', fetchReport);
+        
+        pullPrevWeekBtn.addEventListener('click', () => {
+            const range = getPrevWeekRange();
+            startDateInput.value = range.start;
+            endDateInput.value = range.end;
+            fetchReport();
+        });
+
+        emailBtn.addEventListener('click', triggerEmail);
+
+        // Initial fetch on load
+        fetchReport();
+    });
+
+    // Alert Modal functions
+    function showAlert(title, body, type) {
+        const modal = document.getElementById('alert_modal');
+        const header = document.getElementById('alert_header');
+        const titleEl = document.getElementById('alert_title');
+        const bodyEl = document.getElementById('alert_body');
+
+        titleEl.textContent = title;
+        bodyEl.textContent = body;
+
+        let icon = '';
+        if (type === 'success') {
+            icon = `
+                <div class="h-10 w-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-800">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+            `;
+            titleEl.className = "text-xl font-bold text-emerald-900";
+        } else {
+            icon = `
+                <div class="h-10 w-10 flex items-center justify-center rounded-full bg-red-100 text-red-800">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+            `;
+            titleEl.className = "text-xl font-bold text-red-900";
+        }
+
+        // Clean out old icons and prepend the new one
+        const oldIcon = header.querySelector('div');
+        if (oldIcon) oldIcon.remove();
+        header.insertAdjacentHTML('afterbegin', icon);
+
+        modal.classList.remove('hidden');
+    }
+
+    function closeAlert() {
+        document.getElementById('alert_modal').classList.add('hidden');
+    }
+</script>
+{% endblock %}
