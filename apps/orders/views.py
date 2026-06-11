@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -176,10 +177,10 @@ async def extract_order(request: Request):
     # If client_id is not explicitly provided, try to detect from text
     is_dictation = data.get('is_dictation', False)
     if not client_id:
-        client_id = detect_client_from_text(text, is_dictation=is_dictation)
+        client_id = await asyncio.to_thread(detect_client_from_text, text, is_dictation)
         
     if not client_id:
-        active_clients = get_active_clients()
+        active_clients = await asyncio.to_thread(get_active_clients)
         return JSONResponse({
             "status": "error", 
             "message": "Could not auto-detect client from email. Please select a client.",
@@ -188,7 +189,7 @@ async def extract_order(request: Request):
         }, status_code=400)
     
     # Build knowledge base for the detected/selected client
-    client_context = build_client_kb(client_id)
+    client_context = await asyncio.to_thread(build_client_kb, client_id)
     if not client_context:
         return JSONResponse({"status": "error", "message": "Failed to build knowledge base for client."}, status_code=500)
     
@@ -197,8 +198,8 @@ async def extract_order(request: Request):
     if not extracted_data.get('basic_information'):
         return JSONResponse({"status": "error", "message": "Failed to extract order data."}, status_code=500)
         
-    normalize_extracted_positions(extracted_data)
-    resolve_existing_shifts_for_extraction(extracted_data, client_id)
+    await asyncio.to_thread(normalize_extracted_positions, extracted_data)
+    await asyncio.to_thread(resolve_existing_shifts_for_extraction, extracted_data, client_id)
     
     return JSONResponse({"status": "success", "data": extracted_data, "client_kb": client_context})
 
@@ -210,7 +211,7 @@ async def publish_order(request: Request):
         
     data = await request.json()
     # Execute the insertion logic
-    result = create_order(data, user.get('id', 1))
+    result = await asyncio.to_thread(create_order, data, user.get('id', 1))
     
     if result.get("status") == "error":
         return JSONResponse(result, status_code=400)

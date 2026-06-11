@@ -548,7 +548,7 @@ async def client_profile_changes_monitoring_loop():
                                 found_changes = True
                                 print(f"[Client Profile Changes] {client_name}: "
                                       f"{_FIELD_LABELS.get(field, field)} "
-                                      f"'{_display_val(field, old_val)}' → '{_display_val(field, new_val)}'")
+                                      f"'{_display_val(field, old_val)}' -> '{_display_val(field, new_val)}'")
                     _client_cache = current_clients
 
                     # ── Venue name changes ──
@@ -573,7 +573,7 @@ async def client_profile_changes_monitoring_loop():
                                 found_changes = True
                                 print(f"[Client Profile Changes] Venue change for "
                                       f"{current_v['client_name']}: "
-                                      f"'{cached_v.get('venue_name')}' → '{current_v.get('venue_name')}'")
+                                      f"'{cached_v.get('venue_name')}' -> '{current_v.get('venue_name')}'")
                         _venue_cache = current_venues
 
                     # ── Late fee policy changes ──
@@ -608,7 +608,7 @@ async def client_profile_changes_monitoring_loop():
                                 _changes_log.append(change)
                                 found_changes = True
                                 print(f"[Client Profile Changes] Late fee change for "
-                                      f"{client_name}: {old_names} → {new_names}")
+                                      f"{client_name}: {old_names} -> {new_names}")
                         _late_fee_cache = current_late_fees
 
                     # Always save updated cache + any new changes

@@ -335,16 +335,38 @@ def get_staffing_manager_for_client(client_id: int) -> str | None:
         print(f"Error fetching staffing manager for client {client_id}: {e}")
     return None
 
+_staffing_managers_cache = {}  # {client_id: (email, cache_time)}
+
 def get_staffing_managers_for_clients(client_ids: list[int]) -> tuple[dict[int, str], bool]:
     """Queries the database to find the staffing manager email associated with the active venues of multiple clients.
     Falls back to the client's staff_id account manager if no active venue staffing manager is found.
     Returns (resolved_dict, success_bool).
+    Uses a 5-minute TTL cache to avoid hitting the database on every call.
     """
     if not client_ids:
         return {}, True
         
-    engine = _engine()
+    import time
+    now = time.time()
+    ttl = 300  # 5 minutes
+    
     resolved = {}
+    missing_ids = []
+    
+    for cid in client_ids:
+        if cid in _staffing_managers_cache:
+            email, cache_time = _staffing_managers_cache[cid]
+            if now - cache_time < ttl:
+                if email:  # only add to resolved if it's not None
+                    resolved[cid] = email
+                continue
+        missing_ids.append(cid)
+        
+    if not missing_ids:
+        return resolved, True
+        
+    engine = _engine()
+    db_resolved = {}
     
     # 1. Query active venues
     sql = text("""
@@ -359,15 +381,15 @@ def get_staffing_managers_for_clients(client_ids: list[int]) -> tuple[dict[int, 
     
     try:
         with engine.connect() as conn:
-            res = conn.execute(sql, {"client_ids": tuple(client_ids)}).fetchall()
+            res = conn.execute(sql, {"client_ids": tuple(missing_ids)}).fetchall()
             for row in res:
                 cid, email = row
-                if cid not in resolved:
-                    resolved[cid] = email
+                if cid not in db_resolved:
+                    db_resolved[cid] = email
                     
             # 2. Find fallback for clients not resolved yet
-            missing_ids = [cid for cid in client_ids if cid not in resolved]
-            if missing_ids:
+            still_missing = [cid for cid in missing_ids if cid not in db_resolved]
+            if still_missing:
                 fallback_sql = text("""
                     SELECT c.client_id, u.email
                     FROM client c
@@ -375,14 +397,22 @@ def get_staffing_managers_for_clients(client_ids: list[int]) -> tuple[dict[int, 
                     WHERE c.client_id IN :missing_ids
                       AND u.email IS NOT NULL
                 """)
-                fallback_res = conn.execute(fallback_sql, {"missing_ids": tuple(missing_ids)}).fetchall()
+                fallback_res = conn.execute(fallback_sql, {"missing_ids": tuple(still_missing)}).fetchall()
                 for row in fallback_res:
                     cid, email = row
-                    if cid not in resolved:
-                        resolved[cid] = email
+                    if cid not in db_resolved:
+                        db_resolved[cid] = email
+                        
+            # Update cache and resolved dict
+            for cid in missing_ids:
+                email = db_resolved.get(cid)
+                _staffing_managers_cache[cid] = (email, now)
+                if email:
+                    resolved[cid] = email
+                    
             return resolved, True
     except Exception as e:
         print(f"Error fetching staffing managers for clients {client_ids}: {e}")
-        return {}, False
+        return resolved, False
 
 
