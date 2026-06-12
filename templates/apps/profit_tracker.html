@@ -259,6 +259,7 @@
     .bg-comm { background: #14b8a6; }
     .bg-tax { background: #f87171; }
     .bg-other { background: #c084fc; }
+    .bg-sal { background: #e879f9; }
 
     .pt-legend {
         display: flex;
@@ -807,6 +808,10 @@
                 <option value="">-- Select Client (Optional) --</option>
             </select>
         </div>
+        <div class="pt-control-group">
+            <label for="salariesOverhead">Weekly Salaries & Overhead ($)</label>
+            <input type="number" id="salariesOverhead" class="pt-input" placeholder="0.00" min="0" step="0.01" style="width: 180px;" oninput="if(allClientBreakdown.length){ updateSummaryTotals(false); renderClientTable(); }">
+        </div>
         <button class="pt-btn" id="btnToggleTracking" onclick="toggleAccountTrackingMode()">Account Tracking</button>
         <button class="pt-btn" onclick="fetchData()">Calculate</button>
     </div>
@@ -869,6 +874,12 @@
                 <div class="pt-card-percent" id="pctOtherWork">0%</div>
             </div>
 
+            <div class="pt-card expense">
+                <div class="pt-card-title">Salaries & Overhead</div>
+                <div class="pt-card-value" id="valSalaries">$0.00</div>
+                <div class="pt-card-percent" id="pctSalaries">0%</div>
+            </div>
+
             <div class="pt-card profit">
                 <div class="pt-card-title">Gross Profit</div>
                 <div class="pt-card-value profit-val" id="valProfit">$0.00</div>
@@ -887,6 +898,7 @@
                 <div class="pt-progress-segment bg-comm" id="barCommissions" style="width: 0%" title="Commissions"></div>
                 <div class="pt-progress-segment bg-tax" id="barTax" style="width: 0%" title="Payroll Tax"></div>
                 <div class="pt-progress-segment bg-other" id="barOther" style="width: 0%" title="Other Work"></div>
+                <div class="pt-progress-segment bg-sal" id="barSal" style="width: 0%" title="Salaries & Overhead"></div>
                 <div class="pt-progress-segment bg-profit" id="barProfit" style="width: 0%" title="Profit"></div>
             </div>
             <div class="pt-legend">
@@ -899,6 +911,7 @@
                 <div class="pt-legend-item"><div class="pt-legend-dot bg-comm"></div> Commissions</div>
                 <div class="pt-legend-item"><div class="pt-legend-dot bg-tax"></div> Payroll Tax</div>
                 <div class="pt-legend-item"><div class="pt-legend-dot bg-other"></div> Other Work</div>
+                <div class="pt-legend-item"><div class="pt-legend-dot bg-sal"></div> Salaries & Overhead</div>
             </div>
         </div>
 
@@ -1059,6 +1072,16 @@
     let currentSortKey = 'total_bill';
     let currentSortDir = 'desc';
 
+    function computeSalariesAmount() {
+        const weekly = parseFloat(document.getElementById('salariesOverhead').value) || 0;
+        if (!weekly) return 0;
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        if (!startDate || !endDate) return 0;
+        const days = (new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24) + 1;
+        return weekly * days / 7;
+    }
+
     const tierRates = { T1: 0.0195, T2: 0.0293, T3: 0.039 };
     let clientTiers = {}; // clientName -> 'T1' | 'T2' | 'T3'
     let accountTrackingModeActive = false;
@@ -1132,7 +1155,8 @@
                 ? c.total_bill * tierRates[clientTiers[c.client_name] || 'T2']
                 : c.bt_fee;
         });
-        const profit = total_bill - gross_pay - msp_fee - wc_fee - cc_fee - bt_fee - commissions - payroll_tax - globalOtherWork;
+        const salariesAmount = computeSalariesAmount();
+        const profit = total_bill - gross_pay - msp_fee - wc_fee - cc_fee - bt_fee - commissions - payroll_tax - globalOtherWork - salariesAmount;
 
         setContent('valTotalBill',    formatCurrency(total_bill));
         setContent('valGrossPay',     formatCurrency(gross_pay));
@@ -1143,16 +1167,18 @@
         setContent('valCommissions',  formatCurrency(commissions));
         setContent('valPayrollTax',   formatCurrency(payroll_tax));
         setContent('valOtherWork',    formatCurrency(globalOtherWork));
+        setContent('valSalaries',     formatCurrency(salariesAmount));
         setContent('valProfit',       formatCurrency(profit));
 
         const pctGross = formatPercent(gross_pay,       total_bill);
         const pctMsp   = formatPercent(msp_fee,         total_bill);
-        const pctWc    = formatPercent(wc_fee,          total_bill);
+        const pctWc    = formatPercent(wc_fee,          gross_pay);
         const pctCc    = formatPercent(cc_fee,          total_bill);
         const pctBt    = formatPercent(bt_fee,          total_bill);
         const pctComm  = formatPercent(commissions,     total_bill);
         const pctTax   = formatPercent(payroll_tax,     total_bill);
         const pctOther = formatPercent(globalOtherWork, total_bill);
+        const pctSal   = formatPercent(salariesAmount,  total_bill);
         const pctProfit= formatPercent(profit,          total_bill);
 
         setContent('pctGrossPay',    pctGross);
@@ -1163,6 +1189,7 @@
         setContent('pctCommissions', pctComm);
         setContent('pctPayrollTax',  pctTax);
         setContent('pctOtherWork',   pctOther);
+        setContent('pctSalaries',    pctSal);
         setContent('pctProfit',      pctProfit);
 
         const applyBars = () => {
@@ -1174,6 +1201,7 @@
             setWidth('barCommissions', pctComm);
             setWidth('barTax',         pctTax);
             setWidth('barOther',       pctOther);
+            setWidth('barSal',         pctSal);
             setWidth('barProfit',      pctProfit);
         };
         if (animate) setTimeout(applyBars, 100); else applyBars();
@@ -1348,7 +1376,7 @@
                 ? `<span class="bt-tier-tag">${clientTiers[client.client_name] || 'T2'}</span>`
                 : '';
 
-            const wcPct = client.total_bill > 0 ? (client.wc_fee / client.total_bill * 100).toFixed(2) : 0;
+            const wcPct = client.gross_pay > 0 ? (client.wc_fee / client.gross_pay * 100).toFixed(2) : 0;
 
             const cells = [
                 { key: 'client_name', html: `<td class="font-medium text-white" data-col="client_name">${client.client_name}${fillRateBadge}${tierTag}</td>` },
@@ -1429,7 +1457,7 @@
 
         // Build cell arrays with column visibility
         function makeFootCells(labelText, valuesObj, pctVal) {
-            const wcPct = valuesObj.total_bill > 0 ? (valuesObj.wc_fee / valuesObj.total_bill * 100).toFixed(2) : 0;
+            const wcPct = valuesObj.gross_pay > 0 ? (valuesObj.wc_fee / valuesObj.gross_pay * 100).toFixed(2) : 0;
             const cells = [
                 { key: 'client_name', html: `<td>${labelText}</td>` },
                 { key: 'msp_name', html: `<td></td>` },
@@ -1442,7 +1470,7 @@
                 { key: 'commissions', html: `<td class="text-right">${formatCurrency(valuesObj.commissions)}</td>` },
                 { key: 'payroll_tax', html: `<td class="text-right">${formatCurrency(valuesObj.payroll_tax)}</td>` },
                 { key: 'profit', html: `<td class="text-right">${formatCurrency(valuesObj.profit)}</td>` },
-                { key: 'profit_pct', html: `<td class="text-right">${pctVal}%</td>` }
+                { key: 'profit_pct', html: `<td class="text-right">${pctVal === '—' ? '' : pctVal + '%'}</td>` }
             ];
             return cells.filter(c => visibleColumns.has(c.key)).map(c => c.html).join('');
         }
@@ -1461,8 +1489,15 @@
         owTr.innerHTML = makeFootCells('Other Work', otherWorkVals, '—');
         tfoot.appendChild(owTr);
 
-        // Adjust totals for Other Work
-        sums.profit -= globalOtherWork;
+        // Salaries & Overhead row
+        const salariesAmount = computeSalariesAmount();
+        const salVals = { total_bill: 0, gross_pay: 0, msp_fee: 0, wc_fee: 0, cc_fee: 0, bt_fee: 0, commissions: 0, payroll_tax: 0, profit: -salariesAmount };
+        const salTr = document.createElement('tr');
+        salTr.innerHTML = makeFootCells('Salaries & Overhead', salVals, '—');
+        tfoot.appendChild(salTr);
+
+        // Adjust totals for Other Work + Salaries & Overhead
+        sums.profit -= globalOtherWork + salariesAmount;
         const finalProfitPct = sums.total_bill > 0 ? (sums.profit / sums.total_bill * 100).toFixed(1) : '0.0';
 
         // Totals row
@@ -1648,7 +1683,7 @@
                     data.positions.forEach(pos => {
                         const tr = document.createElement('tr');
                         const pctColor = pos.profit_pct >= 0 ? 'color: var(--pt-success)' : 'color: var(--pt-danger)';
-                        const wcPct = pos.total_bill > 0 ? (pos.wc_fee / pos.total_bill * 100).toFixed(2) : 0;
+                        const wcPct = pos.gross_pay > 0 ? (pos.wc_fee / pos.gross_pay * 100).toFixed(2) : 0;
                         tr.innerHTML = `
                             <td class="font-medium text-white">${pos.position_name}</td>
                             <td class="text-right text-sky-300">${formatCurrency(pos.bill_rate)}</td>
@@ -1765,7 +1800,7 @@
                     if (visibleColumns.has(col.key)) {
                         if (col.key === 'client_name') row.push('"' + label + '"');
                         else if (col.key === 'msp_name') row.push('""');
-                        else if (col.key === 'profit_pct') row.push('"' + pctVal + '%"');
+                        else if (col.key === 'profit_pct') row.push(pctVal === '—' ? '""' : '"' + pctVal + '%"');
                         else {
                             row.push('"' + valuesObj[col.key].toFixed(2) + '"');
                         }
@@ -1775,11 +1810,15 @@
             };
 
             rows.push(makeRow(`Average (${n} clients)`, avgVals, avgProfitPct));
-            
+
             const otherWorkVals = { total_bill: 0, gross_pay: 0, msp_fee: 0, wc_fee: 0, cc_fee: 0, bt_fee: 0, commissions: 0, payroll_tax: 0, profit: -globalOtherWork };
             rows.push(makeRow('Other Work', otherWorkVals, '—'));
-            
-            sums.profit -= globalOtherWork;
+
+            const salariesAmount = computeSalariesAmount();
+            const salVals = { total_bill: 0, gross_pay: 0, msp_fee: 0, wc_fee: 0, cc_fee: 0, bt_fee: 0, commissions: 0, payroll_tax: 0, profit: -salariesAmount };
+            rows.push(makeRow('Salaries & Overhead', salVals, '—'));
+
+            sums.profit -= globalOtherWork + salariesAmount;
             const finalProfitPct = sums.total_bill > 0 ? (sums.profit / sums.total_bill * 100).toFixed(1) : '0.0';
             rows.push(makeRow('Totals', sums, finalProfitPct));
         }
