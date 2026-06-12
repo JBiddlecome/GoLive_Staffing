@@ -328,7 +328,7 @@ def _match_position_key(name: str) -> str | None:
 
 
 def _evaluate_positions_against_levels(
-    ai_positions: dict, requested_positions: str, restrict_level_3: bool = False, restriction_reasons: list[str] = None
+    ai_positions: dict, requested_positions: str, restrict_level_3: bool = False, restriction_reasons: list[str] = None, restrict_event_supervisor: bool = False, event_supervisor_reasons: list[str] = None
 ) -> tuple[str, str, list[str]]:
     """Compare AI-determined levels against requested position levels.
 
@@ -356,8 +356,14 @@ def _evaluate_positions_against_levels(
         reasons = pos_data.get("reasons", [])
         base_name = POSITION_KEY_TO_NAME.get(key, req_name)
 
-        if restrict_level_3:
-            if key in ["event_supervisor"]:
+        if key in ["event_supervisor"]:
+            if restrict_event_supervisor:
+                denied.append(req_name)
+                details.append(
+                    f"❌ {req_name} → NOT approved. Restricted from Event Supervisor due to: {', '.join(event_supervisor_reasons or [])}."
+                )
+                continue
+            if restrict_level_3:
                 denied.append(req_name)
                 details.append(
                     f"❌ {req_name} → NOT approved. Restricted from Level 3/Management positions due to: {', '.join(restriction_reasons or [])}."
@@ -425,7 +431,7 @@ def _evaluate_positions_against_levels(
     return status, detail_text, approved
 
 
-async def ai_analyze(resume_text, experience_text, requested_positions, restrict_level_3=False, restriction_reasons=None):
+async def ai_analyze(resume_text, experience_text, requested_positions, restrict_level_3=False, restriction_reasons=None, restrict_event_supervisor=False, event_supervisor_reasons=None):
     from apps.api_usage_tracker import log_api_usage
     log_api_usage("Position Requests")
     
@@ -457,7 +463,7 @@ async def ai_analyze(resume_text, experience_text, requested_positions, restrict
     summary = parsed.get("candidate_summary", {})
 
     status, detail_text, approved = _evaluate_positions_against_levels(
-        ai_positions, requested_positions, restrict_level_3, restriction_reasons
+        ai_positions, requested_positions, restrict_level_3, restriction_reasons, restrict_event_supervisor, event_supervisor_reasons
     )
 
     # Prepend candidate overview
@@ -552,6 +558,15 @@ async def evaluate_candidate(name, phone, resume_url, experience_text, requested
             """)
             has_noshow = conn.execute(noshow_sql, {"emp_id": emp_id}).fetchone() is not None
             
+            shift_count_sql = text("""
+                SELECT COUNT(t.timesheet_id) 
+                FROM timesheet t
+                WHERE t.employee_id = :emp_id 
+                  AND t.employee_worked IN ('WORKED', 'SENTHOME')
+            """)
+            shift_count_row = conn.execute(shift_count_sql, {"emp_id": emp_id}).fetchone()
+            shift_count = shift_count_row[0] if shift_count_row else 0
+            
             restrict_level_3 = False
             restriction_reasons = []
 
@@ -563,6 +578,12 @@ async def evaluate_candidate(name, phone, resume_url, experience_text, requested
                 restrict_level_3 = True
                 restriction_reasons = reasons
                 
+            restrict_event_supervisor = False
+            event_supervisor_reasons = []
+            if shift_count < 20:
+                restrict_event_supervisor = True
+                event_supervisor_reasons.append(f"Insufficient completed shifts ({shift_count}/20)")
+                
     except Exception as e:
         engine.dispose()
         return "Consider", f"Database error during checking: {str(e)}"
@@ -570,7 +591,7 @@ async def evaluate_candidate(name, phone, resume_url, experience_text, requested
         engine.dispose()
         
     resume_text = await extract_text_from_url(resume_url) if resume_url else "No resume attached."
-    status, analysis_text, _ = await ai_analyze(resume_text, experience_text, requested_positions, restrict_level_3, restriction_reasons)
+    status, analysis_text, _ = await ai_analyze(resume_text, experience_text, requested_positions, restrict_level_3, restriction_reasons, restrict_event_supervisor, event_supervisor_reasons)
     return status, analysis_text
 
 async def fetch_submissions():
