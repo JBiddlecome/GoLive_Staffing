@@ -12,7 +12,17 @@
       "Bash(.venvScriptspython.exe -c ' *)",
       "Bash(claude mcp *)",
       "Bash(Get-ChildItem *)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\jakeb\\\\OneDrive\\\\Documents\\\\GitHub\\\\GoLive Code\\\\golive_code_02-19-26\\\\golive_code_2_19_26\\\\culinary-be\" -Recurse -Filter \"ToolsController.php\" | ForEach-Object { Write-Host \"$\\($_.FullName\\) - $\\($_.Length\\) bytes\" })",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('apps/orders/db_operations.py'\\).read\\(\\)\\); print\\('Syntax OK'\\)\")",
+      "Bash(python -c \"import sys; print\\(sys.executable\\)\")",
+      "Bash(pip show *)",
+      "Bash(python *)",
+      "PowerShell(python -c \"import openpyxl; print\\('ok'\\)\")",
+      "PowerShell(Get-Command *)",
+      "PowerShell(& \"C:\\\\Users\\\\jakeb\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" \"C:\\\\Users\\\\jakeb\\\\Downloads\\\\analyze_history.py\")",
+      "PowerShell(& \"C:\\\\Users\\\\jakeb\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" \"C:\\\\Users\\\\jakeb\\\\Downloads\\\\analyze_history2.py\")",
+      "Bash(grep -n \"class EmployeeNote\\\\|public \\\\$\\\\|->type\" \"C:\\\\Users\\\\jakeb\\\\OneDrive\\\\Documents\\\\GitHub\\\\GoLive Code\\\\golive_code_02-19-26\\\\golive_code_2_19_26\\\\culinary-be\\\\common\\\\models\\\\EmployeeNote.php\")"
     ]
   }
 }

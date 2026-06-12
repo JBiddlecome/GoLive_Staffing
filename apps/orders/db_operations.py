@@ -1,6 +1,158 @@
+import json
+import os
+import requests
 from sqlalchemy import text
 from apps.position_requests.scheduler import _engine
 from datetime import datetime
+
+# GoLive shift_employee.cancel_reason codes (see golive_database_reference.md §3.4)
+CANCEL_REASON_CLIENT_CANCELLED = 4
+CANCEL_REASON_CLIENT_DECREASED_STAFF = 5
+
+CANCEL_REASON_LABELS = {
+    CANCEL_REASON_CLIENT_CANCELLED: "Client Cancelled Shift",
+    CANCEL_REASON_CLIENT_DECREASED_STAFF: "Client Decreased Staff Needed",
+}
+
+
+def _fmt_shift_time(t):
+    try:
+        return t.strftime("%I:%M %p").lstrip("0").lower()
+    except Exception:
+        return str(t)
+
+
+def _cancel_shift_employee(conn, shift_employee_id, employee_id, reason_code, user_id):
+    """
+    Cancels an employee's shift assignment the same way GoLive does:
+    keeps the record (no deleted_at), sets cancel_reason / employee_remove_date / remove_by,
+    and adds a SHIFT_REMOVAL note to the employee profile.
+    """
+    conn.execute(text("""
+        UPDATE shift_employee
+        SET confirmed = 0,
+            cancel_reason = :reason,
+            employee_remove_date = NOW(),
+            remove_by = :user_id
+        WHERE shift_employee_id = :se_id
+    """), {"reason": reason_code, "user_id": user_id, "se_id": shift_employee_id})
+
+    conn.execute(text("""
+        INSERT INTO employee_note (employee_id, shift_employee_id, note, type, user_id, datetime)
+        VALUES (:emp_id, :se_id, :note, :type, :user_id, NOW())
+    """), {
+        "emp_id": employee_id,
+        "se_id": shift_employee_id,
+        "note": CANCEL_REASON_LABELS.get(reason_code, "Removed"),
+        "type": json.dumps(["SHIFT_REMOVAL"]),
+        "user_id": user_id,
+    })
+
+
+def _send_removal_email(removal: dict) -> bool:
+    """
+    Sends the shift-removal notification email to the employee, mirroring the
+    GoLive shiftEmployeeCancel email (subject, body fields, staffing manager signature).
+    """
+    sender_email = "golive@culinarystaffing.com"
+    tenant_id = os.getenv("O365_TENANT_ID")
+    client_id = os.getenv("O365_CLIENT_ID")
+    client_secret = os.getenv("O365_CLIENT_SECRET")
+    to_email = (removal.get("employee_email") or "").strip()
+
+    if not all([tenant_id, client_id, client_secret, to_email]):
+        print("Skipping removal email: Microsoft 365 OAuth credentials missing or employee email is empty.")
+        return False
+
+    token_url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
+    token_data = {
+        "grant_type": "client_credentials",
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "scope": "https://graph.microsoft.com/.default"
+    }
+    try:
+        r = requests.post(token_url, data=token_data)
+        r.raise_for_status()
+        access_token = r.json().get("access_token")
+    except Exception as e:
+        print(f"Failed to authenticate with Microsoft Graph: {e}")
+        return False
+
+    try:
+        event_dt = datetime.strptime(removal["event_date"], "%Y-%m-%d")
+        date_long = f"{event_dt.strftime('%A, %B')} {event_dt.day}, {event_dt.year}"
+    except Exception:
+        date_long = removal.get("event_date", "")
+
+    subject = f"GoLive! Your shift has been removed from {removal['event_title']} on {date_long}"
+    manager_name = removal.get("manager_name") or "The GoLive Staffing Team"
+
+    html_body = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <p>Hi {removal['employee_name']},</p>
+        <h3>Your shift has been removed!</h3>
+        <p>
+          <strong>Event Name</strong>: {removal['event_title']}<br><br>
+          <strong>Event Date: </strong>{date_long}<br><br>
+          <strong>Shift Time: </strong>{removal['shift_time']}<br><br>
+          <strong>Position: </strong>{removal['position']}<br><br>
+          <strong>Reason: </strong>{removal['reason']}
+        </p>
+        <p>Thank you,<br>{manager_name}</p>
+      </body>
+    </html>
+    """
+
+    email_msg = {
+        "message": {
+            "subject": subject,
+            "body": {
+                "contentType": "HTML",
+                "content": html_body
+            },
+            "toRecipients": [
+                {"emailAddress": {"address": to_email}}
+            ]
+        },
+        "saveToSentItems": "true"
+    }
+
+    manager_email = (removal.get("manager_email") or "").strip()
+    if manager_email:
+        email_msg["message"]["ccRecipients"] = [{"emailAddress": {"address": manager_email}}]
+        email_msg["message"]["replyTo"] = [{"emailAddress": {"address": manager_email}}]
+
+    send_url = f"https://graph.microsoft.com/v1.0/users/{sender_email}/sendMail"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    try:
+        send_res = requests.post(send_url, headers=headers, json=email_msg)
+        send_res.raise_for_status()
+        return True
+    except Exception as e:
+        print(f"Failed to send removal email via MS Graph: {e}")
+        return False
+
+
+def _insert_history_entry(conn, related_id, changes, user_id, notes=None):
+    if not changes:
+        return
+    first_model = changes[0].get("model", [None, None])
+    conn.execute(text("""
+        INSERT INTO history_entry (related, related_id, model, model_id, changes, notes, created_at, created_by)
+        VALUES ('Event', :related_id, :model, :model_id, :changes, :notes, NOW(), :created_by)
+    """), {
+        "related_id": related_id,
+        "model": first_model[0] if first_model else None,
+        "model_id": first_model[1] if len(first_model) > 1 else None,
+        "changes": json.dumps(changes),
+        "notes": notes,
+        "created_by": user_id,
+    })
 
 def create_order(data: dict, user_id: int) -> dict:
     """
@@ -21,11 +173,13 @@ def create_order(data: dict, user_id: int) -> dict:
         if not event_name or event_name == client_name:
             event_name = venue_name
         po_number = basic.get('purchase_order', '')
+        order_source_text = (data.get('order_source_text') or '').strip()
         
         if not client_id or not venue_name:
             return {"status": "error", "message": "Missing required basic information (client or venue)."}
 
         engine = _engine()
+        pending_removal_emails = []
         with engine.begin() as conn:
             # 1. Resolve Venue ID, address, state, etc., default venue notes/timeclock, and client settings
             v_sql = text("""
@@ -50,7 +204,18 @@ def create_order(data: dict, user_id: int) -> dict:
              timeclock, tc_holder, tc_tol, tc_pre, tc_lim, 
              admin_notes, venue_details, description, parking, parking_note, directions, check_in,
              county_id, no_break_penalty) = venue
-            
+
+            # Staffing manager for removal notification emails (signature / reply-to)
+            manager = conn.execute(text("""
+                SELECT u.first_name, u.last_name, u.email
+                FROM venue v
+                JOIN `user` u ON u.id = v.staffing_manager_id
+                WHERE v.venue_id = :venue_id AND u.deleted_at IS NULL
+                LIMIT 1
+            """), {"venue_id": venue_id}).fetchone()
+            manager_name = f"{manager.first_name} {manager.last_name}".strip() if manager else None
+            manager_email = manager.email if manager else None
+
             # Since an order can span multiple days (and therefore multiple events), 
             # we group shifts by date. Each date gets its own Event.
             shifts_by_date = {}
@@ -122,14 +287,20 @@ def create_order(data: dict, user_id: int) -> dict:
             latitude = lat if lat is not None else 0.0
             longitude = lon if lon is not None else 0.0
 
+            # Build the order source note block to append to admin_notes
+            if order_source_text:
+                order_note_block = f"\n\n--- Order Source ---\n{order_source_text}"
+            else:
+                order_note_block = ""
+
             for event_date, day_shifts in shifts_by_date.items():
-                
+
                 # Check if an event already exists for this client, venue, and date
                 existing_ev_sql = text("""
-                    SELECT event_id FROM event
-                    WHERE client_id = :client_id 
-                      AND venue_id = :venue_id 
-                      AND date = :date 
+                    SELECT event_id, admin_notes FROM event
+                    WHERE client_id = :client_id
+                      AND venue_id = :venue_id
+                      AND date = :date
                       AND deleted_at IS NULL
                     LIMIT 1
                 """)
@@ -138,14 +309,22 @@ def create_order(data: dict, user_id: int) -> dict:
                     "venue_id": venue_id,
                     "date": event_date
                 }).fetchone()
-                
+
                 has_create_shifts = any(s.get('action', 'CREATE') == 'CREATE' for s in day_shifts)
                 if not has_create_shifts and not existing_ev:
                     raise Exception(f"No existing event found on {event_date} to update or remove shifts.")
-                
+
                 if existing_ev:
                     event_id = existing_ev[0]
                     created_event_ids.append(event_id)
+                    if order_note_block:
+                        existing_notes = existing_ev[1] or ''
+                        conn.execute(text("""
+                            UPDATE event SET admin_notes = :notes WHERE event_id = :event_id
+                        """), {
+                            "notes": existing_notes + order_note_block,
+                            "event_id": event_id
+                        })
                 else:
                     # 2. Create Event (event represents a single day)
                     ev_sql = text("""
@@ -180,7 +359,7 @@ def create_order(data: dict, user_id: int) -> dict:
                         "tc_tol": tc_tol,
                         "tc_pre": tc_pre,
                         "tc_lim": tc_lim or 0,
-                        "admin_notes": admin_notes,
+                        "admin_notes": (admin_notes or '') + order_note_block if order_note_block else admin_notes,
                         "v_details": venue_details,
                         "desc": description,
                         "parking": parking,
@@ -218,6 +397,15 @@ def create_order(data: dict, user_id: int) -> dict:
                             "user_id": user_id
                         })
                 
+                event_changes = []
+                if existing_ev is None:
+                    event_changes.append({
+                        "model": ["Event", event_id],
+                        "operation": None,
+                        "attributes": [],
+                        "description": [f"Event created via Orders app: {event_name}", {}]
+                    })
+
                 for s in day_shifts:
                     action = s.get('action', 'CREATE')
                     pos_name = s.get('position')
@@ -268,54 +456,127 @@ def create_order(data: dict, user_id: int) -> dict:
                         
                         if action == 'REMOVE':
                             remove_count = int(s.get('staff_count', 1))
-                            if matched_shift.count > remove_count:
-                                # Reduce the count instead of deleting
-                                new_count = matched_shift.count - remove_count
+                            removed_name = (s.get('removed_employee_name') or '').strip()
+
+                            # Active (non-cancelled) employee assignments, unconfirmed first then most recent
+                            active_emps = conn.execute(text("""
+                                SELECT se.shift_employee_id, se.employee_id, se.confirmed,
+                                       e.first_name, e.last_name, e.email
+                                FROM shift_employee se
+                                JOIN employee e ON e.employee_id = se.employee_id
+                                WHERE se.shift_position_id = :sp_id
+                                  AND se.deleted_at IS NULL
+                                  AND (se.cancel_reason IS NULL OR se.cancel_reason = 0)
+                                ORDER BY se.confirmed ASC, se.shift_employee_id DESC
+                            """), {"sp_id": shift_position_id}).fetchall()
+
+                            target_emp = None
+                            if removed_name:
+                                wanted = removed_name.lower()
+                                for emp in active_emps:
+                                    full = f"{(emp.first_name or '').strip()} {(emp.last_name or '').strip()}".strip().lower()
+                                    if full and (full == wanted or wanted in full or full in wanted):
+                                        target_emp = emp
+                                        break
+                                if not target_emp:
+                                    # Fallback: match on last name only
+                                    name_parts = wanted.split()
+                                    for emp in active_emps:
+                                        if name_parts and (emp.last_name or '').strip().lower() == name_parts[-1]:
+                                            target_emp = emp
+                                            break
+                                if not target_emp:
+                                    raise Exception(f"Could not find employee '{removed_name}' assigned to the {pos_name} shift on {event_date}.")
+                                remove_count = max(remove_count, 1)
+
+                            to_cancel = []  # list of (employee_row, cancel_reason_code)
+                            new_count = matched_shift.count - remove_count
+
+                            if new_count > 0:
+                                # Reduce the count instead of deleting the shift
                                 conn.execute(text("""
                                     UPDATE shift_position
                                     SET count = :count
                                     WHERE shift_position_id = :sp_id
                                 """), {"count": new_count, "sp_id": shift_position_id})
-                                
-                                # Query active shift employees (unconfirmed first, then recently added)
-                                active_emps_sql = text("""
-                                    SELECT shift_employee_id, confirmed
-                                    FROM shift_employee
-                                    WHERE shift_position_id = :sp_id
-                                      AND deleted_at IS NULL
-                                    ORDER BY confirmed ASC, shift_employee_id DESC
-                                """)
-                                emps_to_remove = conn.execute(active_emps_sql, {"sp_id": shift_position_id}).fetchall()
-                                
-                                # Soft delete up to `remove_count` employee assignments
-                                for emp in emps_to_remove[:remove_count]:
-                                    conn.execute(text("""
-                                        UPDATE shift_employee
-                                        SET deleted_at = NOW()
-                                        WHERE shift_employee_id = :se_id
-                                    """), {"se_id": emp.shift_employee_id})
+
+                                if target_emp:
+                                    to_cancel.append((target_emp, CANCEL_REASON_CLIENT_CANCELLED))
+                                else:
+                                    # Only cancel employees if more are assigned than the new count allows.
+                                    # E.g. count 2 with 1 confirmed employee reduced by 1 keeps the employee.
+                                    overflow = len(active_emps) - new_count
+                                    for emp in active_emps[:max(0, overflow)]:
+                                        to_cancel.append((emp, CANCEL_REASON_CLIENT_DECREASED_STAFF))
                             else:
+                                # Entire shift removed: cancel all assigned employees as Client Cancelled Shift
+                                for emp in active_emps:
+                                    to_cancel.append((emp, CANCEL_REASON_CLIENT_CANCELLED))
+
                                 # Soft delete shift
                                 conn.execute(text("""
                                     UPDATE shift
                                     SET deleted_at = NOW(), deleted_by = :user_id
                                     WHERE shift_id = :shift_id
                                 """), {"shift_id": shift_id, "user_id": user_id})
-                                
+
                                 # Soft delete shift position
                                 conn.execute(text("""
                                     UPDATE shift_position
                                     SET deleted_at = NOW(), deleted_by = :user_id
                                     WHERE shift_id = :shift_id AND deleted_at IS NULL
                                 """), {"shift_id": shift_id, "user_id": user_id})
-                                
-                                # Soft delete shift employees
+
+                            _shift_time_range = " - ".join([
+                                _fmt_shift_time(matched_shift.start),
+                                _fmt_shift_time(matched_shift.end),
+                            ])
+
+                            for emp, reason_code in to_cancel:
+                                _cancel_shift_employee(conn, emp.shift_employee_id, emp.employee_id, reason_code, user_id)
+                                emp_full_name = f"{(emp.first_name or '').strip()} {(emp.last_name or '').strip()}".strip()
+                                reason_label = CANCEL_REASON_LABELS[reason_code]
+                                event_changes.append({
+                                    "model": ["ShiftEmployee", emp.shift_employee_id],
+                                    "operation": None,
+                                    "attributes": [],
+                                    "description": [f"{emp_full_name}'s shift was canceled, reason: \"{reason_label}\"", {}]
+                                })
+                                pending_removal_emails.append({
+                                    "employee_name": emp_full_name,
+                                    "employee_email": emp.email,
+                                    "event_title": event_name,
+                                    "event_date": event_date,
+                                    "shift_time": _shift_time_range,
+                                    "position": pos_name,
+                                    "reason": reason_label,
+                                    "manager_name": manager_name,
+                                    "manager_email": manager_email,
+                                })
+
+                            if new_count > 0:
+                                # Recalculate the position's filled flag like GoLive's updateFilled()
                                 conn.execute(text("""
-                                    UPDATE shift_employee
-                                    SET deleted_at = NOW()
-                                    WHERE shift_position_id = :sp_id AND deleted_at IS NULL
+                                    UPDATE shift_position sp
+                                    SET sp.filled = (
+                                        sp.count <= (
+                                            SELECT COUNT(*) FROM shift_employee se
+                                            WHERE se.shift_position_id = sp.shift_position_id
+                                              AND se.deleted_at IS NULL
+                                              AND (se.cancel_reason IS NULL OR se.cancel_reason = 0)
+                                        )
+                                    )
+                                    WHERE sp.shift_position_id = :sp_id
                                 """), {"sp_id": shift_position_id})
-                            
+
+                            _shift_time = matched_shift.start.strftime("%H:%M") if hasattr(matched_shift.start, 'strftime') else str(matched_shift.start)[-8:-3]
+                            event_changes.append({
+                                "model": ["Shift", shift_id],
+                                "operation": None,
+                                "attributes": [],
+                                "description": [f"{pos_name} ({_shift_time}) removed via Orders app, {remove_count} staff removed", {}]
+                            })
+
                         elif action == 'UPDATE':
                             new_start = f"{event_date} {s['start_time']}:00"
                             new_end = f"{event_date} {s['end_time']}:00"
@@ -373,7 +634,22 @@ def create_order(data: dict, user_id: int) -> dict:
                                     SET count = :count
                                     WHERE shift_position_id = :sp_id
                                 """), {"count": new_count, "sp_id": shift_position_id})
-                        
+
+                            _update_parts = []
+                            if time_changed:
+                                _old_start = matched_shift.start.strftime("%H:%M") if hasattr(matched_shift.start, 'strftime') else str(matched_shift.start)[-8:-3]
+                                _old_end = matched_shift.end.strftime("%H:%M") if hasattr(matched_shift.end, 'strftime') else str(matched_shift.end)[-8:-3]
+                                _update_parts.append(f"time: {_old_start}-{_old_end} → {s['start_time']}-{s['end_time']}")
+                            if new_count != matched_shift.count:
+                                _update_parts.append(f"count: {matched_shift.count} → {new_count}")
+                            _update_detail = f" ({', '.join(_update_parts)})" if _update_parts else ""
+                            event_changes.append({
+                                "model": ["Shift", shift_id],
+                                "operation": None,
+                                "attributes": [],
+                                "description": [f"{pos_name} shift updated via Orders app{_update_detail}", {}]
+                            })
+
                         continue
                         
                     # Resolve position_id, along with current rates (checking effective date amounts), uniform, and tools
@@ -450,7 +726,13 @@ def create_order(data: dict, user_id: int) -> dict:
                         "grooming": grooming
                     })
                     shift_position_id = sp_res.lastrowid
-                    
+                    event_changes.append({
+                        "model": ["Shift", shift_id],
+                        "operation": None,
+                        "attributes": [],
+                        "description": [f"{pos_name} ({s['start_time']}-{s['end_time']}) added via Orders app, {s.get('staff_count', 1)} staff", {}]
+                    })
+
                     # 4.5.1 Copy Uniforms hierarchically (venue -> client -> position default)
                     uniforms = []
                     if venue_position_id:
@@ -708,6 +990,7 @@ def create_order(data: dict, user_id: int) -> dict:
                               AND s.deleted_at IS NULL
                               AND sp.deleted_at IS NULL
                               AND se.deleted_at IS NULL
+                              AND (se.cancel_reason IS NULL OR se.cancel_reason = 0)
                         ),
                         e.stat_shifts_filled_confirmed_count = (
                             SELECT COUNT(*)
@@ -718,6 +1001,7 @@ def create_order(data: dict, user_id: int) -> dict:
                               AND s.deleted_at IS NULL
                               AND sp.deleted_at IS NULL
                               AND se.deleted_at IS NULL
+                              AND (se.cancel_reason IS NULL OR se.cancel_reason = 0)
                               AND se.confirmed = 1
                         ),
                         e.stat_employees_count = (
@@ -729,6 +1013,7 @@ def create_order(data: dict, user_id: int) -> dict:
                               AND s.deleted_at IS NULL
                               AND sp.deleted_at IS NULL
                               AND se.deleted_at IS NULL
+                              AND (se.cancel_reason IS NULL OR se.cancel_reason = 0)
                         ),
                         e.stat_employees_confirmed_count = (
                             SELECT COUNT(*)
@@ -739,6 +1024,7 @@ def create_order(data: dict, user_id: int) -> dict:
                               AND s.deleted_at IS NULL
                               AND sp.deleted_at IS NULL
                               AND se.deleted_at IS NULL
+                              AND (se.cancel_reason IS NULL OR se.cancel_reason = 0)
                               AND se.confirmed = 1
                         ),
                         e.stat_filled = IF(
@@ -769,6 +1055,7 @@ def create_order(data: dict, user_id: int) -> dict:
                                   AND s.deleted_at IS NULL 
                                   AND sp.deleted_at IS NULL 
                                   AND se.deleted_at IS NULL
+                                  AND (se.cancel_reason IS NULL OR se.cancel_reason = 0)
                             ),
                             1, 0
                         ),
@@ -800,6 +1087,7 @@ def create_order(data: dict, user_id: int) -> dict:
                                   AND s.deleted_at IS NULL 
                                   AND sp.deleted_at IS NULL 
                                   AND se.deleted_at IS NULL
+                                  AND (se.cancel_reason IS NULL OR se.cancel_reason = 0)
                                   AND se.confirmed = 1
                             ),
                             1, 0
@@ -808,7 +1096,22 @@ def create_order(data: dict, user_id: int) -> dict:
                 """)
                 conn.execute(update_stats_sql, {"event_id": event_id})
 
-        return {"status": "success", "event_ids": created_event_ids, "message": f"Successfully published {len(created_event_ids)} events."}
+                _insert_history_entry(conn, event_id, event_changes, user_id, notes="Via Orders app")
+
+        # Send removal notification emails only after the transaction has committed
+        emails_sent = 0
+        for removal in pending_removal_emails:
+            try:
+                if _send_removal_email(removal):
+                    emails_sent += 1
+            except Exception as mail_err:
+                print(f"Failed to send removal email to {removal.get('employee_email')}: {mail_err}")
+
+        message = f"Successfully published {len(created_event_ids)} events."
+        if pending_removal_emails:
+            message += f" Removed {len(pending_removal_emails)} employee(s); {emails_sent} notification email(s) sent."
+
+        return {"status": "success", "event_ids": created_event_ids, "message": message}
 
     except Exception as e:
         print(f"Error publishing order: {e}")

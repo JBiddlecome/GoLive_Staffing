@@ -268,6 +268,9 @@
             if (endPicker) endPicker.classList.add('opacity-40', 'pointer-events-none');
             if (expandHeader) expandHeader.className = "bg-rose-50/20 p-4 flex justify-between items-center cursor-pointer hover:bg-rose-50/40 transition-colors";
         }
+
+        const removedWrapper = rowEl.querySelector('.field-removed-employee-wrapper');
+        if (removedWrapper) removedWrapper.style.display = (actionVal === 'REMOVE') ? '' : 'none';
     }
     
     window.setExtractionScope = function(scope) {
@@ -716,6 +719,9 @@
                             </div>
                         </div>
                     </div>
+                    <button type="button" title="Delete shift" onclick="event.stopPropagation(); this.closest('.shift-row-data').remove()" class="p-1.5 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
                     <svg class="w-5 h-5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
                 <!-- Expandable Details -->
@@ -748,6 +754,10 @@
                                 <input type="text" class="field-requested-employee-search w-full text-sm border border-slate-200 rounded-md p-1 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-300" placeholder="Type employee name to add..." value="" onkeyup="if(!this.value.trim()){suggestEmployees(this);}else{searchEmployees(this, getFullDateValue(this.closest('.shift-row-data')));}" onfocus="if(!this.value.trim()){suggestEmployees(this);}else{searchEmployees(this, getFullDateValue(this.closest('.shift-row-data')));}">
                                 <div class="field-requested-employee-dropdown absolute z-50 w-full bg-white border border-slate-200 rounded-md shadow-lg max-h-48 overflow-y-auto hidden mt-1"></div>
                             </div>
+                        </div>
+                        <div class="field-removed-employee-wrapper" style="${actionVal === 'REMOVE' ? '' : 'display: none;'}">
+                            <span class="text-slate-400 font-medium block mb-1">Employee to Remove (Optional)</span>
+                            <input type="text" class="field-removed-employee-name w-full text-sm border border-rose-200 rounded-md p-1 focus:ring-rose-500 focus:border-rose-500 placeholder-slate-300" placeholder="e.g. Jack Smith — leave blank to reduce count" value="${shift.removed_employee_name || ''}">
                         </div>
                     </div>
                 </div>
@@ -811,6 +821,7 @@
                 event_state: document.getElementById('field-event_state').value,
                 event_zip: document.getElementById('field-event_zip').value
             },
+            order_source_text: document.getElementById('orderInput').value.trim(),
             shift_information: []
         };
 
@@ -848,7 +859,8 @@
                 end_time: endVal || '',
                 staff_count: el.querySelector('.field-staff-count') ? el.querySelector('.field-staff-count').value : (el.dataset.count || 1),
                 publication_rule: el.querySelector('.field-publication-rule') ? el.querySelector('.field-publication-rule').value : 'DO_NOT_PUBLISH',
-                requested_employee_id: el.querySelector('.field-requested-employee-id') ? el.querySelector('.field-requested-employee-id').value.trim() : ''
+                requested_employee_id: el.querySelector('.field-requested-employee-id') ? el.querySelector('.field-requested-employee-id').value.trim() : '',
+                removed_employee_name: el.querySelector('.field-removed-employee-name') ? el.querySelector('.field-removed-employee-name').value.trim() : ''
             });
         }
 
