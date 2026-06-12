@@ -505,9 +505,9 @@ async def get_profit_data(payload: ProfitPayload):
         
         msp_rate = float(row.get("msp_rate", 0))
         wc_rate = float(row.get("wc_rate", 0))
-        
+
         msp_fee = total_bill * msp_rate
-        wc_fee = total_bill * wc_rate
+        wc_fee = total_pay * wc_rate
 
         # Credit card processing fee: 2.9% of total_bill for CC clients (payment_type=1)
         payment_type = row.get("payment_type")
@@ -887,7 +887,7 @@ async def get_weekly_client_data(payload: ProfitPayload):
         msp_rate = float(row.get("msp_rate", 0))
         wc_rate = float(row.get("wc_rate", 0))
         msp_fee = total_bill * msp_rate
-        wc_fee = total_bill * wc_rate
+        wc_fee = total_pay * wc_rate
 
         # Credit card processing fee: 2.9% of total_bill for CC clients (payment_type=1)
         payment_type = row.get("payment_type")
@@ -1231,7 +1231,7 @@ async def get_position_breakdown(payload: ProfitPayload):
         msp_rate = float(row.get("msp_rate", 0))
         wc_rate = float(row.get("wc_rate", 0))
         msp_fee = total_bill * msp_rate
-        wc_fee = total_bill * wc_rate
+        wc_fee = total_pay * wc_rate
 
         # Credit card processing fee: 2.9% of total_bill for CC clients (payment_type=1)
         payment_type = row.get("payment_type")
