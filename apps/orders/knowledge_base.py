@@ -142,31 +142,30 @@ def detect_client_from_text(order_text: str, is_dictation: bool = False) -> int:
     except Exception as e:
         print(f"Error matching client name: {e}")
 
-    # 3. Venue Name-based detection
-    if not is_dictation:
-        try:
-            with engine.connect() as conn:
-                sql = text("""
-                    SELECT v.client_id, v.name 
-                    FROM venue v
-                    JOIN client c ON v.client_id = c.client_id
-                    WHERE c.status IN (1, 10, 11)
-                      AND c.deleted_at IS NULL
-                      AND v.status = 1
-                      AND v.deleted_at IS NULL
-                """)
-                venues = conn.execute(sql).fetchall()
-                
-                # Sort venues by name length descending to match more specific names first
-                sorted_venues = sorted(venues, key=lambda v: len(v.name), reverse=True)
-                for cid, name in sorted_venues:
-                    if not name:
-                        continue
-                    pattern = r'\b' + re.escape(name.strip()) + r'\b'
-                    if re.search(pattern, order_text, re.IGNORECASE):
-                        return cid
-        except Exception as e:
-            print(f"Error matching venue name: {e}")
+    # 3. Venue Name-based detection (runs for both email and dictation)
+    try:
+        with engine.connect() as conn:
+            sql = text("""
+                SELECT v.client_id, v.name
+                FROM venue v
+                JOIN client c ON v.client_id = c.client_id
+                WHERE c.status IN (1, 10, 11)
+                  AND c.deleted_at IS NULL
+                  AND v.status = 1
+                  AND v.deleted_at IS NULL
+            """)
+            venues = conn.execute(sql).fetchall()
+
+            # Sort venues by name length descending to match more specific names first
+            sorted_venues = sorted(venues, key=lambda v: len(v.name), reverse=True)
+            for cid, name in sorted_venues:
+                if not name:
+                    continue
+                pattern = r'\b' + re.escape(name.strip()) + r'\b'
+                if re.search(pattern, order_text, re.IGNORECASE):
+                    return cid
+    except Exception as e:
+        print(f"Error matching venue name: {e}")
         
     return None
 

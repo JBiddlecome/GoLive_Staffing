@@ -45,6 +45,7 @@ Return ONLY a valid JSON object matching this exact schema:
             "end_time_inferred": "boolean (true if end_time was guessed from typical_shift_times rather than explicitly stated in the order)",
             "position": "string (Must exactly match one of the available positions in the Client Context. If vague, like 'Cook', map to the typical position used like 'Cook G' or 'Cook 2')",
             "staff_count": "integer (Number of staff needed for this position)",
+            "removed_employee_name": "string (ONLY for REMOVE actions: the full name of the specific employee the client asks to remove/cancel, e.g. 'Jack Smith' from 'Please remove Jack Smith from the cook shift'. Leave EMPTY string if no specific person is named)",
             "details": {
                 "grooming": "string (Grooming or uniform requirements)",
                 "tools": ["string"] (List of required tools),
@@ -59,6 +60,7 @@ Return ONLY a valid JSON object matching this exact schema:
 
 Guidelines:
 - ALWAYS use the exact position names from the Client Context. Do not invent positions.
+- POSITION MATCHING RULE: When the order text mentions a role type (e.g. 'cook', 'server', 'bartender', 'dishwasher', 'prep', 'host', 'busser'), you MUST select a position from available_positions whose name CONTAINS that role keyword. For example, 'cook' must match 'Cook G', 'Cook 1', 'Cook 2', etc. — NOT a position named 'General', 'General Staff', or any catch-all position unless the order explicitly requests a 'General' worker. Among role-matching candidates, choose the one with the highest frequency. Only fall back to a generic/catch-all position if NO available position contains the mentioned role keyword.
 - If an end time or venue address is missing, return an empty string (""). The UI will highlight these for the user to manually fill.
 - Support multi-day orders by creating separate shift_information objects with their respective dates.
 - Format all times in 24-hour HH:MM format.
@@ -79,6 +81,7 @@ Guidelines:
   2. "please remove the cook G shift on 6/3/2026" -> action is "REMOVE", position is "Cook G", date is "2026-06-03".
   3. "We need a cook G on 6/3/2026 from 7am-3pm" -> action is "CREATE", position is "Cook G", date is "2026-06-03", start_time is "07:00", end_time is "15:00".
   4. If the request is to remove a subset/portion of workers from an existing shift (e.g., "remove one of the 10am cooks" or "cancel 2 servers"), the action is "REMOVE", position matches the shift (e.g. "Cook G"), and staff_count is the quantity of workers to remove (e.g. 1 or 2).
+  5. NAMED EMPLOYEE REMOVAL: If the request asks to remove/cancel a SPECIFIC named worker (e.g., "Please remove Jack Smith from the cook shift tomorrow" or "Cancel Jack Smith for Saturday"), the action is "REMOVE", staff_count is 1, position matches the shift they are working, and removed_employee_name is set to that person's full name (e.g. "Jack Smith"). Do NOT confuse the named worker with a requested_employee_name (which is only for CREATE requests asking FOR a specific person).
 - Use the 'Calendar Context (Relative dates)' list provided in the user prompt to resolve relative day names (like 'Friday', 'tomorrow', 'next Monday', 'today') to their correct YYYY-MM-DD calendar dates. Do NOT guess or perform manual date arithmetic.
 - Do NOT return markdown formatting (no ```json).
 """
