@@ -157,6 +157,79 @@ def clean_email_thread_if_needed(text: str) -> str:
     
     return latest_message
 
+def fill_shift_date_gaps(result: dict) -> dict:
+    """
+    Fill in missing weekday dates in shift groups that span > 14 days with a consistent
+    weekday pattern. Guards against the LLM truncating large date ranges mid-output.
+    """
+    from datetime import date as date_type, timedelta
+    from collections import defaultdict
+
+    shifts = result.get("shift_information", [])
+    if len(shifts) < 3:
+        return result
+
+    groups = defaultdict(list)
+    for shift in shifts:
+        key = (
+            shift.get("start_time"),
+            shift.get("end_time"),
+            shift.get("position"),
+            shift.get("staff_count"),
+            shift.get("action", "CREATE"),
+        )
+        groups[key].append(shift)
+
+    new_shifts = []
+    for key, group_shifts in groups.items():
+        dates = []
+        for s in group_shifts:
+            try:
+                dates.append(date_type.fromisoformat(s["date"]))
+            except (KeyError, ValueError):
+                pass
+
+        if len(dates) < 3:
+            new_shifts.extend(group_shifts)
+            continue
+
+        dates.sort()
+        min_date, max_date = dates[0], dates[-1]
+        span = (max_date - min_date).days
+
+        # Only attempt gap-fill for ranges spanning more than 2 weeks
+        if span < 15:
+            new_shifts.extend(group_shifts)
+            continue
+
+        weekdays_used = set(d.weekday() for d in dates)
+        existing_dates = {date_type.fromisoformat(s["date"]): s for s in group_shifts if "date" in s}
+
+        # Build the full expected set of dates
+        all_expected = []
+        cur = min_date
+        while cur <= max_date:
+            if cur.weekday() in weekdays_used:
+                all_expected.append(cur)
+            cur += timedelta(days=1)
+
+        template = group_shifts[0]
+        for d in all_expected:
+            if d in existing_dates:
+                new_shifts.append(existing_dates[d])
+            else:
+                filled = {**template, "date": d.isoformat()}
+                new_shifts.append(filled)
+
+    # Re-number IDs in date order
+    new_shifts.sort(key=lambda x: (x.get("date", ""), x.get("start_time", "")))
+    for i, s in enumerate(new_shifts, 1):
+        s["id"] = i
+
+    result["shift_information"] = new_shifts
+    return result
+
+
 async def ai_extract_order(text: str, client_context: dict, reference_date: str = None, thread_mode: str = 'latest') -> dict:
     """Run structured AI extraction on order text."""
     if thread_mode == 'latest':
@@ -174,7 +247,7 @@ async def ai_extract_order(text: str, client_context: dict, reference_date: str 
     # Generate relative calendar context to prevent LLM calendar math errors
     from datetime import timedelta
     calendar_lines = []
-    for i in range(-2, 12):
+    for i in range(-7, 90):
         dt = ref_dt + timedelta(days=i)
         day_label = dt.strftime("%A")
         date_label = dt.strftime("%Y-%m-%d")
@@ -205,10 +278,12 @@ async def ai_extract_order(text: str, client_context: dict, reference_date: str 
                 {"role": "user", "content": user_msg},
             ],
             response_format={"type": "json_object"},
-            temperature=0.0
+            temperature=0.0,
+            max_tokens=16000,
         )
         content = response.choices[0].message.content or "{}"
-        return json.loads(content)
+        extracted = json.loads(content)
+        return fill_shift_date_gaps(extracted)
     except Exception as e:
         print(f"AI Extraction Error: {str(e)}")
         # Return empty structured data on failure

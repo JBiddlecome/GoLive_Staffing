@@ -66,6 +66,10 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
         Admin
       </button>
+      <button onclick="switchTab('orders')" id="tab-btn-orders" class="tab-button px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center gap-2 whitespace-nowrap">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+        Orders
+      </button>
     </div>
   </div>
 
@@ -339,6 +343,29 @@
         <p class="text-gray-600 text-xs leading-relaxed flex-1">Monitor high-level organizational placement outcomes: track created shifts, filled percentages, and placement latency.</p>
         <div class="mt-5 flex items-center text-xs font-bold text-emerald-600">
           View Report <span class="ml-1.5 group-hover:translate-x-1 transition-transform">➔</span>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- 5. Orders Tab -->
+  <div id="tab-pane-orders" class="tab-pane space-y-6 transition-opacity duration-300 hidden">
+    <div class="border-b border-gray-100 pb-4">
+      <h2 class="brand-serif text-2xl font-semibold text-gray-900">Orders</h2>
+      <p class="text-sm text-gray-500 mt-1">AI-powered order intake — extract and submit client staffing requests from emails.</p>
+    </div>
+    <div class="flex items-center justify-center py-16">
+      <a href="/orders" class="group inline-flex flex-col items-center gap-4 rounded-3xl border border-emerald-100 bg-white p-12 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200 max-w-sm w-full text-center">
+        <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-200 border border-emerald-100/50">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+        </div>
+        <div>
+          <h3 class="brand-serif text-xl font-bold text-gray-900 group-hover:text-emerald-700 transition-colors">Orders Inbox</h3>
+          <p class="text-gray-600 text-sm leading-relaxed mt-2">Parse inbound client order emails using AI to auto-extract shift details, positions, and venue information.</p>
+        </div>
+        <div class="flex items-center text-xs font-bold uppercase tracking-wider text-emerald-600 group-hover:text-emerald-700">
+          <span>Open Application</span>
+          <span class="ml-1.5 group-hover:translate-x-1 transition-transform">➔</span>
         </div>
       </a>
     </div>
