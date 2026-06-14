@@ -22,7 +22,8 @@
       "PowerShell(Get-Command *)",
       "PowerShell(& \"C:\\\\Users\\\\jakeb\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" \"C:\\\\Users\\\\jakeb\\\\Downloads\\\\analyze_history.py\")",
       "PowerShell(& \"C:\\\\Users\\\\jakeb\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" \"C:\\\\Users\\\\jakeb\\\\Downloads\\\\analyze_history2.py\")",
-      "Bash(grep -n \"class EmployeeNote\\\\|public \\\\$\\\\|->type\" \"C:\\\\Users\\\\jakeb\\\\OneDrive\\\\Documents\\\\GitHub\\\\GoLive Code\\\\golive_code_02-19-26\\\\golive_code_2_19_26\\\\culinary-be\\\\common\\\\models\\\\EmployeeNote.php\")"
+      "Bash(grep -n \"class EmployeeNote\\\\|public \\\\$\\\\|->type\" \"C:\\\\Users\\\\jakeb\\\\OneDrive\\\\Documents\\\\GitHub\\\\GoLive Code\\\\golive_code_02-19-26\\\\golive_code_2_19_26\\\\culinary-be\\\\common\\\\models\\\\EmployeeNote.php\")",
+      "Skill(claude-api)"
     ]
   }
 }
