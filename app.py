@@ -70,6 +70,7 @@ from apps.ar_contact_updates.views import router as ar_contact_updates_router
 from apps.shift_risk_dashboard.views import router as shift_risk_dashboard_router
 from apps.profit_tracker.views import router as profit_tracker_router
 from apps.profit_tracker_2.views import router as profit_tracker_2_router
+from apps.forecasting.views import router as forecasting_router
 from apps.client_profile_changes.views import router as client_profile_changes_router
 from apps.email_forwarder.views import router as email_forwarder_router
 from apps.bill_rate_calculator.views import router as bill_rate_calculator_router
@@ -540,6 +541,11 @@ app.include_router(
     profit_tracker_2_router,
     prefix="/profit-tracker-2",
     tags=["Profit Tracker 2"],
+)
+app.include_router(
+    forecasting_router,
+    prefix="/forecasting",
+    tags=["Forecasting"],
 )
 app.include_router(
     client_profile_changes_router,

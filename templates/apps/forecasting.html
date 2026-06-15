@@ -1,0 +1,876 @@
+{% extends "base.html" %}
+
+{% block title %}Forecasting | Staffing Solutions{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --pt-bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        --pt-glass-bg: rgba(30, 41, 59, 0.7);
+        --pt-glass-border: rgba(255, 255, 255, 0.1);
+        --pt-accent: #38bdf8;
+        --pt-success: #34d399;
+        --pt-warning: #facc15;
+        --pt-danger: #ef4444;
+        --pt-text-main: #f8fafc;
+        --pt-text-muted: #94a3b8;
+        --pt-radius: 16px;
+        --pt-card-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    body {
+        background: var(--pt-bg-gradient);
+        color: var(--pt-text-main);
+        font-family: 'Inter', system-ui, sans-serif;
+        margin: 0;
+        min-height: 100vh;
+    }
+
+    .pt-wrapper-main {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+        color: var(--pt-text-main);
+    }
+
+    .pt-wrapper-main h1, .pt-wrapper-main h2, .pt-wrapper-main p, .pt-wrapper-main div, .pt-wrapper-main span, .pt-wrapper-main td {
+        color: var(--pt-text-main);
+    }
+
+    .pt-header h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin: 0 0 0.5rem 0;
+        background: linear-gradient(90deg, #38bdf8, #818cf8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .pt-header p {
+        color: var(--pt-text-muted) !important;
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+    }
+
+    .pt-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        background: var(--pt-glass-bg);
+        border: 1px solid var(--pt-glass-border);
+        border-radius: var(--pt-radius);
+        padding: 1.5rem;
+        align-items: flex-end;
+        box-shadow: var(--pt-card-shadow);
+        backdrop-filter: blur(12px);
+        margin-bottom: 2rem;
+    }
+
+    .pt-control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .pt-control-group label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--pt-text-muted) !important;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .pt-input {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid var(--pt-glass-border);
+        color: var(--pt-text-main);
+        padding: 0.6rem 1rem;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        min-width: 160px;
+        transition: border-color 0.3s ease;
+        outline: none;
+        color-scheme: dark;
+    }
+
+    .pt-input:focus {
+        border-color: var(--pt-accent);
+    }
+
+    .pt-btn {
+        background: var(--pt-accent);
+        color: #0f172a;
+        border: none;
+        padding: 0.7rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .pt-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4);
+    }
+    
+    .pt-btn-success {
+        background: var(--pt-success);
+        box-shadow: 0 4px 15px rgba(52, 211, 153, 0.3);
+    }
+    .pt-btn-success:hover {
+        box-shadow: 0 4px 15px rgba(52, 211, 153, 0.5);
+    }
+
+    .pt-dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .pt-card {
+        background: var(--pt-glass-bg);
+        border: 1px solid var(--pt-glass-border);
+        border-radius: var(--pt-radius);
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        transition: transform 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .pt-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .pt-card.profit {
+        grid-column: span 2;
+        background: linear-gradient(135deg, rgba(52, 211, 153, 0.1), rgba(16, 185, 129, 0.05));
+        border-color: rgba(52, 211, 153, 0.3);
+    }
+
+    .pt-card-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--pt-text-muted);
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .pt-card-value {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: var(--pt-text-main);
+    }
+
+    .pt-card-value.profit-val {
+        font-size: 2.5rem;
+        color: var(--pt-success);
+    }
+
+    .pt-card-percent {
+        margin-top: 0.5rem;
+        font-size: 0.85rem;
+        font-weight: 700;
+        background: rgba(255,255,255,0.1);
+        padding: 0.2rem 0.6rem;
+        border-radius: 20px;
+    }
+
+    /* Tabs */
+    .tabs-nav {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid var(--pt-glass-border);
+        padding-bottom: 0.5rem;
+    }
+    
+    .tab-btn {
+        background: none;
+        border: none;
+        color: var(--pt-text-muted);
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+    
+    .tab-btn:hover {
+        color: var(--pt-text-main);
+        background: rgba(255,255,255,0.05);
+    }
+    
+    .tab-btn.active {
+        color: var(--pt-accent);
+        background: rgba(56, 189, 248, 0.1);
+    }
+    
+    .tab-content {
+        display: none;
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+    
+    /* Tables */
+    .pt-table-container {
+        background: var(--pt-glass-bg);
+        border: 1px solid var(--pt-glass-border);
+        border-radius: var(--pt-radius);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        overflow-x: auto;
+    }
+
+    .pt-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+    }
+
+    .pt-table th, .pt-table td {
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .pt-table th {
+        color: var(--pt-text-muted) !important;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.05em;
+    }
+
+    .pt-table tbody tr:hover {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .text-right { text-align: right !important; }
+    
+    .override-input {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #fff;
+        padding: 0.4rem;
+        border-radius: 4px;
+        width: 80px;
+        text-align: right;
+        font-family: monospace;
+    }
+    
+    .override-input:focus {
+        border-color: var(--pt-accent);
+        outline: none;
+    }
+
+    .pt-loader {
+        display: none;
+        border: 4px solid rgba(255,255,255,0.1);
+        border-top: 4px solid var(--pt-accent);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 3rem auto;
+    }
+
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    
+    /* Toggle switch for clients */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 20px;
+    }
+    .toggle-switch input { 
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #475569;
+      transition: .4s;
+      border-radius: 34px;
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .toggle-slider {
+      background-color: var(--pt-success);
+    }
+    input:checked + .toggle-slider:before {
+      transform: translateX(20px);
+    }
+</style>
+
+<div class="pt-wrapper-main">
+    <div class="pt-header">
+        <h1>Forecasting</h1>
+        <p>Model profit changes based on modified markup percentages, pay rates, and WC fees.</p>
+    </div>
+
+    <!-- Controls -->
+    <div class="pt-controls">
+        <div class="pt-control-group">
+            <label for="startDate">Start Date</label>
+            <input type="date" id="startDate" class="pt-input" value="{{ start_date }}">
+        </div>
+        <div class="pt-control-group">
+            <label for="endDate">End Date</label>
+            <input type="date" id="endDate" class="pt-input" value="{{ end_date }}">
+        </div>
+        <div class="pt-control-group">
+            <label for="profileSelect">Load Profile</label>
+            <select id="profileSelect" class="pt-input" onchange="loadProfile()">
+                <option value="">-- Default --</option>
+            </select>
+        </div>
+        <div class="pt-control-group">
+            <label for="saveProfileName">Save Profile As</label>
+            <input type="text" id="saveProfileName" class="pt-input" placeholder="Profile Name...">
+        </div>
+        <button class="pt-btn pt-btn-success" onclick="saveProfile()">Save Profile</button>
+        <button class="pt-btn" onclick="fetchData()">Calculate & Refresh</button>
+        <button class="pt-btn" style="background: #10b981; color: white;" onclick="exportExcel()">Export to Excel</button>
+    </div>
+
+    <!-- Fee Toggles -->
+    <div class="pt-controls" style="padding: 1rem 1.5rem; justify-content: flex-start; align-items: center;">
+        <div style="font-weight: 600; color: var(--pt-text-muted); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.05em; margin-right: 1rem;">Included Fees:</div>
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--pt-text-main);">
+            <input type="checkbox" id="toggleMsp" checked> MSP
+        </label>
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--pt-text-main);">
+            <input type="checkbox" id="toggleWc" checked> WC
+        </label>
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--pt-text-main);">
+            <input type="checkbox" id="toggleCc" checked> CC
+        </label>
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--pt-text-main);">
+            <input type="checkbox" id="toggleBt" checked> BT
+        </label>
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--pt-text-main);">
+            <input type="checkbox" id="toggleComm" checked> Commissions
+        </label>
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--pt-text-main);">
+            <input type="checkbox" id="toggleTax" checked> Payroll Tax
+        </label>
+    </div>
+
+    <div class="pt-loader" id="loader"></div>
+
+    <div id="dashboardContent" style="display: none;">
+        <!-- Summary Dashboard -->
+        <div class="pt-dashboard">
+            <div class="pt-card total">
+                <div class="pt-card-title">Total Bill (Forecast)</div>
+                <div class="pt-card-value" id="valTotalBill">$0.00</div>
+            </div>
+            <div class="pt-card expense">
+                <div class="pt-card-title">Gross Pay (Forecast)</div>
+                <div class="pt-card-value" id="valGrossPay">$0.00</div>
+            </div>
+            <div class="pt-card expense">
+                <div class="pt-card-title">MSP Fee</div>
+                <div class="pt-card-value" id="valMspFee">$0.00</div>
+            </div>
+            <div class="pt-card expense">
+                <div class="pt-card-title">WC Fee</div>
+                <div class="pt-card-value" id="valWcFee">$0.00</div>
+            </div>
+            <div class="pt-card expense">
+                <div class="pt-card-title">CC Fee</div>
+                <div class="pt-card-value" id="valCcFee">$0.00</div>
+            </div>
+            <div class="pt-card expense">
+                <div class="pt-card-title">BT Fee</div>
+                <div class="pt-card-value" id="valBtFee">$0.00</div>
+            </div>
+            <div class="pt-card expense">
+                <div class="pt-card-title">Commissions</div>
+                <div class="pt-card-value" id="valCommissions">$0.00</div>
+            </div>
+            <div class="pt-card expense">
+                <div class="pt-card-title">Payroll Tax</div>
+                <div class="pt-card-value" id="valPayrollTax">$0.00</div>
+            </div>
+            <div class="pt-card profit">
+                <div class="pt-card-title">Gross Profit (Forecast)</div>
+                <div class="pt-card-value profit-val" id="valProfit">$0.00</div>
+                <div class="pt-card-percent" id="pctProfit" style="background: rgba(52, 211, 153, 0.2); color: var(--pt-success);">0%</div>
+            </div>
+        </div>
+
+        <!-- Overrides Tabs -->
+        <div class="pt-table-container">
+            <div class="tabs-nav">
+                <button class="tab-btn active" onclick="switchTab('positions')">Positions Override</button>
+                <button class="tab-btn" onclick="switchTab('wc')">WC Fees Override</button>
+                <button class="tab-btn" onclick="switchTab('clients')">Client Toggles</button>
+                <button class="tab-btn" onclick="switchTab('breakdown')">Client Breakdown</button>
+            </div>
+            
+            <div id="tab-positions" class="tab-content active">
+                <div style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px;">
+                    <div class="pt-control-group">
+                        <label for="globalMarkup">Global Markup %</label>
+                        <input type="number" id="globalMarkup" class="pt-input" placeholder="e.g. 50">
+                    </div>
+                    <button class="pt-btn" onclick="applyGlobalMarkup()">Apply to All Positions</button>
+                </div>
+                <table class="pt-table">
+                    <thead>
+                        <tr>
+                            <th>Position Name</th>
+                            <th class="text-right">Original Pay Rate</th>
+                            <th class="text-right">Original Markup %</th>
+                            <th class="text-right">Original Bill Rate</th>
+                            <th class="text-right">New Pay Rate</th>
+                            <th class="text-right">New Markup %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="positionsTbody">
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="tab-wc" class="tab-content">
+                <table class="pt-table">
+                    <thead>
+                        <tr>
+                            <th>WC Code / Description</th>
+                            <th class="text-right">Original WC Fee %</th>
+                            <th class="text-right">New WC Fee %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="wcTbody">
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="tab-clients" class="tab-content">
+                <table class="pt-table">
+                    <thead>
+                        <tr>
+                            <th>Client Name</th>
+                            <th class="text-right">Include in Forecast</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientsTbody">
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="tab-breakdown" class="tab-content">
+                <table class="pt-table">
+                    <thead>
+                        <tr>
+                            <th>Client Name</th>
+                            <th class="text-right">Forecast Bill</th>
+                            <th class="text-right">Forecast Pay</th>
+                            <th class="text-right">Forecast WC</th>
+                            <th class="text-right">Forecast Profit</th>
+                            <th class="text-right">Profit %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="breakdownTbody">
+                    </tbody>
+                </table>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<script>
+    // State
+    let uiPositions = [];
+    let uiWcFees = [];
+    let uiClients = [];
+    let clientBreakdown = [];
+    
+    // Overrides
+    let positionOverrides = {}; // { position_name: { pay_rate: float, markup_percentage: float } }
+    let wcFeeOverrides = {};    // { wc_id: float }
+    let clientToggles = {};     // { client_name: boolean }
+    let feeToggles = {};        // { fee_type: boolean }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        loadProfilesList();
+        fetchData();
+    });
+
+    function switchTab(tabId) {
+        document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach(content => content.classList.remove("active"));
+        
+        event.target.classList.add("active");
+        document.getElementById(`tab-${tabId}`).classList.add("active");
+    }
+
+    function applyGlobalMarkup() {
+        const val = document.getElementById("globalMarkup").value;
+        if (!val) return;
+        document.querySelectorAll(".pos-markup-input").forEach(input => {
+            input.value = val;
+        });
+        // Optionally auto-fetch when applying globally:
+        // fetchData();
+    }
+
+    async function loadProfilesList() {
+        try {
+            const res = await fetch("/forecasting/api/profiles", { credentials: "same-origin" });
+            const profiles = await res.json();
+            const select = document.getElementById("profileSelect");
+            select.innerHTML = '<option value="">-- Default --</option>';
+            profiles.forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p.name;
+                opt.textContent = p.name;
+                select.appendChild(opt);
+            });
+        } catch (e) {
+            console.error("Failed to load profiles list", e);
+        }
+    }
+
+    async function loadProfile() {
+        const name = document.getElementById("profileSelect").value;
+        if (!name) {
+            // Reset to default
+            positionOverrides = {};
+            wcFeeOverrides = {};
+            clientToggles = {};
+            feeToggles = {msp: true, wc: true, cc: true, bt: true, comm: true, tax: true};
+            
+            document.getElementById("toggleMsp").checked = true;
+            document.getElementById("toggleWc").checked = true;
+            document.getElementById("toggleCc").checked = true;
+            document.getElementById("toggleBt").checked = true;
+            document.getElementById("toggleComm").checked = true;
+            document.getElementById("toggleTax").checked = true;
+            
+            document.getElementById("saveProfileName").value = "";
+            renderUI();
+            fetchData();
+            return;
+        }
+        
+        try {
+            const res = await fetch(`/forecasting/api/profiles/${encodeURIComponent(name)}`, { credentials: "same-origin" });
+            const data = await res.json();
+            positionOverrides = data.position_overrides || {};
+            wcFeeOverrides = data.wc_fee_overrides || {};
+            clientToggles = data.client_toggles || {};
+            feeToggles = data.fee_toggles || {msp: true, wc: true, cc: true, bt: true, comm: true, tax: true};
+            
+            document.getElementById("toggleMsp").checked = feeToggles.msp !== false;
+            document.getElementById("toggleWc").checked = feeToggles.wc !== false;
+            document.getElementById("toggleCc").checked = feeToggles.cc !== false;
+            document.getElementById("toggleBt").checked = feeToggles.bt !== false;
+            document.getElementById("toggleComm").checked = feeToggles.comm !== false;
+            document.getElementById("toggleTax").checked = feeToggles.tax !== false;
+            
+            document.getElementById("saveProfileName").value = name;
+            
+            renderUI();
+            fetchData();
+        } catch (e) {
+            alert("Failed to load profile.");
+        }
+    }
+
+    async function saveProfile() {
+        const name = document.getElementById("saveProfileName").value.trim();
+        if (!name) {
+            alert("Please enter a profile name to save.");
+            return;
+        }
+        
+        // Sync DOM inputs back to state objects
+        syncInputsToState();
+        
+        const payload = {
+            name: name,
+            position_overrides: positionOverrides,
+            wc_fee_overrides: wcFeeOverrides,
+            client_toggles: clientToggles,
+            fee_toggles: feeToggles
+        };
+        
+        try {
+            const res = await fetch("/forecasting/api/profiles", {
+                method: "POST",
+                credentials: "same-origin",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                alert("Profile saved successfully!");
+                await loadProfilesList();
+                document.getElementById("profileSelect").value = name;
+            } else {
+                alert("Failed to save profile.");
+            }
+        } catch (e) {
+            alert("Error saving profile.");
+        }
+    }
+
+    function syncInputsToState() {
+        // Positions
+        document.querySelectorAll(".pos-pay-input").forEach(input => {
+            const pos = input.dataset.pos;
+            const markupInput = input.closest('tr').querySelector('.pos-markup-input');
+            if (input.value || markupInput.value) {
+                if (!positionOverrides[pos]) positionOverrides[pos] = {};
+                
+                if (input.value) positionOverrides[pos].pay_rate = parseFloat(input.value);
+                else delete positionOverrides[pos].pay_rate;
+                
+                if (markupInput.value) positionOverrides[pos].markup_percentage = parseFloat(markupInput.value);
+                else delete positionOverrides[pos].markup_percentage;
+            } else {
+                delete positionOverrides[pos];
+            }
+        });
+        
+        // WC Fees
+        document.querySelectorAll(".wc-fee-input").forEach(input => {
+            if (input.value) {
+                wcFeeOverrides[input.dataset.wcid] = parseFloat(input.value);
+            } else {
+                delete wcFeeOverrides[input.dataset.wcid];
+            }
+        });
+        
+        // Clients
+        document.querySelectorAll(".client-toggle-cb").forEach(cb => {
+            clientToggles[cb.dataset.client] = cb.checked;
+        });
+
+        // Fee Toggles
+        feeToggles = {
+            msp: document.getElementById("toggleMsp").checked,
+            wc: document.getElementById("toggleWc").checked,
+            cc: document.getElementById("toggleCc").checked,
+            bt: document.getElementById("toggleBt").checked,
+            comm: document.getElementById("toggleComm").checked,
+            tax: document.getElementById("toggleTax").checked
+        };
+    }
+
+    async function fetchData() {
+        document.getElementById("loader").style.display = "block";
+        document.getElementById("dashboardContent").style.display = "none";
+        
+        syncInputsToState(); // Ensure we send current UI state
+
+        const payload = {
+            start_date: document.getElementById("startDate").value,
+            end_date: document.getElementById("endDate").value,
+            client_toggles: clientToggles,
+            position_overrides: positionOverrides,
+            wc_fee_overrides: wcFeeOverrides,
+            fee_toggles: feeToggles
+        };
+
+        try {
+            const res = await fetch("/forecasting/api/data", {
+                method: "POST",
+                credentials: "same-origin",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            
+            uiPositions = data.ui_positions || [];
+            uiWcFees = data.ui_wc_fees || [];
+            uiClients = data.ui_clients || [];
+            clientBreakdown = data.client_breakdown || [];
+            
+            updateDashboard(data);
+            renderUI();
+            
+            document.getElementById("loader").style.display = "none";
+            document.getElementById("dashboardContent").style.display = "block";
+        } catch (e) {
+            console.error("Error fetching data", e);
+            document.getElementById("loader").style.display = "none";
+        }
+    }
+
+    async function exportExcel() {
+        if (!clientBreakdown || clientBreakdown.length === 0) {
+            alert("No data to export. Please calculate first.");
+            return;
+        }
+        
+        document.getElementById("loader").style.display = "block";
+        
+        const payload = {
+            client_breakdown: clientBreakdown,
+            ui_positions: uiPositions,
+            ui_wc_fees: uiWcFees,
+            client_toggles: clientToggles
+        };
+        
+        try {
+            const res = await fetch("/forecasting/api/export", {
+                method: "POST",
+                credentials: "same-origin",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            
+            if (!res.ok) {
+                alert("Failed to export Excel file.");
+                document.getElementById("loader").style.display = "none";
+                return;
+            }
+            
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "Forecasting_Report.xlsx";
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            document.getElementById("loader").style.display = "none";
+        } catch (e) {
+            console.error(e);
+            alert("Error exporting Excel file.");
+            document.getElementById("loader").style.display = "none";
+        }
+    }
+
+    function updateDashboard(data) {
+        const formatMoney = val => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val || 0);
+        
+        document.getElementById("valTotalBill").textContent = formatMoney(data.total_bill);
+        document.getElementById("valGrossPay").textContent = formatMoney(data.gross_pay);
+        document.getElementById("valMspFee").textContent = formatMoney(data.msp_fee);
+        document.getElementById("valWcFee").textContent = formatMoney(data.wc_fee);
+        document.getElementById("valCcFee").textContent = formatMoney(data.cc_fee);
+        document.getElementById("valBtFee").textContent = formatMoney(data.bt_fee);
+        document.getElementById("valCommissions").textContent = formatMoney(data.commissions);
+        document.getElementById("valPayrollTax").textContent = formatMoney(data.payroll_tax);
+        document.getElementById("valProfit").textContent = formatMoney(data.profit);
+        
+        let pct = 0;
+        if (data.total_bill > 0) {
+            pct = ((data.profit / data.total_bill) * 100).toFixed(1);
+        }
+        document.getElementById("pctProfit").textContent = pct + "%";
+    }
+
+    function renderUI() {
+        // Positions Table
+        const posBody = document.getElementById("positionsTbody");
+        posBody.innerHTML = "";
+        uiPositions.forEach(p => {
+            const tr = document.createElement("tr");
+            const override = positionOverrides[p.name] || {};
+            const payVal = override.pay_rate !== undefined ? override.pay_rate : "";
+            const markVal = override.markup_percentage !== undefined ? override.markup_percentage : "";
+            
+            tr.innerHTML = `
+                <td>${p.name}</td>
+                <td class="text-right">$${p.pay_rate.toFixed(2)}</td>
+                <td class="text-right">${p.markup_percentage.toFixed(2)}%</td>
+                <td class="text-right">$${p.bill_rate.toFixed(2)}</td>
+                <td class="text-right">
+                    <input type="number" step="0.01" class="override-input pos-pay-input" data-pos="${p.name}" value="${payVal}" placeholder="New $...">
+                </td>
+                <td class="text-right">
+                    <input type="number" step="0.01" class="override-input pos-markup-input" data-pos="${p.name}" value="${markVal}" placeholder="New %...">
+                </td>
+            `;
+            posBody.appendChild(tr);
+        });
+        
+        // WC Fees Table
+        const wcBody = document.getElementById("wcTbody");
+        wcBody.innerHTML = "";
+        uiWcFees.forEach(w => {
+            const tr = document.createElement("tr");
+            const overrideVal = wcFeeOverrides[w.wc_id] !== undefined ? wcFeeOverrides[w.wc_id] : "";
+            
+            tr.innerHTML = `
+                <td><strong>${w.wc_id}</strong> - ${w.wc_name}</td>
+                <td class="text-right">${w.wc_rate.toFixed(4)}%</td>
+                <td class="text-right">
+                    <input type="number" step="0.0001" class="override-input wc-fee-input" data-wcid="${w.wc_id}" value="${overrideVal}" placeholder="New %...">
+                </td>
+            `;
+            wcBody.appendChild(tr);
+        });
+        
+        // Clients Toggles Table
+        const clBody = document.getElementById("clientsTbody");
+        clBody.innerHTML = "";
+        uiClients.forEach(c => {
+            const tr = document.createElement("tr");
+            const isChecked = clientToggles[c] !== undefined ? clientToggles[c] : true; // Default true
+            
+            tr.innerHTML = `
+                <td>${c}</td>
+                <td class="text-right">
+                    <label class="toggle-switch">
+                        <input type="checkbox" class="client-toggle-cb" data-client="${c}" ${isChecked ? 'checked' : ''}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </td>
+            `;
+            clBody.appendChild(tr);
+        });
+        
+        // Breakdown Table
+        const bdBody = document.getElementById("breakdownTbody");
+        bdBody.innerHTML = "";
+        clientBreakdown.forEach(c => {
+            const tr = document.createElement("tr");
+            const pct = c.total_bill > 0 ? ((c.profit / c.total_bill) * 100).toFixed(1) : 0;
+            tr.innerHTML = `
+                <td>${c.client_name}</td>
+                <td class="text-right">$${c.total_bill.toFixed(2)}</td>
+                <td class="text-right">$${c.gross_pay.toFixed(2)}</td>
+                <td class="text-right">$${c.wc_fee.toFixed(2)}</td>
+                <td class="text-right" style="color: var(--pt-success); font-weight: bold;">$${c.profit.toFixed(2)}</td>
+                <td class="text-right">${pct}%</td>
+            `;
+            bdBody.appendChild(tr);
+        });
+    }
+</script>
+{% endblock %}
