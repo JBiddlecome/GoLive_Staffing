@@ -66,7 +66,7 @@ async def no_show_report_loop():
                     res = send_no_show_report_email(
                         start_date=start_date,
                         end_date=end_date,
-                        recipient="jake@culinarystaffing.com",
+                        recipient=["jake@culinarystaffing.com", "mercedes@culinarystaffing.com"],
                     )
                     
                     if res.get("success"):
