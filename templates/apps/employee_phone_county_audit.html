@@ -39,6 +39,7 @@
             {% for column in audit_results.mobile.columns %}
             <th class="text-left font-semibold px-3 py-2 border-b border-slate-200">{{ column }}</th>
             {% endfor %}
+            <th class="text-left font-semibold px-3 py-2 border-b border-slate-200">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -47,6 +48,16 @@
             {% for column in audit_results.mobile.columns %}
             <td class="px-3 py-2 border-b border-slate-100 align-top">{{ row[column] }}</td>
             {% endfor %}
+            <td class="px-3 py-2 border-b border-slate-100 align-top">
+              {% if row['Original Phone'] %}
+              <button onclick="updateMobile('{{ row['Employee ID'] }}', '{{ row['Original Phone'] }}', this)" 
+                      class="px-2 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 text-xs font-semibold shadow-sm transition-all duration-150">
+                Fix Phone
+              </button>
+              {% else %}
+              <span class="text-xs text-gray-400">No history found</span>
+              {% endif %}
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -87,4 +98,58 @@
   </div>
 </section>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function updateMobile(payrollId, originalPhone, buttonEl) {
+    if (!originalPhone) {
+        alert("No original phone number found to update.");
+        return;
+    }
+    if (!confirm(`Are you sure you want to update employee #${payrollId} mobile number to ${originalPhone}?`)) {
+        return;
+    }
+    
+    // Save original button state
+    const originalText = buttonEl.textContent;
+    buttonEl.disabled = true;
+    buttonEl.textContent = "Updating...";
+    buttonEl.classList.remove("bg-indigo-600", "hover:bg-indigo-500");
+    buttonEl.classList.add("bg-gray-400", "cursor-not-allowed");
+    
+    try {
+        const response = await fetch('/employee-phone-county-audit/update-phone', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                payroll_id: payrollId,
+                original_phone: originalPhone
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.status === "success") {
+            buttonEl.textContent = "Updated ✓";
+            buttonEl.classList.remove("bg-gray-400");
+            buttonEl.classList.add("bg-green-700");
+        } else {
+            alert("Error: " + (data.detail || data.message || "Failed to update phone number."));
+            buttonEl.disabled = false;
+            buttonEl.textContent = originalText;
+            buttonEl.classList.remove("bg-gray-400", "cursor-not-allowed");
+            buttonEl.classList.add("bg-indigo-600", "hover:bg-indigo-500");
+        }
+    } catch (error) {
+        alert("Network error: " + error.message);
+        buttonEl.disabled = false;
+        buttonEl.textContent = originalText;
+        buttonEl.classList.remove("bg-gray-400", "cursor-not-allowed");
+        buttonEl.classList.add("bg-indigo-600", "hover:bg-indigo-500");
+    }
+}
+</script>
 {% endblock %}

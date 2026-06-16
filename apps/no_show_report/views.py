@@ -225,9 +225,14 @@ def generate_no_show_excel(records: list[dict[str, Any]]) -> bytes:
 def send_no_show_report_email(
     start_date: str,
     end_date: str,
-    recipient: str = "jake@culinarystaffing.com"
+    recipient: str | list[str] = "jake@culinarystaffing.com"
 ) -> dict[str, Any]:
     """Query, compile, and email the No Show Report via MS Graph API or mock it locally."""
+    if isinstance(recipient, str):
+        recipients = [r.strip() for r in recipient.split(",") if r.strip()]
+    else:
+        recipients = list(recipient)
+
     records = fetch_no_shows(start_date, end_date)
     excel_bin = generate_no_show_excel(records)
     b64_content = base64.b64encode(excel_bin).decode("utf-8")
@@ -333,7 +338,7 @@ def send_no_show_report_email(
         return {
             "success": True,
             "mocked": True,
-            "recipient": recipient,
+            "recipient": ", ".join(recipients),
             "subject": subject,
             "record_count": len(records),
             "info": f"Dry-run report compiled. Mock HTML saved to scratch/{mock_file.name}. excel attachment created successfully."
@@ -367,7 +372,7 @@ def send_no_show_report_email(
                 "contentType": "HTML",
                 "content": html_body
             },
-            "toRecipients": [{"emailAddress": {"address": recipient}}],
+            "toRecipients": [{"emailAddress": {"address": r}} for r in recipients],
             "attachments": [
                 {
                     "@odata.type": "#microsoft.graph.fileAttachment",
@@ -392,10 +397,10 @@ def send_no_show_report_email(
         return {
             "success": True,
             "mocked": False,
-            "recipient": recipient,
+            "recipient": ", ".join(recipients),
             "subject": subject,
             "record_count": len(records),
-            "info": f"Successfully emailed No Show Report with {len(records)} records to {recipient}."
+            "info": f"Successfully emailed No Show Report with {len(records)} records to {', '.join(recipients)}."
         }
     except Exception as e:
         error_info = getattr(e, 'response', None)
